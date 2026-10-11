@@ -518,3 +518,56 @@ fn normalized_sources_keep_real_call_lines() {
         &[("src/tests.rs", 1, "tokio::time::timeout")],
     );
 }
+
+#[test]
+fn associated_test_bodies_restore_production_ownership() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/lib.rs",
+            "struct Worker;\nimpl Worker {\n    fn before() { std::thread::park_timeout(d); }\n    #[cfg(test)]\n    fn helper() { std::thread::park_timeout(d); }\n    fn after() { std::thread::park_timeout(d); }\n    #[cfg(test)]\n    const TEST: () = { std::thread::park_timeout(d); };\n    const PRODUCT: () = { std::thread::park_timeout(d); };\n}\ntrait Helper {\n    fn before() { std::thread::park_timeout(d); }\n    #[cfg(test)]\n    fn helper() { std::thread::park_timeout(d); }\n    fn after() { std::thread::park_timeout(d); }\n    #[cfg(test)]\n    const TEST: () = { std::thread::park_timeout(d); };\n    const PRODUCT: () = { std::thread::park_timeout(d); };\n}\n",
+        )],
+        &[
+            ("src/lib.rs", 5, "std::thread::park_timeout"),
+            ("src/lib.rs", 8, "std::thread::park_timeout"),
+            ("src/lib.rs", 14, "std::thread::park_timeout"),
+            ("src/lib.rs", 17, "std::thread::park_timeout"),
+        ],
+    );
+}
+
+#[test]
+fn competing_namespace_aliases_preserve_each_timer() {
+    for source in [
+        "mod asynchronous {\n    use tokio::time as wait;\n    async fn sample() { wait::timeout(d, f).await; }\n}\nmod blocking {\n    use std::thread as wait;\n    fn sample() { wait::park_timeout(d); }\n}\n",
+        "mod blocking {\n    use std::thread as wait;\n    fn sample() { wait::park_timeout(d); }\n}\nmod asynchronous {\n    use tokio::time as wait;\n    async fn sample() { wait::timeout(d, f).await; }\n}\n",
+    ] {
+        let (first, second) = if source.starts_with("mod asynchronous") {
+            ("tokio::time::timeout", "std::thread::park_timeout")
+        } else {
+            ("std::thread::park_timeout", "tokio::time::timeout")
+        };
+        check(
+            "maestro-tui",
+            &[("src/tests.rs", source)],
+            &[("src/tests.rs", 3, first), ("src/tests.rs", 7, second)],
+        );
+    }
+}
+
+#[test]
+fn namespace_aliases_do_not_replace_direct_timer_paths() {
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "use tokio::time as std;\nuse std::thread as tokio;\nfn sample() {\n    ::std::thread::park_timeout(d);\n    std::thread::park_timeout(d);\n    ::tokio::time::timeout(d, f);\n    tokio::time::timeout_at(d, f);\n}\n",
+        )],
+        &[
+            ("src/tests.rs", 4, "std::thread::park_timeout"),
+            ("src/tests.rs", 5, "std::thread::park_timeout"),
+            ("src/tests.rs", 6, "tokio::time::timeout"),
+            ("src/tests.rs", 7, "tokio::time::timeout_at"),
+        ],
+    );
+}

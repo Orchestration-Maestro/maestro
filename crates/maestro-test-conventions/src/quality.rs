@@ -4,7 +4,10 @@ use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
 use crate::generated;
-use crate::source::{Member, Source, cfg_test, item_attributes, test_layout};
+use crate::source::{
+    Member, Source, cfg_test, impl_item_attributes, item_attributes, test_layout,
+    trait_item_attributes,
+};
 
 /// Verify protected lint settings and production source size for every member.
 pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
@@ -124,13 +127,7 @@ impl<'ast> Visit<'ast> for TestLines {
     }
 
     fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        let attributes = match item {
-            syn::ImplItem::Const(item) => &item.attrs,
-            syn::ImplItem::Fn(item) => &item.attrs,
-            syn::ImplItem::Type(item) => &item.attrs,
-            syn::ImplItem::Macro(item) => &item.attrs,
-            _ => return,
-        };
+        let attributes = impl_item_attributes(item);
         if cfg_test(attributes) {
             self.spans.push(span_positions(item.span()));
         } else {
@@ -139,13 +136,7 @@ impl<'ast> Visit<'ast> for TestLines {
     }
 
     fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        let attributes = match item {
-            syn::TraitItem::Const(item) => &item.attrs,
-            syn::TraitItem::Fn(item) => &item.attrs,
-            syn::TraitItem::Type(item) => &item.attrs,
-            syn::TraitItem::Macro(item) => &item.attrs,
-            _ => return,
-        };
+        let attributes = trait_item_attributes(item);
         if cfg_test(attributes) {
             self.spans.push(span_positions(item.span()));
         } else {

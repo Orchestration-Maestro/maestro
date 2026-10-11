@@ -150,3 +150,25 @@ pub(crate) fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
         _ => &[],
     }
 }
+
+/// Access attributes on supported associated impl items.
+pub(crate) fn impl_item_attributes(item: &syn::ImplItem) -> &[syn::Attribute] {
+    match item {
+        syn::ImplItem::Const(item) => &item.attrs,
+        syn::ImplItem::Fn(item) => &item.attrs,
+        syn::ImplItem::Type(item) => &item.attrs,
+        syn::ImplItem::Macro(item) => &item.attrs,
+        _ => &[],
+    }
+}
+
+/// Access attributes on supported associated trait items.
+pub(crate) fn trait_item_attributes(item: &syn::TraitItem) -> &[syn::Attribute] {
+    match item {
+        syn::TraitItem::Const(item) => &item.attrs,
+        syn::TraitItem::Fn(item) => &item.attrs,
+        syn::TraitItem::Type(item) => &item.attrs,
+        syn::TraitItem::Macro(item) => &item.attrs,
+        _ => &[],
+    }
+}

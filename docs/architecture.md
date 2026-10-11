@@ -145,9 +145,11 @@ Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,
 `wait_timeout_while` and `std::thread::park_timeout`. Test ownership comes from
-test file layouts, test-support members and explicit `cfg(test)` scopes.
+test file layouts, test-support members and explicit `cfg(test)` scopes,
+including impl/trait methods and associated-constant initializers.
 Direct paths and known imported, renamed, grouped or namespace-alias timer forms
-are checked; known timer-module globs are recognized. Aliases apply file-wide;
+are checked; known timer-module globs are recognized. Direct timer paths take
+precedence over aliases; competing known aliases are retained. Aliases apply file-wide;
 local shadowing is not modelled. Production deadlines remain allowed. Comments
 and literal contents are not call syntax. The scan does not expand macros,
 infer receiver types, resolve arbitrary re-exports/function values, evaluate

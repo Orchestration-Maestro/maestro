@@ -1,6 +1,10 @@
+use std::collections::{BTreeMap, BTreeSet};
+
 use syn::{ext::IdentExt, spanned::Spanned, visit::Visit};
 
-use crate::source::{Member, cfg_test, item_attributes, test_layout};
+use crate::source::{
+    Member, cfg_test, impl_item_attributes, item_attributes, test_layout, trait_item_attributes,
+};
 
 /// Reject recognized timer calls in test-owned parsed sources.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
@@ -44,20 +48,16 @@ pub(crate) fn check(members: &[Member]) -> Result<(), String> {
 
 /// Test ownership and located timer occurrences for one source.
 struct Calls {
-    /// Imported local names and their authored paths.
-    imports: std::collections::BTreeMap<String, String>,
+    /// Imported local names and their known authored identities.
+    imports: BTreeMap<String, BTreeSet<String>>,
     /// Whether the current syntax belongs to tests.
     testing: bool,
     /// Canonical labels with source coordinates.
     found: Vec<((usize, usize), String)>,
 }
 
-/// Collect direct import names from a use tree.
-fn imports(
-    tree: &syn::UseTree,
-    prefix: &str,
-    names: &mut std::collections::BTreeMap<String, String>,
-) {
+/// Collect known import candidates from a use tree.
+fn imports(tree: &syn::UseTree, prefix: &str, names: &mut BTreeMap<String, BTreeSet<String>>) {
     match tree {
         syn::UseTree::Path(path) => imports(
             &path.tree,
@@ -79,7 +79,8 @@ fn imports(
                 {
                     names
                         .entry(api.rsplit("::").next().unwrap_or(api).into())
-                        .or_insert_with(|| (*api).into());
+                        .or_default()
+                        .insert((*api).into());
                 }
             }
         }
@@ -87,13 +88,16 @@ fn imports(
 }
 
 /// Retain only aliases of the known timer functions or their namespaces.
-fn bind(names: &mut std::collections::BTreeMap<String, String>, name: &syn::Ident, path: String) {
+fn bind(names: &mut BTreeMap<String, BTreeSet<String>>, name: &syn::Ident, path: String) {
     if matches!(
         path.as_str(),
         "tokio" | "tokio::time" | "std" | "std::thread"
     ) || TIMERS.contains(&path.as_str())
     {
-        names.insert(name.unraw().to_string(), path);
+        names
+            .entry(name.unraw().to_string())
+            .or_default()
+            .insert(path);
     }
 }
 
@@ -115,11 +119,35 @@ fn import_path(prefix: &str, name: &syn::Ident) -> String {
 
 /// Timer namespace aliases collected across a parsed file.
 #[derive(Default)]
-struct Aliases(std::collections::BTreeMap<String, String>);
+struct Aliases(BTreeMap<String, BTreeSet<String>>);
 
 impl<'ast> Visit<'ast> for Aliases {
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
         imports(&item.tree, "", &mut self.0);
+    }
+}
+
+impl Calls {
+    /// Prefer direct timer identities, then match every known alias candidate.
+    fn timer<'a>(&self, name: &'a str) -> Option<&'a str> {
+        let last = name.rsplit("::").next().unwrap_or(name);
+        if TIMERS.contains(&name) {
+            return Some(name);
+        }
+        if timed_wait(last) {
+            return Some(last);
+        }
+        let (first, suffix) = name.split_once("::").unwrap_or((name, ""));
+        let candidates = self.imports.get(first)?;
+        TIMERS.iter().copied().find(|api| {
+            candidates.iter().any(|candidate| {
+                (suffix.is_empty() && *api == candidate)
+                    || api
+                        .strip_prefix(candidate.as_str())
+                        .and_then(|rest| rest.strip_prefix("::"))
+                        == Some(suffix)
+            })
+        })
     }
 }
 
@@ -128,6 +156,18 @@ impl<'ast> Visit<'ast> for Calls {
         let testing = self.testing;
         self.testing |= cfg_test(item_attributes(item));
         syn::visit::visit_item(self, item);
+        self.testing = testing;
+    }
+    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
+        let testing = self.testing;
+        self.testing |= cfg_test(impl_item_attributes(item));
+        syn::visit::visit_impl_item(self, item);
+        self.testing = testing;
+    }
+    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
+        let testing = self.testing;
+        self.testing |= cfg_test(trait_item_attributes(item));
+        syn::visit::visit_trait_item(self, item);
         self.testing = testing;
     }
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
@@ -144,24 +184,19 @@ impl<'ast> Visit<'ast> for Calls {
             callee = &parenthesized.expr;
         }
         if let syn::Expr::Path(path) = callee {
-            let mut name = path
+            let name = path
                 .path
                 .segments
                 .iter()
                 .map(|part| part.ident.unraw().to_string())
                 .collect::<Vec<_>>()
                 .join("::");
-            if let Some(first) = path.path.segments.first()
-                && let Some(replacement) = self.imports.get(&first.ident.unraw().to_string())
+            if self.testing
+                && let Some(name) = self.timer(&name)
             {
-                name = name.replacen(&first.ident.unraw().to_string(), replacement, 1);
-            }
-            let last = name.rsplit("::").next().unwrap_or(&name);
-            let recognized = TIMERS.contains(&name.as_str()) || timed_wait(last);
-            let name = if timed_wait(last) { last.into() } else { name };
-            if self.testing && recognized {
                 let position = call.span().start();
-                self.found.push(((position.line, position.column), name));
+                self.found
+                    .push(((position.line, position.column), name.into()));
             }
         }
         syn::visit::visit_expr_call(self, call);
