@@ -80,7 +80,7 @@ pub async fn reversed<A, B, F, O>(
 where
     A: Future,
     B: Future,
-    O: FnMut(Phase) -> F,
+    O: FnMut(bool) -> F,
     F: Future<Output = ()>,
 {
     let [(entered_first, open_first), (entered_second, open_second)] = barriers;
@@ -90,11 +90,11 @@ where
         entered_first.await.unwrap();
         let control = async {
             entered_second.await.unwrap();
-            observe(Phase::BothPending).await;
+            observe(false).await;
             open_second.send(()).unwrap();
         };
         let second = alongside(second, control).await;
-        observe(Phase::FirstCompleted).await;
+        observe(true).await;
         open_first.send(()).unwrap();
         assert!(done.send(second).is_ok());
     };

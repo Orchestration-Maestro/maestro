@@ -315,7 +315,7 @@ pub(super) fn pair_input(target: &str) -> String {
     json!({"method":"appendSessionInfo","args":[target],"parent":target,"continuation":true,"hold":true}).to_string()
 }
 /// Named barriers close the observation set before either continuation may run.
-pub(super) fn pair_phase(lines: &[String], phase: super::join::Phase) {
+pub(super) fn pair_phase(lines: &[String], second_completed: bool) {
     let continued: Vec<_> = lines
         .iter()
         .filter(|l| l.starts_with("entry setup-continuation "))
@@ -324,15 +324,12 @@ pub(super) fn pair_phase(lines: &[String], phase: super::join::Phase) {
         .iter()
         .filter(|l| l.starts_with("entry setup-outcome "))
         .collect();
-    match phase {
-        super::join::Phase::BothPending => {
-            assert!(continued.is_empty());
-            assert!(completed.is_empty());
-        }
-        super::join::Phase::FirstCompleted => {
-            assert_eq!(continued, [&"entry setup-continuation \"B\"".to_owned()]);
-            assert_eq!(completed.len(), 1);
-        }
+    if second_completed {
+        assert_eq!(continued, [&"entry setup-continuation \"B\"".to_owned()]);
+        assert_eq!(completed.len(), 1);
+    } else {
+        assert!(continued.is_empty());
+        assert!(completed.is_empty());
     }
 }
 

@@ -732,7 +732,7 @@ async fn pending_observation(
 fn setup_phase(
     accessor: &wasmtime::component::Accessor<super::host::State>,
     start: usize,
-    phase: super::join::Phase,
+    phase: bool,
 ) {
     accessor.with(|mut a| {
         super::setup_sessions::pair_phase(&a.get().observed.transcript[start..], phase);
