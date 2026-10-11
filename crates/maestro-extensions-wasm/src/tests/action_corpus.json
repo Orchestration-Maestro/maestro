@@ -6411,9 +6411,7 @@
     {
       "group": "nameReads",
       "input": {
-        "value": {
-          "present": false
-        }
+        "value": {}
       },
       "expected": {
         "value": {
@@ -6425,7 +6423,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": ""
         }
       },
@@ -6440,7 +6437,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": " "
         }
       },
@@ -6455,7 +6451,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": "﻿name"
         }
       },
@@ -6470,7 +6465,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": "Name Ω"
         }
       },
@@ -6485,7 +6479,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": "name/../x"
         }
       },
@@ -6500,7 +6493,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": "__proto__"
         }
       },
@@ -6515,7 +6507,6 @@
       "group": "nameReads",
       "input": {
         "value": {
-          "present": true,
           "value": "line\nnext"
         }
       },
@@ -8584,15 +8575,7 @@
     {
       "group": "notifications",
       "input": {
-        "detail": {
-          "present": false
-        },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5
-        }
+        "mode": "operation-error"
       },
       "expected": {
         "trace": [
@@ -8699,40 +8682,6 @@
           "present": true,
           "value": null
         },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": null
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": null
-        },
         "mode": "completion-error",
         "result": {
           "summary": "summary Ω\nnext",
@@ -8815,40 +8764,6 @@
           "present": true,
           "value": false
         },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": false
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": false
-        },
         "mode": "completion-error",
         "result": {
           "summary": "summary Ω\nnext",
@@ -8931,40 +8846,6 @@
           "present": true,
           "value": 0
         },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": 0
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": 0
-        },
         "mode": "completion-error",
         "result": {
           "summary": "summary Ω\nnext",
@@ -9047,40 +8928,6 @@
           "present": true,
           "value": ""
         },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": ""
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": ""
-        },
         "mode": "completion-error",
         "result": {
           "summary": "summary Ω\nnext",
@@ -9163,40 +9010,6 @@
           "present": true,
           "value": []
         },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": []
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": []
-        },
         "mode": "completion-error",
         "result": {
           "summary": "summary Ω\nnext",
@@ -9268,40 +9081,6 @@
               "tokensBefore": 123.5,
               "details": {}
             }
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": {}
-        },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": {}
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
           }
         ]
       }
@@ -9405,54 +9184,6 @@
                 ]
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": {
-            "z": 1,
-            "a": [
-              false,
-              null,
-              "Ω"
-            ]
-          }
-        },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": {
-            "z": 1,
-            "a": [
-              false,
-              null,
-              "Ω"
-            ]
-          }
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
           }
         ]
       }
@@ -9556,40 +9287,6 @@
               "tokensBefore": 123.5,
               "details": "null"
             }
-          }
-        ]
-      }
-    },
-    {
-      "group": "notifications",
-      "input": {
-        "detail": {
-          "present": true,
-          "value": "null"
-        },
-        "mode": "operation-error",
-        "result": {
-          "summary": "summary Ω\nnext",
-          "firstKeptEntryId": "cut Ω",
-          "tokensBefore": 123.5,
-          "details": "null"
-        }
-      },
-      "expected": {
-        "trace": [
-          {
-            "kind": "requested",
-            "instructions": {
-              "present": true,
-              "value": ""
-            }
-          },
-          {
-            "kind": "returned"
-          },
-          {
-            "kind": "error",
-            "message": "compaction failed Ω\nline"
           }
         ]
       }

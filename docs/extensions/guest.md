@@ -330,15 +330,17 @@ the callback, the event as one host-encoded JSON document whose `type` names the
 the event needs: a context, and for before-compaction or before-tree its owned signal.
 A signal that comes with any other event is dropped. Resources never appear in the document.
 
-Unshared optional properties keep three states apart: omitted, explicitly `null`, and present, including
-empty strings, empty lists and `false`. In unshared records such a field is a
+Unshared optional event fields keep three states apart: omitted, explicitly `null`, and present, including
+empty strings, empty lists and `false`. Such an event field is a
 `Presence<T>`: it defaults to `Missing` when the property is absent and is skipped on
 serialization only while it is `Missing`. Serializing `Missing` on its own, outside a property,
 is an error; `Null` serializes as `null` and `Present` as its value.
 
 Shared records retain their own optional-field serialization: ordinary `Option` fields
 collapse missing and null, while existing nested options retain explicit null. They
-have no added `Presence` wrapper.
+have no added `Presence` wrapper. The inventory record
+[`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
+also uses standard `Option` decoding for `description`: missing and null both become `None`.
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder

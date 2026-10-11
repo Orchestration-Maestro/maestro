@@ -39,7 +39,7 @@ struct Case {
 fn corpus() -> Result<Vec<Case>, String> {
     let corpus: Corpus =
         serde_json::from_str(include_str!("action_corpus.json")).map_err(|e| e.to_string())?;
-    assert_eq!(corpus.records.len(), 313);
+    assert_eq!(corpus.records.len(), 305);
     Ok(corpus.records)
 }
 /// Configure an action response through the same authored instance.
@@ -381,21 +381,21 @@ async fn notification_case(driver: &mut impl Driver, case: &Case) -> Result<(), 
     let request = admissions(driver) - 1;
     let complete = driver.identity(&format!("compact {request} complete"))?;
     let error = driver.identity(&format!("compact {request} error"))?;
-    assert_eq!(
-        case.input["result"].get("details").is_some(),
-        case.input["detail"]["present"] == true
-    );
-    if case.input["detail"]["present"] == true {
-        assert_eq!(
-            case.input["result"]["details"],
-            case.input["detail"]["value"]
-        );
-    }
     if case.input["mode"] == "operation-error" {
         driver
             .notify_compaction(error, "compaction failed Ω\nline", false)
             .await?;
     } else {
+        assert_eq!(
+            case.input["result"].get("details").is_some(),
+            case.input["detail"]["present"] == true
+        );
+        if case.input["detail"]["present"] == true {
+            assert_eq!(
+                case.input["result"]["details"],
+                case.input["detail"]["value"]
+            );
+        }
         let result = driver
             .notify_compaction(
                 complete,
