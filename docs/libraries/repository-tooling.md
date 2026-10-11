@@ -1,0 +1,25 @@
+## Approved repository-tooling libraries
+
+The private conventions checker may use `syn =3.0.6` (defaults off;
+`full`, `parsing`, `printing`, `visit`), `proc-macro2 =1.0.107` (default
+`proc-macro` plus `span-locations`), `toml =1.1.6` (locked as
+`1.1.6+spec-1.1.0`; default `std`, `serde`, `parse`, `display`),
+`ra-ap-rustc_lexer =0.176.0` (no features) and `cargo_metadata =0.23.1`
+(defaults off; no features). All are MIT OR Apache-2.0 except
+`cargo_metadata`, which is MIT. Dependency feature unification also enables
+syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
+`unicode-ident` is held at 1.0.24 in the lockfile because the lexer asserts
+matching Unicode tables; the hold lifts when `unicode-properties` publishes
+the newer tables.
+
+Documentation parsing and the toolkit Markdown component use
+`pulldown-cmark =0.13.4` with defaults off (MIT). The toolkit enables only
+strikethrough and task-list parsing; task markers do not add checkbox rendering.
+Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
+(MIT OR Apache-2.0).
+
+`maestro-tooling` alone may use `cargo_metadata =0.23.1` with default features
+(MIT). Its dependency closure uses MIT OR Apache-2.0 (camino, cargo-platform,
+semver, serde, serde_core, serde_derive, serde_json, itoa, proc-macro2, quote,
+syn, thiserror and thiserror-impl), Unlicense OR MIT (memchr),
+MIT (zmij), and (MIT OR Apache-2.0) AND Unicode-3.0 (unicode-ident).
