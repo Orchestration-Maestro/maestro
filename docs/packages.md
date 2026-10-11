@@ -10,8 +10,9 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
 
 - **npm** (`npm:` prefix): the user scope runs `install -g <spec>` or
   `uninstall -g <name>`. The project scope works in `<project>/.maestro/npm`:
-  install first creates the root, a `.gitignore` of `*` and `!.gitignore`, and a
-  `package.json` naming `maestro-extensions`, each created exclusively when missing, then runs
+  install first prepares the root directory, then exclusively creates a missing
+  `.gitignore` of `*` and `!.gitignore` and a missing `package.json` naming
+  `maestro-extensions`, then runs
   `install <spec> --prefix <root>`; removal runs `uninstall <name> --prefix <root>`
   only when the root exists. The command is `npm` unless settings configure a
   nonempty `npmCommand` array, whose leading arguments come first (an empty array

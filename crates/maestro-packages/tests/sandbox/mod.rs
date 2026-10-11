@@ -272,7 +272,8 @@ impl Fixture {
     }
     /// Uses the supplied settings, an optional input base and an optionally relative agent directory.
     /// # Panics
-    /// Panics when the disposable directory or ambient working directory is unavailable.
+    /// Panics when the disposable directory is unavailable, or when `relative_agent` is true
+    /// and the ambient working directory is unavailable.
     pub fn over(settings: SettingsManager, cwd: Option<&str>, relative_agent: bool) -> Self {
         let scratch = Scratch::new().unwrap();
         let root = scratch.0.to_string_lossy().into_owned();
