@@ -314,6 +314,7 @@ fn queue_user(text: &str) -> AgentMessage<QueueNotice> {
 fn queue_config() -> maestro_agent::AgentLoopConfig<QueueNotice> {
     let base = config();
     maestro_agent::AgentLoopConfig {
+        thinking_budgets: None,
         model: base.model,
         options: base.options,
         extra: base.extra,

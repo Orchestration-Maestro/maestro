@@ -97,6 +97,7 @@ fn local_should_stop_after_turn(local: Rc<()>) -> maestro_agent::ShouldStopAfter
 /// Construct a complete configuration with local callback captures.
 fn local_config(observed: Rc<()>, local: &Rc<()>) -> AgentLoopConfig<Notice> {
     AgentLoopConfig {
+        thinking_budgets: None,
         model: Arc::new(RwLock::new(local_model())),
         options: SimpleStreamOptions::default(),
         extra: JsonObject::new(),

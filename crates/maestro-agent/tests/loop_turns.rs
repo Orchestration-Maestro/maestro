@@ -799,6 +799,7 @@ async fn retired_entry_drops_after_guard_case() {
     let dropped = Arc::new(AtomicBool::new(false));
     let emit = cleanup_sink(messages, Arc::clone(&blocked), Arc::clone(&dropped));
     let config = maestro_agent::AgentLoopConfig {
+        thinking_budgets: None,
         model: Arc::new(RwLock::new(model())),
         options: maestro_models::SimpleStreamOptions::default(),
         extra: maestro_models::JsonObject::new(),

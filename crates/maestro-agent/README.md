@@ -1,6 +1,6 @@
 # maestro-agent
 
-Live conversation state, caller-owned prompt execution, awaited live subscriptions
-and independent steering/follow-up queues. See [Agent state and owned prompts](../../docs/agent.md)
-for the hosting contract. Continuation, queue consumption and remaining configuration
-are tracked in [the lifecycle follow-up](https://github.com/Orchestration-Maestro/maestro/issues/541).
+Live conversation state, caller-owned prompt/continuation execution, awaited live
+subscriptions and consumed steering/follow-up queues. See [Agent state and owned runs](../../docs/agent.md)
+for admission, captured configuration and queue policy. The [conversation loop](../../docs/loop.md)
+owns request and tool-turn behavior.

@@ -45,6 +45,8 @@ pub struct AgentLoopConfig<C: CustomAgentMessages = Infallible> {
     pub tool_execution: Option<super::ToolExecutionMode>,
     /// Captured model handle: provider is read before key resolution, descriptor afterwards.
     pub model: Arc<RwLock<Model>>,
+    /// Retained budgets snapshotted after credential resolution; absence keeps owned settings.
+    pub thinking_budgets: Option<Arc<RwLock<maestro_models::ThinkingBudgets>>>,
     /// Simple invocation settings.
     pub options: SimpleStreamOptions,
     /// Open settings passed to a replacement stream.

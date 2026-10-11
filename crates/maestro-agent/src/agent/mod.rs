@@ -1,5 +1,9 @@
 //! Conversation state ownership and queued input.
 use crate::types::{AgentMessage, CustomAgentMessages, QueueMode, StreamFn};
+use crate::{
+    AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, ToolExecutionMode, TransformContext,
+};
+use maestro_models::{OnPayload, OnResponse, ThinkingBudgets, Transport};
 use std::sync::Mutex;
 /// Prompt normalization and owned execution.
 mod execution;
@@ -19,13 +23,37 @@ mod state;
 pub use state::{AgentInitialState, AgentState};
 /// Construction options for conversation state and queues.
 pub struct AgentOptions<C: CustomAgentMessages = Infallible> {
+    /// Context conversion captured at admission.
+    pub convert_to_llm: Option<ConvertToLlm<C>>,
+    /// Context transformation captured at admission.
+    pub transform_context: TransformContext<C>,
+    /// Model payload hook captured at admission.
+    pub on_payload: Option<OnPayload>,
+    /// Model response hook captured at admission.
+    pub on_response: Option<OnResponse>,
+    /// Validated tool hook captured at admission.
+    pub before_tool_call: Option<BeforeToolCall<C>>,
+    /// Executed tool hook captured at admission.
+    pub after_tool_call: Option<AfterToolCall<C>>,
+    /// Provider session identifier captured at admission.
+    pub session_id: Option<String>,
+    /// Transport preference captured at admission.
+    pub transport: Option<Transport>,
+    /// Provider retry cap captured at admission.
+    pub max_retry_delay_ms: Option<f64>,
+    /// Tool batch preference captured at admission.
+    pub tool_execution: Option<ToolExecutionMode>,
+    /// Per-request credential resolution captured at admission.
+    pub get_api_key: GetApiKey,
+    /// Retained per-level budgets captured at admission.
+    pub thinking_budgets: Option<Arc<RwLock<ThinkingBudgets>>>,
     /// Caller-owned initial state.
     pub initial_state: AgentInitialState<C>,
     /// Optional steering policy.
     pub steering_mode: Option<QueueMode>,
     /// Optional follow-up policy.
     pub follow_up_mode: Option<QueueMode>,
-    /// Replacement stream captured at prompt admission.
+    /// Replacement stream captured at run admission.
     pub stream_fn: Option<StreamFn>,
     /// Caller execution facility that retains submitted work independently.
     pub spawn: Option<AgentSpawner>,
@@ -33,6 +61,18 @@ pub struct AgentOptions<C: CustomAgentMessages = Infallible> {
 impl<C: CustomAgentMessages> Default for AgentOptions<C> {
     fn default() -> Self {
         Self {
+            convert_to_llm: None,
+            transform_context: None,
+            on_payload: None,
+            on_response: None,
+            before_tool_call: None,
+            after_tool_call: None,
+            session_id: None,
+            transport: None,
+            max_retry_delay_ms: None,
+            tool_execution: None,
+            get_api_key: None,
+            thinking_budgets: None,
             initial_state: AgentInitialState::default(),
             steering_mode: None,
             follow_up_mode: None,
@@ -43,13 +83,37 @@ impl<C: CustomAgentMessages> Default for AgentOptions<C> {
 }
 /// Owner of live conversation state and independent input queues.
 pub struct Agent<C: CustomAgentMessages = Infallible> {
+    /// Context conversion for subsequently admitted runs.
+    pub convert_to_llm: RwLock<ConvertToLlm<C>>,
+    /// Context transformation for subsequently admitted runs.
+    pub transform_context: RwLock<TransformContext<C>>,
+    /// Model payload hook for subsequently admitted runs.
+    pub on_payload: RwLock<Option<OnPayload>>,
+    /// Model response hook for subsequently admitted runs.
+    pub on_response: RwLock<Option<OnResponse>>,
+    /// Validated tool hook for subsequently admitted runs.
+    pub before_tool_call: RwLock<Option<BeforeToolCall<C>>>,
+    /// Executed tool hook for subsequently admitted runs.
+    pub after_tool_call: RwLock<Option<AfterToolCall<C>>>,
+    /// Provider session identifier for subsequently admitted runs.
+    pub session_id: RwLock<Option<String>>,
+    /// Transport preference for subsequently admitted runs.
+    pub transport: RwLock<Transport>,
+    /// Provider retry cap for subsequently admitted runs.
+    pub max_retry_delay_ms: RwLock<Option<f64>>,
+    /// Tool batch preference for subsequently admitted runs.
+    pub tool_execution: RwLock<ToolExecutionMode>,
+    /// Credential resolver for subsequently admitted runs.
+    pub get_api_key: RwLock<GetApiKey>,
+    /// Budget handle for subsequently admitted runs.
+    pub thinking_budgets: RwLock<Option<Arc<RwLock<ThinkingBudgets>>>>,
     /// Shared live state.
     state: Arc<RwLock<AgentState<C>>>,
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
     listeners: Mutex<listeners::Listeners<C>>,
-    /// Replacement stream captured at prompt admission.
+    /// Replacement stream captured at run admission.
     pub stream_fn: RwLock<Option<StreamFn>>,
     /// Caller execution facility that retains submitted work independently.
     pub spawn: RwLock<Option<AgentSpawner>>,
@@ -73,6 +137,26 @@ impl<C: CustomAgentMessages> Agent<C> {
     #[must_use]
     pub fn new(options: AgentOptions<C>) -> Self {
         Self {
+            convert_to_llm: RwLock::new(
+                options
+                    .convert_to_llm
+                    .unwrap_or_else(execution::default_converter),
+            ),
+            transform_context: RwLock::new(options.transform_context),
+            on_payload: RwLock::new(options.on_payload),
+            on_response: RwLock::new(options.on_response),
+            before_tool_call: RwLock::new(options.before_tool_call),
+            after_tool_call: RwLock::new(options.after_tool_call),
+            session_id: RwLock::new(options.session_id),
+            transport: RwLock::new(options.transport.unwrap_or(Transport::Auto)),
+            max_retry_delay_ms: RwLock::new(options.max_retry_delay_ms),
+            tool_execution: RwLock::new(
+                options
+                    .tool_execution
+                    .unwrap_or(ToolExecutionMode::Parallel),
+            ),
+            get_api_key: RwLock::new(options.get_api_key),
+            thinking_budgets: RwLock::new(options.thinking_budgets),
             active: Mutex::new(None),
             listeners: Mutex::new(listeners::Listeners::default()),
             stream_fn: RwLock::new(options.stream_fn),
@@ -129,6 +213,22 @@ impl<C: CustomAgentMessages> Agent<C> {
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .push_back(message);
+    }
+    /// Move steering entries according to the policy at this poll.
+    fn drain_steering(&self) -> Vec<AgentMessage<C>> {
+        Self::drain(&self.steering, self.steering_mode())
+    }
+    /// Move follow-up entries according to the policy at this poll.
+    fn drain_follow_up(&self) -> Vec<AgentMessage<C>> {
+        Self::drain(&self.follow_up, self.follow_up_mode())
+    }
+    /// Move entries without changing their allocation identity or order.
+    fn drain(queue: &RwLock<VecDeque<AgentMessage<C>>>, mode: QueueMode) -> Vec<AgentMessage<C>> {
+        let mut queue = write(queue);
+        match mode {
+            QueueMode::All => queue.drain(..).collect(),
+            QueueMode::OneAtATime => queue.pop_front().into_iter().collect(),
+        }
     }
     /// Clear steering input, releasing retired entries after unlocking.
     pub fn clear_steering_queue(&self) {

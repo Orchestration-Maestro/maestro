@@ -403,6 +403,7 @@ fn config(input: &Arc<Input>, observations: Arc<Mutex<Observations>>) -> AgentLo
     options.common.session_id = Some("session".into());
     options.common.temperature = Some(0.25);
     let mut config = AgentLoopConfig {
+        thinking_budgets: None,
         model: Arc::new(RwLock::new(super::model())),
         options,
         extra: JsonObject::from_iter([(
