@@ -21,13 +21,13 @@ fn check_group(name: &str) {
     }
 }
 
-/// Choice selects one branch, including an embedded empty branch.
+/// Choice selects one branch; a whole-component directly empty body uses literal fallback.
 #[test]
 fn groups_select_exactly_one_alternative() {
     check_group("groups_select_exactly_one_alternative");
 }
 
-/// Optional groups accept zero or one branch.
+/// Optional groups accept zero or one branch unless whole-component empty-body fallback applies.
 #[test]
 fn groups_make_one_alternative_optional() {
     check_group("groups_make_one_alternative_optional");
@@ -39,7 +39,7 @@ fn groups_repeat_zero_or_more_alternatives() {
     check_group("groups_repeat_zero_or_more_alternatives");
 }
 
-/// Required repetition needs a first branch, which may itself be nullable.
+/// Required repetition needs a first branch, possibly nullable, unless empty-body fallback applies.
 #[test]
 fn groups_require_one_or_more_alternatives() {
     check_group("groups_require_one_or_more_alternatives");
@@ -63,7 +63,8 @@ fn group_dot_guards_follow_the_initial_alternative() {
     check_group("group_dot_guards_follow_the_initial_alternative");
 }
 
-/// Malformed delimiters and empty positive bodies retain authored fallback.
+/// Unclosed groups use basic syntax; directly empty positive bodies use literal fallback
+/// only with both component-start and component-end context.
 #[test]
 fn unclosed_and_empty_groups_keep_literal_fallback() {
     check_group("unclosed_and_empty_groups_keep_literal_fallback");
@@ -91,4 +92,19 @@ fn nested_groups_do_not_have_a_depth_cutoff() {
 #[test]
 fn group_members_consume_unicode_scalars() {
     check_group("group_members_consume_unicode_scalars");
+}
+
+/// Named members keep delimiters inside the complete outer class.
+#[test]
+fn named_classes_shield_group_delimiters() {
+    assert_eq!(minimatch("xa", "x@([[:alpha:]|])"), Ok(true));
+    assert_eq!(minimatch("x]", "x@([[:alpha:]|])"), Ok(false));
+    assert_eq!(minimatch("b", "[[:alpha:]@(a)]"), Ok(true));
+}
+
+/// An invalid named range endpoint does not swallow following alternatives.
+#[test]
+fn invalid_classes_preserve_following_group_alternatives() {
+    assert_eq!(minimatch("xb", "x@([a-[:alpha:]]|b)"), Ok(true));
+    assert_eq!(minimatch("xbz", "x@([a-[:alpha:]]|b)z"), Ok(true));
 }

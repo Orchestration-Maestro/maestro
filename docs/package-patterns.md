@@ -30,8 +30,9 @@ message is `pattern is too long`.
 `@(a|b)` selects one alternative, `?(a|b)` selects zero or one, `*(a|b)`
 selects zero or more, and `+(a|b)` requires at least one. Alternatives can contain
 nested groups, including nullable branches. Matching uses finite position states,
-without a nesting cutoff. Escaped bars remain literal; bars inside bracket regions
-do not separate alternatives. Unclosed outer groups use basic token parsing of
+without a nesting cutoff. Escaped bars remain literal; bars inside bracket regions,
+including recognized named members and their outer bracket, do not separate
+alternatives. Unclosed outer groups use basic token parsing of
 their remaining authored text, without recognizing nested groups in that fallback.
 
 `!(a|b)` excludes alternatives together with the following component context,

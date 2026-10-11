@@ -1,6 +1,7 @@
 //! Flat group ownership and authored delimiter scanning.
 
 use super::{Ast, Token};
+use crate::minimatch::brace_expressions::class_boundary;
 use std::ops::Range;
 
 /// Cardinality of an authored group.
@@ -63,27 +64,22 @@ pub(in crate::minimatch) struct Groups {
 struct Shield {
     /// Escape awaiting its next scalar.
     escaped: bool,
-    /// Bracket opening byte and optional negation byte length.
-    bracket: Option<(usize, usize)>,
+    /// Exclusive byte boundary of the current class, or component end if unclosed.
+    bracket_end: usize,
 }
 
 impl Shield {
     /// Consumes shielded scalars without interpreting group delimiters.
-    fn consumes(&mut self, c: char, at: usize) -> bool {
+    fn consumes(&mut self, pattern: &str, c: char, at: usize) -> bool {
+        if at < self.bracket_end {
+            return true;
+        }
         if self.escaped || c == '\\' {
             self.escaped = !self.escaped;
             return true;
         }
-        if let Some((begin, negation)) = &mut self.bracket {
-            if at == *begin + 1 && matches!(c, '!' | '^') {
-                *negation = 1;
-            } else if c == ']' && at > *begin + 1 + *negation {
-                self.bracket = None;
-            }
-            return true;
-        }
         if c == '[' {
-            self.bracket = Some((at, 0));
+            self.bracket_end = at + class_boundary(&pattern[at..]);
             return true;
         }
         false
@@ -93,23 +89,24 @@ impl Shield {
 impl Groups {
     /// Parses groups iteratively, retaining malformed outer text as basic syntax.
     pub(super) fn parse(pattern: &str) -> Option<Self> {
-        let mut model = Self {
-            source: pattern.into(),
-            nodes: Vec::new(),
-            sequences: vec![Vec::new()],
-        };
+        let mut model = None;
         let mut stack = Vec::new();
         let mut sequence = 0;
         let mut begin = 0;
         let mut shield = Shield::default();
         let mut chars = pattern.char_indices().peekable();
         while let Some((at, c)) = chars.next() {
-            if shield.consumes(c, at) {
+            if shield.consumes(pattern, c, at) {
                 continue;
             }
             if let Some(operator) = Operator::from_scalar(c)
                 && chars.peek().is_some_and(|(_, next)| *next == '(')
             {
+                let model = model.get_or_insert_with(|| Self {
+                    source: pattern.into(),
+                    nodes: Vec::new(),
+                    sequences: vec![Vec::new()],
+                });
                 model.append(sequence, &pattern[begin..at]);
                 let id = model.open(operator, sequence, stack.last().copied(), at);
                 stack.push(id);
@@ -119,12 +116,14 @@ impl Groups {
             } else if matches!(c, '|' | ')')
                 && let Some(&id) = stack.last()
             {
+                let model = model.as_mut()?;
                 model.append(sequence, &pattern[begin..at]);
                 model.nodes[id].alternatives.push(sequence);
                 sequence = model.finish_delimiter(id, c, at, &mut stack);
                 begin = at + 1;
             }
         }
+        let mut model = model?;
         model.append(sequence, &pattern[begin..]);
         if let Some(&id) = stack.first() {
             let group = &model.nodes[id];
