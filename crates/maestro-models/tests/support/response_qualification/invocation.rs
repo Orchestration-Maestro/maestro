@@ -300,9 +300,20 @@ fn compare_requests(
         .iter()
         .map(|request| request_record(request, wire))
         .collect::<TestResult<_>>()?;
+    let mut expected = row.expected.requests.clone().ok_or("requests")?;
+    for request in &mut expected {
+        if let Some(beta) = request["headers"].get_mut("anthropic-beta") {
+            let names = beta
+                .as_array()
+                .ok_or("beta names")?
+                .iter()
+                .map(|name| name.as_str().ok_or("beta name"))
+                .collect::<Result<Vec<_>, _>>()?;
+            *beta = json!(names.join(","));
+        }
+    }
     assert!(
-        canonical(json!(actual))
-            == canonical(json!(row.expected.requests.as_ref().ok_or("requests")?)),
+        canonical(json!(actual)) == canonical(json!(expected)),
         "{} wire request: {diagnostic}",
         row.id
     );
