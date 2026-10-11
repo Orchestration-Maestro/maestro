@@ -5,9 +5,11 @@
     clippy::excessive_nesting
 )]
 
+mod actions;
 mod agent_events;
 mod agent_results;
 mod api;
+pub use actions::*;
 mod context;
 #[cfg(any(test, target_arch = "wasm32"))]
 mod event_data;
@@ -31,9 +33,10 @@ pub use api::{
     FlagType, FlagValue, ShortcutHandler, ShortcutOptions,
 };
 pub use context::{
-    AbortSignal, CommandContextPort, ContextPort, ContextUsage, ExtensionCommandContext,
-    ExtensionContext, ExtensionUIContext, ExtensionUIContextPort, NewSessionCommandOptions,
-    ReplacedSessionContext, ReplacedSessionContextPort, SignalPort, WithSession,
+    AbortSignal, CommandContextPort, CompactOptions, CompactionComplete, CompactionError,
+    ContextPort, ContextUsage, ExtensionCommandContext, ExtensionContext, ExtensionUIContext,
+    ExtensionUIContextPort, NewSessionCommandOptions, ReplacedSessionContext,
+    ReplacedSessionContextPort, SignalPort, WithSession,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;

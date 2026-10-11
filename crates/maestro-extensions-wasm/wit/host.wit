@@ -96,6 +96,7 @@ interface host {
         shutdown: func() -> result<_, string>;
         get-context-usage: func() -> result<option<context-usage>, string>;
         get-system-prompt: func() -> result<string, string>;
+        compact: func(custom-instructions: option<string>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
 
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
@@ -114,6 +115,7 @@ interface host {
         shutdown: func() -> result<_, string>;
         get-context-usage: func() -> result<option<context-usage>, string>;
         get-system-prompt: func() -> result<string, string>;
+        compact: func(custom-instructions: option<string>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
 
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
@@ -166,4 +168,17 @@ interface host {
     register-tool: func(metadata: string, prepare: option<borrow<callback>>, execute: borrow<callback>) -> result<_, string>;
     /// Appends a custom entry to the session; `data` is JSON text.
     append-entry: func(custom-type: string, data: option<string>) -> result<_, string>;
+
+    send-message: func(message: string, options: option<string>) -> result<_, string>;
+    send-user-message: func(content: string, options: option<string>) -> result<_, string>;
+    set-session-name: func(name: string) -> result<_, string>;
+    get-session-name: func() -> result<option<string>, string>;
+    set-label: func(entry-id: string, label: option<string>) -> result<_, string>;
+    get-active-tools: func() -> result<list<string>, string>;
+    get-all-tools: func() -> result<string, string>;
+    set-active-tools: func(tool-names: list<string>) -> result<_, string>;
+    get-commands: func() -> result<string, string>;
+    set-model: async func(model: string) -> result<bool, string>;
+    get-thinking-level: func() -> result<string, string>;
+    set-thinking-level: func(level: string) -> result<_, string>;
 }

@@ -8,6 +8,7 @@
 )]
 
 mod callbacks;
+mod compaction;
 mod event_bus;
 #[cfg(test)]
 pub(crate) use event_bus::events;

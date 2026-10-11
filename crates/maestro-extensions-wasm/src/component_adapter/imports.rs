@@ -9,6 +9,47 @@ use crate::{FlagOptions, FlagValue};
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Forwards the ordinary action.
+    fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()>;
+    /// Forwards the ordinary action.
+    fn send_user_message(&self, content: &str, options: Option<&str>) -> ExtensionResult<()>;
+    /// Forwards the ordinary action.
+    fn set_session_name(&self, name: &str) -> ExtensionResult<()>;
+    /// Forwards the ordinary action.
+    fn get_session_name(&self) -> ExtensionResult<Option<String>>;
+    /// Forwards the ordinary action.
+    fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()>;
+    /// Forwards the ordinary action.
+    fn get_active_tools(&self) -> ExtensionResult<Vec<String>>;
+    /// Forwards the ordinary action.
+    fn get_all_tools(&self) -> ExtensionResult<String>;
+    /// Forwards the ordinary action.
+    fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()>;
+    /// Forwards the ordinary action.
+    fn get_commands(&self) -> ExtensionResult<String>;
+    /// Forwards the ordinary action.
+    fn get_thinking_level(&self) -> ExtensionResult<String>;
+    /// Forwards the ordinary action.
+    fn set_thinking_level(&self, level: &str) -> ExtensionResult<()>;
+    /// Selects a supplied model.
+    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool>;
+    /// Starts a compaction on the supplied context.
+    fn compact(
+        &self,
+        context: &Self::Context,
+        instructions: Option<&str>,
+        complete: Option<&Self::Callback>,
+        error: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+    /// Starts a compaction on the supplied context.
+    fn command_compact(
+        &self,
+        context: &Self::CommandContext,
+        instructions: Option<&str>,
+        complete: Option<&Self::Callback>,
+        error: Option<&Self::Callback>,
+    ) -> ExtensionResult<()>;
+
     /// Explicit remover resource.
     type Subscription: 'static;
     /// Callback-scoped emission resource.

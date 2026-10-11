@@ -18,6 +18,61 @@ use crate::{AutocompleteItem, FlagOptions, FlagValue};
 struct Generated;
 
 impl Imports for Generated {
+    fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
+        host::send_message(message, options)
+    }
+    fn send_user_message(&self, content: &str, options: Option<&str>) -> ExtensionResult<()> {
+        host::send_user_message(content, options)
+    }
+    fn set_session_name(&self, name: &str) -> ExtensionResult<()> {
+        host::set_session_name(name)
+    }
+    fn get_session_name(&self) -> ExtensionResult<Option<String>> {
+        host::get_session_name()
+    }
+    fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()> {
+        host::set_label(entry_id, label)
+    }
+    fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
+        host::get_active_tools()
+    }
+    fn get_all_tools(&self) -> ExtensionResult<String> {
+        host::get_all_tools()
+    }
+    fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()> {
+        host::set_active_tools(tool_names)
+    }
+    fn get_commands(&self) -> ExtensionResult<String> {
+        host::get_commands()
+    }
+    fn get_thinking_level(&self) -> ExtensionResult<String> {
+        host::get_thinking_level()
+    }
+    fn set_thinking_level(&self, level: &str) -> ExtensionResult<()> {
+        host::set_thinking_level(level)
+    }
+    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
+        Box::pin(host::set_model(model))
+    }
+    fn compact(
+        &self,
+        context: &Self::Context,
+        instructions: Option<&str>,
+        complete: Option<&Self::Callback>,
+        error: Option<&Self::Callback>,
+    ) -> ExtensionResult<()> {
+        context.compact(instructions, complete, error)
+    }
+    fn command_compact(
+        &self,
+        context: &Self::CommandContext,
+        instructions: Option<&str>,
+        complete: Option<&Self::Callback>,
+        error: Option<&Self::Callback>,
+    ) -> ExtensionResult<()> {
+        context.compact(instructions, complete, error)
+    }
+
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
     fn event_on(
@@ -327,6 +382,21 @@ impl Imports for Generated {
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
+    fn invoke_compaction_complete(
+        handler: &host::Callback,
+        result: String,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<()> {
+        Exports::new(Generated).invoke_compaction_complete(handler.id(), &result, emitter)
+    }
+    fn invoke_compaction_error(
+        handler: &host::Callback,
+        error: String,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<()> {
+        Exports::new(Generated).invoke_compaction_error(handler.id(), error, emitter)
+    }
+
     async fn start() -> ExtensionResult<()> {
         Exports::new(Generated).start::<E>().await
     }

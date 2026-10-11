@@ -192,6 +192,145 @@ pub struct Ui {
     _lease: Lease,
 }
 impl Imports for Controlled {
+    fn compact(
+        &self,
+        context: &Context,
+        instructions: Option<&str>,
+        complete: Option<&Callback>,
+        error: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow().actions.check()?;
+        let cwd = context.session.cwd()?;
+        self.observed
+            .borrow_mut()
+            .log(format!("compact binding {cwd}"));
+        super::action_host::compact(
+            &mut self.observed.borrow_mut(),
+            instructions,
+            complete.map(|c| c.id),
+            error.map(|c| c.id),
+        )
+    }
+    fn command_compact(
+        &self,
+        context: &CommandContext,
+        instructions: Option<&str>,
+        complete: Option<&Callback>,
+        error: Option<&Callback>,
+    ) -> ExtensionResult<()> {
+        self.observed.borrow().actions.check()?;
+        let cwd = context.session.cwd()?;
+        self.observed
+            .borrow_mut()
+            .log(format!("compact binding {cwd}"));
+        super::action_host::compact(
+            &mut self.observed.borrow_mut(),
+            instructions,
+            complete.map(|c| c.id),
+            error.map(|c| c.id),
+        )
+    }
+
+    fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "sendMessage",
+            &serde_json::json!([
+                super::action_host::document(Some(message)),
+                super::action_host::document(options)
+            ]),
+        )
+    }
+    fn send_user_message(&self, content: &str, options: Option<&str>) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "sendUserMessage",
+            &serde_json::json!([
+                super::action_host::document(Some(content)),
+                super::action_host::document(options)
+            ]),
+        )
+    }
+    fn set_session_name(&self, name: &str) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "setSessionName",
+            &serde_json::json!([name]),
+        )
+    }
+    fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "setLabel",
+            &serde_json::json!([
+                entry_id,
+                label.map_or(
+                    serde_json::json!({"present":false}),
+                    |v| serde_json::json!({"present":true,"value":v})
+                )
+            ]),
+        )
+    }
+    fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "setActiveTools",
+            &serde_json::json!([tool_names]),
+        )
+    }
+    fn set_thinking_level(&self, level: &str) -> ExtensionResult<()> {
+        super::action_host::action(
+            &mut self.observed.borrow_mut(),
+            "setThinkingLevel",
+            &serde_json::json!([serde_json::from_str::<serde_json::Value>(level).unwrap()]),
+        )
+    }
+    fn get_session_name(&self) -> ExtensionResult<Option<String>> {
+        let o = self.observed.borrow();
+        o.actions.check()?;
+        Ok(o.actions.value.as_str().map(str::to_owned))
+    }
+    fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
+        let o = self.observed.borrow();
+        o.actions.check()?;
+        serde_json::from_value(o.actions.value.clone()).map_err(|e| e.to_string())
+    }
+    fn get_all_tools(&self) -> ExtensionResult<String> {
+        self.observed.borrow().actions.record()
+    }
+    fn get_commands(&self) -> ExtensionResult<String> {
+        self.observed.borrow().actions.record()
+    }
+    fn get_thinking_level(&self) -> ExtensionResult<String> {
+        self.observed.borrow().actions.record()
+    }
+    fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
+        Box::pin(async move {
+            self.observed.borrow_mut().log("model selection started");
+            let hold = self.observed.borrow_mut().take_hold();
+            pause(hold).await;
+            super::action_host::action(
+                &mut self.observed.borrow_mut(),
+                "setModel",
+                &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
+            )?;
+            self.observed
+                .borrow()
+                .actions
+                .value
+                .as_bool()
+                .ok_or_else(|| {
+                    self.observed
+                        .borrow()
+                        .actions
+                        .value
+                        .as_str()
+                        .unwrap_or("missing boolean reply")
+                        .to_owned()
+                })
+        })
+    }
+
     type Subscription = super::bus_host::Subscription;
     type Emitter = super::bus_host::Emitter;
     fn event_on(
@@ -640,6 +779,9 @@ impl Imports for Controlled {
     }
 
     fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {
+        if custom_type == "state Ω" {
+            self.observed.borrow().actions.check()?;
+        }
         self.observed.borrow_mut().entry(custom_type, data);
         Ok(())
     }

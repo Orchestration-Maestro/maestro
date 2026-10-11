@@ -94,6 +94,28 @@ impl Drop for ControlledDriver {
 }
 
 impl Driver for ControlledDriver {
+    fn repeat_release(&mut self, handler: u32) -> impl Future<Output = Result<(), String>> {
+        release(handler);
+        std::future::ready(Ok(()))
+    }
+
+    fn notify_compaction(
+        &mut self,
+        handler: u32,
+        payload: &str,
+        complete: bool,
+    ) -> impl Future<Output = Result<(), String>> {
+        std::future::ready(if complete {
+            self.exports()
+                .invoke_compaction_complete(handler, payload, &super::bus_host::Emitter)
+        } else {
+            self.exports().invoke_compaction_error(
+                handler,
+                payload.to_owned(),
+                &super::bus_host::Emitter,
+            )
+        })
+    }
     async fn start(&mut self) -> Result<(), String> {
         self.exports().start::<Author>().await
     }

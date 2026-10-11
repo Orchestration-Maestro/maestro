@@ -136,6 +136,52 @@ impl ComponentDriver {
 }
 
 impl Driver for ComponentDriver {
+    async fn repeat_release(&mut self, handler: u32) -> Result<(), String> {
+        started(&mut self.harness)
+            .map_err(|e| e.to_string())?
+            .release(handler)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    async fn notify_compaction(
+        &mut self,
+        handler: u32,
+        payload: &str,
+        complete: bool,
+    ) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let emitter = harness
+            .store
+            .data_mut()
+            .table
+            .push(super::bus_host::Emitter)
+            .map_err(|e| e.to_string())?;
+        let function = if complete {
+            harness.exports.func_invoke_compaction_complete()
+        } else {
+            harness.exports.func_invoke_compaction_error()
+        };
+        let result = function
+            .call_async(
+                &mut harness.store,
+                (
+                    borrow(handler),
+                    payload,
+                    Resource::new_borrow(emitter.rep()),
+                ),
+            )
+            .await
+            .map_err(|e| e.to_string())?
+            .0;
+        harness
+            .store
+            .data_mut()
+            .table
+            .delete(emitter)
+            .map_err(|e| e.to_string())?;
+        result
+    }
     async fn start(&mut self) -> Result<(), String> {
         let harness = Harness::start(&self.path)
             .await

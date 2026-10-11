@@ -54,6 +54,12 @@ struct Ordinary<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Ordinary<I> {
+    fn compact(&self, options: Option<crate::CompactOptions>) -> ExtensionResult<()> {
+        super::compaction::compact(&self.imports, options, |instructions, complete, error| {
+            self.imports
+                .compact(&self.context, instructions, complete, error)
+        })
+    }
     fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
         Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
             _resource: self.imports.ui(&self.context)?,
@@ -129,6 +135,12 @@ struct Command<I: Imports> {
 }
 
 impl<I: Imports> ContextPort for Command<I> {
+    fn compact(&self, options: Option<crate::CompactOptions>) -> ExtensionResult<()> {
+        super::compaction::compact(&self.imports, options, |instructions, complete, error| {
+            self.imports
+                .command_compact(&self.context, instructions, complete, error)
+        })
+    }
     fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
         Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
             _resource: self.imports.command_ui(&self.context)?,

@@ -252,6 +252,28 @@ macro_rules! context_methods {
             Ok(Ok(self.observed.catalog.data.prompt.clone()))
         }
 
+        fn compact(
+            &mut self,
+            this: Resource<$kind>,
+            instructions: Option<String>,
+            complete: Option<Resource<Identity>>,
+            error: Option<Resource<Identity>>,
+        ) -> wasmtime::Result<Result<(), String>> {
+            if let Err(error) = self.observed.actions.check() {
+                return Ok(Err(error));
+            }
+            let cwd = match self.table.get(&this)?.0.cwd() {
+                Ok(cwd) => cwd,
+                Err(error) => return Ok(Err(error)),
+            };
+            self.observed.log(format!("compact binding {cwd}"));
+            Ok(super::action_host::compact(
+                &mut self.observed,
+                instructions.as_deref(),
+                complete.map(|c| c.rep()),
+                error.map(|c| c.rep()),
+            ))
+        }
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
             Ok(self.table.get(&this)?.0.cwd())
         }
@@ -313,6 +335,97 @@ impl host::HostCallbackEmitter for State {
     }
 }
 impl host::Host for State {
+    fn send_message(
+        &mut self,
+        message: String,
+        options: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "sendMessage",
+            &serde_json::json!([
+                super::action_host::document(Some(&message)),
+                super::action_host::document(options.as_deref())
+            ]),
+        ))
+    }
+    fn send_user_message(
+        &mut self,
+        content: String,
+        options: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "sendUserMessage",
+            &serde_json::json!([
+                super::action_host::document(Some(&content)),
+                super::action_host::document(options.as_deref())
+            ]),
+        ))
+    }
+    fn set_session_name(&mut self, name: String) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "setSessionName",
+            &serde_json::json!([name]),
+        ))
+    }
+    fn set_label(
+        &mut self,
+        entry_id: String,
+        label: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "setLabel",
+            &serde_json::json!([
+                entry_id,
+                label.map_or(
+                    serde_json::json!({"present":false}),
+                    |v| serde_json::json!({"present":true,"value":v})
+                )
+            ]),
+        ))
+    }
+    fn set_active_tools(
+        &mut self,
+        tool_names: Vec<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "setActiveTools",
+            &serde_json::json!([tool_names]),
+        ))
+    }
+    fn set_thinking_level(&mut self, level: String) -> wasmtime::Result<Result<(), String>> {
+        Ok(super::action_host::action(
+            &mut self.observed,
+            "setThinkingLevel",
+            &serde_json::json!([serde_json::from_str::<serde_json::Value>(&level).unwrap()]),
+        ))
+    }
+    fn get_session_name(&mut self) -> wasmtime::Result<Result<Option<String>, String>> {
+        Ok(self
+            .observed
+            .actions
+            .check()
+            .map(|()| self.observed.actions.value.as_str().map(str::to_owned)))
+    }
+    fn get_active_tools(&mut self) -> wasmtime::Result<Result<Vec<String>, String>> {
+        Ok(self.observed.actions.check().and_then(|()| {
+            serde_json::from_value(self.observed.actions.value.clone()).map_err(|e| e.to_string())
+        }))
+    }
+    fn get_all_tools(&mut self) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record())
+    }
+    fn get_commands(&mut self) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record())
+    }
+    fn get_thinking_level(&mut self) -> wasmtime::Result<Result<String, String>> {
+        Ok(self.observed.actions.record())
+    }
+
     fn event_on(
         &mut self,
         channel: String,
@@ -436,6 +549,11 @@ impl host::Host for State {
         custom_type: String,
         data: Option<String>,
     ) -> wasmtime::Result<Result<(), String>> {
+        if custom_type == "state Ω"
+            && let Err(error) = self.observed.actions.check()
+        {
+            return Ok(Err(error));
+        }
         self.observed.entry(&custom_type, data.as_deref());
         Ok(Ok(()))
     }
@@ -689,6 +807,32 @@ pub async fn cancel_held(
 }
 
 impl host::HostWithStore<State> for Imports {
+    async fn set_model(
+        accessor: &Accessor<State, Self>,
+        model: String,
+    ) -> wasmtime::Result<Result<bool, String>> {
+        accessor.with(|mut access| access.get().observed.log("model selection started"));
+        let hold = accessor.with(|mut access| access.get().observed.take_hold());
+        pause(hold).await;
+        Ok(accessor.with(|mut access| {
+            let state = access.get();
+            super::action_host::action(
+                &mut state.observed,
+                "setModel",
+                &serde_json::json!([serde_json::from_str::<serde_json::Value>(&model).unwrap()]),
+            )?;
+            state.observed.actions.value.as_bool().ok_or_else(|| {
+                state
+                    .observed
+                    .actions
+                    .value
+                    .as_str()
+                    .unwrap_or("missing boolean reply")
+                    .to_owned()
+            })
+        }))
+    }
+
     async fn event_emit(
         accessor: &Accessor<State, Self>,
         channel: String,

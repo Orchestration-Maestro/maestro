@@ -24,6 +24,8 @@ mod compaction;
 mod component_adapter;
 mod loader;
 mod messages;
+mod slash_commands;
+pub use slash_commands::*;
 mod model_registry;
 mod session_manager;
 pub use model_registry::*;

@@ -73,6 +73,10 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Total admitted compaction requests.
+    pub compactions: usize,
+    /// Ordinary action controls.
+    pub actions: super::action_host::Bank,
     /// Registration transport observations and supplied flag replies.
     pub registrations: super::registration_host::Bank,
     /// Event-channel observations.
@@ -198,6 +202,9 @@ impl Observed {
 
     /// Records a custom session entry.
     pub fn entry(&mut self, custom_type: &str, data: Option<&str>) {
+        if custom_type == "action-control" {
+            self.actions.control(data.expect("action control"));
+        }
         if custom_type == "reader-control" {
             self.readers.control(data.expect("control document"));
         }

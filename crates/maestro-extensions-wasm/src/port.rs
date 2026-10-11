@@ -8,6 +8,7 @@
 /// Declares a port trait and the facade methods that forward to it from one list.
 ///
 /// Ordinary methods return `ExtensionResult<T>`; the optional infallible block returns directly.
+/// An asynchronous block adds trait declarations with explicit facade implementations.
 /// The facade reaches its port through the
 /// field `$access`.
 macro_rules! port {
@@ -19,12 +20,14 @@ macro_rules! port {
                 fn $method:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty;
             )*
         }
+        $(asynchronous { $( $(#[$async_meta:meta])* fn $async_method:ident($($async_arg:ident: $async_ty:ty),*) -> $async_ret:ty; )* })?
         $(infallible {
             $( $(#[$infallible_meta:meta])* fn $infallible:ident() -> $value:ty; )*
         })?
     ) => {
         $(#[$port_meta])*
         pub trait $port {
+            $($( $(#[$async_meta])* fn $async_method(&self $(, $async_arg: $async_ty)*) -> ExtensionFuture<'_, $async_ret>; )*)?
             $($( $(#[$infallible_meta])* fn $infallible(&self) -> $value; )*)?
             $(
                 $(#[$meta])*

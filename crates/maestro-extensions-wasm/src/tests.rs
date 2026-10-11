@@ -25,6 +25,7 @@ macro_rules! on_both_adapters {
     }};
 }
 
+pub(crate) mod action_host;
 mod agent_events;
 mod application_messages;
 mod author;
@@ -54,6 +55,7 @@ mod registration_fixture;
 mod registration_host;
 mod scenario;
 mod selection_events;
+mod session_actions;
 mod session_corpus;
 mod session_events;
 mod session_reader;
@@ -317,6 +319,8 @@ struct Contract {
     event_params: Vec<String>,
     /// The results of `invoke-event`.
     event_results: Vec<String>,
+    /// Ordinary action and compaction resource signatures.
+    action_signatures: Vec<Signature>,
     /// Typed registration imports and callback exports.
     registration_signatures: Vec<Signature>,
     /// Signatures of the new retained-capability and usage routes.
@@ -361,6 +365,7 @@ fn contract() -> Result<Contract, String> {
             signature(&engine, &host, name, &resources(&engine, &host)).map(|(_, result)| result)
         })
         .collect::<Result<_, _>>()?,
+        action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         event_params,
         event_results,
@@ -496,13 +501,20 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     );
     assert_eq!(
         names(&contract.exports, false),
-        ["invoke-listener", "invoke-prepare", "release"],
+        [
+            "invoke-compaction-complete",
+            "invoke-compaction-error",
+            "invoke-listener",
+            "invoke-prepare",
+            "release"
+        ],
         "preparation and release stay synchronous"
     );
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
     assert_catalog_imports(&contract);
     assert_registration_contract(&contract);
+    assert_action_contract(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
@@ -511,28 +523,10 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]model-registry.get-api-key-and-headers",
             "callback-emit",
             "event-emit",
+            "set-model",
         ]
     );
-    let polling = contract
-        .imports
-        .iter()
-        .chain(&contract.exports)
-        .any(|(name, _)| name.contains("poll"));
-    assert!(!polling, "there is no polling function in the author world");
-    let outside: Vec<&String> = contract
-        .interfaces
-        .iter()
-        .filter(|name| !name.starts_with("maestro:extension/") && !name.starts_with("wasi:"))
-        .collect();
-    assert!(
-        outside.is_empty(),
-        "only the author world and WASI interfaces are imported: {outside:?}"
-    );
-    let wasi = contract
-        .interfaces
-        .iter()
-        .filter(|name| name.starts_with("wasi:"));
-    assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
+    assert_interface_contract(&contract);
     Ok(())
 }
 
@@ -576,4 +570,127 @@ fn assert_registration_contract(contract: &Contract) {
         (vec!["handler: borrow<callback>", "ctx: own<context>"], vec!["result<_, string>"]),
     ].map(|(params, results)| (params.into_iter().map(str::to_owned).collect::<Vec<_>>(), results.into_iter().map(str::to_owned).collect::<Vec<_>>()));
     assert_eq!(contract.registration_signatures, expected);
+}
+
+/// Inspect the actual lowered sync admission and async model-selection types.
+fn action_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+    guest: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let resources = resources(engine, host);
+    [
+        (host, "send-message"),
+        (host, "send-user-message"),
+        (host, "set-model"),
+        (host, "[method]context.compact"),
+        (host, "[method]command-context.compact"),
+        (guest, "invoke-compaction-complete"),
+        (guest, "invoke-compaction-error"),
+    ]
+    .into_iter()
+    .map(|(interface, name)| signature(engine, interface, name, &resources))
+    .collect()
+}
+/// These imports and notifications carry typed borrowed identities, not futures or polling.
+fn assert_action_contract(contract: &Contract) {
+    let sync = names(&contract.imports, false);
+    for name in [
+        "send-message",
+        "send-user-message",
+        "set-session-name",
+        "get-session-name",
+        "set-label",
+        "get-active-tools",
+        "get-all-tools",
+        "set-active-tools",
+        "get-commands",
+        "get-thinking-level",
+        "set-thinking-level",
+        "[method]context.compact",
+        "[method]command-context.compact",
+    ] {
+        assert!(sync.contains(&name), "sync route {name}");
+    }
+    let expected = expected_action_signatures();
+    assert_eq!(contract.action_signatures, expected);
+}
+
+/// The component admits only its author world and supported system interfaces.
+fn assert_interface_contract(contract: &Contract) {
+    let polling = contract
+        .imports
+        .iter()
+        .chain(&contract.exports)
+        .any(|(name, _)| name.contains("poll"));
+    assert!(!polling, "there is no polling function in the author world");
+    let outside: Vec<&String> = contract
+        .interfaces
+        .iter()
+        .filter(|name| !name.starts_with("maestro:extension/") && !name.starts_with("wasi:"))
+        .collect();
+    assert!(
+        outside.is_empty(),
+        "only the author world and WASI interfaces are imported: {outside:?}"
+    );
+    let wasi = contract
+        .interfaces
+        .iter()
+        .filter(|name| name.starts_with("wasi:"));
+    assert!(wasi.clone().count() > 0 && wasi.into_iter().all(|name| name.contains("@0.2.")));
+}
+
+/// Expected parameter/result sequences for the action wire.
+fn expected_action_signatures() -> [Signature; 7] {
+    [
+        (
+            vec!["message: string", "options: option<string>"],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec!["content: string", "options: option<string>"],
+            vec!["result<_, string>"],
+        ),
+        (vec!["model: string"], vec!["result<bool, string>"]),
+        (
+            vec![
+                "self: borrow<context>",
+                "custom-instructions: option<string>",
+                "on-complete: option<borrow<callback>>",
+                "on-error: option<borrow<callback>>",
+            ],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec![
+                "self: borrow<command-context>",
+                "custom-instructions: option<string>",
+                "on-complete: option<borrow<callback>>",
+                "on-error: option<borrow<callback>>",
+            ],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec![
+                "handler: borrow<callback>",
+                "result: string",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec![
+                "handler: borrow<callback>",
+                "error: string",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<_, string>"],
+        ),
+    ]
+    .map(|(params, results)| {
+        (
+            params.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+            results.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+        )
+    })
 }
