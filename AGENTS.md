@@ -177,6 +177,9 @@ semantics and the missing/null distinctions of unshared event fields.
 Describe Maestro in its own words. Name no other agent tool.
 Follow the [identity guide](docs/identity.md) for voice, code naming and brand
 assets. Consumers read brand values from the pack, never hard-code them.
+Before changing a themed surface, read [PRODUCT.md](PRODUCT.md),
+[DESIGN.md](DESIGN.md), [docs/identity.md](docs/identity.md) and
+[assets/brand/brand.json](assets/brand/brand.json).
 
 ## Agent skills
 

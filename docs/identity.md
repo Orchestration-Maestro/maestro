@@ -8,6 +8,10 @@ shape. This is Maestro's approved brand system. The files define its assets and
 usage; they do not install a theme, change product messages or provide a runtime
 pack loader.
 
+[Product context](../PRODUCT.md) and the [design system](../DESIGN.md)
+record surface scope and component-state mappings without replacing this guide
+or the pack. Read both before changing a themed surface.
+
 ## Voice
 
 Write crisp, technical prose with rare dry wit. State the result, name the

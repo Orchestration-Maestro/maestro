@@ -1088,3 +1088,23 @@ fn brand_pack_presentation_keeps_tagline_and_mark_measurements() {
         (40.0, 20.0, 0.125, 0.8)
     );
 }
+
+#[test]
+fn design_color_quotes_resolve_from_the_brand_pack() {
+    let design = include_str!("../../../DESIGN.md");
+    let pack = forge_json();
+    let mut names = std::collections::BTreeSet::new();
+    for line in design.lines().filter(|line| line.contains("\"#")) {
+        let (name, quoted) = line.trim().split_once(": ").unwrap();
+        let (mode, role) = name.split_once('-').unwrap();
+        let key = pack["modes"][mode]["colors"][role].as_str().unwrap();
+        let expected = pack["palette"][key].as_str().unwrap();
+        assert_eq!(quoted, format!("\"{expected}\""), "colour drift at {name}");
+        assert!(names.insert(name));
+    }
+    for (mode, data) in pack["modes"].as_object().unwrap() {
+        for role in data["colors"].as_object().unwrap().keys() {
+            assert!(names.contains(format!("{mode}-{role}").as_str()));
+        }
+    }
+}
