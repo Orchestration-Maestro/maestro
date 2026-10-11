@@ -67,6 +67,7 @@ mod session_records;
 mod session_summary;
 pub(crate) mod setup_host;
 mod setup_sessions;
+mod shared_messages;
 mod shared_records;
 mod shell_callbacks;
 pub(crate) mod shell_host;

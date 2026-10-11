@@ -15,6 +15,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Deserializer, Serialize, de::IntoDeserializer};
 
+use super::Presence;
 use super::agent_events::{
     AgentEndEvent, AgentStartEvent, BeforeAgentStartEvent, ContextEvent, MessageEndEvent,
     MessageStartEvent, MessageUpdateEvent, TurnEndEvent, TurnStartEvent,
@@ -22,7 +23,6 @@ use super::agent_events::{
 use super::context::{AbortSignal, ExtensionContext};
 use super::extension_result::ExtensionFuture;
 use super::object;
-use super::presence::Presence;
 use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
 use super::session_events::{
     SessionBeforeTreeEvent, SessionBeforeTreeResult, SessionCompactEvent, SessionTreeEvent,

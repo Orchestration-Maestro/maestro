@@ -1,0 +1,354 @@
+//! Recorded message transformation cases.
+#![cfg(test)]
+use maestro_session::messages::*;
+use serde::Deserialize;
+use serde_json::Value;
+
+/// One recorded function invocation.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Case {
+    /// Failure label.
+    id: String,
+    /// Invoked operation.
+    operation: String,
+    /// Function arguments.
+    args: Vec<Value>,
+    /// Recorded result.
+    expected: Value,
+    /// Owning witness.
+    test: String,
+    /// Constructor wire result.
+    #[serde(default)]
+    serialized_expected: Option<Value>,
+}
+
+/// Evaluate shell cases in one group.
+fn shell_group(name: &str) {
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("fixtures/message_projection.json")).unwrap();
+    let mut count = 0;
+    for case in cases.into_iter().filter(|case| case.test == name) {
+        assert_eq!(case.operation, "bashExecutionToText");
+        assert!(case.serialized_expected.is_none());
+        let message = serde_json::from_value(decode(case.args[0].clone())).unwrap();
+        assert_eq!(
+            bash_execution_to_text(&message),
+            case.expected.as_str().unwrap(),
+            "{}",
+            case.id
+        );
+        count += 1;
+    }
+    assert!(count > 0);
+}
+
+#[test]
+fn shell_transcript_keeps_authored_text() {
+    shell_group("shell_transcript_keeps_authored_text");
+}
+
+#[test]
+fn shell_status_uses_cancellation_before_exit() {
+    shell_group("shell_status_uses_cancellation_before_exit");
+}
+
+/// Decode transport markers without changing ordinary values.
+fn decode(value: Value) -> Value {
+    match value {
+        Value::Object(mut object) => {
+            if object.get("$number").and_then(Value::as_str) == Some("-0") {
+                return serde_json::json!(-0.0);
+            }
+            object.retain(|_, value| value.get("$undefined") != Some(&Value::Bool(true)));
+            Value::Object(
+                object
+                    .into_iter()
+                    .map(|(key, value)| (key, decode(value)))
+                    .collect(),
+            )
+        }
+        Value::Array(values) => Value::Array(values.into_iter().map(decode).collect()),
+        Value::Number(number) => serde_json::json!(number.as_f64().unwrap()),
+        value => value,
+    }
+}
+
+#[test]
+fn shell_truncation_requires_flag_and_path() {
+    shell_group("shell_truncation_requires_flag_and_path");
+}
+
+/// Select recorded cases for a witness.
+fn cases(name: &str) -> Vec<Case> {
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("fixtures/message_projection.json")).unwrap();
+    let selected: Vec<_> = cases.into_iter().filter(|case| case.test == name).collect();
+    assert!(!selected.is_empty());
+    selected
+}
+
+/// Run date cases in a fresh UTC process.
+fn in_utc(name: &str) -> bool {
+    if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
+        return true;
+    }
+    let status = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", name, "--nocapture"])
+        .env("TZ", "UTC")
+        .env("MAESTRO_DATE_CHILD", name)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    false
+}
+
+/// Compare fields and timestamp, including invalid time, then wire encoding.
+fn assert_constructor(case: &Case, actual: Value, timestamp: f64) {
+    let mut expected = decode(case.expected.clone());
+    if expected["timestamp"]["$number"] == "NaN" {
+        assert!(timestamp.is_nan(), "{}", case.id);
+        expected["timestamp"] = Value::Null;
+    } else {
+        assert_eq!(
+            timestamp.to_bits(),
+            expected["timestamp"].as_f64().unwrap().to_bits(),
+            "{}",
+            case.id
+        );
+    }
+    assert_eq!(decode(actual.clone()), expected, "{}", case.id);
+    assert_eq!(
+        decode(actual),
+        decode(case.serialized_expected.clone().unwrap()),
+        "{}",
+        case.id
+    );
+}
+
+#[test]
+fn summary_constructors_preserve_fields_and_time() {
+    let name = "summary_constructors_preserve_fields_and_time";
+    if !in_utc(name) {
+        return;
+    }
+    for case in cases(name) {
+        let summary = case.args[0].as_str().unwrap().to_owned();
+        let time = case.args[2].as_str().unwrap();
+        match case.operation.as_str() {
+            "createBranchSummaryMessage" => {
+                let message = create_branch_summary_message(
+                    summary,
+                    case.args[1].as_str().unwrap().to_owned(),
+                    time,
+                );
+                assert_constructor(
+                    &case,
+                    serde_json::to_value(&message).unwrap(),
+                    message.timestamp,
+                );
+            }
+            "createCompactionSummaryMessage" => {
+                let message = create_compaction_summary_message(
+                    summary,
+                    case.args[1].as_f64().unwrap(),
+                    time,
+                );
+                assert_constructor(
+                    &case,
+                    serde_json::to_value(&message).unwrap(),
+                    message.timestamp,
+                );
+            }
+            _ => panic!("unexpected operation"),
+        }
+    }
+}
+
+use maestro_request::presence::Presence;
+
+/// Invoke the custom constructor for each selected recorded query.
+fn custom_factory_group(name: &str) {
+    for case in cases(name) {
+        assert_eq!(case.operation, "createCustomMessage");
+        let details = if case.args[3].get("$undefined") == Some(&Value::Bool(true)) {
+            Presence::Missing
+        } else {
+            serde_json::from_value(case.args[3].clone()).unwrap()
+        };
+        let message = create_custom_message::<Value>(
+            case.args[0].as_str().unwrap().to_owned(),
+            serde_json::from_value(case.args[1].clone()).unwrap(),
+            case.args[2].as_bool().unwrap(),
+            details,
+            case.args[4].as_str().unwrap(),
+        );
+        assert_constructor(
+            &case,
+            serde_json::to_value(&message).unwrap(),
+            message.timestamp,
+        );
+    }
+}
+
+#[test]
+fn custom_constructor_preserves_time() {
+    let name = "custom_constructor_preserves_time";
+    if in_utc(name) {
+        custom_factory_group(name);
+    }
+}
+
+#[test]
+fn custom_constructor_keeps_content_visibility_and_details() {
+    /// Payload without Clone, Default or serialization requirements.
+    struct Payload(u8);
+    custom_factory_group("custom_constructor_keeps_content_visibility_and_details");
+    let message = create_custom_message(
+        "typed".into(),
+        maestro_models::UserContent::Text("payload".into()),
+        false,
+        Presence::Present(Payload(9)),
+        "1970-01-01",
+    );
+    assert!(matches!(message.details, Presence::Present(Payload(9))));
+}
+
+use maestro_agent::{AgentMessage, CustomAgentMessages as _};
+use maestro_models::Message;
+use std::sync::{Arc, RwLock};
+
+/// Unknown caller role.
+struct Unknown;
+impl maestro_agent::CustomAgentMessages for Unknown {
+    fn role(&self) -> &'static str {
+        "future.notice"
+    }
+}
+/// Test conversation entry.
+type Entry = AgentMessage<CustomAgentMessages<Value, Unknown>>;
+
+/// Decode one fixture entry through its owning record.
+fn entry(value: Value) -> Entry {
+    let value = decode(value);
+    match value["role"].as_str().unwrap() {
+        "user" | "assistant" | "toolResult" => match serde_json::from_value(value).unwrap() {
+            Message::User(message) => Entry::User(Arc::new(RwLock::new(message))),
+            Message::Assistant(message) => Entry::Assistant(Arc::new(RwLock::new(message))),
+            Message::ToolResult(message) => Entry::ToolResult(Arc::new(RwLock::new(message))),
+        },
+        role => {
+            let message = match role {
+                "custom" => CustomAgentMessages::Custom(serde_json::from_value(value).unwrap()),
+                "bashExecution" => {
+                    CustomAgentMessages::BashExecution(serde_json::from_value(value).unwrap())
+                }
+                "branchSummary" => {
+                    CustomAgentMessages::BranchSummary(serde_json::from_value(value).unwrap())
+                }
+                "compactionSummary" => {
+                    CustomAgentMessages::CompactionSummary(serde_json::from_value(value).unwrap())
+                }
+                _ => CustomAgentMessages::Other(Unknown),
+            };
+            Entry::Custom(Arc::new(RwLock::new(message)))
+        }
+    }
+}
+
+/// Compare the entire ordered model transcript for each recorded invocation.
+fn conversion_group(name: &str) {
+    for case in cases(name) {
+        assert_eq!(case.operation, "convertToLlm");
+        assert!(case.serialized_expected.is_none());
+        let mut entries: Vec<_> = case.args[0]
+            .as_array()
+            .unwrap()
+            .iter()
+            .cloned()
+            .map(entry)
+            .collect();
+        if case.id == "base-sequence" {
+            entries[3] = entries[1].clone();
+        }
+        assert_eq!(
+            decode(serde_json::to_value(convert_to_llm(&entries)).unwrap()),
+            decode(case.expected),
+            "{}",
+            case.id
+        );
+    }
+}
+
+#[test]
+fn custom_projection_keeps_block_order_and_ignores_visibility() {
+    conversion_group("custom_projection_keeps_block_order_and_ignores_visibility");
+}
+
+#[test]
+fn summary_projection_keeps_distinct_newline_wrappers() {
+    conversion_group("summary_projection_keeps_distinct_newline_wrappers");
+}
+
+#[test]
+fn conversion_keeps_base_values_order_and_duplicates() {
+    conversion_group("conversion_keeps_base_values_order_and_duplicates");
+}
+
+#[test]
+fn conversion_drops_only_suppressed_shell_and_unknown_roles() {
+    conversion_group("conversion_drops_only_suppressed_shell_and_unknown_roles");
+    for (value, role) in [
+        (
+            serde_json::json!({"role":"bashExecution","command":"","output":"","cancelled":false,"truncated":false,"timestamp":0}),
+            "bashExecution",
+        ),
+        (
+            serde_json::json!({"role":"custom","customType":"x","content":"","display":false,"timestamp":0}),
+            "custom",
+        ),
+        (
+            serde_json::json!({"role":"branchSummary","summary":"","fromId":"x","timestamp":0}),
+            "branchSummary",
+        ),
+        (
+            serde_json::json!({"role":"compactionSummary","summary":"","tokensBefore":0,"timestamp":0}),
+            "compactionSummary",
+        ),
+        (serde_json::json!({"role":"future.notice"}), "future.notice"),
+    ] {
+        let Entry::Custom(message) = entry(value) else {
+            panic!("expected custom entry")
+        };
+        assert_eq!(message.read().unwrap().role(), role);
+    }
+}
+
+#[test]
+fn conversion_observes_changes_through_retained_inputs() {
+    let rows = cases("conversion_observes_changes_through_retained_inputs");
+    assert_eq!(rows.len(), 2);
+    let input = entry(rows[0].args[0][0].clone());
+    for (index, case) in rows.into_iter().enumerate() {
+        assert_eq!(case.operation, "convertToLlm");
+        assert!(case.serialized_expected.is_none());
+        if index == 1 {
+            let Entry::User(message) = &input else {
+                panic!("expected user")
+            };
+            message.write().unwrap().content =
+                serde_json::from_value(case.args[0][0]["content"].clone()).unwrap();
+        }
+        assert_eq!(
+            decode(
+                serde_json::to_value(maestro_session::convert_to_llm(std::slice::from_ref(
+                    &input
+                )))
+                .unwrap()
+            ),
+            decode(case.expected),
+            "{}",
+            case.id
+        );
+    }
+}

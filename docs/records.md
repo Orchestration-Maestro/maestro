@@ -167,3 +167,15 @@ without trimming, list validation or default-membership validation.
 The opt-in faux provider supplies offline queued responses, async factories and
 ordered cancellable events through the ordinary invocation interface. See the
 [scripted model guide](models/faux.md) for a two-turn tool flow and defaults.
+
+## Application message records
+
+`maestro-request::messages` owns `BashExecutionMessage`, generic
+`CustomMessage<T>`, `BranchSummaryMessage` and `CompactionSummaryMessage`.
+`maestro-request::presence::Presence<T>` distinguishes missing, null and present
+optional fields. Its `is_missing` predicate supports skipping omitted fields
+in record serializers; serializing Missing on its own returns an error.
+
+The guest re-exports these records, with `CustomMessage` selecting string details.
+The native [conversation projection](sessions/messages.md) re-exports the shared
+records and converts their model-visible content.

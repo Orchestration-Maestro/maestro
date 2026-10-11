@@ -17,7 +17,6 @@ mod events;
 mod extension_result;
 pub(crate) mod finite;
 pub(crate) mod object;
-mod presence;
 mod selection_events;
 mod session_events;
 mod tool_events;
@@ -51,7 +50,7 @@ pub use events::{
     SessionShutdownEvent, SessionShutdownReason, SessionStartEvent, SessionStartReason,
 };
 pub use extension_result::{ExtensionFuture, ExtensionResult};
-pub use presence::Presence;
+pub use maestro_request::presence::Presence;
 pub use selection_events::*;
 pub use session_events::*;
 pub use tool_events::*;
