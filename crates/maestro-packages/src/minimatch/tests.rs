@@ -76,3 +76,34 @@ fn brace_arrays_keep_expected_order() {
         assert_eq!(brace_expand(&case.pattern), case.expected, "case {index}");
     }
 }
+
+/// Class literals retain native drive identity after separator framing.
+#[test]
+fn class_platform_framing_precedes_scalar_matching() {
+    let groups: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        serde_json::from_str(include_str!("../../tests/pattern_class_vectors.json")).unwrap();
+    let rows = groups
+        .get("class_platform_framing_precedes_scalar_matching")
+        .unwrap();
+    assert!(!rows.is_empty());
+    for (index, row) in rows.iter().enumerate() {
+        let (pattern, input, posix, windows): (String, String, bool, bool) =
+            serde_json::from_value(row.clone()).unwrap();
+        assert_eq!(
+            match_platform(&input, &pattern, Platform::Posix),
+            Ok(posix),
+            "posix case {index}"
+        );
+        assert_eq!(
+            match_platform(&input, &pattern, Platform::Windows),
+            Ok(windows),
+            "windows case {index}"
+        );
+        let native = if cfg!(windows) { windows } else { posix };
+        assert_eq!(
+            super::minimatch(&input, &pattern),
+            Ok(native),
+            "native case {index}"
+        );
+    }
+}

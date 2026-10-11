@@ -1776,6 +1776,7 @@ dependencies = [
  "maestro-resources",
  "maestro-settings",
  "percent-encoding",
+ "regress",
  "rustix",
  "serde",
  "serde_json",

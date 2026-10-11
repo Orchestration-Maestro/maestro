@@ -1,4 +1,4 @@
-//! Basic package patterns.
+//! Package file patterns.
 //!
 //! Source attribution and [BlueOak-1.0.0](https://blueoakcouncil.org/license/1.0.0)
 //! license details are in [third-party notices](https://github.com/Orchestration-Maestro/maestro/blob/main/THIRD-PARTY-NOTICES.md).
@@ -7,11 +7,14 @@ use std::collections::BTreeSet;
 
 mod assert_valid_pattern;
 mod ast;
+mod brace_expressions;
 pub use assert_valid_pattern::PatternError;
 
-/// Matches a path against a basic package file pattern.
+/// Matches a path against a package file pattern, including bracket classes.
 ///
-/// Closed character classes and extended groups are not yet implemented.
+/// Extended groups are not yet implemented.
+/// See the [file-pattern guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/package-patterns.md)
+/// for class forms and named-category definitions.
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
