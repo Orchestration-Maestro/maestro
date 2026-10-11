@@ -141,3 +141,33 @@ fn local_model() -> Model {
         compat: None,
     }
 }
+
+/// Compile both observable wrappers with local payloads and task submission.
+#[test]
+fn maestro_browser_raw_wrappers_accept_local_captures() {
+    let local = Rc::new(());
+    let config = Arc::new(local_config(Rc::clone(&local), &local));
+    let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let captured = Rc::clone(&tasks);
+    let spawn: maestro_agent::AgentSpawner = Arc::new(move |task| captured.borrow_mut().push(task));
+    let context = AgentContext {
+        system_prompt: String::new(),
+        messages: Arc::new(RwLock::new(vec![AgentMessage::Custom(Arc::new(
+            RwLock::new(Notice(local)),
+        ))])),
+        tools: None,
+    };
+    let prompt = maestro_agent::agent_loop(
+        vec![],
+        context.clone(),
+        Arc::clone(&config),
+        AgentLoopOptions::default(),
+        Arc::clone(&spawn),
+    );
+    let continuation =
+        maestro_agent::agent_loop_continue(context, config, AgentLoopOptions::default(), spawn)
+            .unwrap();
+    assert_eq!(tasks.borrow().len(), 2);
+    drop((prompt, continuation));
+    tasks.borrow_mut().clear();
+}

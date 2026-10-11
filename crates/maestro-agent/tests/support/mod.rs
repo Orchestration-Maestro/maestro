@@ -188,5 +188,7 @@ pub mod owner_corpus;
 
 /// Native captured-run binding fixtures.
 pub mod binding_corpus;
+/// Controlled raw-stream execution and payload observations.
+pub mod observable;
 /// Native queue effect and retirement witnesses.
 pub mod queue_effects;

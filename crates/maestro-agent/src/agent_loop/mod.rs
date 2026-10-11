@@ -1,10 +1,115 @@
-//! Awaited conversation turns.
+//! Awaited and observable conversation turns.
 use crate::{
-    AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, CustomAgentMessages, StreamFn,
+    AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, AgentSpawner, CustomAgentMessages,
+    StreamFn,
 };
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, EventStream};
+use std::io::Write;
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+/// Submit owned prompt work and return its observable stream without awaiting it.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
+    prompts: Vec<AgentMessage<C>>,
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    submit(Some(prompts), context, config, options, spawn)
+}
+/// Submit continuation without replaying the existing tail.
+///
+/// # Errors
+/// Rejects empty or assistant tails before submitting work.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'static>(
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> Result<EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>, DiagnosticErrorInfo> {
+    check_continuation(&context)?;
+    Ok(submit(None, context, config, options, spawn))
+}
+/// Submit owned prompt work and return its observable stream without awaiting it.
+#[cfg(target_arch = "wasm32")]
+pub fn agent_loop<C: CustomAgentMessages + 'static>(
+    prompts: Vec<AgentMessage<C>>,
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    submit(Some(prompts), context, config, options, spawn)
+}
+/// Submit continuation without replaying the existing tail.
+///
+/// # Errors
+/// Rejects empty or assistant tails before submitting work.
+#[cfg(target_arch = "wasm32")]
+pub fn agent_loop_continue<C: CustomAgentMessages + 'static>(
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> Result<EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>, DiagnosticErrorInfo> {
+    check_continuation(&context)?;
+    Ok(submit(None, context, config, options, spawn))
+}
+/// Construct the terminal-selected observation stream.
+fn create_agent_stream<C: CustomAgentMessages + crate::agent::Native + 'static>()
+-> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    EventStream::new(
+        |event| matches!(event, AgentEvent::AgentEnd { .. }),
+        |event| match event {
+            AgentEvent::AgentEnd { messages } => messages.clone(),
+            _ => Vec::new(),
+        },
+    )
+}
+/// Submit one awaited operation, retaining production independently of readers.
+fn submit<C: CustomAgentMessages + crate::agent::Native + 'static>(
+    prompts: Option<Vec<AgentMessage<C>>>,
+    mut context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    if let Some(prompts) = &prompts {
+        context = prepare_prompt(prompts, context);
+    }
+    let prompts = prompts.unwrap_or_default();
+    let stream = create_agent_stream();
+    let producer = stream.clone();
+    let sink = stream.clone();
+    let emit: AgentEventSink<C> = Arc::new(move |event| {
+        sink.push(event);
+        Box::pin(std::future::ready(Ok(())))
+    });
+    spawn(Box::pin(async move {
+        let result = prepared_loop(prompts, context, &config, emit, options).await;
+        match result {
+            Ok(messages) => producer.end(Some(messages)),
+            Err(error) => {
+                let _ = writeln!(std::io::stderr(), "{}", error.message);
+            }
+        }
+    }));
+    drop(spawn);
+    stream
+}
+/// Check continuation admission without converting custom entries.
+fn check_continuation<C: CustomAgentMessages>(
+    context: &AgentContext<C>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let diagnostic = match read(&context.messages).last() {
+        None => Some("Cannot continue: no messages in context"),
+        Some(AgentMessage::Assistant(_)) => Some("Cannot continue from message role: assistant"),
+        _ => None,
+    };
+    diagnostic.map_or(Ok(()), |message| Err(failure(message)))
+}
 /// Await one conversation observation.
 #[cfg(not(target_arch = "wasm32"))]
 pub type AgentEventSink<C = std::convert::Infallible> =
@@ -51,7 +156,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    prompt(prompts, context, config, emit, options).await
+    let context = prepare_prompt(&prompts, context);
+    prepared_loop(prompts, context, config, emit, options).await
 }
 /// Continue through retained history without replaying its tail.
 ///
@@ -65,7 +171,8 @@ pub async fn run_agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'sta
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    continue_loop(context, config, emit, options).await
+    check_continuation(&context)?;
+    prepared_loop(Vec::new(), context, config, emit, options).await
 }
 /// Run prompts over a copied outer history, retaining shared entries.
 ///
@@ -79,7 +186,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    prompt(prompts, context, config, emit, options).await
+    let context = prepare_prompt(&prompts, context);
+    prepared_loop(prompts, context, config, emit, options).await
 }
 /// Continue through retained history without replaying its tail.
 ///
@@ -93,22 +201,17 @@ pub async fn run_agent_loop_continue<C: CustomAgentMessages + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    continue_loop(context, config, emit, options).await
+    check_continuation(&context)?;
+    prepared_loop(Vec::new(), context, config, emit, options).await
 }
-/// Emit prompt observations over a copied outer history, returning new entries.
-async fn prompt<C: CustomAgentMessages + 'static>(
+/// Execute prepared prompt or admitted continuation observations.
+async fn prepared_loop<C: CustomAgentMessages + 'static>(
     prompts: Vec<AgentMessage<C>>,
-    mut context: AgentContext<C>,
+    context: AgentContext<C>,
     config: &AgentLoopConfig<C>,
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    let history = read(&context.messages)
-        .iter()
-        .chain(&prompts)
-        .cloned()
-        .collect();
-    context.messages = Arc::new(RwLock::new(history));
     emit(AgentEvent::AgentStart).await?;
     emit(AgentEvent::TurnStart).await?;
     for prompt in &prompts {
@@ -129,30 +232,18 @@ async fn prompt<C: CustomAgentMessages + 'static>(
     };
     driver.run(prompts).await
 }
-/// Continue through the supplied history without replaying its existing tail.
-async fn continue_loop<C: CustomAgentMessages + 'static>(
-    context: AgentContext<C>,
-    config: &AgentLoopConfig<C>,
-    emit: AgentEventSink<C>,
-    options: AgentLoopOptions,
-) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    match read(&context.messages).last() {
-        None => return Err(failure("Cannot continue: no messages in context")),
-        Some(AgentMessage::Assistant(_)) => {
-            return Err(failure("Cannot continue from message role: assistant"));
-        }
-        _ => (),
-    }
-    emit(AgentEvent::AgentStart).await?;
-    emit(AgentEvent::TurnStart).await?;
-    Driver {
-        context,
-        config,
-        emit,
-        options,
-    }
-    .run(Vec::new())
-    .await
+/// Capture the prompt history's outer collection without copying its entries.
+fn prepare_prompt<C: CustomAgentMessages>(
+    prompts: &[AgentMessage<C>],
+    mut context: AgentContext<C>,
+) -> AgentContext<C> {
+    let history = read(&context.messages)
+        .iter()
+        .chain(prompts)
+        .cloned()
+        .collect();
+    context.messages = Arc::new(RwLock::new(history));
+    context
 }
 /// Inputs retained for the operation's turn progression.
 struct Driver<'a, C: CustomAgentMessages> {

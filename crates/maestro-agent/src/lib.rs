@@ -8,6 +8,9 @@ pub use agent::{
     Subscription,
 };
 pub use types::*;
-/// Awaited conversation operations.
+/// Awaited and observable conversation operations.
 pub mod agent_loop;
-pub use agent_loop::{AgentEventSink, AgentLoopOptions, run_agent_loop, run_agent_loop_continue};
+pub use agent_loop::{
+    AgentEventSink, AgentLoopOptions, agent_loop, agent_loop_continue, run_agent_loop,
+    run_agent_loop_continue,
+};

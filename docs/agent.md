@@ -2,7 +2,7 @@
 
 `maestro-agent` owns live conversation state, shared message and executable-tool
 entries, and independent steering and follow-up input queues.
-The [awaited conversation operations](loop.md) accept turn controls and tool-batch
+The [conversation operations](loop.md) accept turn controls and tool-batch
 execution preferences.
 `Agent::prompt` and `Agent::r#continue` synchronously reserve a run and submit its work through
 `AgentOptions::spawn`. The caller supplies a facility that retains and drives the
