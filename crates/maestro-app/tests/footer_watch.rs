@@ -1052,3 +1052,44 @@ fn native_poll_overdue_teardown(close: bool) {
         "closing callback must stop delivery before the already-due next tick"
     );
 }
+
+#[test]
+fn footer_linked_worktree_without_commondir_watches_its_own_metadata() {
+    let e = Rc::new(Effects::default());
+    e.text("/repo/.git", "gitdir: /storage/worktrees/one");
+    e.text("/storage/worktrees/one/HEAD", "ref: refs/heads/main");
+    e.directory("/storage/worktrees/one/reftable");
+    e.text("/storage/worktrees/one/reftable/tables.list", "0");
+    let p = provider(&e, "/repo");
+    assert_eq!(
+        e.active(),
+        [
+            "/storage/worktrees/one",
+            "/storage/worktrees/one/reftable",
+            "/storage/worktrees/one/reftable/tables.list",
+        ]
+    );
+    assert_eq!(e.live_polls(), 1);
+    assert_eq!(p.get_git_branch().as_deref(), Some("main"));
+    p.dispose();
+}
+
+#[test]
+fn footer_pending_refresh_after_leaving_repository_keeps_branch_absent() {
+    let e = Effects::repo();
+    let p = provider(&e, "/repo");
+    assert_eq!(p.get_git_branch().as_deref(), Some("main"));
+    let seen = subscribed(&p);
+    begin(&e);
+    e.event(1, None);
+    p.set_cwd(watching::target("/absent"));
+    e.answer("stale");
+    assert_eq!(e.pending_timers(), 1);
+    e.advance(500);
+    assert_eq!(e.pending_timers(), 0);
+    assert_eq!(p.get_git_branch(), None);
+    assert_eq!(*seen.borrow(), [None]);
+    assert_eq!(e.query_dirs.borrow().as_slice(), ["/repo"]);
+    assert!(e.active().is_empty());
+    p.dispose();
+}

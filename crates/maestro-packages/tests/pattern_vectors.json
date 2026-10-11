@@ -976,16 +976,6 @@
       "expected": false
     },
     {
-      "pattern": "/a",
-      "input": "//a",
-      "expected": true
-    },
-    {
-      "pattern": "//a",
-      "input": "/a",
-      "expected": true
-    },
-    {
       "pattern": "a/*/",
       "input": "a/b",
       "expected": false

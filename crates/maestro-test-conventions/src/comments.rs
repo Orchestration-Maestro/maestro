@@ -66,7 +66,7 @@ fn forbidden(comment: &str) -> Option<usize> {
         let after = words.get(index + 2).map(|entry| entry.1);
         if NUMBERED.contains(&lower.as_str()) && next.as_deref().is_some_and(digits)
             || lower == "pull" && next.as_deref() == Some("request") && after.is_some_and(digits)
-            || matches!(lower.as_str(), "milestone" | "sprint")
+            || matches!(lower.as_str(), "milestone" | "sprint" | "ticket-owned")
             || lower == "user" && next.as_deref() == Some("story")
             || planning_id(word)
         {

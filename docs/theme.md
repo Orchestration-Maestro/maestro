@@ -197,9 +197,9 @@ with the file-extension table. A name without a dot is compared whole, so extens
 ## Component styles
 
 `get_markdown_theme`, `get_select_list_theme`, `get_editor_theme` and
-`get_settings_list_theme` return the terminal toolkit's style records. Their color callbacks
+`get_settings_list_theme` return the terminal toolkit's style records. Their coloring callbacks
 read the published theme on every call and return their text unstyled when no theme is published
-or the key is missing. The Markdown decorations apply when `styles_enabled` is set and first
+or the key is missing. Strikethrough and unselected settings labels do not read the theme. The Markdown decorations apply when `styles_enabled` is set and first
 check that a theme is published; strikethrough does not. The settings cursor is the only value
 fixed at creation: the accent-colored arrow and space of the theme published then.
 

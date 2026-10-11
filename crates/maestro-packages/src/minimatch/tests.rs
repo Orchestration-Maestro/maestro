@@ -6,6 +6,8 @@ use serde::Deserialize;
 #[test]
 fn windows_roots_keep_drive_and_unc_identity() {
     let cases = [
+        ("/a", "//a", false),
+        ("//a", "/a", false),
         (r"c:/a", r"C:/a", true),
         (r"c:/a", r"C\:/a", true),
         (r"c:/a", r"//\?/C:/a", true),
@@ -39,6 +41,8 @@ fn windows_roots_keep_drive_and_unc_identity() {
 #[test]
 fn posix_roots_do_not_adopt_windows_identity() {
     let cases = [
+        ("/a", "//a", true),
+        ("//a", "/a", true),
         (r"c:/a", r"C:/a", false),
         (r"c:/a", r"//?/C:/a", false),
         (r"/server/share/a", r"//server/share/a", true),
