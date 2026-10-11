@@ -84,14 +84,14 @@ fn candidate_files(
     })
 }
 /// Decodes only a selected package resource filter.
-fn decode_patterns(value: &Value) -> io::Result<Vec<String>> {
+fn decode_patterns(value: &Value) -> io::Result<Vec<&str>> {
     let patterns = value.as_array().ok_or_else(|| {
         io::Error::new(io::ErrorKind::InvalidData, "package filter is not an array")
     })?;
     patterns
         .iter()
         .map(|v| {
-            v.as_str().map(str::to_owned).ok_or_else(|| {
+            v.as_str().ok_or_else(|| {
                 io::Error::new(
                     io::ErrorKind::InvalidData,
                     "package pattern is not a string",

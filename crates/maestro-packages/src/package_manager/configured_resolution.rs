@@ -29,7 +29,6 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             .await?;
         }
         for kind in ResourceType::ALL {
-            let user_entries = root_entries(&user, kind.name())?;
             let project_entries = root_entries(&project, kind.name())?;
             self.resolve_local_entries(
                 project_entries,
@@ -37,6 +36,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 InstalledSourceScope::Project,
                 &mut result,
             )?;
+            let user_entries = root_entries(&user, kind.name())?;
             self.resolve_local_entries(
                 user_entries,
                 kind,
@@ -50,7 +50,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Collects literal top-level entries before selecting their enabled membership.
     fn resolve_local_entries(
         &self,
-        entries: Vec<String>,
+        entries: Vec<&str>,
         kind: ResourceType,
         scope: InstalledSourceScope,
         result: &mut Accumulator,
@@ -82,13 +82,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
 }
 /// Consumes one optional root list without decoding other members.
-pub(super) fn root_entries(settings: &Settings, name: &str) -> io::Result<Vec<String>> {
+pub(super) fn root_entries<'a>(settings: &'a Settings, name: &str) -> io::Result<Vec<&'a str>> {
     match settings.0.get(name) {
         None | Some(serde_json::Value::Null) => Ok(Vec::new()),
         Some(serde_json::Value::Array(entries)) => entries
             .iter()
             .map(|value| {
-                value.as_str().map(str::to_owned).ok_or_else(|| {
+                value.as_str().ok_or_else(|| {
                     io::Error::new(io::ErrorKind::InvalidData, "resource entry is not a string")
                 })
             })

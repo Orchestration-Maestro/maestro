@@ -7423,5 +7423,107 @@
       "callbacks": [],
       "second": null
     }
+  },
+  {
+    "case": "project-home-before-user-decode",
+    "recipe": {
+      "global": {
+        "extensions": 42
+      },
+      "project": {
+        "extensions": [
+          "~file.ts"
+        ]
+      },
+      "homeFailure": true
+    },
+    "expected": {
+      "result": null,
+      "error": {
+        "message": "home unavailable"
+      },
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
+    "case": "auto-four-kind-links",
+    "recipe": {
+      "files": {
+        "shared/extensions/shared.ts": "export default function() {}",
+        "shared/skills/shared-skill/SKILL.md": "---\nname: shared-skill\ndescription: Shared skill\n---\nContent",
+        "shared/prompts/shared.md": "Shared prompt",
+        "shared/themes/shared.json": "{\"name\":\"shared-theme\"}"
+      },
+      "links": {
+        "user/extensions": "shared/extensions",
+        "project/.maestro/extensions": "shared/extensions",
+        "user/skills": "shared/skills",
+        "project/.maestro/skills": "shared/skills",
+        "user/prompts": "shared/prompts",
+        "project/.maestro/prompts": "shared/prompts",
+        "user/themes": "shared/themes",
+        "project/.maestro/themes": "shared/themes"
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [
+          {
+            "path": "$BASE/project/.maestro/extensions/shared.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$BASE/project/.maestro/skills/shared-skill/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$BASE/project/.maestro/prompts/shared.md",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$BASE/project/.maestro/themes/shared.json",
+            "enabled": true,
+            "metadata": {
+              "source": "auto",
+              "scope": "project",
+              "origin": "top-level",
+              "baseDir": "$BASE/project/.maestro"
+            }
+          }
+        ]
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
   }
 ]

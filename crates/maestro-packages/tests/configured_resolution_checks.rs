@@ -376,3 +376,107 @@ fn missing_callback_admission_waits_before_next_source() {
 fn missing_callback_borrow_ends_with_operation() {
     configured_resolution_support::borrowed_callback();
 }
+
+#[test]
+fn project_home_failure_precedes_malformed_user_list() {
+    configured_resolution_support::check(&["project-home-before-user-decode"]);
+}
+
+use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
+use maestro_settings::SettingsManager;
+use serde_json::json;
+use std::{cell::RefCell, fs, path::Path, rc::Rc};
+
+#[test]
+fn relative_automatic_and_installed_roots_share_ambient_matching_context() {
+    let scratch = scratch::Scratch::new_in(Path::new(".")).unwrap();
+    let base = scratch.0.to_str().unwrap().strip_prefix("./").unwrap();
+    let user = format!("{base}/user");
+    let project = format!("{base}/project");
+    let package = format!("{project}/.maestro/npm/node_modules/pkg");
+    for root in [&user, &package] {
+        fs::create_dir_all(format!("{root}/prompts")).unwrap();
+        for name in ["a", "b", "c"] {
+            fs::write(format!("{root}/prompts/{name}.md"), name).unwrap();
+        }
+    }
+    fs::write(format!("{project}/.git"), "marker").unwrap();
+    fs::write(format!("{package}/package.json"), "{}").unwrap();
+    let effects = Rc::new(support::Effects {
+        native_exists: true,
+        ..Default::default()
+    });
+    *effects.home_override.borrow_mut() = Some(std::env::temp_dir().to_str().unwrap().into());
+    for (patterns, expected) in [
+        (json!(["prompts/a.md"]), [true, false, false]),
+        (json!(["!prompts/a.md"]), [false, true, true]),
+        (json!(["!prompts/*", "+prompts/a.md"]), [true, false, false]),
+        (
+            json!(["!prompts/*", "+prompts/a.md", "-prompts/a.md"]),
+            [false, false, false],
+        ),
+    ] {
+        fs::write(
+            format!("{user}/settings.json"),
+            json!({"prompts":patterns}).to_string(),
+        )
+        .unwrap();
+        fs::write(
+            format!("{project}/.maestro/settings.json"),
+            json!({"packages":[{"source":"npm:pkg", "prompts":patterns}]}).to_string(),
+        )
+        .unwrap();
+        let settings = Rc::new(RefCell::new(SettingsManager::create(
+            &project, &user, ".maestro",
+        )));
+        let manager = DefaultPackageManager::new(
+            PackageManagerOptions {
+                cwd: project.clone(),
+                agent_dir: user.clone(),
+                settings_manager: settings,
+            },
+            support::Controlled(Rc::clone(&effects)),
+        );
+        resolution_support::run(async {
+            let result = manager.resolve(None).await?;
+            assert_relative_selection(&result, [&user, &package], &patterns, expected);
+            Ok(())
+        })
+        .unwrap();
+    }
+}
+
+#[test]
+fn automatic_directory_alias_collisions_keep_project_owner_for_each_kind() {
+    configured_resolution_support::check(&["auto-four-kind-links"]);
+}
+
+/// Checks authored paths and independent enabled decisions after completed resolution.
+#[cfg(test)]
+fn assert_relative_selection(
+    result: &maestro_packages::ResolvedPaths,
+    roots: [&str; 2],
+    patterns: &serde_json::Value,
+    expected: [bool; 3],
+) {
+    for (root_index, root) in roots.into_iter().enumerate() {
+        let records: Vec<_> = result
+            .prompts
+            .iter()
+            .filter(|r| r.path.starts_with(root))
+            .collect();
+        assert_eq!(records.len(), 3);
+        for (index, name) in ["a", "b", "c"].iter().enumerate() {
+            let record = records
+                .iter()
+                .find(|r| r.path == format!("{root}/prompts/{name}.md"))
+                .unwrap();
+            let enabled = if root_index == 0 && *patterns == json!(["prompts/a.md"]) {
+                true
+            } else {
+                expected[index]
+            };
+            assert_eq!(record.enabled, enabled, "{root}/{name}: {patterns}");
+        }
+    }
+}

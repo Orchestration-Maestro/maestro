@@ -201,4 +201,5 @@ owner, keeping the first on equal rank and replacing at the existing key positio
 Stable ranking orders project local, project automatic, user local, user automatic,
 then package records; canonical deduplication retains the first ranked record,
 including when it is disabled. Filtered manifest candidates use survivor-then-restoration
-order; unfiltered manifest and top-level entries retain their original candidate order.
+order; unfiltered manifest and top-level collectors emit their original candidate order
+before authored-path merging and ranked canonical deduplication.

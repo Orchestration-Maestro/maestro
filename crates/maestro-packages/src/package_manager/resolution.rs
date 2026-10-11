@@ -1,6 +1,6 @@
 //! Explicit source resolution with resource provenance.
 use maestro_resources::PathMetadata;
-/// One enabled resource with its original path and provenance.
+/// One discovered resource with its original path and provenance.
 pub struct ResolvedResource {
     /// The authored resource path.
     pub path: String,
