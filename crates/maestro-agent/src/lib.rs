@@ -1,9 +1,12 @@
 #![doc = include_str!("../../../docs/agent.md")]
-/// State ownership and queue control.
+/// State ownership, prompt execution and queue control.
 pub mod agent;
 /// Message and executable-tool records.
 pub mod types;
-pub use agent::{Agent, AgentInitialState, AgentOptions, AgentState};
+pub use agent::{
+    Agent, AgentInitialState, AgentListener, AgentOptions, AgentSpawner, AgentState, PromptInput,
+    Subscription,
+};
 pub use types::*;
 /// Awaited conversation operations.
 pub mod agent_loop;

@@ -43,8 +43,8 @@ pub struct AgentLoopConfig<C: CustomAgentMessages = Infallible> {
     pub get_follow_up_messages: Option<super::GetFollowUpMessages<C>>,
     /// Batch preference; absence selects parallel unless a tool requires sequential.
     pub tool_execution: Option<super::ToolExecutionMode>,
-    /// Supplied model descriptor.
-    pub model: Model,
+    /// Captured model handle: provider is read before key resolution, descriptor afterwards.
+    pub model: Arc<RwLock<Model>>,
     /// Simple invocation settings.
     pub options: SimpleStreamOptions,
     /// Open settings passed to a replacement stream.

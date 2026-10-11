@@ -1,11 +1,32 @@
-# Agent state and queued input
+# Agent state and owned prompts
 
 `maestro-agent` owns live conversation state, shared message and executable-tool
 entries, and independent steering and follow-up input queues.
 The [awaited conversation operations](loop.md) accept turn controls and tool-batch
 execution preferences.
-Agent-owned execution remains tracked in
-[the Agent lifecycle](https://github.com/Orchestration-Maestro/maestro/issues/477).
+`Agent::prompt` synchronously reserves a run and submits its work through
+`AgentOptions::spawn`. The caller supplies a facility that retains and drives the
+submitted future independently of the returned completion observer. Construction
+is inert; prompting without that facility returns
+`Agent requires a task spawner before prompting.`
+
+Dropping prompt observation does not cancel submitted work. `abort` only signals
+cooperative cancellation, and `wait_for_idle` observes completion without returning
+history. `stream_fn` replaces model dispatch for subsequently admitted runs.
+Replacement streams receive the default parallel tool-execution preference in open options.
+Run admission copies outer history/tool collections while retaining entry handles
+and the selected model handle. Replacing the live model slot does not retarget
+admitted work; synthetic failure records use the current live model.
+
+`subscribe` deduplicates callback identity. Dispatch reduces state before awaiting
+live listeners in registration order; additions and removals can affect an ongoing
+walk. Listeners share a mutable event handle. `Subscription::unsubscribe` removes
+the callback identity explicitly; dropping the subscription does not remove it.
+Caller-created strong captures of the Agent require explicit deregistration.
+
+Continuation, queue consumption and remaining request configuration are tracked in
+[the lifecycle follow-up](https://github.com/Orchestration-Maestro/maestro/issues/541).
+Delegated request/tool behavior is documented in [conversation operations](loop.md).
 
 `SharedAgentTool` entries expose declarations, labels, callbacks and scheduling
 preferences directly, including mutable access through the shared handle.
@@ -27,7 +48,7 @@ default to `OneAtATime` when omitted; changing either policy does not consume in
 stores policies but does not yet expose queue consumption.
 
 Reset clears history and queued input while keeping instructions, model, tools
-and queue modes. Agent-owned reset and clear release discarded entries outside
+and queue modes without aborting active work or releasing run admission. Agent-owned reset and clear release discarded entries outside
 internally acquired guards. Poisoned standard-library locks retain their value.
 
 ```rust

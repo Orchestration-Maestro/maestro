@@ -1,5 +1,6 @@
 # maestro-agent
 
-Live conversation state with retained message/tool entries and independent
-steering and follow-up queues. See [Agent state and queued input](../../docs/agent.md)
-for the delivered API and execution follow-ups.
+Live conversation state, caller-owned prompt execution, awaited live subscriptions
+and independent steering/follow-up queues. See [Agent state and owned prompts](../../docs/agent.md)
+for the hosting contract. Continuation, queue consumption and remaining configuration
+are tracked in [the lifecycle follow-up](https://github.com/Orchestration-Maestro/maestro/issues/541).
