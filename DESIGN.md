@@ -86,9 +86,10 @@ emphasis, dim carries secondary treatment where the existing widget uses it,
 and italic carries existing emphasis/thinking treatment; these attributes do
 not add a new state or replace the owning widget's formatting. The theme's
 [terminal role table](docs/identity.md#terminal-roles) defines the ANSI and
-truecolor aliases. The 16-color path uses `terminal.ansi`; truecolor uses
-`terminal.truecolor`. The existing 256-color conversion is owned by
-[the theme library](docs/theme.md), not a new pack palette. Quantized and
+truecolor aliases. `terminal.ansi` and `terminal.truecolor` are pack projections
+exposed as presentation data, not rendering paths. Runtime truecolor and
+256-color rendering are owned by
+[the theme library's color modes](docs/theme.md#color-modes), not a new pack palette. Quantized and
 user-controlled ANSI combinations need rendered contrast checks; the pack's
 sRGB contrast table does not certify them.
 
@@ -132,8 +133,9 @@ component actually supports, not a promise of new interactions.
 | Error | error with the existing error text/sign; tool background remains panel |
 | Streaming/busy | live with existing indicator/text; pending background remains panel |
 
-Unlisted states are not applicable. Focus/hover/disabled styling is not
-invented for passive components. Status signs use `glyphs` only where the
+Within grouped families, states apply only to the components that support them;
+component-specific outcomes are listed in their rows below. Focus/hover/disabled
+styling is not invented for passive components. Status signs use `glyphs` only where the
 surface already has a sign; wording and animation stay with their owners.
 
 ### Landed terminal toolkit
@@ -164,16 +166,16 @@ components above; the theme-key adapter stays in
 
 | Component family | States and role mappings |
 | --- | --- |
-| Footer, keybinding hints | Default text/muted; selected model/thinking accent; busy live; errors error |
+| Footer, keybinding hints | Default text/muted; selected model/thinking accent; busy live; errors error; Footer context usage warning warning, critical error |
 | User, assistant, skill-invocation, branch-summary, compaction-summary messages | Default text; user panel; thinking muted; streaming live; errors error |
-| ToolExecution, BashExecution, diff | Default title text/output muted; pending live/panel; success success/panel; error error/panel; diff additions success, removals error, context muted |
+| ToolExecution, BashExecution, diff | Default title text/output muted; pending live/panel; success success/panel; error error/panel; BashExecution cancellation and output-truncation notices warning; diff additions success, removals error, context muted |
 | CustomMessage | Default panel/text and label accent; other states supplied by registered renderer |
 | DynamicBorder, BorderedLoader, CountdownTimer | Default border; busy live/accent; existing cancellation/focus treatment only |
 | CustomEditor, ExtensionEditor, ExtensionInput | Default text/border; focus accent/cursor; editor completions selected accent |
-| ExtensionSelector, ConfigSelector, ModelSelector, OAuthSelector, ScopedModelsSelector | Default text/muted; focused/selected accent; errors error; busy live where loading exists |
-| SessionSelector, SessionSelectorSearch, TreeSelector, UserMessageSelector | Default text/muted; focus/selected accent; search no-match muted |
+| ExtensionSelector, ConfigSelector, ModelSelector, OAuthSelector, ScopedModelsSelector | Default text/muted; focused/selected accent; errors error; busy live where loading exists; ModelSelector current-model sign success; OAuthSelector configured/matching auth success, differing auth warning, unconfigured muted |
+| SessionSelector, SessionSelectorSearch, TreeSelector, UserMessageSelector | Default text/muted; focus/selected accent; search no-match muted; SessionSelector loading accent, deletion confirmation error, status accent/error |
 | SettingsSelector, ShowImagesSelector, ThemeSelector, ThinkingSelector | Default text/muted; focus/selected accent; preview keeps selected theme's own colours |
-| LoginDialog | Default text/muted; focus/selected accent; error error; busy live |
+| LoginDialog | Default text/muted; focus/selected accent; error error; busy live; login instructions warning, URL accent, open-link hint muted |
 
 ### Browser and exported-viewer inventory to port
 
@@ -187,12 +189,12 @@ retain their own application policy.
 | --- | --- |
 | ChatPanel, AgentInterface | Default background/text; busy/streaming live; errors error; child controls focus/hover accent |
 | MessageList, UserMessage, AssistantMessage, ToolMessage, ToolMessageDebugView, AbortedMessage, StreamingMessageContainer | Default text/panel; streaming live; tool success success, errors error; interactive controls focus/hover accent |
-| Input, MessageEditor | Default text/panel/border; focus accent; hover accent on controls; disabled muted; sending busy live; errors error |
+| Input, MessageEditor | Default text/panel/border; focus accent; hover accent on controls; disabled muted; sending busy live; errors error; MessageEditor drag-over accent border/text on panel, file-processing indicator muted |
 | ThinkingBlock, ExpandableSection, ConsoleBlock | Default text/muted; toggle focus/hover accent; expanded content text/panel; errors error where output carries errors |
 | AttachmentTile, AttachmentOverlay | Default panel/text/border; selected/focus/hover accent on controls; loading live; errors error |
-| CustomProviderCard, ProviderKeyInput | Default panel/text/muted; focus/hover accent; disabled muted; validation error error |
+| CustomProviderCard, ProviderKeyInput | Default panel/text/muted; focus/hover accent; disabled muted; validation error error; CustomProviderCard checking warning, connected success, disconnected error with muted status text; ProviderKeyInput testing muted, saved-key sign success |
 | ModelSelector, ProvidersModelsTab | Default text/muted; focus/hover/selected accent; loading live; errors error |
-| CustomProviderDialog, ApiKeyPromptDialog, SettingsDialog, ApiKeysTab, ProxyTab | Default background/panel/text/border; focus/hover accent; disabled muted; validation error error; busy live where saving/checking exists |
+| CustomProviderDialog, ApiKeyPromptDialog, SettingsDialog, ApiKeysTab, ProxyTab | Default background/panel/text/border; focus/hover accent; disabled muted; validation error error; busy live where saving/checking exists; SettingsDialog selected sidebar tab text/panel, selected mobile tab text/accent border, inactive tabs muted |
 | PersistentStorageDialog, SessionListDialog | Default text/panel; focus/hover/selected accent on controls; denied/error error; loading live where supported |
 | SandboxIframe, ConsoleRuntimeProvider, ArtifactsRuntimeProvider, AttachmentsRuntimeProvider, FileDownloadRuntimeProvider | Frame border/background; default content stays sandbox-owned; busy live/error error in host status only |
 | Tool renderers: BashRenderer, DefaultRenderer, CalculateRenderer, GetCurrentTimeRenderer, JavaScript REPL, ExtractDocument | Default text/panel/border; pending live; result success/error; code uses mono, descriptions muted; expand controls focus/hover accent |
