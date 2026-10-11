@@ -79,10 +79,11 @@ working directory with no drive entries yields `D:b`, not `..\b`.
 leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
-adapter, shared request owner, cancellation leaf, watch leaf, lock leaf and the
+adapter, shared request owner, cancellation leaf, watch leaf, lock leaf,
+file-pattern leaf and the
 terminal scenario harness. The edge is ignored when checking a crate's complete
 direct set or leaf
-status, so the graph holds 31 crates and 95 permitted edges: 72 table edges plus
+status, so the graph holds 32 crates and 97 permitted edges: 74 table edges plus
 23 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.

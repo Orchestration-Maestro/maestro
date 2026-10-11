@@ -199,6 +199,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-request", "core"),
         ("maestro-watch", "core"),
         ("maestro-lock", "core"),
+        ("maestro-pattern", "core"),
         ("maestro-models", "core"),
         ("maestro-storage", "core"),
         ("maestro-resources", "core"),
@@ -501,13 +502,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 31);
+    assert_eq!(support::policy::POLICY.len(), 32);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        72
+        74
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -536,6 +537,7 @@ const DECLARATIONS: &[(&str, &str)] = &[
 const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-watch",
     "maestro-lock",
+    "maestro-pattern",
     "maestro-cancellation",
     "maestro-request",
     "maestro-extensions-wasm",
@@ -585,9 +587,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 31);
+    assert_eq!(rows.len(), 32);
     assert_eq!(consumers.len(), 23);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 8);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }
@@ -726,12 +728,14 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-chat", "core"),
         ("maestro-watch", "core"),
         ("maestro-lock", "core"),
+        ("maestro-pattern", "core"),
     ]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
     assert!(!workspace.root.join("crates/maestro-tools").exists());
     assert!(!workspace.root.join("crates/maestro-chat").exists());
     assert!(!workspace.root.join("crates/maestro-watch").exists());
     assert!(!workspace.root.join("crates/maestro-lock").exists());
+    assert!(!workspace.root.join("crates/maestro-pattern").exists());
     assert!(!workspace.root.join("wit").exists());
 }
 
