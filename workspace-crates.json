@@ -19,6 +19,7 @@
   "maestro-test-conventions": "dedicated",
   "maestro-test-terminal": "dedicated",
   "maestro-tooling": "dedicated",
+  "maestro-tools": "core",
   "maestro-tui": "core",
   "maestro-tui-crossterm": "core",
   "maestro-watch": "core"

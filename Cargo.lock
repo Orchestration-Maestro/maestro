@@ -1848,6 +1848,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-tools"
+version = "0.1.0"
+dependencies = [
+ "ryu-js",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-tui"
 version = "0.1.0"
 dependencies = [
