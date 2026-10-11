@@ -91,6 +91,7 @@ are later scope, not active foundation concepts.
 - **EventBus:** Shared literal event channels with ordered listener snapshots, explicit unsubscribe and callback-scoped foreign delivery; asynchronous listener tails are independently owned.
 - **Registration:** A host-admitted declaration of an owned capability.
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
+- **File pattern:** A glob or ignore rule matched against relative file paths.
 - **Resource:** Discovered instruction material, such as skills, prompt templates or context files, with source/provenance data and entry-point-specific ordering.
 
 ### Interfaces

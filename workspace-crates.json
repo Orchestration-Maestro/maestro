@@ -10,6 +10,7 @@
   "maestro-models": "core",
   "maestro-packages": "core",
   "maestro-path": "core",
+  "maestro-pattern": "core",
   "maestro-request": "core",
   "maestro-resources": "core",
   "maestro-settings": "core",

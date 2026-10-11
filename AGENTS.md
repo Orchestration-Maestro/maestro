@@ -95,7 +95,8 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness, cancellation leaf, watch leaf and lock leaf may not.
+  terminal scenario harness, cancellation leaf, watch leaf, lock leaf and
+  file-pattern leaf may not.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
   no workspace dependencies, including the path utility. Only theme/application

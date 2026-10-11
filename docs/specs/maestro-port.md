@@ -178,9 +178,10 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-request` | define model-request records | — | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | acquire file-write locks | — | below 0 |
+| `maestro-pattern` | match file patterns | — | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request` | 0 |
-| `maestro-resources` | discover instruction resources | `maestro-request` | 0 |
+| `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock` | 0 |
 | `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
@@ -188,7 +189,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-tui` | render terminal components | `maestro-cancellation` | 0 |
 | `maestro-agent` | run an agent | `maestro-models` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock` | 1 |
-| `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources` | 1 |
+| `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
@@ -222,6 +223,12 @@ The crate is core, sits below layer 0 and depends on no workspace crate, includi
 targets extensions only, and no internal dev edge is added. Existing delivery
 layers stay unchanged; the shared owner precedes its four consumers.
 
+`maestro-pattern` is a core leaf below layer 0 whose one job is matching file
+patterns: glob patterns and ignore rules. It has no workspace dependencies,
+including `maestro-path`. Only `maestro-resources` and `maestro-packages` may
+depend on it. Move the existing matchers only after this contract lands, through
+[shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
+
 `maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
 workspace dependencies, including the path utility. Only theme and application
 may depend on watch; only settings and credentials may depend on lock.
@@ -253,12 +260,13 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`), shared
-request owner (`maestro-request`), watch leaf (`maestro-watch`) and lock leaf
-(`maestro-lock`) are excluded from this permission.
+request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
+(`maestro-lock`) and file-pattern leaf (`maestro-pattern`) are excluded from
+this permission.
 
-The graph contains 31 crates: the 30 table entries plus the foundation utility.
-It permits 95 internal production dependency edges: 72 table edges plus 23
-optional utility edges. Eight crates are leaves when utility edges are ignored,
+The graph contains 32 crates: the 31 table entries plus the foundation utility.
+It permits 97 internal production dependency edges: 74 table edges plus 23
+optional utility edges. Nine crates are leaves when utility edges are ignored,
 including the utility itself. The below-layer-0 owners are delivered before
 their consumers; the utility is delivered before its first consumer.
 
