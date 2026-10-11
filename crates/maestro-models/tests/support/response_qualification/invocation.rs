@@ -141,7 +141,7 @@ pub(super) async fn invoke(
     wire: &Wire,
     context: Context,
 ) -> TestResult<SharedAssistantMessage> {
-    let before = serde_json::to_value(&context)?;
+    let history = serde_json::to_value(&context)?;
     let (transport, feed) = controlled(wire)?;
     let payloads = Arc::new(Mutex::new(Vec::new()));
     let signal = Cancellation::new();
@@ -160,14 +160,16 @@ pub(super) async fn invoke(
         })
     });
     let common = common(wire, fetch, Arc::clone(&payloads), signal.clone());
-    let (result, events) = dispatch(wire, context.clone(), common, feed, &signal).await?;
-    assert!(
-        serde_json::to_value(&context)? == before,
-        "{} retained caller history",
-        row.id
-    );
-    compare_stream(row, &result, events)?;
-    compare_requests(row, wire, &transport, &payloads)?;
+    let (result, events) = dispatch(wire, context, common, feed, &signal).await?;
+    let diagnostic = json!({
+        "model": {"id": wire.model["id"], "provider": wire.model["provider"],
+            "api": wire.model["api"]},
+        "inputHistory": history,
+        "capturedPayloads": *payloads.lock().map_err(|_| "payloads poisoned")?,
+        "actualResult": &*result.read().map_err(|_| "result poisoned")?,
+    });
+    compare_stream(row, &result, events, &diagnostic)?;
+    compare_requests(row, wire, &transport, &payloads, &diagnostic)?;
     Ok(result)
 }
 
@@ -247,23 +249,28 @@ fn compare_stream(
     row: &Row,
     result: &SharedAssistantMessage,
     events: Option<Vec<Value>>,
+    diagnostic: &Value,
 ) -> TestResult {
     let finished = result.read().map_err(|_| "result poisoned")?.clone();
     let mut message = serde_json::to_value(&finished)?;
-    assert!(message["timestamp"].is_number(), "{} result clock", row.id);
+    assert!(
+        message["timestamp"].is_number(),
+        "{} result clock: {diagnostic}",
+        row.id
+    );
     message
         .as_object_mut()
         .ok_or("message object")?
         .remove("timestamp");
     assert!(
         Some(canonical(message)) == row.expected.result.clone().map(canonical),
-        "{} terminal result",
+        "{} terminal result: {diagnostic}",
         row.id
     );
     assert!(
         events.map(|events| canonical(json!(events)))
             == row.expected.events.clone().map(|v| canonical(json!(v))),
-        "{} ordered events",
+        "{} ordered events: {diagnostic}",
         row.id
     );
     Ok(())
@@ -275,12 +282,13 @@ fn compare_requests(
     wire: &Wire,
     transport: &transport::Transport,
     payloads: &Mutex<Vec<Value>>,
+    diagnostic: &Value,
 ) -> TestResult {
     let payloads = payloads.lock().map_err(|_| "payloads poisoned")?.clone();
     assert!(
         canonical(json!(payloads))
             == canonical(json!(row.expected.payloads.as_ref().ok_or("payloads")?)),
-        "{} payload evidence",
+        "{} payload evidence: {diagnostic}",
         row.id
     );
     let requests = transport
@@ -295,7 +303,7 @@ fn compare_requests(
     assert!(
         canonical(json!(actual))
             == canonical(json!(row.expected.requests.as_ref().ok_or("requests")?)),
-        "{} wire request",
+        "{} wire request: {diagnostic}",
         row.id
     );
     Ok(())

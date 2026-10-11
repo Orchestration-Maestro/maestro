@@ -194,7 +194,10 @@ The response qualification cases use catalog models with injected, finite server
 responses through public streaming and completion operations. They compare
 payload callbacks, application-owned request headers and bodies, terminal records
 and recorded stream events. Continuations use actual returned assistants and
-returned tool identifiers, with caller histories checked after dispatch.
+returned tool identifiers. Generated histories are compared with the recorded
+inputs before dispatch. Payload, request, terminal-record and recorded-event
+comparison failures include the model identity, input history, captured payloads
+and actual result, without invocation credentials.
 
 The cases exercise response identity on successful and failed turns, compatible
 and foreign reasoning replay, cache/session request affinity, native tool-result
