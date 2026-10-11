@@ -6,7 +6,7 @@ use maestro_resources::{
     NativeResourceOperations,
     skills::{ResourceEntry, ResourceFileType, ResourceOperations},
 };
-use serde_json::{Value, json};
+use serde_json::json;
 use std::{
     collections::BTreeMap,
     io,

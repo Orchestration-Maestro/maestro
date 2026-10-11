@@ -72,6 +72,9 @@ impl PackageOperations for Local {
     fn home_dir(&self) -> io::Result<String> {
         panic!("unexpected home")
     }
+    fn temp_dir(&self) -> String {
+        panic!("unexpected temp directory")
+    }
     fn current_dir(&self) -> io::Result<String> {
         panic!("unexpected cwd")
     }

@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod resolution_support;
-mod resource_output;
 mod resource_cases;
+mod resource_output;
 mod scratch;
 use resolution_support::run as block_on;
 mod support;
