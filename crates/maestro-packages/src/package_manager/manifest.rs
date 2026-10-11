@@ -1,16 +1,82 @@
-//! Raw package branding selection for extension entry discovery.
+//! Raw package branding selection with deferred resource-list decoding.
 use maestro_resources::skills::ResourceOperations;
-use serde_json::Value;
-use std::path::Path;
+use serde_json::value::RawValue;
+use std::{collections::BTreeMap, io, path::Path};
+/// Named fields retained without consuming their resource lists.
+pub(super) struct Manifest {
+    /// Last selected value for each decoded key.
+    fields: BTreeMap<String, Box<RawValue>>,
+}
+impl Manifest {
+    /// Borrows a named field without decoding its contents.
+    pub(super) fn field(&self, name: &str) -> Option<&RawValue> {
+        self.fields.get(name).map(AsRef::as_ref)
+    }
+    /// Consumes one complete string list; false values contribute no entries.
+    pub(super) fn entries(&self, name: &str) -> io::Result<Vec<String>> {
+        let Some(raw) = self.field(name).filter(|raw| truthy(raw)) else {
+            return Ok(Vec::new());
+        };
+        serde_json::from_str(raw.get())
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+    }
+}
 /// Reads the selected branding member, treating unreadable manifests as absent.
 pub(super) fn read_maestro_manifest_file(
     path: &str,
     operations: &dyn ResourceOperations,
-) -> Option<Value> {
+) -> Option<Manifest> {
     let content = operations.read_file(Path::new(path)).ok()?;
-    let mut package: Value = serde_json::from_str(&content).ok()?;
-    package
-        .as_object_mut()?
-        .remove("maestro")
-        .filter(|value| !value.is_null())
+    let mut package: BTreeMap<String, Box<RawValue>> = serde_json::from_str(&content).ok()?;
+    let raw = package.remove("maestro").filter(|raw| truthy(raw))?;
+    let fields = if raw.get().starts_with('{') {
+        serde_json::from_str(raw.get()).ok()?
+    } else {
+        BTreeMap::new()
+    };
+    Some(Manifest { fields })
+}
+/// Distinguishes absent-like JSON scalars from present lists and records.
+fn truthy(raw: &RawValue) -> bool {
+    match raw.get() {
+        "null" | "false" => false,
+        text if text.starts_with('"') => {
+            serde_json::from_str::<String>(text).is_ok_and(|text| !text.is_empty())
+        }
+        text if text.starts_with('-') || text.starts_with(|c: char| c.is_ascii_digit()) => {
+            text.parse::<f64>() != Ok(0.0)
+        }
+        _ => true,
+    }
+}
+
+/// Collects literal candidates without canonicalizing authored identities.
+pub(super) fn collect_manifest_entries(
+    entries: &[String],
+    root: &str,
+    kind: super::resource_discovery::ResourceType,
+    operations: &dyn ResourceOperations,
+) -> io::Result<Vec<String>> {
+    use super::resource_discovery::{collect_resource_files, resolve_entry_path};
+    use maestro_resources::skills::ResourceFileType;
+    let mut files = Vec::new();
+    for entry in entries
+        .iter()
+        .filter(|entry| !entry.starts_with(['!', '+', '-']))
+    {
+        let path = resolve_entry_path(root, entry, operations)?;
+        if !operations.exists(Path::new(&path)) {
+            continue;
+        }
+        match operations.metadata(Path::new(&path)) {
+            Ok(ResourceFileType::File) => files.push(path),
+            Ok(ResourceFileType::Directory) => {
+                if let Ok(entries) = collect_resource_files(&path, kind, operations) {
+                    files.extend(entries);
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(files)
 }

@@ -2,7 +2,8 @@
 
 `maestro-packages` uses `git-url-parse =0.6.0` with defaults (`url`, MIT),
 `url =2.5.8` and `percent-encoding =2.3.2` with defaults (MIT OR Apache-2.0),
-plus inherited workspace serde_json for raw scoped settings. The selected parser
+plus inherited workspace serde_json for raw scoped settings and `raw_value`
+for deferred package-manifest field selection. This feature adds no package. The selected parser
 adds `getset =0.1.7` and `nom =8.0.0` (MIT); it reuses the existing URL/IDNA
 closure and the `unicode-ident =1.0.24` hold. Outside browser targets it also uses
 Tokio `=1.53.2` (MIT; defaults off, `rt`, `process`, `io-util`, `time` and `macros`) to wait for package

@@ -16,6 +16,7 @@ mod process;
 mod progress;
 mod resolution;
 mod resource_discovery;
+mod resource_patterns;
 mod sources;
 use maestro_resources::SourceScope;
 pub use resolution::{ResolvedPaths, ResolvedResource};

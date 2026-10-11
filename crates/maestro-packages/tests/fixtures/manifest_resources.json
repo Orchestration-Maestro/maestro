@@ -1,0 +1,4248 @@
+{
+  "rows": [
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "absent",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"name\":\"plain\"}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "null",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":null}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "false",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":false}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "zero",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":0}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "empty_string",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":\"\"}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "invalid",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "bom",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "﻿{\"maestro\":{\"extensions\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "empty_object",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "empty_array",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":[]}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "truthy_scalar",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":true}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "number",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":1}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "string",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":\"x\"}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "only_unknown",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"unknown\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "missing_kind",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "empty_kind",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "literal_manifest_entries_preserve_order_and_file_kinds",
+      "id": "literal_order",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json",
+        ".hidden.data",
+        "node_modules/a/index.js"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"src/z.ts\",\"src/no.md\",\".hidden.data\",\"node_modules/a/index.js\",\"missing.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/no.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/.hidden.data",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/node_modules/a/index.js",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "literal_manifest_entries_preserve_order_and_file_kinds",
+      "id": "empty_path",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "literal_manifest_entries_preserve_order_and_file_kinds",
+      "id": "whitespace_literal",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\" src/a.ts \",\"./src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "brace_and_bracket_manifest_entries_are_literal_paths",
+      "id": "braces_and_class_literal",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/{a,z}.ts\",\"src/[az].ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "brace_and_bracket_manifest_entries_are_literal_paths",
+      "id": "literal_metachar_files",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/{a,z}.ts",
+        "src/[az].ts",
+        "src/@(a|z).ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/{a,z}.ts\",\"src/[az].ts\",\"src/@(a|z).ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/{a,z}.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[az].ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/@(a|z).ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "basename",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "relative",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "absolute",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!$ROOT/pkg/src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "case_sensitive",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!A.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "numeric_range",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!plugin-{1..3}.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "nested_group",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!src/@(main|+(a|b)).ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "unicode_class",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"![[:alpha:]].ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/[a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_match_all_path_views",
+      "id": "unclosed_class",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts",
+        "src/é.ts",
+        "src/z.ts",
+        "src/1.ts",
+        "src/main.ts",
+        "src/abba.ts",
+        "src/[a.ts",
+        "src/plugin-1.ts",
+        "src/plugin-2.ts",
+        "src/plugin-3.ts",
+        "src/plugin-4.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"![a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/abba.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/main.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-1.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-2.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-3.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/plugin-4.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/é.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_exclusions_also_match_parent_directories",
+      "id": "parent_relative",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!skills/alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_exclusions_also_match_parent_directories",
+      "id": "parent_basename",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_exclusions_also_match_parent_directories",
+      "id": "parent_absolute",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!$ROOT/pkg/skills/alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_exclusions_also_match_parent_directories",
+      "id": "skill_filename",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "relative",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "dot_slash",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+./src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "dot_backslash",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+.\\\\src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "absolute",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+$ROOT/pkg/src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "basename_not_exact",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "wildcard_is_literal",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+src/*.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "trailing_slash_not_exact",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+src/a.ts/\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "only_first_prefix_removed",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+././src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_force_overrides_use_exact_parent_paths",
+      "id": "relative",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\",\"+skills/alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_force_overrides_use_exact_parent_paths",
+      "id": "absolute",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\",\"+$ROOT/pkg/skills/alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_force_overrides_use_exact_parent_paths",
+      "id": "basename_not_exact",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\",\"+alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_force_overrides_use_exact_parent_paths",
+      "id": "trailing_slash_not_exact",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\",\"+skills/alpha/\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_force_overrides_use_exact_parent_paths",
+      "id": "file_exact",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"skills\":[\"skills\",\"!SKILL.md\",\"+skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_exclusion_wins_independently_of_entry_order",
+      "id": "forward",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"!*.ts\",\"+src/a.ts\",\"-src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_exclusion_wins_independently_of_entry_order",
+      "id": "reversed",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"-src/a.ts\",\"+src/a.ts\",\"!*.ts\",\"src/z.ts\",\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_reinclusion_keeps_original_candidate_order",
+      "id": "source_order",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/z.ts\",\"src/a.ts\",\"src/z.ts\",\"!src/z.ts\",\"+src/z.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/z.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "override_only_manifests_never_discover_new_candidates",
+      "id": "plus_only",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"+src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "override_only_manifests_never_discover_new_candidates",
+      "id": "bang_only",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"!missing.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "empty_selected_fields_do_not_read_conventions",
+      "id": "field_null",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":null,\"skills\":[\"skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "empty_selected_fields_do_not_read_conventions",
+      "id": "field_false",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":false,\"skills\":[\"skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "empty_selected_fields_do_not_read_conventions",
+      "id": "field_zero",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":0,\"skills\":[\"skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "empty_selected_fields_do_not_read_conventions",
+      "id": "field_empty",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":\"\",\"skills\":[\"skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_string",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":\"src/a.ts\",\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_true",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":true,\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_number",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":1,\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_object",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":{},\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_bad_element",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[\"src/a.ts\",7],\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_null_element",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[\"src/a.ts\",null],\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_skills_nested_array",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[[\"src/a.ts\"]],\"prompts\":[\"prompts/p.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "failed_manifest_kind_contributes_no_partial_entries",
+      "id": "bad_extension_member",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\",null],\"skills\":[\"skills/alpha/SKILL.md\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "a_failed_local_source_does_not_stop_later_sources",
+      "id": "next_source",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[7]}}",
+      "sources": [
+        "$ROOT/pkg",
+        "$ROOT/after.data"
+      ],
+      "events": [],
+      "outside": [
+        "after.data"
+      ],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/after.data",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/after.data",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "installed_remote_manifest_errors_propagate",
+      "id": "remote_bad_skills",
+      "packageRoot": "$ROOT/agent/git/example.com/org/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[7]}}",
+      "sources": [
+        "git:https://example.com/org/pkg"
+      ],
+      "events": [],
+      "error": {
+        "kind": "InvalidData"
+      }
+    },
+    {
+      "test": "manifest_duplicates_use_the_last_selected_member",
+      "id": "duplicate_kind",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[7],\"extensions\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_duplicates_use_the_last_selected_member",
+      "id": "duplicate_manifest",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[7]},\"maestro\":{\"extensions\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "escaped_manifest_keys_select_the_same_field",
+      "id": "escaped_key",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestr\\u006f\":{\"extens\\u0069ons\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "unknown_manifest_fields_are_not_decoded_as_resources",
+      "id": "unknown_wrong",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"unused\":[null,{\"x\":7}]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "unknown_manifest_fields_are_not_decoded_as_resources",
+      "id": "unknown_deep",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"unused\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"maestro\":{\"extensions\":[\"src/a.ts\"],\"other\":1e400}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_excluded_aliases_are_not_deduplicated_early",
+      "id": "alias_exclusion",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/link.ts\",\"src/a.ts\",\"!src/link.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "alias": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_results_keep_enabled_metadata_for_each_kind",
+      "id": "all_kinds",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[\"skills/alpha/SKILL.md\"],\"prompts\":[\"prompts/p.md\"],\"themes\":[\"themes/t.json\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "missing_file",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "noManifest": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "missing_or_unreadable_manifests_use_conventions",
+      "id": "manifest_directory",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "manifestDirectory": true,
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/default.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/skills/beta/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "manifest_duplicates_use_the_last_selected_member",
+      "id": "overwritten_unrepresentable",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":1e400,\"extensions\":[\"src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "present_manifests_suppress_unlisted_conventions",
+      "id": "positional_array",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":[[\"src/a.ts\"]]}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_pattern_text_is_not_trimmed",
+      "id": "bom_pattern",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\",\"!﻿a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_pattern_text_is_not_trimmed",
+      "id": "nextline_pattern",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\",\"!a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "installed_remote_manifest_errors_propagate",
+      "id": "remote_valid",
+      "packageRoot": "$ROOT/agent/git/example.com/org/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"]}}",
+      "sources": [
+        "git:https://example.com/org/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/agent/git/example.com/org/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "git:https://example.com/org/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/agent/git/example.com/org/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_exclusions_keep_explicit_dependency_resources",
+      "id": "dependencies",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "extensions/local.ts",
+        "node_modules/dep/extensions/remote.ts",
+        "node_modules/dep/extensions/skip.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"extensions\",\"node_modules/dep/extensions\",\"!**/skip.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/extensions/local.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          },
+          {
+            "path": "$ROOT/pkg/node_modules/dep/extensions/remote.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "manifest_overrides_apply_to_prompts_and_themes",
+      "id": "other_kinds",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "prompts/p.md",
+        "prompts/q.md",
+        "themes/t.json",
+        "themes/q.json"
+      ],
+      "text": "{\"maestro\":{\"prompts\":[\"prompts\",\"!*.md\",\"+prompts/p.md\"],\"themes\":[\"themes\",\"!*.json\",\"+themes/t.json\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": [
+          {
+            "path": "$ROOT/pkg/themes/t.json",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "test": "late_manifest_failures_keep_earlier_local_resources",
+      "id": "bad_themes",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/z.ts",
+        "src/a.ts",
+        "src/no.md",
+        "src/.hidden.ts",
+        "src/é.ts",
+        "extensions/default.ts",
+        "skills/alpha/SKILL.md",
+        "skills/beta/SKILL.md",
+        "prompts/p.md",
+        "themes/t.json"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\"],\"skills\":[\"skills/alpha/SKILL.md\"],\"prompts\":[\"prompts/p.md\"],\"themes\":{}}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/prompts/p.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_includes_use_exact_paths_not_wildcards",
+      "id": "literal_star_candidate",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/*.ts",
+        "src/a.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"!*.ts\",\"+src/*.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/*.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_exclusion_wins_independently_of_entry_order",
+      "id": "literal_star_removal",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/*.ts",
+        "src/a.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src\",\"-src/*.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [
+          {
+            "path": "$ROOT/pkg/src/a.ts",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    {
+      "test": "skill_exclusions_also_match_parent_directories",
+      "id": "ordinary_markdown_control",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "skills/alpha/SKILL.md",
+        "skills/alpha/README.md"
+      ],
+      "text": "{\"maestro\":{\"prompts\":[\"skills/alpha/SKILL.md\",\"skills/alpha/README.md\",\"!alpha\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [
+          {
+            "path": "$ROOT/pkg/skills/alpha/README.md",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/pkg"
+            }
+          }
+        ],
+        "themes": []
+      }
+    },
+    {
+      "test": "force_exclusion_wins_independently_of_entry_order",
+      "id": "removal_before_restoration",
+      "packageRoot": "$ROOT/pkg",
+      "files": [
+        "src/a.ts"
+      ],
+      "text": "{\"maestro\":{\"extensions\":[\"src/a.ts\",\"!*.ts\",\"-src/a.ts\",\"+src/a.ts\"]}}",
+      "sources": [
+        "$ROOT/pkg"
+      ],
+      "events": [],
+      "expected": {
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    }
+  ]
+}

@@ -111,6 +111,26 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             _ => {}
         }
     }
+    /// Inserts each selected kind only after its complete candidate selection succeeds.
+    fn collect_manifest(
+        &self,
+        manifest: &super::manifest::Manifest,
+        path: &str,
+        metadata: &PathMetadata,
+        result: &mut Accumulator,
+    ) -> io::Result<()> {
+        let operations = self.operations.resource_operations();
+        for kind in ResourceType::ALL {
+            let entries = manifest.entries(kind.name())?;
+            let files =
+                super::manifest::collect_manifest_entries(&entries, path, kind, operations)?;
+            let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
+            for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
+                result.insert(kind, file.clone(), metadata);
+            }
+        }
+        Ok(())
+    }
     /// Collects conventional paths, retaining results produced by earlier kinds.
     fn collect_conventional(
         &self,
@@ -119,6 +139,12 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         result: &mut Accumulator,
     ) -> io::Result<bool> {
         let operations = self.operations.resource_operations();
+        if let Some(manifest) =
+            super::manifest::read_maestro_manifest_file(&join(&[path, "package.json"]), operations)
+        {
+            self.collect_manifest(&manifest, path, metadata, result)?;
+            return Ok(true);
+        }
         let mut found = false;
         for kind in ResourceType::ALL {
             let dir = join(&[path, kind.name()]);
