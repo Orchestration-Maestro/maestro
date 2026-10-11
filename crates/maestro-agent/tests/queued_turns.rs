@@ -150,3 +150,175 @@ fn capture_users(
         support::ready(Ok(stream))
     }));
 }
+
+/// Constructor policies reach independent queue drains in a public run.
+#[test]
+fn constructor_queue_modes_are_consumed_independently() {
+    support::run(mixed_modes(ModeChange::Constructor));
+}
+
+/// Replacing one policy after enqueue leaves the sibling drain unchanged.
+#[test]
+fn changing_one_queue_mode_after_enqueue_preserves_sibling_policy() {
+    support::run(mixed_modes(ModeChange::AfterEnqueue));
+}
+
+/// A policy changed inside a model turn governs later queue consumption.
+#[test]
+fn changing_one_queue_mode_during_turn_preserves_sibling_policy() {
+    support::run(mixed_modes(ModeChange::DuringTurn));
+}
+
+/// The public operation at which one independent policy is selected.
+#[derive(Clone, Copy, PartialEq)]
+enum ModeChange {
+    /// Both unequal policies are supplied at construction.
+    Constructor,
+    /// One policy is changed after entries have been queued.
+    AfterEnqueue,
+    /// Entries and one policy change occur inside the first model call.
+    DuringTurn,
+}
+
+/// Exercise each unequal combination with each setter independently.
+async fn mixed_modes(change: ModeChange) {
+    use maestro_agent::QueueMode::{All, OneAtATime};
+    for (steering, follow) in [(All, OneAtATime), (OneAtATime, All)] {
+        for change_steering in [true, false] {
+            if change == ModeChange::Constructor && !change_steering {
+                continue;
+            }
+            mixed_mode_run(steering, follow, change_steering, change).await;
+        }
+    }
+}
+
+/// Queue distinguishable repeated entries before selecting one policy.
+fn enqueue_mixed(agent: &maestro_agent::Agent) {
+    for text in ["zulu", "alpha", "zulu"] {
+        agent.steer(support::user(&format!("steer:{text}")));
+        agent.follow_up(support::user(&format!("follow:{text}")));
+    }
+}
+
+/// Choose only the requested policy; the sibling retains its constructor value.
+fn change_mode(agent: &maestro_agent::Agent, steering: bool, mode: maestro_agent::QueueMode) {
+    if steering {
+        agent.set_steering_mode(mode);
+    } else {
+        agent.set_follow_up_mode(mode);
+    }
+}
+
+/// Drive one run to settlement and assert ordered request boundaries.
+async fn mixed_mode_run(
+    steering: maestro_agent::QueueMode,
+    follow: maestro_agent::QueueMode,
+    change_steering: bool,
+    change: ModeChange,
+) {
+    use maestro_agent::{Agent, AgentOptions};
+    use std::sync::{Arc, Mutex};
+    let tasks = Arc::new(support::owned::Tasks::default());
+    let replace = change != ModeChange::Constructor;
+    let agent = Arc::new(Agent::new(AgentOptions {
+        spawn: Some(tasks.spawner()),
+        steering_mode: Some(if replace && change_steering {
+            follow
+        } else {
+            steering
+        }),
+        follow_up_mode: Some(if replace && !change_steering {
+            steering
+        } else {
+            follow
+        }),
+        ..Default::default()
+    }));
+    let selected = if change_steering { steering } else { follow };
+    if change != ModeChange::DuringTurn {
+        enqueue_mixed(&agent);
+        if replace {
+            change_mode(&agent, change_steering, selected);
+        }
+    }
+    let requests = Arc::new(Mutex::new(Vec::new()));
+    capture_mixed(&agent, &requests, selected, change_steering, change);
+    let observe = agent.prompt(support::owned::input("prompt"));
+    tasks.take().await;
+    observe.await.unwrap();
+    assert_mixed_boundaries(&requests.lock().unwrap(), steering, change);
+    assert!(!agent.has_queued_messages());
+}
+
+/// Observe requests and replace one policy inside the initial model turn.
+fn capture_mixed(
+    agent: &std::sync::Arc<maestro_agent::Agent>,
+    requests: &std::sync::Arc<std::sync::Mutex<Vec<Vec<String>>>>,
+    selected: maestro_agent::QueueMode,
+    change_steering: bool,
+    change: ModeChange,
+) {
+    use std::sync::Arc;
+    let captured = requests.clone();
+    let owner = Arc::downgrade(agent);
+    *agent.stream_fn.write().unwrap() = Some(Arc::new(move |_, context, _, _| {
+        let users = context
+            .messages
+            .iter()
+            .filter_map(|message| match message {
+                maestro_models::Message::User(message) => match &message.content {
+                    maestro_models::UserContent::Text(text) => Some(text.clone()),
+                    maestro_models::UserContent::Blocks(_) => None,
+                },
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let first = {
+            let mut requests = captured.lock().unwrap();
+            requests.push(users);
+            requests.len() == 1
+        };
+        if first && change == ModeChange::DuringTurn {
+            let agent = owner.upgrade().unwrap();
+            enqueue_mixed(&agent);
+            change_mode(&agent, change_steering, selected);
+        }
+        let stream = maestro_models::AssistantMessageEventStream::new();
+        stream.end(Some(support::assistant("done")));
+        support::ready(Ok(stream))
+    }));
+}
+
+/// Compare ordered cumulative request contents, including duplicate entries.
+fn assert_mixed_boundaries(
+    requests: &[Vec<String>],
+    steering: maestro_agent::QueueMode,
+    change: ModeChange,
+) {
+    use maestro_agent::QueueMode;
+    let all = [
+        "steer:zulu",
+        "steer:alpha",
+        "steer:zulu",
+        "follow:zulu",
+        "follow:alpha",
+        "follow:zulu",
+    ];
+    let boundaries = if steering == QueueMode::All {
+        [3, 4, 5, 6]
+    } else {
+        [1, 2, 3, 6]
+    };
+    let mut expected = Vec::new();
+    if change == ModeChange::DuringTurn {
+        expected.push(Vec::new());
+    }
+    expected.extend(boundaries.map(|end| {
+        all[..end]
+            .iter()
+            .map(|v| (*v).to_owned())
+            .collect::<Vec<_>>()
+    }));
+    assert_eq!(requests, expected);
+}

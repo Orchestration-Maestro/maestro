@@ -17,7 +17,8 @@ negation. `/` always separates components; within a component, a backslash escap
 the next scalar and a final backslash remains literal.
 Brace alternatives and sequences use the
 [brace-expansion library](https://docs.rs/brace-expansion/0.1.1/brace_expansion/).
-Repeated separators collapse; eligible pattern `component/..` pairs reduce,
+Repeated separators collapse except for the extra leading empty component in Windows
+UNC roots; eligible pattern `component/..` pairs reduce,
 without normalizing the input path. Windows input backslashes are separators;
 pattern backslashes remain escapes. Windows drive letters compare without case,
 including extended drive prefixes; other components remain case-sensitive.

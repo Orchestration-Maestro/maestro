@@ -872,3 +872,9 @@ fn cleanup_sink(
         ready(Ok(()))
     })
 }
+
+/// Notifications can be excluded from requests while remaining in history.
+#[test]
+fn custom_notification_is_filtered_before_model_request() {
+    run(support::corpus::filtered_notification());
+}

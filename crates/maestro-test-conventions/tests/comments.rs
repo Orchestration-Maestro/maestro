@@ -192,3 +192,22 @@ fn nested_block_comments_report_the_inner_line_in_non_src_files() {
     }
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+#[test]
+fn hyphenated_planning_token_is_rejected_only_in_comments() {
+    rejects(&[
+        "// ticket-owned",
+        "/* TICKET-OWNED */",
+        "/// Ticket-Owned",
+        "//! ticket-owned",
+    ]);
+    let workspace = Workspace::new();
+    workspace.member("models", "maestro-models", "");
+    workspace.list(&[("maestro-models", "core")]);
+    std::fs::write(
+        workspace.root.join("crates/models/src/lib.rs"),
+        "const TEXT: &str = \"ticket-owned\";\n// ticket-ownedness\n",
+    )
+    .unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}

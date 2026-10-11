@@ -930,3 +930,68 @@ fn compare_common_options(simple: &StreamOptions, open: &StreamOptions) {
         open.fetch.as_ref().unwrap()
     ));
 }
+
+/// Filtering a notification changes the request without deleting retained history.
+///
+/// # Panics
+/// Panics if request projection or retained history differs.
+pub async fn filtered_notification() {
+    let input = Arc::new(Input::from(BTreeMap::from([(
+        "id".into(),
+        json!("filter"),
+    )])));
+    let mut config = config(&input, Arc::new(Mutex::new(Observations::default())));
+    config.convert_to_llm = Arc::new(|messages| {
+        let projected = messages
+            .read()
+            .unwrap()
+            .iter()
+            .filter_map(|message| match message {
+                AgentMessage::Custom(_) => None,
+                message => Some(convert(message)),
+            })
+            .collect();
+        ready(Ok(projected))
+    });
+    let history = Arc::new(RwLock::new(vec![
+        entry("before"),
+        notice("notification"),
+        entry("after"),
+    ]));
+    let context = AgentContext {
+        system_prompt: String::new(),
+        messages: history.clone(),
+        tools: None,
+    };
+    let options = AgentLoopOptions {
+        signal: None,
+        stream_fn: Some(Arc::new(|_, context, _, _| {
+            let projected: Vec<_> = context
+                .messages
+                .iter()
+                .map(|message| {
+                    let Message::User(message) = message else {
+                        panic!("expected user")
+                    };
+                    message.content.clone()
+                })
+                .collect();
+            assert_eq!(
+                projected,
+                [
+                    UserContent::Text("before".into()),
+                    UserContent::Text("after".into())
+                ]
+            );
+            let stream = AssistantMessageEventStream::new();
+            stream.end(Some(assistant("done")));
+            ready(Ok(stream))
+        })),
+    };
+    run_agent_loop_continue(context, &config, Arc::new(|_| ready(Ok(()))), options)
+        .await
+        .unwrap();
+    let retained = history.read().unwrap();
+    assert!(matches!(&retained[1], AgentMessage::Custom(_)));
+    assert_eq!(retained.len(), 4);
+}

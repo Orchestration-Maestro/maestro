@@ -1,4 +1,5 @@
-//! Component style records whose color callbacks read the published theme when invoked.
+//! Component styles whose coloring callbacks read the published theme when invoked.
+//! Strikethrough and unselected settings labels do not read the theme.
 use super::code::{colored_rows, highlight_rows};
 use super::styles::paint;
 use super::{LiveTheme, SyntaxHighlighter, Theme, ThemeColor};
@@ -17,7 +18,8 @@ fn shared(live: LiveTheme, key: ThemeColor) -> Rc<dyn Fn(&str) -> String> {
     Rc::new(foreground(live, key))
 }
 
-/// Markdown styles; decorations apply when `styles_enabled`, after a theme lookup.
+/// Markdown styles; bold, italic and underline require a published theme and
+/// `styles_enabled`. Strikethrough checks only `styles_enabled`.
 ///
 /// Code blocks use `highlighter`; an engine failure colors their rows as code.
 #[must_use]
