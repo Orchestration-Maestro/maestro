@@ -89,6 +89,10 @@ the first authored path and provenance after per-kind canonical deduplication.
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).
 
+Known limit: non-ASCII ignore-rule matching (case equivalence beyond lowercase,
+character-based `?` and bracket classes) is tracked in
+[#557](https://github.com/Orchestration-Maestro/maestro/issues/557).
+
 Package-root resource manifests and expansion are tracked in [#452](https://github.com/Orchestration-Maestro/maestro/issues/452),
 missing/pinned-npm/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
 and configured/automatic merging and filters in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).
