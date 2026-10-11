@@ -69,7 +69,7 @@ async fn all_routes(driver: &mut impl Driver) -> Result<(), String> {
     .await?;
     let routes = routes();
     for (method, reply) in routes {
-        let mut input = json!({"retained":true,"method":method,"args":["./a/../雪\n","other Ω"],"options":{"id":"","parentSession":"relative"},"message":{"role":"user","content":"z","timestamp":3},"compaction":{"summary":"s","firstKeptEntryId":"cut","tokensBefore":1.25}});
+        let mut input = json!({"retained":true,"method":method,"fromId":"branch target 雪","args":["./a/../雪\n","other Ω"],"options":{"id":"","parentSession":"relative"},"message":{"role":"user","content":"z","timestamp":3},"compaction":{"summary":"s","firstKeptEntryId":"cut","tokensBefore":1.25}});
         if method == "appendCustomMessageEntry" {
             input["message"] = json!({"customType":"kind","content":"text","display":false});
         }
@@ -81,10 +81,20 @@ async fn all_routes(driver: &mut impl Driver) -> Result<(), String> {
                 error.map_or_else(|| reply.clone(), |e| json!({"error":e})),
                 "route {method}"
             );
-            assert_eq!(
-                lines.iter().filter(|l| l.starts_with("writer ")).count(),
-                usize::from(error.is_none())
-            );
+            let calls: Vec<Value> = lines
+                .iter()
+                .filter_map(|line| line.strip_prefix("writer "))
+                .map(|call| {
+                    let (method, args) = call.split_once(' ').unwrap();
+                    json!([method, serde_json::from_str::<Value>(args).unwrap()])
+                })
+                .collect();
+            let expected = if error.is_none() {
+                json!([route_call(method)])
+            } else {
+                json!([])
+            };
+            super::session_corpus::same(&json!(calls), &expected);
         }
     }
     for method in ["newSession", "createBranchedSession"] {
@@ -249,6 +259,40 @@ fn routes() -> [(&'static str, Value); 17] {
     ]
 }
 
+/// Literal operation and operand expectations independent of adapter dispatch.
+fn route_call(method: &str) -> Value {
+    match method {
+        "setSessionFile" => json!(["set_session_file", ["./a/../雪\n"]]),
+        "newSession" => {
+            json!(["new_session",[{"present":true,"value":{"id":"","parentSession":"relative"}}]])
+        }
+        "isPersisted" => json!(["is_persisted", []]),
+        "getChildren" => json!(["get_children", ["./a/../雪\n"]]),
+        "buildSessionContext" => json!(["build_session_context", []]),
+        "appendMessage" => {
+            json!(["append_message",[{"present":true,"value":{"role":"user","content":"z","timestamp":3}}]])
+        }
+        "appendThinkingLevelChange" => json!(["append_thinking_level_change", ["./a/../雪\n"]]),
+        "appendModelChange" => json!(["append_model_change", ["./a/../雪\n", "other Ω"]]),
+        "appendCompaction" => {
+            json!(["append_compaction",[{"present":true,"value":{"summary":"s","firstKeptEntryId":"cut","tokensBefore":1.25}},null]])
+        }
+        "appendCustomEntry" => json!(["append_custom_entry",["./a/../雪\n",{"present":false}]]),
+        "appendSessionInfo" => json!(["append_session_info", ["./a/../雪\n"]]),
+        "appendCustomMessageEntry" => {
+            json!(["append_custom_message_entry",[{"present":true,"value":{"customType":"kind","content":"text","display":false}}]])
+        }
+        "appendLabelChange" => json!(["append_label_change", ["./a/../雪\n", null]]),
+        "branch" => json!(["branch", ["./a/../雪\n"]]),
+        "resetLeaf" => json!(["reset_leaf", []]),
+        "branchWithSummary" => {
+            json!(["branch_with_summary",["branch target 雪","./a/../雪\n",{"present":false},null]])
+        }
+        "createBranchedSession" => json!(["create_branched_session", ["./a/../雪\n"]]),
+        _ => panic!("missing route expectation: {method}"),
+    }
+}
+
 /// One closed host outcome proves admission and release independently.
 async fn ownership_case(
     driver: &mut impl Driver,
@@ -312,7 +356,7 @@ async fn ownership_case(
 
 /// Distinct inputs to the overlapping operations.
 pub(super) fn pair_input(target: &str) -> String {
-    json!({"method":"appendSessionInfo","args":[target],"parent":target,"continuation":true,"hold":true}).to_string()
+    json!({"method":"appendSessionInfo","args":[target],"parent":"unwritten","continuation":true,"hold":true}).to_string()
 }
 /// Named barriers close the observation set before either continuation may run.
 pub(super) fn pair_phase(lines: &[String], second_completed: bool) {
@@ -331,6 +375,29 @@ pub(super) fn pair_phase(lines: &[String], second_completed: bool) {
         assert!(continued.is_empty());
         assert!(completed.is_empty());
     }
+}
+
+/// Both returned operations expose their own written name, in completion order.
+pub(super) fn pair_completed(lines: &[String]) {
+    let continued: Vec<_> = lines
+        .iter()
+        .filter(|line| line.starts_with("entry setup-continuation "))
+        .map(String::as_str)
+        .collect();
+    assert_eq!(
+        continued,
+        [
+            "entry setup-continuation \"B\"",
+            "entry setup-continuation \"A\""
+        ]
+    );
+    assert_eq!(
+        lines
+            .iter()
+            .filter(|line| line.starts_with("entry setup-outcome "))
+            .count(),
+        2
+    );
 }
 
 /// Each distinct closure and future capture drops exactly once.
@@ -619,16 +686,19 @@ async fn command_options(driver: &mut impl Driver) -> Result<(), String> {
 /// One pending setup writes and later reads its own captured target.
 async fn bound_target(driver: &mut impl Driver, target: &str) -> Result<(), String> {
     let start = driver.transcript().len();
-    driver.command_held("setup", &json!({"method":"appendSessionInfo","args":[target],"parent":target,"continuation":true,"hold":true,"retain":true,"control":{"value":"entry"}}).to_string()).await?;
+    driver.command_held("setup", &json!({"method":"appendSessionInfo","args":[target],"parent":"unwritten","continuation":true,"hold":true,"retain":true,"control":{"value":"entry"}}).to_string()).await?;
     let lines = driver.transcript()[start..].to_vec();
     let pending = lines
         .iter()
         .position(|l| l.starts_with("command suspended after wait-for-idle"))
         .unwrap();
-    let continued = lines
+    let expected = format!("entry setup-continuation {}", json!(target));
+    let continuations: Vec<_> = lines
         .iter()
-        .position(|l| l == &format!("entry setup-continuation {}", json!(target)))
-        .unwrap();
+        .filter(|line| line.starts_with("entry setup-continuation "))
+        .collect();
+    assert_eq!(continuations, [&expected]);
+    let continued = lines.iter().position(|line| line == &expected).unwrap();
     let done = lines
         .iter()
         .position(|l| l.starts_with("entry setup-outcome "))

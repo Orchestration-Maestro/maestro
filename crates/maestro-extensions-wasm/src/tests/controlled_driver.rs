@@ -304,6 +304,7 @@ impl Driver for ControlledDriver {
         .await;
         a?;
         b?;
+        super::setup_sessions::pair_completed(&self.host.observed().transcript[start..]);
         Ok(())
     }
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {

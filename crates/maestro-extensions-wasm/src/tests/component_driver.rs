@@ -521,6 +521,9 @@ impl Driver for ComponentDriver {
                 .await;
                 a.map_err(|e| e.to_string())??;
                 b.map_err(|e| e.to_string())??;
+                accessor.with(|mut a| {
+                    super::setup_sessions::pair_completed(&a.get().observed.transcript[start..]);
+                });
                 Ok(())
             })
             .await
