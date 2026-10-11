@@ -75,7 +75,7 @@ impl<C: CustomAgentMessages> Subscription<C> {
         let removed = self.agent.upgrade().and_then(|agent| {
             let mut listeners = lock(&agent.listeners);
             let key = listeners.entries.iter().find_map(|(key, value)| {
-                std::ptr::eq(Arc::as_ptr(value), self.listener.as_ptr()).then_some(*key)
+                std::ptr::addr_eq(Arc::as_ptr(value), self.listener.as_ptr()).then_some(*key)
             });
             key.and_then(|key| listeners.entries.remove(&key))
         });

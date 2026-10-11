@@ -207,11 +207,9 @@ async fn execute(input: Arc<Input>) -> Value {
     let events = Arc::new(Mutex::new(Vec::new()));
     let requests = Arc::new(Mutex::new(Vec::new()));
     let tools = input.tools.clone().unwrap_or_else(|| {
-        if input
-            .fail
-            .as_deref()
-            .is_some_and(|phase| phase.starts_with("tool_execution"))
-        {
+        if input.fail.as_deref().is_some_and(|phase| {
+            phase.starts_with("tool_execution") || phase.starts_with("toolResult_")
+        }) {
             vec!["call".into()]
         } else {
             vec![]

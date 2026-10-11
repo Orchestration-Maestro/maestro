@@ -16920,6 +16920,1505 @@
     "input": {
       "kind": "text",
       "text": "failure",
+      "fail": "toolResult_start"
+    },
+    "expected": {
+      "events": [
+        {
+          "event": {
+            "type": "agent_start"
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "turn_start"
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            }
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_end",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_end",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "tool_execution_start",
+            "toolCallId": "call",
+            "toolName": "echo",
+            "args": {}
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": [
+              "call"
+            ]
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "tool_execution_end",
+            "toolCallId": "call",
+            "toolName": "echo",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "terminate": true
+            },
+            "isError": false
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "isError": false
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "isError": false
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "agent_end",
+            "messages": [
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": ""
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "captured",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "error",
+                "errorMessage": "original\nerror"
+              }
+            ]
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": ""
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "captured",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "error",
+                "errorMessage": "original\nerror"
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": [],
+            "errorMessage": "original\nerror"
+          },
+          "signalSame": true
+        }
+      ],
+      "requests": [
+        {
+          "model": {
+            "id": "captured",
+            "name": "Fixture",
+            "api": "fixture",
+            "provider": "fixture",
+            "baseUrl": "https://example.invalid",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 100,
+            "maxTokens": 20
+          },
+          "context": {
+            "systemPrompt": "",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "name": "echo",
+                "description": "Echo",
+                "parameters": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            ]
+          },
+          "options": {
+            "transport": "auto",
+            "toolExecution": "parallel"
+          },
+          "signalSame": true
+        }
+      ],
+      "final": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "failure"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "echo",
+                "arguments": {}
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "toolUse",
+            "timestamp": 2
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "captured",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "errorMessage": "original\nerror"
+          }
+        ],
+        "isStreaming": false,
+        "pendingToolCalls": [],
+        "errorMessage": "original\nerror"
+      },
+      "signalAbsent": true
+    }
+  },
+  {
+    "input": {
+      "kind": "text",
+      "text": "failure",
+      "fail": "toolResult_end"
+    },
+    "expected": {
+      "events": [
+        {
+          "event": {
+            "type": "agent_start"
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "turn_start"
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            }
+          },
+          "state": {
+            "messages": [],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_end",
+            "message": {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_end",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "echo",
+                  "arguments": {}
+                }
+              ],
+              "api": "fixture",
+              "provider": "fixture",
+              "model": "fixture",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "toolUse",
+              "timestamp": 2
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "tool_execution_start",
+            "toolCallId": "call",
+            "toolName": "echo",
+            "args": {}
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": [
+              "call"
+            ]
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "tool_execution_end",
+            "toolCallId": "call",
+            "toolName": "echo",
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "terminate": true
+            },
+            "isError": false
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_start",
+            "message": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "isError": false
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              }
+            ],
+            "isStreaming": true,
+            "streamingMessage": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "isError": false
+            },
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "message_end",
+            "message": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "echo",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "result"
+                }
+              ],
+              "details": {
+                "result": true
+              },
+              "isError": false
+            }
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              },
+              {
+                "role": "toolResult",
+                "toolCallId": "call",
+                "toolName": "echo",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "result"
+                  }
+                ],
+                "details": {
+                  "result": true
+                },
+                "isError": false
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": []
+          },
+          "signalSame": true
+        },
+        {
+          "event": {
+            "type": "agent_end",
+            "messages": [
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": ""
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "captured",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "error",
+                "errorMessage": "original\nerror"
+              }
+            ]
+          },
+          "state": {
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call",
+                    "name": "echo",
+                    "arguments": {}
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "fixture",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "toolUse",
+                "timestamp": 2
+              },
+              {
+                "role": "toolResult",
+                "toolCallId": "call",
+                "toolName": "echo",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "result"
+                  }
+                ],
+                "details": {
+                  "result": true
+                },
+                "isError": false
+              },
+              {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": ""
+                  }
+                ],
+                "api": "fixture",
+                "provider": "fixture",
+                "model": "captured",
+                "usage": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "totalTokens": 0,
+                  "cost": {
+                    "input": 0,
+                    "output": 0,
+                    "cacheRead": 0,
+                    "cacheWrite": 0,
+                    "total": 0
+                  }
+                },
+                "stopReason": "error",
+                "errorMessage": "original\nerror"
+              }
+            ],
+            "isStreaming": true,
+            "pendingToolCalls": [],
+            "errorMessage": "original\nerror"
+          },
+          "signalSame": true
+        }
+      ],
+      "requests": [
+        {
+          "model": {
+            "id": "captured",
+            "name": "Fixture",
+            "api": "fixture",
+            "provider": "fixture",
+            "baseUrl": "https://example.invalid",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 100,
+            "maxTokens": 20
+          },
+          "context": {
+            "systemPrompt": "",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "failure"
+                  }
+                ]
+              }
+            ],
+            "tools": [
+              {
+                "name": "echo",
+                "description": "Echo",
+                "parameters": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            ]
+          },
+          "options": {
+            "transport": "auto",
+            "toolExecution": "parallel"
+          },
+          "signalSame": true
+        }
+      ],
+      "final": {
+        "messages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "failure"
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "echo",
+                "arguments": {}
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "fixture",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "toolUse",
+            "timestamp": 2
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call",
+            "toolName": "echo",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "result": true
+            },
+            "isError": false
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "fixture",
+            "provider": "fixture",
+            "model": "captured",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "errorMessage": "original\nerror"
+          }
+        ],
+        "isStreaming": false,
+        "pendingToolCalls": [],
+        "errorMessage": "original\nerror"
+      },
+      "signalAbsent": true
+    }
+  },
+  {
+    "input": {
+      "kind": "text",
+      "text": "failure",
       "fail": "stream",
       "secondFailure": true
     },

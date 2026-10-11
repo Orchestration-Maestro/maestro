@@ -18,7 +18,9 @@ Run admission copies outer history/tool collections while retaining entry handle
 and the selected model handle. Replacing the live model slot does not retarget
 admitted work; synthetic failure records use the current live model.
 
-`subscribe` deduplicates callback identity. Dispatch reduces state before awaiting
+`subscribe` deduplicates callback allocation identity, including independently
+coerced aliases. Either alias's removal handle removes that callback.
+Dispatch reduces state before awaiting
 live listeners in registration order; additions and removals can affect an ongoing
 walk. Listeners share a mutable event handle. `Subscription::unsubscribe` removes
 the callback identity explicitly; dropping the subscription does not remove it.

@@ -82,6 +82,7 @@ async fn prompt_observation_drop_does_not_cancel_case() {
     agent.wait_for_idle().await;
     agent.wait_for_idle().await;
     task.await.unwrap();
+    assert_dropped_run_history(&agent);
 }
 /// Exercise the public owned-run boundary with controlled settlement.
 #[test]
@@ -470,6 +471,7 @@ fn native_prompt_and_continuation_futures_are_send() {
         .unwrap()
         .unwrap();
         assert_eq!(prompt.len(), 2);
+        native_tool_progress(false).await;
         let continuation = tokio::spawn(async {
             maestro_agent::run_agent_loop_continue(
                 support::context(),
@@ -483,6 +485,7 @@ fn native_prompt_and_continuation_futures_are_send() {
         .unwrap()
         .unwrap();
         assert_eq!(continuation.len(), 1);
+        native_tool_progress(true).await;
         let AgentMessage::Assistant(response) = &continuation[0] else {
             panic!("missing continuation")
         };
@@ -612,10 +615,12 @@ async fn normalize_text_case(text: &str, count: usize) {
             mime_type: "image/png".into(),
         })
         .collect();
+    let before = maestro_models::timestamp_now();
     let run = agent.prompt(PromptInput::Text {
         text: text.into(),
         images: images.clone(),
     });
+    let after = maestro_models::timestamp_now();
     tasks.take().await;
     run.await.unwrap();
     let state = agent.state().read().unwrap();
@@ -624,6 +629,7 @@ async fn normalize_text_case(text: &str, count: usize) {
         panic!("expected user")
     };
     let user = user.read().unwrap();
+    assert!(user.timestamp >= before && user.timestamp <= after);
     let maestro_models::UserContent::Blocks(blocks) = &user.content else {
         panic!("expected blocks")
     };
@@ -770,5 +776,114 @@ fn assert_winning_history(agent: &Agent) {
     };
     assert!(
         matches!(&user.read().unwrap().content, maestro_models::UserContent::Blocks(blocks) if matches!(&blocks[0], maestro_models::UserBlock::Text(text) if text.text == "winner"))
+    );
+}
+
+/// Both spawned entry points await actual tool progress and publish the final artifact.
+async fn native_tool_progress(continuation: bool) {
+    let events = Arc::new(Mutex::new(Vec::new()));
+    let seen = events.clone();
+    let messages = tokio::spawn(async move {
+        let context = support::with_execute(Arc::new(|_, _, _, update| {
+            update.unwrap()(maestro_agent::AgentToolResult {
+                content: vec![maestro_models::UserBlock::Text(
+                    maestro_models::TextContent {
+                        text: "native partial".into(),
+                        text_signature: None,
+                    },
+                )],
+                details: serde_json::json!({"phase":"progress"}),
+                terminate: None,
+            });
+            support::ready(Ok(maestro_agent::AgentToolResult {
+                content: vec![maestro_models::UserBlock::Text(
+                    maestro_models::TextContent {
+                        text: "native final".into(),
+                        text_signature: None,
+                    },
+                )],
+                details: serde_json::json!({"phase":"final"}),
+                terminate: Some(true),
+            }))
+        }));
+        let listener: maestro_agent::AgentEventSink = Arc::new(move |event| {
+            let seen = seen.clone();
+            Box::pin(async move {
+                seen.lock().unwrap().push(event);
+                Ok(())
+            })
+        });
+        let options = support::responses(vec![support::tool_call()]);
+        let config = support::config();
+        if continuation {
+            maestro_agent::run_agent_loop_continue(context, &config, listener, options).await
+        } else {
+            maestro_agent::run_agent_loop(
+                vec![support::user("native tool")],
+                context,
+                &config,
+                listener,
+                options,
+            )
+            .await
+        }
+    })
+    .await
+    .unwrap()
+    .unwrap();
+    assert_native_artifacts(&events, &messages);
+}
+
+/// The same dropped-observer run retains both its prompt and completed response.
+fn assert_dropped_run_history(agent: &Agent) {
+    let state = agent.state().read().unwrap();
+    let history = state.messages().read().unwrap();
+    assert_eq!(history.len(), 2);
+    assert!(
+        matches!(&history[0], AgentMessage::User(user) if matches!(&user.read().unwrap().content, maestro_models::UserContent::Blocks(blocks) if matches!(&blocks[0], maestro_models::UserBlock::Text(text) if text.text == "hello")))
+    );
+    assert!(
+        matches!(&history[1], AgentMessage::Assistant(response) if matches!(&response.read().unwrap().content[0], maestro_models::AssistantContent::Text(text) if text.text == "done"))
+    );
+}
+
+/// Joined native execution publishes progress before its final result and history artifact.
+fn assert_native_artifacts(events: &Mutex<Vec<AgentEvent>>, messages: &[AgentMessage]) {
+    let events = events.lock().unwrap();
+    let artifacts: Vec<_> = events
+        .iter()
+        .filter_map(|event| match event {
+            AgentEvent::ToolExecutionUpdate { partial_result, .. } => {
+                Some(("update", partial_result))
+            }
+            AgentEvent::ToolExecutionEnd {
+                result, is_error, ..
+            } => {
+                assert!(!is_error);
+                Some(("end", result))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(artifacts.len(), 2);
+    assert_eq!(artifacts[0].0, "update");
+    assert_eq!(
+        artifacts[0].1.details,
+        serde_json::json!({"phase":"progress"})
+    );
+    assert!(
+        matches!(&artifacts[0].1.content[0], maestro_models::UserBlock::Text(text) if text.text == "native partial")
+    );
+    assert_eq!(artifacts[1].0, "end");
+    assert_eq!(artifacts[1].1.details, serde_json::json!({"phase":"final"}));
+    assert!(
+        matches!(&artifacts[1].1.content[0], maestro_models::UserBlock::Text(text) if text.text == "native final")
+    );
+    assert_native_history(messages);
+}
+/// The completed transcript carries the final artifact, not the partial update.
+fn assert_native_history(messages: &[AgentMessage]) {
+    assert!(
+        matches!(messages.last().unwrap(), AgentMessage::ToolResult(result) if matches!(&result.read().unwrap().content[0], maestro_models::UserBlock::Text(text) if text.text == "native final"))
     );
 }

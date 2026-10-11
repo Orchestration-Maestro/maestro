@@ -17,14 +17,14 @@ async fn subscriptions_are_inert_deduplicated_and_explicitly_removed_case() {
     let (agent, tasks) = agent();
     let log = Arc::new(Mutex::new(Vec::new()));
     let seen = Arc::clone(&log);
-    let a: AgentListener = Arc::new(move |event, _| {
+    let a = Arc::new(move |event: Arc<std::sync::RwLock<AgentEvent>>, _| {
         if matches!(&*event.read().unwrap(), AgentEvent::AgentStart) {
             seen.lock().unwrap().push("a");
         }
         support::ready(Ok(()))
     });
-    let first = agent.subscribe(Arc::clone(&a));
-    let second = agent.subscribe(a);
+    let first = agent.subscribe(first_alias::erase(Arc::clone(&a)));
+    let second = agent.subscribe(second_alias::erase(a));
     let seen = Arc::clone(&log);
     drop(agent.subscribe(Arc::new(move |event, _| {
         if matches!(&*event.read().unwrap(), AgentEvent::AgentStart) {
@@ -39,7 +39,6 @@ async fn subscriptions_are_inert_deduplicated_and_explicitly_removed_case() {
     run.await.unwrap();
     assert_eq!(*log.lock().unwrap(), ["a", "b"]);
     second.unsubscribe();
-    first.unsubscribe();
     second.unsubscribe();
     *agent.stream_fn.write().unwrap() =
         support::responses(vec![support::assistant("again")]).stream_fn;
@@ -47,6 +46,7 @@ async fn subscriptions_are_inert_deduplicated_and_explicitly_removed_case() {
     tasks.take().await;
     run.await.unwrap();
     assert_eq!(*log.lock().unwrap(), ["a", "b", "b"]);
+    first.unsubscribe();
 }
 /// Dispatch reads live membership after each awaited callback.
 #[test]
@@ -253,5 +253,44 @@ impl Drop for ReentrantDrop {
             .subscribe(Arc::new(|_, _| support::ready(Ok(()))))
             .unsubscribe();
         self.effect.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+/// Independently coerce a concrete callback at one registration site.
+mod first_alias {
+    use super::*;
+    /// Preserve the allocation while erasing its concrete callback type.
+    #[inline(never)]
+    pub fn erase<F>(callback: Arc<F>) -> AgentListener
+    where
+        F: Fn(
+                Arc<std::sync::RwLock<AgentEvent>>,
+                maestro_models::Cancellation,
+            )
+                -> maestro_models::BoxFuture<Result<(), maestro_models::DiagnosticErrorInfo>>
+            + Send
+            + Sync
+            + 'static,
+    {
+        callback
+    }
+}
+/// Independently coerce the same callback at another registration site.
+mod second_alias {
+    use super::*;
+    /// Preserve the allocation while erasing its concrete callback type.
+    #[inline(never)]
+    pub fn erase<F>(callback: Arc<F>) -> AgentListener
+    where
+        F: Fn(
+                Arc<std::sync::RwLock<AgentEvent>>,
+                maestro_models::Cancellation,
+            )
+                -> maestro_models::BoxFuture<Result<(), maestro_models::DiagnosticErrorInfo>>
+            + Send
+            + Sync
+            + 'static,
+    {
+        callback
     }
 }

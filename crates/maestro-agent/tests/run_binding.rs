@@ -130,8 +130,16 @@ fn captured_entries_survive_replacement_until_settlement() {
             unreachable!()
         };
         let weak = Arc::downgrade(value);
+        let inventory =
+            support::with_execute(Arc::new(|_, _, _, _| support::ready(Ok(support::result()))))
+                .tools
+                .unwrap();
+        let tool = inventory.write().unwrap().pop().unwrap();
+        let weak_tool = Arc::downgrade(&tool);
+        agent.state().write().unwrap().set_tools(vec![tool.clone()]);
         agent.state().write().unwrap().set_messages(vec![history]);
         *agent.stream_fn.write().unwrap() = Some(Arc::new(|_, context, _, _| {
+            assert_eq!(context.tools.as_ref().unwrap()[0].name, "retained edit");
             assert!(
                 matches!(&context.messages[0], maestro_models::Message::User(value) if matches!(&value.content, maestro_models::UserContent::Text(text) if text == "retained"))
             );
@@ -141,10 +149,17 @@ fn captured_entries_survive_replacement_until_settlement() {
         }));
         let run = agent.prompt(support::owned::input("new"));
         agent.state().write().unwrap().set_messages(vec![]);
+        agent.state().write().unwrap().set_tools(vec![]);
+        tool.write().unwrap().definition.name = "retained edit".into();
+        assert!(Arc::ptr_eq(&weak_tool.upgrade().unwrap(), &tool));
+        drop(tool);
+        drop(inventory);
+        assert!(weak_tool.upgrade().is_some());
         assert!(weak.upgrade().is_some());
         tasks.take().await;
         run.await.unwrap();
         assert!(weak.upgrade().is_none());
+        assert!(weak_tool.upgrade().is_none());
         assert!(agent.signal().is_none());
     });
 }
