@@ -1,6 +1,6 @@
 //! Conventional resource collection over replaceable filesystem observations.
-use crate::ignore::{Ignore, TestResult};
 use maestro_path::join;
+use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
 use maestro_resources::skills::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::{io, path::Path};
 /// The conventional resource directories.
@@ -58,11 +58,13 @@ fn collect_files(
         return result;
     }
     let mut local = Ignore::new();
-    local.load(dir, operations);
-    rules.stack.push((dir.to_owned(), local));
+    load_ignore(&mut local, dir, operations);
+    rules.push(relative_path(root, dir), local);
     let entries = operations.read_dir(Path::new(dir)).unwrap_or_default();
-    if matches!(kind, ResourceType::Skills) && admitted_skill(dir, &entries, operations, rules) {
-        rules.stack.pop();
+    if matches!(kind, ResourceType::Skills)
+        && admitted_skill(dir, root, &entries, operations, rules)
+    {
+        rules.pop();
         return vec![join(&[dir, "SKILL.md"])];
     }
     for entry in entries {
@@ -74,7 +76,10 @@ fn collect_files(
         let Some(file_type) = entry_type(&entry, &path, operations) else {
             continue;
         };
-        if rules.ignored(&path, file_type == ResourceFileType::Directory) {
+        if rules.ignored(
+            &relative_path(root, &path),
+            file_type == ResourceFileType::Directory,
+        ) {
             continue;
         }
         if file_type == ResourceFileType::Directory {
@@ -89,7 +94,7 @@ fn collect_files(
             result.push(path);
         }
     }
-    rules.stack.pop();
+    rules.pop();
     result
 }
 impl ResourceType {
@@ -158,43 +163,19 @@ fn relative_path(root: &str, path: &str) -> String {
         path
     }
 }
-/// Matchers scoped to the directories on the active traversal branch.
-#[derive(Default)]
-struct ScopedIgnoreRules {
-    /// Ancestor matchers followed by the current directory's matcher.
-    stack: Vec<(String, Ignore)>,
-}
-impl ScopedIgnoreRules {
-    /// The deepest matching rule decides; pruned parents are never traversed.
-    fn ignored(&self, path: &str, directory: bool) -> bool {
-        self.stack
-            .iter()
-            .rev()
-            .find_map(
-                |(dir, rules)| match rules.test(&relative_path(dir, path), directory) {
-                    TestResult::Unmatched => None,
-                    TestResult::Ignored => Some(true),
-                    TestResult::Unignored => Some(false),
-                },
-            )
-            .unwrap_or(false)
-    }
-}
-impl Ignore {
-    /// Reads the three conventional ignore files in declaration order.
-    fn load(&mut self, dir: &str, operations: &dyn ResourceOperations) {
-        for name in [".gitignore", ".ignore", ".fdignore"] {
-            let path = join(&[dir, name]);
-            let Ok(text) = operations.read_file(Path::new(&path)) else {
-                continue;
-            };
-            for line in text
-                .split('\n')
-                .map(|line| line.strip_suffix('\r').unwrap_or(line))
-                .filter(|line| !line.trim_matches(crate::whitespace).starts_with('#'))
-            {
-                self.add(line);
-            }
+/// Reads the three conventional ignore files in declaration order.
+fn load_ignore(rules: &mut Ignore, dir: &str, operations: &dyn ResourceOperations) {
+    for name in [".gitignore", ".ignore", ".fdignore"] {
+        let path = join(&[dir, name]);
+        let Ok(text) = operations.read_file(Path::new(&path)) else {
+            continue;
+        };
+        for line in text
+            .split('\n')
+            .map(|line| line.strip_suffix('\r').unwrap_or(line))
+            .filter(|line| !line.trim_matches(crate::whitespace).starts_with('#'))
+        {
+            rules.add(line);
         }
     }
 }
@@ -229,6 +210,7 @@ fn collect_child(
 /// Determines whether a file-like skill entry overrides directory scanning.
 fn admitted_skill(
     dir: &str,
+    root: &str,
     entries: &[ResourceEntry],
     operations: &dyn ResourceOperations,
     rules: &ScopedIgnoreRules,
@@ -237,7 +219,7 @@ fn admitted_skill(
         let path = join(&[dir, "SKILL.md"]);
         entry.name == "SKILL.md"
             && entry_type(entry, &path, operations) == Some(ResourceFileType::File)
-            && !rules.ignored(&path, false)
+            && !rules.ignored(&relative_path(root, &path), false)
     })
 }
 /// Resolves literal manifest operands, consulting ambient directories only on demand.

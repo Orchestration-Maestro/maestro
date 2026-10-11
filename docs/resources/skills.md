@@ -148,13 +148,12 @@ directory the adapter cannot read is never replaced by an empty one: a resolutio
 that needs it fails with that error's kind, which a scan turns into the end of the
 affected directory, and one that the operands or a drive directory anchor does
 not need it.
-Each scan shares one case-insensitive ignore matcher. Its candidates and rule
-prefixes are paths relative to the scan directory, so a rule matches the same
-paths whatever the scan directory is called.
-Rules are appended in
-`.gitignore`, `.ignore`, `.fdignore` order with directory prefixes and compiled
-when rules change. Later rules may reopen files, but child negation cannot reopen
-an excluded parent. Escaped leading exclamation marks stay literal. Invalid
-patterns and ignore read/compile failures follow the quiet partial-result route.
+Each entered directory contributes `.gitignore`, `.ignore`, `.fdignore` in that
+order to the shared [`maestro-pattern`](../libraries/package-pattern.md) rule owner.
+Directory identities remain literal; rules see candidates relative to their own
+directory. The deepest matching scope decides, and leaving a directory removes
+its scope. Ignored directories are pruned before child rules are loaded.
+Escaped leading exclamation marks stay literal. Invalid rules are inert and
+ignore-file read failures are quiet.
 Directory read and broken-link metadata failures are quiet; instruction reads,
 metadata parsing and explicit path failures return path-bearing warnings.

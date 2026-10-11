@@ -1,8 +1,8 @@
 //! Ordered directory traversal of instruction entry files.
 use super::operations::ProcessContext;
 use super::{LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations, load_file};
-use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use maestro_path::{Cwd, SEP, dirname, join};
+use maestro_path::{Cwd, SEP, join};
+use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
 use std::{io, path::Path};
 
 /// Shared scan-local observations and ignore-rule state.
@@ -17,10 +17,8 @@ struct Discovery<'a> {
     source: &'a str,
     /// Replaceable filesystem adapter.
     operations: &'a dyn ResourceOperations,
-    /// Ordered rules compiled only when new rules arrive.
-    builder: GitignoreBuilder,
-    /// Most recently successful compiled matcher.
-    matcher: Gitignore,
+    /// Rules on the active directory branch.
+    rules: ScopedIgnoreRules,
 }
 /// Scan nested directories, preferring each directory's entry file.
 ///
@@ -37,17 +35,13 @@ pub(super) fn scan(
     source: &str,
     operations: &dyn ResourceOperations,
 ) -> LoadSkillsResult {
-    // Candidates are root-relative, so a root of `.` keeps the matcher from stripping a prefix.
-    let mut builder = GitignoreBuilder::new(".");
-    let _ = builder.case_insensitive(true);
     let mut scan = Discovery {
         root: dir,
         base,
         ctx,
         source,
         operations,
-        builder,
-        matcher: Gitignore::empty(),
+        rules: ScopedIgnoreRules::default(),
     };
     // The root's own relative path is empty without any resolution, so its rules cannot fail.
     scan.visit(dir, true).unwrap_or_default()
@@ -64,6 +58,7 @@ impl Discovery<'_> {
             self.add_rules(dir)?;
             // A failure below ends this directory with what was gathered.
             let _ = self.read_entries(dir, include_root_files, &mut result);
+            self.rules.pop();
         }
         Ok(result)
     }
@@ -134,27 +129,15 @@ impl Discovery<'_> {
         };
         Ok(maestro_path::relative(&from, &to, &shared_base))
     }
-    /// Check excluded ancestors before a candidate's own negations.
+    /// Applies directory-local rules after traversal has admitted the parent.
     fn ignored(&self, path: &str, is_dir: bool) -> io::Result<bool> {
-        let candidate = self.relative(path)?;
-        let mut parent = dirname(&candidate);
-        while parent != "." {
-            if self.matcher.matched(&parent, true).is_ignore() {
-                return Ok(true);
-            }
-            parent = dirname(&parent);
-        }
-        Ok(self.matcher.matched(&candidate, is_dir).is_ignore())
+        let candidate = self.relative(path)?.replace(SEP, "/");
+        Ok(self.rules.ignored(&candidate, is_dir))
     }
-    /// Append authored directory-prefixed rules in ignore-file order.
+    /// Compiles one directory's authored rules in ignore-file order.
     fn add_rules(&mut self, dir: &str) -> io::Result<()> {
-        let prefix = self.relative(dir)?.replace(SEP, "/");
-        let prefix = if prefix.is_empty() {
-            prefix
-        } else {
-            format!("{prefix}/")
-        };
-        let mut changed = false;
+        let scope = self.relative(dir)?.replace(SEP, "/");
+        let mut rules = Ignore::new();
         for filename in [".gitignore", ".ignore", ".fdignore"] {
             let path = join(&[dir, filename]);
             if !self.operations.exists(Path::new(&path)) {
@@ -163,29 +146,20 @@ impl Discovery<'_> {
             let Ok(text) = self.operations.read_file(Path::new(&path)) else {
                 continue;
             };
-            for pattern in text
+            for line in text
                 .split('\n')
                 .map(|s| s.strip_suffix('\r').unwrap_or(s))
-                .filter_map(|line| prefix_pattern(line, &prefix))
+                .filter(|line| {
+                    let trimmed = line.trim_matches(crate::frontmatter::text_whitespace);
+                    !trimmed.is_empty() && !trimmed.starts_with('#')
+                })
             {
-                changed |= self.builder.add_line(None, &pattern).is_ok();
+                rules.add(line);
             }
         }
-        if changed && let Ok(matcher) = self.builder.build() {
-            self.matcher = matcher;
-        }
+        self.rules.push(scope, rules);
         Ok(())
     }
-}
-/// Prefix an authored ignore pattern without turning escaped punctuation into operators.
-fn prefix_pattern(line: &str, prefix: &str) -> Option<String> {
-    let trimmed = line.trim_matches(crate::frontmatter::text_whitespace);
-    if trimmed.is_empty() || trimmed.starts_with('#') {
-        return None;
-    }
-    let (negation, pattern) = line.strip_prefix('!').map_or(("", line), |p| ("!", p));
-    let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
-    Some(format!("{negation}{prefix}{pattern}"))
 }
 /// Follow symlink metadata without turning broken links into diagnostics.
 fn observed_type(

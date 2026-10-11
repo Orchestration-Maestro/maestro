@@ -1,6 +1,6 @@
 //! Character-class behavior through package matching.
 
-use maestro_packages::minimatch;
+use maestro_pattern::minimatch;
 use std::collections::BTreeMap;
 
 /// Replays the group's recorded public-operation results.

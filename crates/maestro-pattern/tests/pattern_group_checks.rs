@@ -1,6 +1,6 @@
 //! Group behavior through package matching.
 
-use maestro_packages::minimatch;
+use maestro_pattern::minimatch;
 use std::collections::BTreeMap;
 
 /// Replays exact tuples through the public operation.

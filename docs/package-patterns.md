@@ -1,6 +1,8 @@
 # Package file patterns
 
-`maestro_packages::minimatch(path, pattern)` evaluates a file pattern without
+`maestro-packages` re-exports the same operation and `PatternError` type.
+
+`maestro_pattern::minimatch(path, pattern)` evaluates a file pattern without
 filesystem access.
 
 Matching is case-sensitive outside native Windows drive identity. `*` matches

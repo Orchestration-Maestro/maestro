@@ -6,8 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-brace-expansion = "=0.1.1"
-regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
+maestro-pattern = { path = "../maestro-pattern" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-resources = { path = "../maestro-resources" }
 maestro-path = { path = "../maestro-path" }

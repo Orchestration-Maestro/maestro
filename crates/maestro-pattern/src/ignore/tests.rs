@@ -58,6 +58,6 @@ fn terminal_directory_globstars_select_base_and_readmission() {
     }
     let mut rules = Ignore::new();
     rules.add("a/**");
-    assert!(rules.test("a", true) == TestResult::Unmatched);
-    assert!(rules.test("a/sub", true) == TestResult::Ignored);
+    assert_eq!(rules.test("a", true), TestResult::Unmatched);
+    assert_eq!(rules.test("a/sub", true), TestResult::Ignored);
 }

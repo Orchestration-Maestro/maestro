@@ -1,7 +1,7 @@
 # Package discovery libraries
 
-`maestro-packages` owns character-based ignore rules over its existing scalar
-pattern matcher. The ignore-rule source is MIT; its complete attribution is in
+`maestro-packages` uses the character-based ignore rules owned by
+`maestro-pattern`. The ignore-rule source is MIT; its complete attribution is in
 [third-party notices](../../THIRD-PARTY-NOTICES.md#package-ignore-rules).
 No additional dependency or feature is required.
 
