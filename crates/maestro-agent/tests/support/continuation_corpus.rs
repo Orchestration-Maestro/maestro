@@ -1,4 +1,4 @@
-//! Replay ticket-owned observations through public conversation operations.
+//! Replay recorded observations through public conversation operations.
 use super::{assistant, owned, ready};
 use maestro_agent::{
     Agent, AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AgentTool,

@@ -4,7 +4,7 @@
 entries, and independent steering and follow-up input queues.
 The [awaited conversation operations](loop.md) accept turn controls and tool-batch
 execution preferences.
-`Agent::prompt` and `Agent::r#continue` synchronously reserve a run and submits its work through
+`Agent::prompt` and `Agent::r#continue` synchronously reserve a run and submit its work through
 `AgentOptions::spawn`. The caller supplies a facility that retains and drives the
 submitted future independently of the returned completion observer. Construction
 is inert; prompting without that facility returns
@@ -31,7 +31,7 @@ Caller-created strong captures of the Agent require explicit deregistration.
 Continuation rejects busy runs first, then empty history. An assistant tail
 requires queued input: steering takes precedence over follow-ups. Only a steering
 restart skips the first steering poll. Other tails continue without replaying
-old message events. Continuing without a task facility returns
+old message events. An otherwise admissible continuation without a task facility returns
 `Agent requires a task spawner before continuing.`
 
 Construction accepts conversion, transformation, credential, payload/response and

@@ -43,48 +43,45 @@ fn captured_budget_edits_reach_each_request() {
 
 #[test]
 fn construction_defers_callbacks_and_installs_defaults() {
+    let tasks = Arc::new(support::owned::Tasks::default());
     let calls = Arc::new(Mutex::new(Vec::new()));
     let convert_calls = calls.clone();
     let transform_calls = calls.clone();
     let key_calls = calls.clone();
-    let payload_calls = calls.clone();
-    let response_calls = calls.clone();
-    let before_calls = calls.clone();
-    let after_calls = calls.clone();
     let agent: Agent = Agent::new(AgentOptions {
-        convert_to_llm: Some(Arc::new(move |_| {
+        convert_to_llm: Some(Arc::new(move |history| {
             convert_calls.lock().unwrap().push("convert");
-            support::ready(Ok(vec![]))
+            assert_eq!(history.read().unwrap().len(), 2);
+            let maestro_agent::AgentMessage::User(last) = &history.read().unwrap()[1] else {
+                panic!("expected transformed user");
+            };
+            assert_eq!(
+                last.read().unwrap().content,
+                maestro_models::UserContent::Text("transformed".into())
+            );
+            support::ready(Ok(vec![maestro_models::Message::User(
+                maestro_models::UserMessage {
+                    content: maestro_models::UserContent::Text("converted".into()),
+                    timestamp: 3.0,
+                },
+            )]))
         })),
         transform_context: Some(Arc::new(move |history, _| {
             transform_calls.lock().unwrap().push("transform");
+            history.write().unwrap().push(support::user("transformed"));
             support::ready(Ok(history))
         })),
         get_api_key: Some(Arc::new(move |_| {
             key_calls.lock().unwrap().push("key");
-            support::ready(Ok(None))
+            support::ready(Ok(Some("constructor-key".into())))
         })),
-        on_payload: Some(Arc::new(move |payload, _| {
-            payload_calls.lock().unwrap().push("payload");
-            support::ready(Ok(payload))
-        })),
-        on_response: Some(Arc::new(move |_, _| {
-            response_calls.lock().unwrap().push("response");
-            support::ready(Ok(()))
-        })),
-        before_tool_call: Some(Arc::new(move |_, _| {
-            before_calls.lock().unwrap().push("before");
-            support::ready(Ok(None))
-        })),
-        after_tool_call: Some(Arc::new(move |_, _| {
-            after_calls.lock().unwrap().push("after");
-            support::ready(Ok(None))
-        })),
+        spawn: Some(tasks.spawner()),
+        stream_fn: Some(Arc::new(constructor_dispatch)),
         session_id: Some(String::new()),
         transport: Some(maestro_models::Transport::Sse),
         max_retry_delay_ms: Some(-0.5),
         tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
-        ..Default::default()
+        ..constructor_hooks(&calls)
     });
     assert!(calls.lock().unwrap().is_empty());
     assert_eq!(agent.session_id.read().unwrap().as_deref(), Some(""));
@@ -93,6 +90,140 @@ fn construction_defers_callbacks_and_installs_defaults() {
         "inert_construction",
         None,
         serde_json::json!({"calls":*calls.lock().unwrap(),"transport":*defaults.transport.read().unwrap(),"execution":if *defaults.tool_execution.read().unwrap()==maestro_agent::ToolExecutionMode::Parallel {"parallel"}else{"sequential"},"sessionAbsent":defaults.session_id.read().unwrap().is_none(),"budgetsAbsent":defaults.thinking_budgets.read().unwrap().is_none(),"retryAbsent":defaults.max_retry_delay_ms.read().unwrap().is_none(),"streaming":agent.state().read().unwrap().is_streaming()}),
+    );
+    support::run(drive_constructor(agent, tasks, calls));
+}
+
+/// Configure payload, response and tool callbacks before constructing their owner.
+fn constructor_hooks(calls: &Arc<Mutex<Vec<&'static str>>>) -> AgentOptions {
+    let payload_calls = calls.clone();
+    let response_calls = calls.clone();
+    let before_calls = calls.clone();
+    let after_calls = calls.clone();
+    AgentOptions {
+        on_payload: Some(Arc::new(move |mut payload, _| {
+            payload_calls.lock().unwrap().push("payload");
+            payload["constructor"] = serde_json::json!(true);
+            support::ready(Ok(payload))
+        })),
+        on_response: Some(Arc::new(move |response, _| {
+            assert_eq!(response.status.to_bits(), 201.0_f64.to_bits());
+            response_calls.lock().unwrap().push("response");
+            support::ready(Ok(()))
+        })),
+        before_tool_call: Some(Arc::new(move |context, _| {
+            context.args["constructor"] = serde_json::json!("before");
+            before_calls.lock().unwrap().push("before");
+            support::ready(Ok(None))
+        })),
+        after_tool_call: Some(Arc::new(move |context, _| {
+            assert_eq!(context.result.details, serde_json::json!("executed"));
+            after_calls.lock().unwrap().push("after");
+            support::ready(Ok(Some(maestro_agent::AfterToolCallResult {
+                details: Some(serde_json::json!("after")),
+                terminate: Some(true),
+                ..Default::default()
+            })))
+        })),
+        ..Default::default()
+    }
+}
+
+/// Observe constructor-bound conversion and forwarded provider callbacks at dispatch.
+fn constructor_dispatch(
+    model: maestro_models::Model,
+    context: maestro_models::Context,
+    options: maestro_models::SimpleStreamOptions,
+    _: maestro_models::ProviderStreamOptions,
+) -> maestro_models::BoxFuture<
+    Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>,
+> {
+    Box::pin(async move {
+        assert_eq!(context.messages.len(), 1);
+        let maestro_models::Message::User(user) = &context.messages[0] else {
+            panic!("expected converted user");
+        };
+        assert_eq!(
+            user.content,
+            maestro_models::UserContent::Text("converted".into())
+        );
+        assert_eq!(options.common.api_key.as_deref(), Some("constructor-key"));
+        let model = Arc::new(model);
+        let payload =
+            options.common.on_payload.unwrap()(serde_json::json!({"original":true}), model.clone())
+                .await?;
+        assert_eq!(
+            payload,
+            serde_json::json!({"original":true,"constructor":true})
+        );
+        options.common.on_response.unwrap()(
+            maestro_models::ProviderResponse {
+                status: 201.0,
+                headers: std::collections::BTreeMap::default(),
+            },
+            model,
+        )
+        .await?;
+        let stream = maestro_models::AssistantMessageEventStream::new();
+        stream.end(Some(support::tool_call()));
+        Ok(stream)
+    })
+}
+
+/// Join the same constructor-configured run through tool execution and final reduction.
+async fn drive_constructor(
+    agent: Agent,
+    tasks: Arc<support::owned::Tasks>,
+    calls: Arc<Mutex<Vec<&'static str>>>,
+) {
+    let executed = calls.clone();
+    let tools = support::with_execute(Arc::new(move |_, args, _, _| {
+        assert_eq!(args, serde_json::json!({"constructor":"before"}));
+        executed.lock().unwrap().push("execute");
+        support::ready(Ok(maestro_agent::AgentToolResult {
+            details: serde_json::json!("executed"),
+            terminate: None,
+            content: vec![],
+        }))
+    }))
+    .tools
+    .unwrap();
+    agent
+        .state()
+        .write()
+        .unwrap()
+        .set_tools(tools.read().unwrap().clone());
+    let agent = Arc::new(agent);
+    let observe = agent.prompt(support::owned::input("original"));
+    tasks.take().await;
+    observe.await.unwrap();
+    assert_eq!(
+        *calls.lock().unwrap(),
+        [
+            "transform",
+            "convert",
+            "key",
+            "payload",
+            "response",
+            "before",
+            "execute",
+            "after"
+        ]
+    );
+    let messages = agent
+        .state()
+        .read()
+        .unwrap()
+        .messages()
+        .read()
+        .unwrap()
+        .clone();
+    let maestro_agent::AgentMessage::ToolResult(result) = messages.last().unwrap() else {
+        panic!("expected final tool result");
+    };
+    assert_eq!(
+        result.read().unwrap().details,
+        Some(serde_json::json!("after"))
     );
 }
 
