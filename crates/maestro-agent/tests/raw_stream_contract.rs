@@ -500,13 +500,24 @@ fn maestro_raw_continue_accepts_tool_result_tail() {
         convert(entries)
     });
     let tasks = Arc::new(owned::Tasks::default());
-    let stream = start(
-        true,
-        context,
-        config,
-        responses(vec![assistant("done")]),
-        &tasks,
-    );
+    let options = AgentLoopOptions {
+        signal: None,
+        stream_fn: Some(Arc::new(|_, request, _, _| {
+            let maestro_models::Message::ToolResult(value) = &request.messages[0] else {
+                panic!("tool result missing from request")
+            };
+            assert_eq!(value.tool_call_id, "tail");
+            assert_eq!(value.tool_name, "echo");
+            let maestro_models::UserBlock::Text(value) = &value.content[0] else {
+                panic!("tail payload missing")
+            };
+            assert_eq!(value.text, "tail payload");
+            let stream = AssistantMessageEventStream::new();
+            stream.end(Some(assistant("done")));
+            ready(Ok(stream))
+        })),
+    };
+    let stream = start(true, context, config, options, &tasks);
     run(tasks.take());
     let recorded = drain(&stream);
     assert_eq!(

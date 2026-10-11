@@ -444,7 +444,7 @@ fn maestro_stop_hook_prevents_later_queue_poll() {
         );
         assert_eq!(
             roles(&call.context.messages.read().unwrap()),
-            ["user", "user", "assistant", "toolResult"]
+            ["user", "assistant", "toolResult"]
         );
         ready(Ok(true))
     }));
@@ -452,9 +452,11 @@ fn maestro_stop_hook_prevents_later_queue_poll() {
         "echo",
         Arc::new(|_, _, _, _| ready(Ok(artifact("hello", false)))),
     );
+    let context = tools(vec![echo]);
+    context.messages.write().unwrap().clear();
     let recorded = observe(
         vec![user("Hello")],
-        tools(vec![echo]),
+        context,
         config,
         responses(vec![calls(&["echo"], &serde_json::json!({}))]),
     );
