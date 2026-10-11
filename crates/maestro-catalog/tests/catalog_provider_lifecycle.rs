@@ -381,11 +381,14 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
             maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
         );
     }
-    let mut registry = ModelRegistry::in_memory(auth).unwrap();
+    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let mut aliases = Vec::new();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
     for id in ["p", "q", "r"] {
         let config = dynamic::config(&[id]);
+        config.write().unwrap().api_key = Some(id.into());
+        config.write().unwrap().headers = Some([("X".into(), id.into())].into());
         let fail = fail.clone();
         let calls = calls.clone();
         config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
@@ -402,6 +405,7 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
             }),
         }));
         registry.register_provider(id, config).unwrap();
+        aliases.push(registry.find(id, id).unwrap());
     }
     calls.lock().unwrap().clear();
     fail.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -420,8 +424,28 @@ fn refresh_stops_after_first_replay_failure_with_partial_publication() {
     assert!(maestro_models::get_oauth_provider("p").is_some());
     assert!(maestro_models::get_oauth_provider("q").is_some());
     assert!(maestro_models::get_oauth_provider("r").is_none());
+    for id in ["p", "q", "r"] {
+        auth.remove(id);
+    }
+    assert_partial_request_sources(&registry, &aliases);
 }
 
+/// Resolve retained descriptors after the replay stopped, independently of stored tokens.
+fn assert_partial_request_sources(
+    registry: &ModelRegistry,
+    aliases: &[Arc<RwLock<maestro_models::Model>>],
+) {
+    for (model, value) in aliases.iter().zip(["p", "q", "r"]) {
+        let headers = [("X", value)];
+        request_support::success(
+            request_support::run(
+                registry.get_api_key_and_headers(model, &request_support::Operations::default()),
+            ),
+            if value == "r" { None } else { Some(value) },
+            if value == "r" { &[] } else { &headers },
+        );
+    }
+}
 #[test]
 fn known_removal_stays_removed_when_survivor_replay_fails() {
     if dynamic::isolated("known_removal_stays_removed_when_survivor_replay_fails") {
@@ -708,4 +732,42 @@ fn assert_callable(restored: &maestro_models::ApiProvider, model: maestro_models
                 .is_some_and(|message| message.contains("aborted"))
         );
     });
+}
+
+#[test]
+fn failed_same_handle_registration_preserves_prior_alias_edits() {
+    if dynamic::isolated("failed_same_handle_registration_preserves_prior_alias_edits") {
+        return;
+    }
+    let auth = support::auth();
+    auth.set(
+        "p",
+        maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+    );
+    let mut registry = ModelRegistry::in_memory(auth).unwrap();
+    let retained = dynamic::config(&["m"]);
+    registry.register_provider("p", retained.clone()).unwrap();
+    {
+        let mut config = retained.write().unwrap();
+        config.name = Some("alias edit".into());
+        config.oauth = Some(Arc::new(dynamic::OAuth {
+            calls: None,
+            id: "ignored",
+            name: "Failing",
+            transform: Arc::new(|_| Err(dynamic::diagnostic("alias failure").into())),
+        }));
+    }
+    assert_eq!(
+        registry
+            .register_provider("p", retained.clone())
+            .unwrap_err()
+            .to_string(),
+        "alias failure"
+    );
+    assert_eq!(registry.get_provider_display_name("p"), "alias edit");
+    assert_eq!(registry.refresh().unwrap_err().to_string(), "alias failure");
+    retained.write().unwrap().oauth = None;
+    registry.refresh().unwrap();
+    assert_eq!(registry.get_provider_display_name("p"), "alias edit");
+    assert!(registry.find("p", "m").is_some());
 }

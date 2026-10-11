@@ -216,7 +216,7 @@ fn response_provider_delegates_and_borrows_access_key() {
         ];
         let expected = models.clone();
         let pointer = models.as_ptr();
-        let models = provider.modify_models(models, &rotated).unwrap();
+        assert!(provider.modify_models(&models, &rotated).is_none());
         assert_eq!(models, expected);
         assert_eq!(models.as_ptr(), pointer);
         drop(occupied);

@@ -107,11 +107,11 @@ impl maestro_models::OAuthProviderInterface for OAuth {
     }
     fn modify_models(
         &self,
-        models: Vec<maestro_models::Model>,
+        models: &[maestro_models::Model],
         _: &maestro_models::OAuthCredentials,
-    ) -> Result<Vec<maestro_models::Model>, maestro_models::OAuthError> {
+    ) -> Option<Result<Vec<maestro_models::Model>, maestro_models::OAuthError>> {
         self.record("transform");
-        (self.transform)(models)
+        Some((self.transform)(models.to_vec()))
     }
 }
 /// Complete controlled credentials.

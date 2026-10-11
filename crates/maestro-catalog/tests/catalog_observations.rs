@@ -188,10 +188,10 @@ impl OAuthProviderInterface for Modifier {
     }
     fn modify_models(
         &self,
-        models: Vec<Model>,
+        models: &[Model],
         _: &OAuthCredentials,
-    ) -> Result<Vec<Model>, OAuthError> {
-        (self.action)(models)
+    ) -> Option<Result<Vec<Model>, OAuthError>> {
+        Some((self.action)(models.to_vec()))
     }
 }
 /// Registration cleanup even when an assertion fails.

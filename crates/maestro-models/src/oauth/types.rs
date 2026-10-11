@@ -224,15 +224,15 @@ pub trait OAuthProviderInterface {
     /// # Errors
     /// Implementations may reject credentials.
     fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError>;
-    /// Transform model descriptors; the default returns the original moved vector.
+    /// Optionally transform model descriptors; absent by default.
     ///
     /// # Errors
     /// Implementations may return transformation failures.
     fn modify_models(
         &self,
-        models: Vec<crate::Model>,
+        _models: &[crate::Model],
         _credentials: &OAuthCredentials,
-    ) -> Result<Vec<crate::Model>, OAuthError> {
-        Ok(models)
+    ) -> Option<Result<Vec<crate::Model>, OAuthError>> {
+        None
     }
 }

@@ -244,7 +244,8 @@ fn subscription_provider_delegates_without_model_changes() {
             models[0].name = "first custom".into();
             models[1].name = "second custom".into();
             let allocation = models.as_ptr();
-            let result = provider.modify_models(models, &credentials).unwrap();
+            assert!(provider.modify_models(&models, &credentials).is_none());
+            let result = models;
             assert_eq!(result.as_ptr(), allocation);
             assert_eq!(result[0].name, "first custom");
             assert_eq!(result[1].name, "second custom");

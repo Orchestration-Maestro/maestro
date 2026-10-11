@@ -142,9 +142,9 @@ impl maestro_models::OAuthProviderInterface for RegisteredOAuth {
     }
     fn modify_models(
         &self,
-        models: Vec<maestro_models::Model>,
+        models: &[maestro_models::Model],
         credentials: &maestro_models::OAuthCredentials,
-    ) -> Result<Vec<maestro_models::Model>, OAuthError> {
+    ) -> Option<Result<Vec<maestro_models::Model>, OAuthError>> {
         self.inner.modify_models(models, credentials)
     }
 }

@@ -132,6 +132,15 @@ fn dynamic_definitions_keep_values_without_file_defaults() {
         }
         registry.register_provider("p", config).unwrap();
     }
+    let config = dynamic::config(&["named-id"]);
+    config.write().unwrap().models.as_mut().unwrap()[0]
+        .name
+        .clear();
+    registry.register_provider("q", config).unwrap();
+    assert_eq!(
+        registry.find("q", "named-id").unwrap().read().unwrap().name,
+        ""
+    );
     let value = registry.find("p", "").unwrap();
     let value = value.read().unwrap();
     assert_eq!(value.name, "");
@@ -334,7 +343,10 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
         calls: Some(calls.clone()),
         id: "ignored",
         name: "Custom",
-        transform: Arc::new(Ok),
+        transform: Arc::new(|mut models| {
+            models[0].name = "delegated transformation".into();
+            Ok(models)
+        }),
     });
     registry
         .register_provider(
@@ -357,11 +369,16 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
     assert!(installed.get_api_key(&tokens).unwrap().eq(&tokens.access));
     let refreshed = request_support::run(installed.refresh_token(tokens, None)).unwrap();
     assert_eq!(refreshed.expires.to_bits(), (42.0_f64).to_bits());
-    assert!(
-        installed
-            .modify_models(vec![], &refreshed)
-            .unwrap()
-            .is_empty()
+    let models = vec![maestro_models::get_model("anthropic", "claude-sonnet-4-5").unwrap()];
+    let transformed = installed
+        .modify_models(&models, &refreshed)
+        .unwrap()
+        .unwrap();
+    assert_eq!(transformed[0].name, "delegated transformation");
+    assert_ne!(models[0].name, transformed[0].name);
+    assert_eq!(
+        *calls.lock().unwrap(),
+        ["login", "key", "refresh", "transform"]
     );
 }
 #[test]
@@ -631,6 +648,7 @@ fn per_model_metadata_replaces_provider_defaults_without_compat_merging() {
         )
         .unwrap(),
     ));
+    config.write().unwrap().api = None;
     config.write().unwrap().models = Some(vec![expected.clone()]);
     registry.register_provider("p", config).unwrap();
     let model = registry.find("p", "m").unwrap();
@@ -826,4 +844,53 @@ fn set_credential_kind(auth: &maestro_credentials::AuthStorage, kind: usize) {
             maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
         );
     }
+}
+
+#[test]
+fn absent_oauth_modifier_preserves_unrelated_descriptor_alias() {
+    if dynamic::isolated("absent_oauth_modifier_preserves_unrelated_descriptor_alias") {
+        return;
+    }
+    let auth = support::auth();
+    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    registry
+        .register_provider("q", dynamic::config(&["other"]))
+        .unwrap();
+    let unrelated = registry.find("q", "other").unwrap();
+    auth.set(
+        "p",
+        maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+    );
+    let config = dynamic::config(&["m"]);
+    config.write().unwrap().oauth = Some(maestro_models::get_oauth_provider("anthropic").unwrap());
+    registry.register_provider("p", config).unwrap();
+    assert!(Arc::ptr_eq(
+        &unrelated,
+        &registry.find("q", "other").unwrap()
+    ));
+    unrelated.write().unwrap().name = "surviving alias".into();
+    assert_eq!(
+        registry.find("q", "other").unwrap().read().unwrap().name,
+        "surviving alias"
+    );
+}
+
+#[test]
+fn nonempty_models_accept_oauth_without_configured_key() {
+    if dynamic::isolated("nonempty_models_accept_oauth_without_configured_key") {
+        return;
+    }
+    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let config = dynamic::config(&["m"]);
+    config.write().unwrap().api_key = None;
+    config.write().unwrap().oauth = Some(dynamic::oauth("OAuth only"));
+    registry.register_provider("p", config).unwrap();
+    assert_eq!(
+        registry.find("p", "m").unwrap().read().unwrap().api,
+        "openai-completions"
+    );
+    assert_eq!(
+        maestro_models::get_oauth_provider("p").unwrap().name(),
+        "OAuth only"
+    );
 }

@@ -144,9 +144,9 @@ Neither login nor refresh persists credentials.
 `uses_callback_server`, `login`, `refresh_token`, `get_api_key` and
 `modify_models`. It reports `anthropic`, `Anthropic (Claude Pro/Max)` and
 `Some(true)`, delegates login/refresh, and borrows `credentials.access` as its
-API key. The default model modifier returns the original moved vector without
-changing its contents, order or allocation. Other providers may override it
-with a fallible transformation.
+API key. `modify_models` takes a borrowed descriptor slice and returns `None`
+when no modifier is supplied. A supplied modifier returns `Some` with a fallible,
+owned replacement list.
 
 `OAuthError` retains boxed `DiagnosticErrorInfo`, optional supplied/native
 `errno` and an optional wrapped `cause`. Display prints its message;
@@ -198,7 +198,7 @@ extraction failures retain their own messages. Refresh writes no token-failure
 messages to stderr.
 
 `OPENAI_CODEX_OAUTH_PROVIDER` delegates these operations with the default
-originator, borrows the access key and inherits the unchanged model modifier.
+originator, borrows the access key and supplies no model modifier.
 
 ### Controlled refresh example
 

@@ -110,14 +110,17 @@ impl ModelRegistry {
         oauth: &OAuthProviderHandle,
     ) -> Result<(), OAuthError> {
         if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider) {
-            let models = self
+            let models: Vec<_> = self
                 .models
                 .read()
                 .unwrap_or_else(PoisonError::into_inner)
                 .iter()
                 .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
                 .collect();
-            let transformed = oauth.modify_models(models, &credentials)?;
+            let Some(transformed) = oauth.modify_models(&models, &credentials) else {
+                return Ok(());
+            };
+            let transformed = transformed?;
             self.models = Arc::new(RwLock::new(
                 transformed
                     .into_iter()

@@ -75,9 +75,11 @@ headers are present, or the auth-header flag is true.
 OAuth registration forces the installed ID to the registration name. Raw and
 simple protocol calls forward to the supplied callback under `provider:<name>`;
 see [invocation records](records.md) for option carriers. Incoming OAuth model
-transforms run after nonempty replacement when stored OAuth credentials exist.
+transforms run after nonempty replacement when a modifier and stored OAuth
+credentials exist. Without a modifier, unrelated descriptor handles stay shared.
 A transform failure leaves installed handlers, request sources and the replacement
-list visible, but does not retain the failed configuration.
+list visible, but the failed call does not upsert the incoming configuration.
+Prior edits through an already-retained configuration alias remain visible.
 
 `unregister_provider` does nothing for unknown names. A known name is removed
 before refresh restores the underlying catalog and replays surviving providers;

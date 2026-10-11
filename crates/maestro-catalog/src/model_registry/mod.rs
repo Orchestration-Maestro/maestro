@@ -157,8 +157,10 @@ impl ModelRegistry {
             Err(error) => self.load_error = Some(error),
         }
         for provider in get_oauth_providers() {
-            if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id()) {
-                models = provider.modify_models(models, &credentials)?;
+            if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id())
+                && let Some(transformed) = provider.modify_models(&models, &credentials)
+            {
+                models = transformed?;
             }
         }
         self.models = Arc::new(RwLock::new(
