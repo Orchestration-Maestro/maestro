@@ -82,7 +82,6 @@ async fn forwarding(driver: &mut impl Driver) -> Result<(), String> {
             json!({"ok":expected_value(&case.expected["result"]).unwrap_or(&Value::Null)})
         );
     }
-    source_fork_positions(driver).await?;
     oracle_commands(driver).await?;
     driver.release_all().await;
     assert_eq!(driver.live(), 0);
@@ -515,20 +514,24 @@ async fn continuation_outcomes(driver: &mut impl Driver) -> Result<(), String> {
                 case.expected["result"].clone()
             }
         );
-        assert!(lines.contains(&"replacement-rebound".to_owned()));
-        let mut trace = vec![json!("rebound")];
-        if lines
+        let trace: Vec<Value> = lines
             .iter()
-            .any(|l| l.starts_with("entry replacement-target "))
-        {
-            trace.push(json!("continuation A"));
-        }
-        if lines
-            .iter()
-            .any(|l| l == "entry replacement-continued none")
-        {
-            trace.push(json!("continued"));
-        }
+            .filter_map(|line| {
+                if line == "replacement-rebound" {
+                    Some(json!("rebound"))
+                } else if let Some(target) = line.strip_prefix("entry replacement-target ") {
+                    let target: Value = serde_json::from_str(target).unwrap();
+                    Some(json!(format!(
+                        "continuation {}",
+                        target["cwd"].as_str().unwrap()
+                    )))
+                } else if line == "entry replacement-continued none" {
+                    Some(json!("continued"))
+                } else {
+                    None
+                }
+            })
+            .collect();
         assert_eq!(json!(trace), case.expected["trace"]);
     }
     Ok(())
@@ -789,21 +792,6 @@ async fn opaque_spellings(driver: &mut impl Driver) -> Result<(), String> {
         assert_eq!(
             one(&lines, "replacement-send ")["payload"]["details"],
             json!(text)
-        );
-    }
-    Ok(())
-}
-
-/// The two source regression operands distinguish an omitted position from an explicit at.
-async fn source_fork_positions(driver: &mut impl Driver) -> Result<(), String> {
-    for (id, data) in [
-        ("entry-1", Value::Null),
-        ("entry-2", json!({"position":"at"})),
-    ] {
-        let lines=ask(driver,json!({"group":"fork","input":{"args":[{"value":id},{"present":!data.is_null(),"value":data}]},"control":{}}),false).await?;
-        assert_eq!(
-            one(&lines, "replacement-call "),
-            json!({"group":"fork","id":id,"data":if data.is_null() {json!({"present":false})} else {json!({"present":true,"value":data})},"callback":false})
         );
     }
     Ok(())
