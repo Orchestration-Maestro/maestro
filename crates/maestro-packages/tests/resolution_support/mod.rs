@@ -43,6 +43,10 @@ struct Recipe {
 /// Native filesystem with selected read/stat failures.
 #[derive(Default)]
 pub struct Filesystem {
+    /// Reject ambient resource-directory reads.
+    pub fail_current: bool,
+    /// Number of resource-directory reads.
+    pub current_reads: Rc<std::cell::Cell<usize>>,
     /// Replacement extension entry sequence.
     pub order: Vec<String>,
     /// Supplied canonicalization witness.
@@ -98,6 +102,10 @@ impl ResourceOperations for Filesystem {
         NativeResourceOperations.canonicalize(path)
     }
     fn current_directory(&self) -> io::Result<String> {
+        self.current_reads.set(self.current_reads.get() + 1);
+        if self.fail_current {
+            return Err(io::ErrorKind::PermissionDenied.into());
+        }
         NativeResourceOperations.current_directory()
     }
     fn drive_directories(&self) -> Vec<(char, String)> {
@@ -282,4 +290,65 @@ pub async fn first_authored_metadata() {
     assert_eq!(resource.path, source);
     assert_eq!(resource.metadata.source, base);
     assert_eq!(resource.metadata.base_dir.as_deref(), Some(base.as_str()));
+}
+
+/// Relative installed roots consult ambient state only when a manifest operand needs it.
+#[cfg(unix)]
+pub async fn ambient_entry_resolution() {
+    let dir = Scratch::new().unwrap();
+    let extensions = dir.0.join("pkg/extensions");
+    std::fs::create_dir_all(&extensions).unwrap();
+    let entry = extensions.join("file.ts");
+    std::fs::write(&entry, "").unwrap();
+    let manifest = extensions.join("package.json");
+    std::fs::write(
+        &manifest,
+        json!({"maestro":{"extensions":[entry]}}).to_string(),
+    )
+    .unwrap();
+    let reads = Rc::new(std::cell::Cell::new(0));
+    let resources = Filesystem {
+        fail_current: true,
+        current_reads: Rc::clone(&reads),
+        ..Default::default()
+    };
+    let base = dir.0.to_string_lossy().into_owned();
+    let (manager, effects) = manager(&base, resources);
+    let current = std::env::current_dir().unwrap();
+    let relative = maestro_path::relative(
+        &current.to_string_lossy(),
+        &base,
+        &maestro_path::Cwd {
+            current: "",
+            drive_directories: &[],
+        },
+    );
+    effects
+        .outputs
+        .borrow_mut()
+        .push_back(Ok(support::output(&relative, "", Some(0))));
+    let sources = ["npm:pkg".into()];
+    let result = manager
+        .resolve_extension_sources(&sources, None)
+        .await
+        .unwrap();
+    assert_eq!(result.extensions.len(), 1);
+    assert_eq!(result.extensions[0].path, entry.to_string_lossy());
+    assert_eq!(
+        reads.get(),
+        0,
+        "absolute manifest operand avoids ambient observation"
+    );
+    std::fs::write(manifest, r#"{"maestro":{"extensions":["file.ts"]}}"#).unwrap();
+    let error = manager
+        .resolve_extension_sources(&sources, None)
+        .await
+        .err()
+        .unwrap();
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+    assert_eq!(
+        reads.get(),
+        1,
+        "relative manifest operand requires ambient observation"
+    );
 }

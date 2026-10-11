@@ -410,6 +410,8 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
                 .is_err()
         );
         assert_eq!(&effects.reads.borrow()[start..], &["home"]);
+        #[cfg(unix)]
+        resolution_support::ambient_entry_resolution().await;
         Ok(())
     }))
     .unwrap();
