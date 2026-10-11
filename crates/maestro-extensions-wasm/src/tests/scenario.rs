@@ -148,9 +148,22 @@ pub trait Driver {
     /// Invoke setup through a lent callback identity.
     async fn notify_setup(&mut self, handler: u32) -> Result<(), String>;
     /// Drop the operation while its admitted setup is pending, then await its own final owner.
-    async fn setup_drop(&mut self) -> Result<(), String>;
+    async fn setup_drop(&mut self) -> Result<(), String> {
+        self.drop_command("setup", &super::setup_sessions::drop_input())
+            .await
+    }
+    /// Await the capture teardown of a command that drops an admitted callback operation.
+    async fn drop_command(&mut self, name: &str, args: &str) -> Result<(), String>;
+    /// Invoke a continuation under a supplied identity.
+    async fn notify_continuation(&mut self, handler: u32) -> Result<(), String>;
+    /// Drop an operation while its host admission gate remains closed and await its teardown.
+    async fn host_drop(&mut self, args: &str) -> Result<(), String>;
     /// Overlap two writable setup operations and finish the second first.
     async fn setup_pair(&mut self) -> Result<(), String>;
+    /// Complete switch and fork before the older new-session invocation.
+    async fn replacement_triple(&mut self) -> Result<(), String>;
+    /// Finish B's send without releasing A's independent send gate.
+    async fn replacement_sends_pair(&mut self) -> Result<(), String>;
     /// Runs two calls with distinct inputs through named entry/completion barriers.
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String>;
     /// The exact missing/wrong-kind diagnostic for a lent callback resource.

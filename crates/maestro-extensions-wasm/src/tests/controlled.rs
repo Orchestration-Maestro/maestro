@@ -199,7 +199,192 @@ pub struct Ui {
     /// Counted owner.
     _lease: Lease,
 }
+impl Controlled {
+    /// Probe the consumed slot while its owning command still retains the identity.
+    async fn repeat_continuation(&self, id: u32) {
+        if self.observed.borrow().replacement.repeat != Some(true) {
+            return;
+        }
+        let error = Exports::new(self.clone())
+            .invoke_with_session(id, self.replaced_context("repeat-target"))
+            .await
+            .unwrap_err();
+        self.observed
+            .borrow_mut()
+            .log(format!("replacement-repeat {error}"));
+    }
+}
+
 impl Imports for Controlled {
+    fn fork<'a>(
+        &'a self,
+        context: &'a CommandContext,
+        id: &'a str,
+        data: Option<String>,
+        callback: Option<&'a Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            let _completion = super::replacement_host::Completion(
+                self.observed.borrow_mut().replacement_finished.take(),
+            );
+            self.observed.borrow_mut().log(format!(
+                "replacement-binding {}",
+                serde_json::json!(context.session.cwd)
+            ));
+            let hold = super::replacement_host::start(
+                &mut self.observed.borrow_mut(),
+                "fork",
+                id,
+                data.as_deref(),
+                callback.is_some(),
+            );
+            pause(hold).await;
+            let cancelled = super::replacement_host::outcome(&self.observed.borrow())?;
+            self.observed.borrow_mut().log("replacement-rebound");
+            if !cancelled
+                && !self.observed.borrow().replacement.unused
+                && let Some(callback) = callback
+            {
+                let mut replaced = self.replaced_context(id);
+                replaced.setup = Some(super::setup_host::reader(id));
+                Exports::new(self.clone())
+                    .invoke_with_session(callback.id, replaced)
+                    .await?;
+                self.repeat_continuation(callback.id).await;
+            }
+            let _ = context;
+            Ok(SessionChangeResult { cancelled })
+        })
+    }
+    fn navigate_tree<'a>(
+        &'a self,
+        context: &'a CommandContext,
+        id: &'a str,
+        data: Option<String>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            let _completion = super::replacement_host::Completion(
+                self.observed.borrow_mut().replacement_finished.take(),
+            );
+            self.observed.borrow_mut().log(format!(
+                "replacement-binding {}",
+                serde_json::json!(context.session.cwd)
+            ));
+            let hold = super::replacement_host::start(
+                &mut self.observed.borrow_mut(),
+                "navigateTree",
+                id,
+                data.as_deref(),
+                false,
+            );
+            pause(hold).await;
+            super::replacement_host::outcome(&self.observed.borrow())
+                .map(|cancelled| SessionChangeResult { cancelled })
+        })
+    }
+    fn switch_session<'a>(
+        &'a self,
+        context: &'a CommandContext,
+        id: &'a str,
+        callback: Option<&'a Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            let _completion = super::replacement_host::Completion(
+                self.observed.borrow_mut().replacement_finished.take(),
+            );
+            self.observed.borrow_mut().log(format!(
+                "replacement-binding {}",
+                serde_json::json!(context.session.cwd)
+            ));
+            let hold = super::replacement_host::start(
+                &mut self.observed.borrow_mut(),
+                "switchSession",
+                id,
+                None,
+                callback.is_some(),
+            );
+            pause(hold).await;
+            let cancelled = super::replacement_host::outcome(&self.observed.borrow())?;
+            self.observed.borrow_mut().log("replacement-rebound");
+            if !cancelled
+                && !self.observed.borrow().replacement.unused
+                && let Some(callback) = callback
+            {
+                let mut replaced = self.replaced_context(id);
+                replaced.setup = Some(super::setup_host::reader(id));
+                Exports::new(self.clone())
+                    .invoke_with_session(callback.id, replaced)
+                    .await?;
+                self.repeat_continuation(callback.id).await;
+            }
+            Ok(SessionChangeResult { cancelled })
+        })
+    }
+    fn reload<'a>(&'a self, context: &'a CommandContext) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let _completion = super::replacement_host::Completion(
+                self.observed.borrow_mut().replacement_finished.take(),
+            );
+            self.observed.borrow_mut().log(format!(
+                "replacement-binding {}",
+                serde_json::json!(context.session.cwd)
+            ));
+            let hold = super::replacement_host::start(
+                &mut self.observed.borrow_mut(),
+                "reload",
+                "",
+                None,
+                false,
+            );
+            pause(hold).await;
+            super::replacement_host::outcome(&self.observed.borrow()).map(|_| ())
+        })
+    }
+    fn replaced_send_message<'a>(
+        &'a self,
+        context: &'a ReplacedContext,
+        payload: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let hold = super::replacement_host::send_start(
+                &mut self.observed.borrow_mut(),
+                "sendMessage",
+                &context.session.cwd,
+            );
+            pause(hold).await;
+            super::replacement_host::send(
+                &mut self.observed.borrow_mut(),
+                context.setup.as_ref().unwrap(),
+                ("sendMessage", &context.session.cwd),
+                &payload,
+                options.as_deref(),
+            )
+        })
+    }
+    fn replaced_send_user_message<'a>(
+        &'a self,
+        context: &'a ReplacedContext,
+        payload: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(async move {
+            let hold = super::replacement_host::send_start(
+                &mut self.observed.borrow_mut(),
+                "sendUserMessage",
+                &context.session.cwd,
+            );
+            pause(hold).await;
+            super::replacement_host::send(
+                &mut self.observed.borrow_mut(),
+                context.setup.as_ref().unwrap(),
+                ("sendUserMessage", &context.session.cwd),
+                &payload,
+                options.as_deref(),
+            )
+        })
+    }
+
     fn compact(
         &self,
         context: &Context,

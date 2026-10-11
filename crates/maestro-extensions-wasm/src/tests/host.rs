@@ -27,12 +27,15 @@ pub struct Update;
 pub struct Ordinary(Session, super::reader_host::Reader);
 /// Host type of the command context resource.
 pub struct Command(
-    Session,
+    pub(super) Session,
     super::reader_host::Reader,
     Option<super::reader_host::Reader>,
 );
 /// Host type of the replacement context resource.
-pub struct Replaced(Session, Option<super::reader_host::Reader>);
+pub struct Replaced(
+    pub(super) Session,
+    pub(super) Option<super::reader_host::Reader>,
+);
 
 /// Host state shared by every import.
 pub struct State {
@@ -649,6 +652,46 @@ impl Imports {
 }
 
 impl host::HostCommandContextWithStore<State> for Imports {
+    async fn fork(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Command>,
+        id: String,
+        data: Option<String>,
+        callback: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
+        super::replacement_host::binding(accessor, &this)?;
+        super::replacement_host::command(accessor, "fork", &id, data.as_deref(), callback).await
+    }
+    async fn navigate_tree(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Command>,
+        id: String,
+        data: Option<String>,
+    ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
+        super::replacement_host::binding(accessor, &this)?;
+        super::replacement_host::command(accessor, "navigateTree", &id, data.as_deref(), None).await
+    }
+    async fn switch_session(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Command>,
+        id: String,
+        callback: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
+        super::replacement_host::binding(accessor, &this)?;
+        super::replacement_host::command(accessor, "switchSession", &id, None, callback).await
+    }
+    async fn reload(
+        accessor: &Accessor<State, Self>,
+        this: Resource<Command>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        super::replacement_host::binding(accessor, &this)?;
+        Ok(
+            super::replacement_host::command(accessor, "reload", "", None, None)
+                .await?
+                .map(|_| ()),
+        )
+    }
+
     async fn wait_for_idle(
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,

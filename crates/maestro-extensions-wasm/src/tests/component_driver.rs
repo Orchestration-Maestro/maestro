@@ -445,10 +445,27 @@ impl Driver for ComponentDriver {
             .map_err(|e| e.to_string())?
             .map_err(|e| e.to_string())?
     }
-    async fn setup_drop(&mut self) -> Result<(), String> {
+    async fn notify_continuation(&mut self, handler: u32) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let target = harness
+            .replaced("identity-target")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                exports
+                    .call_invoke_with_session(accessor, borrow(handler), target)
+                    .await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    async fn drop_command(&mut self, name: &str, args: &str) -> Result<(), String> {
         let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
         let handler = harness
-            .callback("command setup")
+            .callback(&format!("command {name}"))
             .map_err(|e| e.to_string())?;
         let exports = harness.exports.clone();
         let context = harness
@@ -463,12 +480,7 @@ impl Driver for ComponentDriver {
             .run_concurrent(async |accessor| {
                 let main = async {
                     let result = exports
-                        .call_invoke_command(
-                            accessor,
-                            borrow(handler),
-                            super::setup_sessions::drop_input(),
-                            context,
-                        )
+                        .call_invoke_command(accessor, borrow(handler), args.to_owned(), context)
                         .await;
                     completion.await.unwrap();
                     result
@@ -476,6 +488,49 @@ impl Driver for ComponentDriver {
                 let helper = async {
                     entered.await.unwrap();
                     let _ = open.send(());
+                };
+                super::join::alongside(main, helper).await
+            })
+            .await
+            .map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?
+    }
+    async fn host_drop(&mut self, args: &str) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback("command replacement")
+            .map_err(|e| e.to_string())?;
+        let ctx = harness
+            .command_context("/work")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let (done, finished) = tokio::sync::oneshot::channel();
+        let (dropped, drop_seen) = tokio::sync::oneshot::channel();
+        harness.observed().replacement_finished = Some(done);
+        harness.observed().replacement_dropped = Some(dropped);
+        let (operation, entered, open) = gate();
+        let (notification, notified, acknowledge) = gate();
+        harness.observed().hold_next_idle(operation);
+        harness.observed().hold_next_idle(notification);
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let (complete, completed) = tokio::sync::oneshot::channel();
+                let main = async {
+                    let result = exports
+                        .call_invoke_command(accessor, borrow(handler), args.to_owned(), ctx)
+                        .await;
+                    completed.await.unwrap();
+                    result
+                };
+                let helper = async {
+                    entered.await.unwrap();
+                    notified.await.unwrap();
+                    acknowledge.send(()).unwrap();
+                    drop_seen.await.unwrap();
+                    let _ = open.send(());
+                    finished.await.unwrap();
+                    complete.send(()).unwrap();
                 };
                 super::join::alongside(main, helper).await
             })
@@ -523,6 +578,104 @@ impl Driver for ComponentDriver {
                 b.map_err(|e| e.to_string())??;
                 accessor.with(|mut a| {
                     super::setup_sessions::pair_completed(&a.get().observed.transcript[start..]);
+                });
+                Ok(())
+            })
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    async fn replacement_sends_pair(&mut self) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback("command replacement")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let first = harness.command_context("/A").map_err(|e| e.to_string())?;
+        let second = harness.command_context("/B").map_err(|e| e.to_string())?;
+        let start = harness.store.data().observed.transcript.len();
+        let (hold_a, entered_a, open_a) = gate();
+        let (hold_b, entered_b, open_b) = gate();
+        harness.observed().hold_next_idle(hold_a);
+        harness.observed().hold_next_idle(hold_b);
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let observe = async |phase| {
+                    send_pair_phase(accessor, start, phase);
+                };
+                let (a, b) = super::join::reversed(
+                    exports.call_invoke_command(
+                        accessor,
+                        borrow(handler),
+                        super::replacement_commands::send_pair_input("A"),
+                        first,
+                    ),
+                    exports.call_invoke_command(
+                        accessor,
+                        borrow(handler),
+                        super::replacement_commands::send_pair_input("B"),
+                        second,
+                    ),
+                    [(entered_a, open_a), (entered_b, open_b)],
+                    observe,
+                )
+                .await;
+                a.map_err(|e| e.to_string())??;
+                b.map_err(|e| e.to_string())??;
+                accessor.with(|mut a| {
+                    super::replacement_commands::send_pair_completed(
+                        &a.get().observed.transcript[start..],
+                    );
+                });
+                Ok(())
+            })
+            .await
+            .map_err(|e| e.to_string())?
+    }
+    async fn replacement_triple(&mut self) -> Result<(), String> {
+        let harness = started(&mut self.harness).map_err(|e| e.to_string())?;
+        let handler = harness
+            .callback("command replacement")
+            .map_err(|e| e.to_string())?;
+        let exports = harness.exports.clone();
+        let start = harness.store.data().observed.transcript.len();
+        let gates = std::array::from_fn(|_| gate());
+        let barriers = gates.map(|(hold, entered, open)| {
+            harness.observed().hold_next_idle(hold);
+            (entered, open)
+        });
+        let contexts = ["newSession", "fork", "switchSession"]
+            .map(|group| harness.command_context(group).unwrap());
+        harness
+            .store
+            .run_concurrent(async |accessor| {
+                let groups = ["newSession", "fork", "switchSession"];
+                let calls = contexts
+                    .into_iter()
+                    .zip(groups)
+                    .map(|(ctx, group)| {
+                        exports.call_invoke_command(
+                            accessor,
+                            borrow(handler),
+                            super::replacement_commands::triple_input(group),
+                            ctx,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                let outcomes = super::replacement_commands::triple(
+                    calls
+                        .try_into()
+                        .unwrap_or_else(|_| panic!("three operations")),
+                    barriers,
+                )
+                .await;
+                for outcome in outcomes {
+                    outcome.map_err(|e| e.to_string())??;
+                }
+                accessor.with(|mut a| {
+                    super::replacement_commands::triple_completed(
+                        &a.get().observed.transcript[start..],
+                    );
                 });
                 Ok(())
             })
@@ -739,5 +892,19 @@ fn setup_phase(
 ) {
     accessor.with(|mut a| {
         super::setup_sessions::pair_phase(&a.get().observed.transcript[start..], phase);
+    });
+}
+
+/// Observe closed send-admission sets without nesting another host borrow in the driver.
+fn send_pair_phase(
+    accessor: &wasmtime::component::Accessor<super::host::State>,
+    start: usize,
+    second_completed: bool,
+) {
+    accessor.with(|mut a| {
+        super::replacement_commands::send_pair_phase(
+            &a.get().observed.transcript[start..],
+            second_completed,
+        );
     });
 }

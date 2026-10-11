@@ -146,6 +146,10 @@ interface host {
         new-session: async func(
             data: new-session-command-data, setup: option<borrow<callback>>, with-session: option<borrow<callback>>,
         ) -> result<session-change-result, string>;
+        fork: async func(entry-id: string, data: option<string>, with-session: option<borrow<callback>>) -> result<session-change-result, string>;
+        navigate-tree: async func(target-id: string, options: option<string>) -> result<session-change-result, string>;
+        switch-session: async func(path: string, with-session: option<borrow<callback>>) -> result<session-change-result, string>;
+        reload: async func() -> result<_, string>;
     }
 
     /// Context bound to the session an operation created.
@@ -153,6 +157,8 @@ interface host {
 
 
         command: func() -> command-context;
+        send-message: async func(message: string, options: option<string>) -> result<_, string>;
+        send-user-message: async func(content: string, options: option<string>) -> result<_, string>;
     }
 
     /// Registers one handler for an event name.

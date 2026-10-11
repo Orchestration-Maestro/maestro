@@ -73,10 +73,16 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Replacement-operation host decisions.
+    pub replacement: super::replacement_host::Bank,
     /// Setup-session host decisions.
     pub setup: super::setup_host::Bank,
     /// Completion witness after the admitted setup future releases its capture.
     pub setup_finished: Option<oneshot::Sender<()>>,
+    /// Host-operation teardown witness for an in-flight dropped command.
+    pub replacement_finished: Option<oneshot::Sender<()>>,
+    /// Guest operation drop acknowledgement before the host admission gate opens.
+    pub replacement_dropped: Option<oneshot::Sender<()>>,
     /// Total admitted compaction requests.
     pub compactions: usize,
     /// Ordinary action controls.
@@ -206,11 +212,20 @@ impl Observed {
 
     /// Records a custom session entry.
     pub fn entry(&mut self, custom_type: &str, data: Option<&str>) {
-        if custom_type == "setup-drop"
-            && data == Some("\"setup-future\"")
+        if ((custom_type == "setup-drop" && data == Some("\"setup-future\""))
+            || (custom_type == "replacement-drop" && data == Some("\"future\"")))
             && let Some(finished) = self.setup_finished.take()
         {
             let _ = finished.send(());
+        }
+        if custom_type == "replacement-dropped"
+            && data == Some("\"host\"")
+            && let Some(done) = self.replacement_dropped.take()
+        {
+            let _ = done.send(());
+        }
+        if custom_type == "replacement-control" {
+            self.replacement = serde_json::from_str(data.expect("replacement control")).unwrap();
         }
         if custom_type == "setup-control" {
             self.setup = serde_json::from_str(data.expect("setup control")).unwrap();

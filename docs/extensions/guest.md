@@ -413,20 +413,26 @@ apply those edits before continuing.
 ## Contexts and sessions
 
 Handlers run with an `ExtensionContext`, which reads the working directory. Commands run with
-an `ExtensionCommandContext`, which adds `wait_for_idle` and `new_session`; the ordinary
-context has neither method, which the rustdoc examples check at compile time.
+an `ExtensionCommandContext`, which adds `wait_for_idle`, `new_session`, `fork`,
+`navigate_tree`, `switch_session` and `reload`. The ordinary context has none of these
+methods, which the rustdoc examples check at compile time.
 
-`new_session` accepts optional `setup` and `with_session` callbacks. Setup receives a
+`new_session` accepts optional `setup` and `with_session` callbacks; `fork` and
+`switch_session` accept an optional `with_session`. Tree navigation and reload have
+no replacement continuation. Setup receives a
 writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
-ordinary contexts still expose a reader. The host runs the continuation against a
-`ReplacedSessionContext` bound to the replacement session while the operation is pending. The
+ordinary contexts still expose a reader. When the host invokes the continuation, it
+supplies a `ReplacedSessionContext` while the operation is pending. The
 host calls the continuation closure once. Captures the closure keeps drop when that call
 returns; captures moved into the returned future drop when the future completes. The identity
 the host announced for it lasts until the operation ends, and a continuation the host never
 ran is released then. The facade forwards the host's answers: after the operation, `cwd` on the
 context that started it returns whatever the host reports, which the test host makes a
-stale-context message, while the replacement context keeps working. Errors are the plain text
-the host supplies, so an author can catch one and continue.
+stale-context message. A replacement context retains its host capability when cloned;
+the host can still reject later calls. Its `send_message` and `send_user_message`
+methods await that capability's host send, unlike the ordinary
+[message actions](#ordinary-actions). Errors are the plain text the host supplies,
+so an author can catch one and continue.
 
 The writer exposes `set_session_file`, `new_session`, `is_persisted`, `get_children`,
 `build_session_context`, the message/thinking/model/compaction/custom/name/label append
@@ -436,8 +442,9 @@ can fail locally. `NewSessionOptions` carries optional writer-chosen `id` and
 `parent_session` strings, separately from command options. `SessionContext` contains the
 host's ordered messages, open thinking-level string and optional provider/model identity.
 
-Setup and continuation entries belong to their new-session operation and are removed
-when its future ends or is dropped. Setup's writer and its reader address the capability
+Setup entries belong to their new-session operation; continuation entries belong to
+their new-session, fork or switch operation. These entries are removed
+when their owning future ends or is dropped. Setup's writer and its reader address the capability
 supplied for that invocation; independently retained capability handles keep their own
 owners. The guest implements no persistence, context projection or navigation policy.
 
