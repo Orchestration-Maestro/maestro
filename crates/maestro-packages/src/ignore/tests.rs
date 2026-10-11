@@ -41,3 +41,23 @@ fn recorded_ignore_rules_keep_character_decisions() {
         );
     }
 }
+
+#[test]
+fn terminal_directory_globstars_select_base_and_readmission() {
+    for pattern in ["a/**/", "/a/**/", "a/**/**/"] {
+        let mut rules = Ignore::new();
+        rules.add(pattern);
+        assert!(rules.test("a", true) == TestResult::Ignored, "{pattern}");
+        assert!(
+            rules.test("a/sub", true) == TestResult::Ignored,
+            "{pattern}"
+        );
+        assert!(rules.test("a", false) == TestResult::Unmatched, "{pattern}");
+        rules.add(&format!("!{pattern}"));
+        assert!(rules.test("a", true) == TestResult::Unignored, "!{pattern}");
+    }
+    let mut rules = Ignore::new();
+    rules.add("a/**");
+    assert!(rules.test("a", true) == TestResult::Unmatched);
+    assert!(rules.test("a/sub", true) == TestResult::Ignored);
+}

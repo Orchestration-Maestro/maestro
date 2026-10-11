@@ -4,7 +4,7 @@ use std::{collections::HashSet, sync::LazyLock};
 
 /// A bracket parser's selected component syntax.
 pub(super) enum ParsedClass {
-    /// No closing delimiter; resume ordinary token parsing.
+    /// No closing delimiter was found.
     Unclosed,
     /// One surviving ordinary member with no negation.
     Literal(char),

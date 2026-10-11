@@ -498,7 +498,7 @@ fn ignore_matching_folds_unicode_literal_names() {
     .unwrap();
 }
 
-/// One leading file byte-order mark is not part of the first ignore pattern.
+/// One leading rule byte-order mark is not part of the first ignore pattern.
 #[test]
 fn ignore_files_strip_one_leading_byte_order_mark() {
     block_on(Box::pin(async {
@@ -588,6 +588,45 @@ fn unicode_directory_rules_prune_before_readmission() {
 fn escaped_ignore_metacharacters_select_literal_names() {
     block_on(Box::pin(async {
         resolution_support::cases(&["unicode_escaped_syntax"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Directory globstars prune their base while non-directory forms allow child readmission.
+#[test]
+fn terminal_directory_globstars_keep_zero_directory_matches() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&[
+            "directory_globstar",
+            "anchored_directory_globstar",
+            "repeated_directory_globstar",
+            "non_directory_globstar",
+            "directory_globstar_readmission",
+            "anchored_directory_globstar_readmission",
+            "repeated_directory_globstar_readmission",
+        ])
+        .await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Comment selection precedes single rule-level byte-order-mark removal.
+#[test]
+fn ignore_ingress_selects_comments_before_rule_preparation() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_bom_comment"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Rule preparation removes one leading byte-order mark, not two.
+#[test]
+fn ignore_ingress_preserves_a_second_rule_bom() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_double_bom"]).await;
         Ok(())
     }))
     .unwrap();

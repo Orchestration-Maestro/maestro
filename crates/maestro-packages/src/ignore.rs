@@ -61,7 +61,9 @@ impl Ignore {
         } else {
             body.to_owned()
         };
-        if pattern.ends_with("/**") {
+        if directory {
+            pattern.push('/');
+        } else if pattern.ends_with("/**") {
             pattern.push_str("/*");
         }
         self.rules.push(Rule {
@@ -73,7 +75,10 @@ impl Ignore {
     /// Folds and splits an entry once, then selects its last matching rule.
     pub(crate) fn test(&self, path: &str, directory: bool) -> TestResult {
         let folded: String = path.chars().map(canonical).collect();
-        let components: Vec<_> = folded.split('/').collect();
+        let mut components: Vec<_> = folded.split('/').collect();
+        if directory {
+            components.push("");
+        }
         self.rules
             .iter()
             .rev()

@@ -188,10 +188,9 @@ impl Ignore {
                 continue;
             };
             for line in text
-                .strip_prefix('\u{feff}')
-                .unwrap_or(&text)
                 .split('\n')
                 .map(|line| line.strip_suffix('\r').unwrap_or(line))
+                .filter(|line| !line.trim_matches(crate::whitespace).starts_with('#'))
             {
                 self.add(line);
             }

@@ -82,8 +82,10 @@ directory-scoped rules and ignored-parent pruning. Rules match Unicode scalars
 with one-to-one uppercase equivalence; expansions and non-ASCII-to-ASCII mappings
 remain distinct. A question wildcard consumes one scalar, and bracket complements
 apply to the complete case-equivalent member set. Braces and parentheses are
-literal in ignore rules. One leading byte-order mark is removed from each
-ignore file. The deepest matching directory decides, with later rules winning
+literal in ignore rules. Discovery discards blank lines and lines whose trimmed
+text begins with `#` before rule preparation removes one leading byte-order mark.
+Directory patterns such as `a/**/` match `a` itself; `a/**` selects only descendants.
+The deepest matching directory decides, with later rules winning
 within that directory. Native Unix
 listings use byte-name order; replacement filesystem adapters supply their own
 order through `PackageOperations::resource_operations`. Returned records retain
