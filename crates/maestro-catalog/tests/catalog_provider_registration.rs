@@ -344,7 +344,7 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
         id: "ignored",
         name: "Custom",
         transform: Arc::new(|mut models| {
-            models[0].name = "delegated transformation".into();
+            models[0].to_mut().name = "delegated transformation".into();
             Ok(models)
         }),
     });
@@ -449,7 +449,7 @@ fn incoming_oauth_transform_runs_after_replacement_only_with_tokens() {
             let model = models.iter_mut().find(|m| m.provider == "p").unwrap();
             assert_eq!(model.id, "m");
             assert_eq!(model.cost.cache_write.to_bits(), (4.0_f64).to_bits());
-            model.base_url = "transformed".into();
+            model.to_mut().base_url = "transformed".into();
             Ok(models)
         }),
     });
@@ -580,10 +580,18 @@ fn builtin_oauth_transform_changes_only_matching_values() {
     );
     let mut registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
     registry
-        .register_provider("other", dynamic::config(&["unrelated"]))
+        .register_provider("other", dynamic::config(&["unrelated", "unrelated"]))
         .unwrap();
     let unrelated = registry.find("other", "unrelated").unwrap();
     let published = registry.get_all();
+    let duplicates: Vec<_> = published
+        .read()
+        .unwrap()
+        .iter()
+        .filter(|handle| handle.read().unwrap().provider == "other")
+        .cloned()
+        .collect();
+    assert!(!Arc::ptr_eq(&duplicates[0], &duplicates[1]));
     let config = dynamic::config(&["m"]);
     config.write().unwrap().oauth = Some(Arc::clone(&oauth));
     registry
@@ -609,7 +617,33 @@ fn builtin_oauth_transform_changes_only_matching_values() {
             .iter()
             .any(|model| Arc::ptr_eq(model, &unrelated))
     );
+    check_duplicate_aliases(&registry, &duplicates, &unrelated);
+    assert!(
+        config.read().unwrap().models.as_ref().unwrap()[0]
+            .base_url
+            .is_none()
+    );
+}
+
+/// Observe independent retained aliases in the newly published list.
+fn check_duplicate_aliases(
+    registry: &ModelRegistry,
+    duplicates: &[Arc<RwLock<maestro_models::Model>>],
+    unrelated: &Arc<RwLock<maestro_models::Model>>,
+) {
+    let live: Vec<_> = registry
+        .get_all()
+        .read()
+        .unwrap()
+        .iter()
+        .filter(|handle| handle.read().unwrap().provider == "other")
+        .cloned()
+        .collect();
+    assert!(Arc::ptr_eq(&live[0], &duplicates[0]));
+    assert!(Arc::ptr_eq(&live[1], &duplicates[1]));
+    duplicates[1].write().unwrap().name = "second alias".into();
     unrelated.write().unwrap().name = "edited through retained alias".into();
+    assert_eq!(live[1].read().unwrap().name, "second alias");
     assert_eq!(
         registry
             .find("other", "unrelated")
@@ -618,11 +652,6 @@ fn builtin_oauth_transform_changes_only_matching_values() {
             .unwrap()
             .name,
         "edited through retained alias"
-    );
-    assert!(
-        config.read().unwrap().models.as_ref().unwrap()[0]
-            .base_url
-            .is_none()
     );
 }
 
@@ -938,5 +967,117 @@ fn nonempty_models_accept_oauth_without_configured_key() {
     assert_eq!(
         maestro_models::get_oauth_provider("p").unwrap().name(),
         "OAuth only"
+    );
+}
+
+#[test]
+fn repeated_borrowed_descriptor_keeps_one_shared_alias() {
+    if dynamic::isolated("repeated_borrowed_descriptor_keeps_one_shared_alias") {
+        return;
+    }
+    let auth = support::auth();
+    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    registry
+        .register_provider("other", dynamic::config(&["m"]))
+        .unwrap();
+    let retained = registry.find("other", "m").unwrap();
+    auth.set(
+        "p",
+        maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+    );
+    let config = dynamic::config(&["trigger"]);
+    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+        calls: None,
+        id: "ignored",
+        name: "Repeated borrow",
+        transform: Arc::new(|models| {
+            static FOREIGN: std::sync::OnceLock<maestro_models::Model> = std::sync::OnceLock::new();
+            let selected = models.into_iter().find(|m| m.provider == "other").unwrap();
+            let foreign = FOREIGN.get_or_init(|| selected.as_ref().clone());
+            let copied = std::borrow::Cow::Owned(selected.as_ref().clone());
+            Ok(vec![
+                selected.clone(),
+                selected,
+                copied,
+                std::borrow::Cow::Borrowed(foreign),
+            ])
+        }),
+    }));
+    registry.register_provider("p", config).unwrap();
+    let published = registry.get_all();
+    let live = published.read().unwrap();
+    assert_eq!(live.len(), 4);
+    assert!(Arc::ptr_eq(&live[0], &retained));
+    assert!(Arc::ptr_eq(&live[1], &retained));
+    assert!(!Arc::ptr_eq(&live[2], &retained));
+    assert!(!Arc::ptr_eq(&live[3], &retained));
+    assert!(!Arc::ptr_eq(&live[2], &live[3]));
+    retained.write().unwrap().name = "shared edit".into();
+    assert_eq!(live[0].read().unwrap().name, "shared edit");
+    assert_eq!(live[1].read().unwrap().name, "shared edit");
+    assert_eq!(live[2].read().unwrap().name, "Name m");
+    assert_eq!(live[3].read().unwrap().name, "Name m");
+}
+
+#[test]
+fn owned_descriptor_preserves_key_order_and_signed_zero() {
+    if dynamic::isolated("owned_descriptor_preserves_key_order_and_signed_zero") {
+        return;
+    }
+    let auth = support::auth();
+    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    registry
+        .register_provider("other", dynamic::config(&["m"]))
+        .unwrap();
+    let retained = registry.find("other", "m").unwrap();
+    {
+        let mut model = retained.write().unwrap();
+        model.cost.input = 0.0;
+        model.compat = Some(
+            serde_json::from_str(r#"{"supportsStore":true,"supportsDeveloperRole":false}"#)
+                .unwrap(),
+        );
+    }
+    auth.set(
+        "p",
+        maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+    );
+    let config = dynamic::config(&["trigger"]);
+    config.write().unwrap().oauth = Some(Arc::new(dynamic::OAuth {
+        calls: None,
+        id: "ignored",
+        name: "Exact returned values",
+        transform: Arc::new(|mut models| {
+            let model = models
+                .iter_mut()
+                .find(|m| m.provider == "other")
+                .unwrap()
+                .to_mut();
+            model.cost.input = -0.0;
+            model.compat = Some(
+                serde_json::from_str(r#"{"supportsDeveloperRole":false,"supportsStore":true}"#)
+                    .unwrap(),
+            );
+            Ok(models)
+        }),
+    }));
+    registry.register_provider("p", config).unwrap();
+    let returned = registry.find("other", "m").unwrap();
+    assert!(!Arc::ptr_eq(&retained, &returned));
+    let model = returned.read().unwrap();
+    assert_eq!(model.cost.input.to_bits(), (-0.0_f64).to_bits());
+    let compat = serde_json::to_value(model.compat.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        compat
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["supportsDeveloperRole", "supportsStore"]
+    );
+    assert_eq!(
+        retained.read().unwrap().cost.input.to_bits(),
+        0.0_f64.to_bits()
     );
 }

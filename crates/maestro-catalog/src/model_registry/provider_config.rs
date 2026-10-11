@@ -3,6 +3,7 @@ use maestro_models::{
     Api, DiagnosticErrorInfo, ModelCompat, ModelCost, ModelInput, OAuthError, OAuthProviderHandle,
     StreamFunction, StreamOptionsInput, ThinkingLevelMap,
 };
+use std::borrow::Cow;
 
 /// Partially supplied dynamic registration; absent fields retain earlier values on replay.
 #[derive(Default)]
@@ -140,11 +141,11 @@ impl maestro_models::OAuthProviderInterface for RegisteredOAuth {
     ) -> Result<&'a str, OAuthError> {
         self.inner.get_api_key(credentials)
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: &[maestro_models::Model],
+        models: &'m [maestro_models::Model],
         credentials: &maestro_models::OAuthCredentials,
-    ) -> Option<Result<Vec<maestro_models::Model>, OAuthError>> {
+    ) -> Option<Result<Vec<Cow<'m, maestro_models::Model>>, OAuthError>> {
         self.inner.modify_models(models, credentials)
     }
 }

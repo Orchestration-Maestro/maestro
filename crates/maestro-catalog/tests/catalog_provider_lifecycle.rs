@@ -195,7 +195,7 @@ fn registered_oauth_label_precedes_current_global_provider() {
             calls: None,
             id: "p",
             name: "Other Instance",
-            transform: Arc::new(Ok),
+            transform: Arc::new(|models| Ok(models)),
         }));
         assert_eq!(registry.get_provider_display_name("p"), name);
         assert_eq!(
@@ -285,7 +285,12 @@ fn immediate_registration_uses_incoming_config_not_merged_config() {
         name: "Transform",
         transform: Arc::new(move |mut models| {
             observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            models.iter_mut().find(|m| m.provider == "p").unwrap().name = "transformed".into();
+            models
+                .iter_mut()
+                .find(|m| m.provider == "p")
+                .unwrap()
+                .to_mut()
+                .name = "transformed".into();
             Ok(models)
         }),
     }));

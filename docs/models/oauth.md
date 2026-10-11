@@ -145,8 +145,10 @@ Neither login nor refresh persists credentials.
 `modify_models`. It reports `anthropic`, `Anthropic (Claude Pro/Max)` and
 `Some(true)`, delegates login/refresh, and borrows `credentials.access` as its
 API key. `modify_models` takes a borrowed descriptor slice and returns `None`
-when no modifier is supplied. A supplied modifier returns `Some` with a fallible,
-owned replacement list.
+when no modifier is supplied. A supplied modifier returns `Some` with a fallible
+list of `Cow<Model>` descriptors: borrowed input elements keep their identity;
+owned elements represent new objects. Registry publication is described in
+[catalog](../catalog.md).
 
 `OAuthError` retains boxed `DiagnosticErrorInfo`, optional supplied/native
 `errno` and an optional wrapped `cause`. Display prints its message;
@@ -276,7 +278,9 @@ The helper does not parse or normalize the supplied endpoint text.
 `GITHUB_COPILOT_OAUTH_PROVIDER` reports `github-copilot` and `GitHub Copilot`,
 borrows the access key and delegates login and refresh. Its model modifier
 normalizes truthy enterprise metadata and changes only matching-provider base URLs,
-preserving descriptor order and other fields. Absent, null, false, zero or empty
+preserving descriptor order and other fields. Unrelated descriptors are borrowed;
+matching descriptors are owned copies, even when their endpoint is unchanged.
+Absent, null, false, zero or empty
 enterprise metadata skips modifier normalization. Refresh retains supplied string
 or null metadata; absent metadata remains absent. Other non-string values fail
 before refresh effects; truthy non-string values fail before model modification

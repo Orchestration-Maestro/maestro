@@ -160,11 +160,12 @@ impl maestro_models::OAuthProviderInterface for OAuth {
             Ok(&credentials.access)
         }
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: &[maestro_models::Model],
+        models: &'m [maestro_models::Model],
         _: &maestro_models::OAuthCredentials,
-    ) -> Option<Result<Vec<maestro_models::Model>, maestro_models::OAuthError>> {
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, maestro_models::Model>>, maestro_models::OAuthError>>
+    {
         Some(
             if self
                 .fail_transform
@@ -172,7 +173,7 @@ impl maestro_models::OAuthProviderInterface for OAuth {
             {
                 Err(diagnostic("transform failed"))
             } else {
-                Ok(models.to_vec())
+                Ok(models.iter().map(std::borrow::Cow::Borrowed).collect())
             },
         )
     }

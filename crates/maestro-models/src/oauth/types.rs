@@ -1,6 +1,7 @@
 //! Shared OAuth credential and prompt records.
 use crate::JsonObject;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 /// Token data with provider-specific extension fields.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -226,13 +227,16 @@ pub trait OAuthProviderInterface {
     fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError>;
     /// Optionally transform model descriptors; absent by default.
     ///
+    /// Borrow an input element to retain its identity, or return an owned descriptor
+    /// to publish a new object.
+    ///
     /// # Errors
     /// Implementations may return transformation failures.
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        _models: &[crate::Model],
+        _models: &'m [crate::Model],
         _credentials: &OAuthCredentials,
-    ) -> Option<Result<Vec<crate::Model>, OAuthError>> {
+    ) -> Option<Result<Vec<Cow<'m, crate::Model>>, OAuthError>> {
         None
     }
 }

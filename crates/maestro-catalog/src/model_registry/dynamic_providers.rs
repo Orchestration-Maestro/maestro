@@ -7,7 +7,7 @@ use maestro_models::{
     ApiProvider, Model, OAuthError, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
     register_oauth_provider,
 };
-use std::collections::HashMap;
+use std::borrow::Cow;
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Apply incoming operations before descriptor publication and optional transformation.
@@ -126,26 +126,16 @@ impl ModelRegistry {
             return Ok(());
         };
         let transformed = transformed?;
-        let mut originals: HashMap<_, Vec<_>> = HashMap::new();
-        for (snapshot, handle) in models.iter().zip(&handles) {
-            originals
-                .entry((&snapshot.provider, &snapshot.id))
-                .or_default()
-                .push((snapshot, handle));
-        }
         self.models = Arc::new(RwLock::new(
             transformed
                 .into_iter()
                 .map(|model| {
-                    if let Some((_, handle)) = originals
-                        .get(&(&model.provider, &model.id))
-                        .and_then(|candidates| {
-                            candidates.iter().find(|(snapshot, _)| **snapshot == model)
-                        })
+                    if let Cow::Borrowed(original) = &model
+                        && let Some(index) = models.element_offset(original)
                     {
-                        Arc::clone(handle)
+                        Arc::clone(&handles[index])
                     } else {
-                        Arc::new(RwLock::new(model))
+                        Arc::new(RwLock::new(model.into_owned()))
                     }
                 })
                 .collect(),

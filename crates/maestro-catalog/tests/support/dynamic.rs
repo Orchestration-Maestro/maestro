@@ -53,8 +53,12 @@ pub fn config(ids: &[&str]) -> Arc<RwLock<ProviderConfigInput>> {
     }))
 }
 /// Controlled model transformation callback.
-pub type Transform = dyn Fn(Vec<maestro_models::Model>) -> Result<Vec<maestro_models::Model>, maestro_models::OAuthError>
-    + Send
+pub type Transform = dyn for<'m> Fn(
+        Vec<std::borrow::Cow<'m, maestro_models::Model>>,
+    ) -> Result<
+        Vec<std::borrow::Cow<'m, maestro_models::Model>>,
+        maestro_models::OAuthError,
+    > + Send
     + Sync;
 /// Controlled account implementation with an optional model transform.
 pub struct OAuth {
@@ -105,13 +109,16 @@ impl maestro_models::OAuthProviderInterface for OAuth {
         self.record("key");
         Ok(&credentials.access)
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: &[maestro_models::Model],
+        models: &'m [maestro_models::Model],
         _: &maestro_models::OAuthCredentials,
-    ) -> Option<Result<Vec<maestro_models::Model>, maestro_models::OAuthError>> {
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, maestro_models::Model>>, maestro_models::OAuthError>>
+    {
         self.record("transform");
-        Some((self.transform)(models.to_vec()))
+        Some((self.transform)(
+            models.iter().map(std::borrow::Cow::Borrowed).collect(),
+        ))
     }
 }
 /// Complete controlled credentials.
@@ -141,7 +148,7 @@ pub fn oauth(name: &'static str) -> maestro_models::OAuthProviderHandle {
         calls: None,
         id: "ignored",
         name,
-        transform: Arc::new(Ok),
+        transform: Arc::new(|models| Ok(models)),
     })
 }
 /// Read dynamic descriptor identities in published order.

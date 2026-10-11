@@ -5,6 +5,7 @@ mod dynamic_providers;
 mod loading;
 mod provider_config;
 pub use provider_config::{ProviderConfigInput, ProviderModelInput};
+use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
 use maestro_credentials::{AuthCredential, AuthStorage};
@@ -160,7 +161,7 @@ impl ModelRegistry {
             if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id())
                 && let Some(transformed) = provider.modify_models(&models, &credentials)
             {
-                models = transformed?;
+                models = transformed?.into_iter().map(Cow::into_owned).collect();
             }
         }
         self.models = Arc::new(RwLock::new(

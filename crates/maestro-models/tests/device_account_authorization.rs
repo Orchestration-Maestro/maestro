@@ -930,7 +930,13 @@ fn device_provider_changes_only_matching_models() {
         let mut expected_models = original.clone();
         expected_models[0].base_url = expected.into();
         expected_models[2].base_url = expected.into();
-        assert_eq!(result, expected_models);
+        assert_eq!(
+            result
+                .into_iter()
+                .map(std::borrow::Cow::into_owned)
+                .collect::<Vec<_>>(),
+            expected_models
+        );
         assert_eq!(models, original);
     }
     modifier_accepts_falsy_metadata(&models);
@@ -1331,7 +1337,13 @@ fn modifier_accepts_falsy_metadata(models: &[maestro_models::Model]) {
         let mut expected = models.to_vec();
         expected[0].base_url = "https://api.token".into();
         expected[2].base_url = "https://api.token".into();
-        assert_eq!(result, expected);
+        assert_eq!(
+            result
+                .into_iter()
+                .map(std::borrow::Cow::into_owned)
+                .collect::<Vec<_>>(),
+            expected
+        );
     }
 }
 

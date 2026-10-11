@@ -186,12 +186,15 @@ impl OAuthProviderInterface for Modifier {
     fn get_api_key<'a>(&self, _: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
         panic!("unexpected key resolution")
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: &[Model],
+        models: &'m [Model],
         _: &OAuthCredentials,
-    ) -> Option<Result<Vec<Model>, OAuthError>> {
-        Some((self.action)(models.to_vec()))
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, OAuthError>> {
+        Some(
+            (self.action)(models.to_vec())
+                .map(|models| models.into_iter().map(std::borrow::Cow::Owned).collect()),
+        )
     }
 }
 /// Registration cleanup even when an assertion fails.

@@ -8,6 +8,7 @@ use crate::{
     OAuthPrompt, OAuthProviderInterface, default_fetch,
 };
 use serde::Deserialize as _;
+use std::borrow::Cow;
 use url::Url;
 
 /// Parse an enterprise URL or domain into its hostname, retaining valid empty hosts.
@@ -160,20 +161,20 @@ impl OAuthProviderInterface for GitHubCopilotOAuthProvider {
     fn get_api_key<'a>(&self, credentials: &'a OAuthCredentials) -> Result<&'a str, OAuthError> {
         Ok(&credentials.access)
     }
-    fn modify_models(
+    fn modify_models<'m>(
         &self,
-        models: &[Model],
+        models: &'m [Model],
         credentials: &OAuthCredentials,
-    ) -> Option<Result<Vec<Model>, OAuthError>> {
+    ) -> Option<Result<Vec<Cow<'m, Model>>, OAuthError>> {
         Some(modify_models(models, credentials))
     }
 }
 
 /// Transform matching endpoints while propagating enterprise metadata failures.
-fn modify_models(
-    models: &[Model],
+fn modify_models<'m>(
+    models: &'m [Model],
     credentials: &OAuthCredentials,
-) -> Result<Vec<Model>, OAuthError> {
+) -> Result<Vec<Cow<'m, Model>>, OAuthError> {
     let domain = match credentials.extra.get("enterpriseUrl") {
         None | Some(serde_json::Value::Null | serde_json::Value::Bool(false)) => None,
         Some(serde_json::Value::Number(number)) if number.as_f64() == Some(0.0) => None,
@@ -183,12 +184,15 @@ fn modify_models(
     let base = get_github_copilot_base_url(Some(&credentials.access), domain.as_deref());
     Ok(models
         .iter()
-        .cloned()
-        .map(|mut model| {
+        .map(|model| {
             if model.provider == "github-copilot" {
-                model.base_url.clone_from(&base);
+                Cow::Owned(Model {
+                    base_url: base.clone(),
+                    ..model.clone()
+                })
+            } else {
+                Cow::Borrowed(model)
             }
-            model
         })
         .collect())
 }
