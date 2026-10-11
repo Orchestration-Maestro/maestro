@@ -953,8 +953,8 @@ impl PackageOperations for RecordingNative {
     fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
         self.inner.create_dir_all(path)
     }
-    fn write_file(&self, path: &str, text: &str) -> std::io::Result<()> {
-        self.inner.write_file(path, text)
+    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> std::io::Result<()> {
+        self.inner.write_file(path, text, exclusive)
     }
     fn directory_is_empty(&self, path: &str) -> std::io::Result<bool> {
         self.inner.directory_is_empty(path)

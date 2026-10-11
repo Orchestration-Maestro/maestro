@@ -11,7 +11,7 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
 - **npm** (`npm:` prefix): the user scope runs `install -g <spec>` or
   `uninstall -g <name>`. The project scope works in `<project>/.maestro/npm`:
   install first creates the root, a `.gitignore` of `*` and `!.gitignore`, and a
-  `package.json` naming `maestro-extensions`, each only when missing, then runs
+  `package.json` naming `maestro-extensions`, each created exclusively when missing, then runs
   `install <spec> --prefix <root>`; removal runs `uninstall <name> --prefix <root>`
   only when the root exists. The command is `npm` unless settings configure a
   nonempty `npmCommand` array, whose leading arguments come first (an empty array
@@ -26,6 +26,15 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
   resolving both against a working directory captured at most once, and only when a path needs it (per-drive directory lookups are separate); a failed ancestor removal ends the cleanup.
 - **Local paths**: installation only checks that the path, resolved against the input
   base, exists (`Path does not exist: <path>` otherwise); removal does nothing.
+
+Bootstrap creation retains existing entries, including dangling links, and accepts
+an exclusive-create collision from a competing creator. Other directory/open/write
+failures propagate as their original errors, leaving prior effects in place. Exclusive
+creation prevents the losing writer from truncating a winner's file; it does not
+publish a complete file atomically. Readers may observe an incomplete write, and a
+failed write may leave a partial file. The filesystem adapter's `write_file` requires
+a new pathname when `exclusive` is true; false retains create/truncate behavior.
+Neither mode creates parent directories.
 
 Installation does not consult the offline setting. [Available-update
 checks](package-updates.md) consult it without acquiring contents. Configured

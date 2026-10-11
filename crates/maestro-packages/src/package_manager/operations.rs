@@ -1,6 +1,6 @@
 //! Replaceable native effects for package source lookup.
 use super::PackageFuture;
-use std::io;
+use std::io::{self, Write};
 /// A completed child status and independently decoded streams.
 pub struct CommandOutput {
     /// Exit status; absent when terminated without an exit code.
@@ -67,10 +67,11 @@ pub trait PackageOperations {
     /// # Errors
     /// Returns the adapter's creation failure.
     fn create_dir_all(&self, path: &str) -> io::Result<()>;
-    /// Writes UTF-8 text, replacing any file at the path.
+    /// Writes UTF-8 text, requiring a new pathname when `exclusive` is true.
+    /// Otherwise creates or truncates the destination. Neither mode creates parents.
     /// # Errors
-    /// Returns the adapter's write failure.
-    fn write_file(&self, path: &str, text: &str) -> io::Result<()>;
+    /// Returns the original open or write failure, including exclusive creation collisions.
+    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()>;
     /// Whether a directory has no entries.
     /// # Errors
     /// Returns an open or enumeration failure, including one after an earlier entry.
@@ -179,8 +180,14 @@ impl PackageOperations for NativePackageOperations {
     fn create_dir_all(&self, path: &str) -> io::Result<()> {
         std::fs::create_dir_all(path)
     }
-    fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
-        std::fs::write(path, text)
+    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()> {
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .create_new(exclusive)
+            .open(path)?
+            .write_all(text.as_bytes())
     }
     fn directory_is_empty(&self, path: &str) -> io::Result<bool> {
         let mut empty = true;

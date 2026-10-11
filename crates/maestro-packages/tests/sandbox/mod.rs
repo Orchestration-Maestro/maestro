@@ -38,6 +38,8 @@ pub enum Op {
 }
 /// A one-shot action run when a child is admitted.
 pub type Hook = Box<dyn FnOnce(&Call)>;
+/// A one-shot filesystem action before the native effect.
+pub type Effect = Box<dyn FnOnce(&str) -> io::Result<()>>;
 /// Observations and instructions shared between a test and its adapter.
 #[derive(Default)]
 pub struct Script {
@@ -51,6 +53,10 @@ pub struct Script {
     pub held: Cell<bool>,
     /// Filesystem effects that fail when the path ends with the suffix.
     pub failures: RefCell<Vec<(Op, String)>>,
+    /// Runs before the selected filesystem effect, outside the instruction borrow.
+    pub before_effect: RefCell<Option<(Op, String, Effect)>>,
+    /// Overrides the temporary base for isolated native tests.
+    pub temp_root: RefCell<Option<String>>,
     /// Runs once after a successful removal.
     pub after_remove: RefCell<Option<AfterRemove>>,
     /// Makes ambient directory reads fail.
@@ -86,6 +92,19 @@ impl Script {
 impl Sandbox {
     /// Fails with the injected error when this effect is scripted to fail.
     fn check(&self, op: Op, path: &str) -> io::Result<()> {
+        let effect = {
+            let mut pending = self.script.before_effect.borrow_mut();
+            if pending.as_ref().is_some_and(|(selected, suffix, _)| {
+                *selected == op && path.ends_with(suffix.as_str())
+            }) {
+                pending.take()
+            } else {
+                None
+            }
+        };
+        if let Some((_, _, effect)) = effect {
+            effect(path)?;
+        }
         let failing = self
             .script
             .failures
@@ -110,7 +129,11 @@ impl Sandbox {
 }
 impl PackageOperations for Sandbox {
     fn temp_dir(&self) -> String {
-        std::env::temp_dir().to_string_lossy().into_owned()
+        self.script
+            .temp_root
+            .borrow()
+            .clone()
+            .unwrap_or_else(|| std::env::temp_dir().to_string_lossy().into_owned())
     }
     fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
         &maestro_resources::NativeResourceOperations
@@ -169,9 +192,9 @@ impl PackageOperations for Sandbox {
         self.check(Op::Create, path)?;
         self.native.create_dir_all(path)
     }
-    fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
+    fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()> {
         self.check(Op::Write, path)?;
-        self.native.write_file(path, text)
+        self.native.write_file(path, text, exclusive)
     }
     fn directory_is_empty(&self, path: &str) -> io::Result<bool> {
         self.check(Op::Read, path)?;
@@ -241,12 +264,15 @@ pub struct Fixture {
 }
 impl Fixture {
     /// Seeds in-memory global settings.
+    #[must_use]
     pub fn new(global: &Value) -> Self {
         let settings =
             SettingsManager::in_memory(Settings(global.as_object().cloned().unwrap_or_default()));
         Self::over(settings, None, false)
     }
     /// Uses the supplied settings, an optional input base and an optionally relative agent directory.
+    /// # Panics
+    /// Panics when the disposable directory or ambient working directory is unavailable.
     pub fn over(settings: SettingsManager, cwd: Option<&str>, relative_agent: bool) -> Self {
         let scratch = Scratch::new().unwrap();
         let root = scratch.0.to_string_lossy().into_owned();
@@ -299,22 +325,28 @@ impl Fixture {
         Self::over(SettingsManager::from_storage(storage), None, false)
     }
     /// Uses an agent directory written relative to the process working directory.
+    #[must_use]
     pub fn relative_agent() -> Self {
         Self::over(SettingsManager::in_memory(Settings::default()), None, true)
     }
     /// An absolute path below the disposable root.
+    #[must_use]
     pub fn path(&self, relative: &str) -> String {
         format!("{}/{relative}", self.scratch.0.to_string_lossy())
     }
     /// The project input base.
+    #[must_use]
     pub fn project(&self, relative: &str) -> String {
         self.path(&format!("project/{relative}"))
     }
     /// The user agent directory.
+    #[must_use]
     pub fn agent(&self, relative: &str) -> String {
         self.path(&format!("agent/{relative}"))
     }
     /// Waits for every settings write queued so far.
+    /// # Panics
+    /// Panics if driving the flush fails.
     pub fn flush(&self) {
         let flushed = self.settings.borrow().flush();
         block_on(Box::pin(async move {
@@ -324,10 +356,12 @@ impl Fixture {
         .unwrap();
     }
     /// Launches seen so far.
+    #[must_use]
     pub fn calls(&self) -> Vec<Call> {
         self.script.calls.borrow().clone()
     }
     /// The recorded `(phase, message)` pairs.
+    #[must_use]
     pub fn phases(&self) -> Vec<(maestro_packages::ProgressEventType, Option<String>)> {
         self.events
             .borrow()
@@ -338,6 +372,8 @@ impl Fixture {
 }
 
 /// Polls the future to completion; a held child must be released by another poll source.
+/// # Errors
+/// Returns the future's error.
 pub fn block_on<T>(mut future: PackageFuture<'_, T>) -> io::Result<T> {
     let mut cx = Context::from_waker(Waker::noop());
     loop {
@@ -358,6 +394,9 @@ pub fn poll_once<T>(future: &mut PackageFuture<'_, T>) -> Option<io::Result<T>> 
 }
 
 /// Reads a file's text.
+/// # Panics
+/// Panics if the file cannot be read as UTF-8.
+#[must_use]
 pub fn read(path: &str) -> String {
     std::fs::read_to_string(path).unwrap()
 }
