@@ -43,8 +43,6 @@ pub(super) fn walk(
         })
         .filter(|pattern| !missing || pattern.root(matcher).is_some())
         .collect();
-    let cwd = target.path.clone();
-    let mut pending = vec![Phase::Process(target, patterns)];
     let mut context = Context {
         matcher,
         nocase: platform != Platform::Posix,
@@ -53,7 +51,8 @@ pub(super) fn walk(
         walked: HashSet::new(),
         followed: HashSet::new(),
     };
-    context.seed_cwd(&cwd);
+    context.seed_cwd(&target.path);
+    let mut pending = vec![Phase::Process(target, patterns)];
     let mut seen = HashSet::new();
     let mut result = Vec::new();
     while let Some(phase) = pending.pop() {

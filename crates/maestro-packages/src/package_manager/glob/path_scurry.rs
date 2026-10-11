@@ -36,7 +36,7 @@ impl Children {
             });
         &self.entries[index]
     }
-    /// Promotes provisional identities and establishes the native listing order.
+    /// Promotes provisional identities and establishes the confirmed listing prefix.
     pub(super) fn readdir_sync(&mut self, names: impl Iterator<Item = String>, nocase: bool) {
         for name in names {
             let key = comparison_key(&name, nocase);
