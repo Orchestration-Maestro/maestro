@@ -78,20 +78,20 @@ source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
-directory-scoped rules with native ASCII case-insensitive matching and non-ASCII
-lowercasing in patterns and paths, literal braces,
-and ignored-parent pruning. One leading byte-order mark is removed from each
-ignore file. The deepest matching directory decides, with later rules winning
+directory-scoped rules and ignored-parent pruning. Rules match Unicode scalars
+with one-to-one uppercase equivalence; expansions and non-ASCII-to-ASCII mappings
+remain distinct. A question wildcard consumes one scalar, and bracket complements
+apply to the complete case-equivalent member set. Braces and parentheses are
+literal in ignore rules. Discovery discards blank lines and lines whose trimmed
+text begins with `#` before rule preparation removes one leading byte-order mark.
+Directory patterns such as `a/**/` match `a` itself; `a/**` selects only descendants.
+The deepest matching directory decides, with later rules winning
 within that directory. Native Unix
 listings use byte-name order; replacement filesystem adapters supply their own
 order through `PackageOperations::resource_operations`. Returned records retain
 the first authored path and provenance after per-kind canonical deduplication.
 Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).
-
-Known limit: non-ASCII ignore-rule matching (case equivalence beyond lowercase,
-character-based `?` and bracket classes) is tracked in
-[#557](https://github.com/Orchestration-Maestro/maestro/issues/557).
 
 Package-root resource manifests and expansion are tracked in [#452](https://github.com/Orchestration-Maestro/maestro/issues/452),
 missing/pinned-npm/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),

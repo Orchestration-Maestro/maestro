@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 mod matching;
 mod parse;
 
-use super::brace_expressions::{Class, ParsedClass, parse_class};
+use super::brace_expressions::{Class, ParsedClass, parse_class, parse_ignore_class};
 
 /// One basic segment token.
 #[derive(Debug, PartialEq, Eq)]
@@ -30,6 +30,8 @@ pub(super) enum Ast {
     Literal(String),
     /// Tokens including at least one nonliteral token.
     Pattern(Vec<Token>),
+    /// Ignore tokens permit dotted components.
+    Ignore(Vec<Token>),
     /// Nested syntax held without recursive ownership.
     Groups(parse::Groups),
 }
@@ -43,12 +45,22 @@ impl Ast {
         Self::basic(pattern)
     }
 
-    /// Parses scalar tokens without recognizing groups.
+    /// Parses ignore tokens without extended groups or public dot policy.
+    pub(super) fn parse_ignore(pattern: &str) -> Self {
+        Self::basic_mode(pattern, true)
+    }
+
+    /// Parses public scalar tokens without recognizing groups.
     fn basic(pattern: &str) -> Self {
+        Self::basic_mode(pattern, false)
+    }
+
+    /// Parses scalar tokens in the selected dialect.
+    fn basic_mode(pattern: &str, ignore: bool) -> Self {
         let mut tokens = Vec::new();
         let mut tail = pattern;
         while let Some(c) = tail.chars().next() {
-            if let Some((token, consumed)) = class_token(tail) {
+            if let Some((token, consumed)) = class_token(tail, ignore) {
                 tokens.push(token);
                 tail = &tail[consumed..];
                 continue;
@@ -56,10 +68,14 @@ impl Ast {
             tail = &tail[c.len_utf8()..];
             let mut chars = tail.chars();
             tokens.push(match c {
-                '\\' => Token::Literal(chars.next().unwrap_or('\\')),
+                '\\' => match chars.next() {
+                    Some(c) => Token::Literal(if ignore { super::canonical(c) } else { c }),
+                    None if ignore => Token::Never,
+                    None => Token::Literal('\\'),
+                },
                 '*' => Token::Star,
                 '?' => Token::Question,
-                _ => Token::Literal(c),
+                _ => Token::Literal(if ignore { super::canonical(c) } else { c }),
             });
             tail = chars.as_str();
         }
@@ -75,14 +91,23 @@ impl Ast {
                 | Token::Group(_) => None,
             })
             .collect();
-        literal.map_or(Self::Pattern(tokens), Self::Literal)
+        literal.map_or_else(
+            || {
+                if ignore {
+                    Self::Ignore(tokens)
+                } else {
+                    Self::Pattern(tokens)
+                }
+            },
+            Self::Literal,
+        )
     }
 
     /// Borrows decoded literal text for native root identity.
     pub(super) fn literal(&self) -> Option<&str> {
         match self {
             Self::Literal(text) => Some(text),
-            Self::Pattern(_) | Self::Groups(_) => None,
+            Self::Pattern(_) | Self::Ignore(_) | Self::Groups(_) => None,
         }
     }
 
@@ -90,34 +115,41 @@ impl Ast {
     pub(super) fn matches(&self, text: &str) -> bool {
         match self {
             Self::Literal(literal) => literal == text,
-            Self::Pattern(tokens) => match_pattern(tokens, text),
+            Self::Pattern(tokens) => match_pattern(tokens, text, false),
+            Self::Ignore(tokens) => match_pattern(tokens, text, true),
             Self::Groups(groups) => matching::matches(groups, text),
         }
     }
 }
 
 /// Decodes a class token, including named range endpoint rejection.
-/// Otherwise, an unclosed opener falls back to ordinary token parsing.
-fn class_token(pattern: &str) -> Option<(Token, usize)> {
+/// Unclosed openers fall back only in the public dialect; ignore openers cannot match.
+fn class_token(pattern: &str, ignore: bool) -> Option<(Token, usize)> {
     if !pattern.starts_with('[') {
         return None;
     }
-    let (parsed, consumed) = parse_class(pattern);
+    let (parsed, consumed) = if ignore {
+        parse_ignore_class(pattern)
+    } else {
+        parse_class(pattern)
+    };
     let token = match parsed {
-        ParsedClass::Literal(c) => Token::Literal(c),
+        ParsedClass::Literal(c) => Token::Literal(if ignore { super::canonical(c) } else { c }),
         ParsedClass::Class(class) => Token::Class(class),
         ParsedClass::Never => Token::Never,
+        ParsedClass::Unclosed if ignore => return Some((Token::Never, pattern.len())),
         ParsedClass::Unclosed => return None,
     };
     Some((token, consumed))
 }
 
 /// Consumes scalar text through active token positions.
-fn match_pattern(tokens: &[Token], text: &str) -> bool {
+fn match_pattern(tokens: &[Token], text: &str, dot: bool) -> bool {
     if text.is_empty()
-        || text == "."
-        || text == ".."
-        || (text.starts_with('.') && tokens.first() != Some(&Token::Literal('.')))
+        || (!dot
+            && (text == "."
+                || text == ".."
+                || (text.starts_with('.') && tokens.first() != Some(&Token::Literal('.')))))
     {
         return false;
     }

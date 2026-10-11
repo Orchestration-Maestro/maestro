@@ -85,6 +85,10 @@ fn ignore_files_keep_declared_order_and_directory_prefixes() {
             "ignore_nested",
             "ignore_nested_basename",
             "ignore_read_failure",
+            "unicode_file_order",
+            "unicode_nested_scope",
+            "unicode_basename_scope",
+            "unicode_readmission",
         ])
         .await;
         Ok(())
@@ -468,7 +472,8 @@ fn ignore_directory_prefixes_are_literal_identities() {
     .unwrap();
 }
 
-/// Directory patterns are normalized by their own scoped matcher.
+/// A quoted slash is not a directory marker in ignore 7.0.5 or native Git.
+/// An unquoted directory marker with trailing whitespace still excludes descendants.
 #[test]
 fn nested_ignore_directory_rules_keep_native_normalization() {
     block_on(Box::pin(async {
@@ -493,7 +498,7 @@ fn ignore_matching_folds_unicode_literal_names() {
     .unwrap();
 }
 
-/// One leading file byte-order mark is not part of the first ignore pattern.
+/// One leading rule byte-order mark is not part of the first ignore pattern.
 #[test]
 fn ignore_files_strip_one_leading_byte_order_mark() {
     block_on(Box::pin(async {
@@ -517,7 +522,17 @@ fn nonroot_skill_entry_stops_deeper_skill_discovery() {
 #[test]
 fn ignore_case_matching_preserves_authored_range_members() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_cross_case_range", "ignore_ascii_range"]).await;
+        resolution_support::cases(&[
+            "ignore_cross_case_range",
+            "ignore_ascii_range",
+            "unicode_accent_member",
+            "unicode_accent_upper_range",
+            "unicode_accent_lower_range",
+            "unicode_cross_case_range",
+            "unicode_negated_bang",
+            "unicode_negated_caret",
+        ])
+        .await;
         Ok(())
     }))
     .unwrap();
@@ -527,7 +542,91 @@ fn ignore_case_matching_preserves_authored_range_members() {
 #[test]
 fn invalid_ignore_range_keeps_following_rules_active() {
     block_on(Box::pin(async {
-        resolution_support::cases(&["ignore_invalid_range_continuation"]).await;
+        resolution_support::cases(&[
+            "ignore_invalid_range_continuation",
+            "unicode_malformed_range",
+        ])
+        .await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Equivalent Greek scalars are excluded without consuming an ASCII decoy.
+#[test]
+fn unicode_ignore_literals_select_equivalent_names() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["unicode_greek_literals"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Question wildcards consume scalars rather than bytes or grapheme clusters.
+#[test]
+fn ignore_question_counts_scalars_without_grapheme_folding() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["unicode_scalar_question", "unicode_scalar_pair"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Ignored Greek directory equivalents are pruned before child rules load.
+#[test]
+fn unicode_directory_rules_prune_before_readmission() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["unicode_directory_pruning"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Quoted metacharacters select literal filenames rather than wildcard decoys.
+#[cfg(unix)]
+#[test]
+fn escaped_ignore_metacharacters_select_literal_names() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["unicode_escaped_syntax"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Directory globstars prune their base while non-directory forms allow child readmission.
+#[test]
+fn terminal_directory_globstars_keep_zero_directory_matches() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&[
+            "directory_globstar",
+            "anchored_directory_globstar",
+            "repeated_directory_globstar",
+            "non_directory_globstar",
+            "directory_globstar_readmission",
+            "anchored_directory_globstar_readmission",
+            "repeated_directory_globstar_readmission",
+        ])
+        .await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Comment selection precedes single rule-level byte-order-mark removal.
+#[test]
+fn ignore_ingress_selects_comments_before_rule_preparation() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_bom_comment"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Rule preparation removes one leading byte-order mark, not two.
+#[test]
+fn ignore_ingress_preserves_a_second_rule_bom() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_double_bom"]).await;
         Ok(())
     }))
     .unwrap();

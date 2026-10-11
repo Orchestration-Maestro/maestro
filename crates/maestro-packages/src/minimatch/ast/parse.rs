@@ -177,7 +177,7 @@ impl Groups {
     fn append(&mut self, sequence: usize, text: &str) {
         let tokens = match Ast::basic(text) {
             Ast::Literal(text) => text.chars().map(Token::Literal).collect(),
-            Ast::Pattern(tokens) => tokens,
+            Ast::Pattern(tokens) | Ast::Ignore(tokens) => tokens,
             Ast::Groups(_) => return,
         };
         self.sequences[sequence].extend(tokens);

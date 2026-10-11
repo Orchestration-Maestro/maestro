@@ -1,10 +1,10 @@
 //! Typed bracket-class parsing and scalar membership.
 
-use std::sync::LazyLock;
+use std::{collections::HashSet, sync::LazyLock};
 
 /// A bracket parser's selected component syntax.
 pub(super) enum ParsedClass {
-    /// No closing delimiter; resume ordinary token parsing.
+    /// No closing delimiter was found.
     Unclosed,
     /// One surviving ordinary member with no negation.
     Literal(char),
@@ -23,11 +23,16 @@ pub(super) struct Class {
     named: Vec<NamedClass>,
     /// Whether to complement the complete union.
     negated: bool,
+    /// Canonical membership prepared for the ignore dialect.
+    canonical: Option<HashSet<char>>,
 }
 
 impl Class {
     /// Evaluates prepared membership, then applies outer negation.
     pub(super) fn matches(&self, scalar: char) -> bool {
+        if let Some(canonical) = &self.canonical {
+            return canonical.contains(&scalar) ^ self.negated;
+        }
         let end = self.ranges.partition_point(|(start, _)| *start <= scalar);
         let member = end
             .checked_sub(1)
@@ -159,10 +164,14 @@ enum Member {
     Named(NamedClass),
     /// The outer closing bracket.
     End,
+    /// Unsupported named syntax in the ignore dialect.
+    Invalid,
 }
 
 /// Shared class grammar without membership normalization.
 struct Members<'a> {
+    /// Whether only C-locale named classes are admitted.
+    ignore: bool,
     /// Remaining authored bytes.
     tail: &'a str,
     /// Whether a member has preceded the next closing bracket.
@@ -177,6 +186,7 @@ impl<'a> Members<'a> {
         let tail = &pattern[1..];
         let negated = tail.starts_with(['!', '^']);
         Self {
+            ignore: false,
             tail: if negated { &tail[1..] } else { tail },
             saw_start: false,
             negated,
@@ -197,7 +207,13 @@ impl<'a> Members<'a> {
             && let Some((named, consumed)) = NamedClass::parse(self.tail)
         {
             self.tail = &self.tail[consumed..];
+            if self.ignore && matches!(named, NamedClass::Ascii | NamedClass::Word) {
+                return Some(Member::Invalid);
+            }
             return Some(Member::Named(named));
+        }
+        if scalar == '[' && self.ignore && self.tail.starts_with(':') {
+            return Some(Member::Invalid);
         }
         Some(Member::Scalar(scalar))
     }
@@ -216,16 +232,23 @@ pub(super) fn class_boundary(pattern: &str) -> usize {
 
 /// Parses a class at the start of a component suffix, returning consumed bytes.
 pub(super) fn parse_class(pattern: &str) -> (ParsedClass, usize) {
+    parse_class_mode(pattern, false)
+}
+/// Parses shared member syntax with a selected named-class vocabulary.
+fn parse_class_mode(pattern: &str, ignore: bool) -> (ParsedClass, usize) {
     let mut members = Members::new(pattern);
+    members.ignore = ignore;
     let mut class = Class {
         ranges: Vec::new(),
         named: Vec::new(),
         negated: members.negated,
+        canonical: None,
     };
     let mut invalid = false;
     let mut range_start = None;
     while let Some(member) = members.next() {
         match member {
+            Member::Invalid => invalid = true,
             Member::End => {
                 let parsed = if invalid {
                     ParsedClass::Never
@@ -272,4 +295,59 @@ fn take_scalar(tail: &mut &str) -> Option<char> {
     let scalar = tail.chars().next()?;
     *tail = &tail[scalar.len_utf8()..];
     Some(scalar)
+}
+
+/// Parses ignore class syntax through the shared class grammar.
+pub(super) fn parse_ignore_class(pattern: &str) -> (ParsedClass, usize) {
+    let (parsed, consumed) = parse_class_mode(pattern, true);
+    let parsed = match parsed {
+        ParsedClass::Class(class) => class.canonicalize(),
+        other => other,
+    };
+    (parsed, consumed)
+}
+
+impl Class {
+    /// Expands normalized original intervals once, before case conversion.
+    fn canonicalize(mut self) -> ParsedClass {
+        let mut values: HashSet<_> = self
+            .ranges
+            .drain(..)
+            .flat_map(|(start, end)| {
+                (u32::from(start)..=u32::from(end))
+                    .filter_map(char::from_u32)
+                    .map(super::canonical)
+            })
+            .collect();
+        values.extend(
+            (0u8..=127)
+                .map(char::from)
+                .filter(|c| self.named.iter().any(|named| named.ascii(*c)))
+                .map(super::canonical),
+        );
+        self.named.clear();
+        self.canonical = Some(values);
+        ParsedClass::Class(self)
+    }
+}
+impl NamedClass {
+    /// Evaluates the C-locale member sets over ASCII scalars.
+    fn ascii(self, scalar: char) -> bool {
+        match self {
+            Self::Alnum => scalar.is_ascii_alphanumeric(),
+            Self::Alpha => scalar.is_ascii_alphabetic(),
+            Self::Ascii => scalar.is_ascii(),
+            Self::Blank => matches!(scalar, ' ' | '\t'),
+            Self::Cntrl => scalar.is_ascii_control(),
+            Self::Digit => scalar.is_ascii_digit(),
+            Self::Graph => scalar.is_ascii_graphic(),
+            Self::Lower => scalar.is_ascii_lowercase(),
+            Self::Print => (' '..='~').contains(&scalar),
+            Self::Punct => scalar.is_ascii_punctuation(),
+            Self::Space => matches!(scalar, ' ' | '\t'..='\r'),
+            Self::Upper => scalar.is_ascii_uppercase(),
+            Self::Word => scalar.is_ascii_alphanumeric() || scalar == '_',
+            Self::Xdigit => scalar.is_ascii_hexdigit(),
+        }
+    }
 }

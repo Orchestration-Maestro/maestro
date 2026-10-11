@@ -2,6 +2,7 @@
 #![doc = include_str!("../../../docs/package-sources.md")]
 
 mod git;
+mod ignore;
 
 pub use git::{GitSource, parse_git_url};
 
