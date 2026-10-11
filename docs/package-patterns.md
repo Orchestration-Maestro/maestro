@@ -1,7 +1,7 @@
 # Package file patterns
 
 `maestro_packages::minimatch(path, pattern)` evaluates a file pattern without
-filesystem access. Package discovery does not yet use this operation.
+filesystem access.
 
 Matching is case-sensitive outside native Windows drive identity. `*` matches
 zero or more scalars within a nonempty component; `?` matches one Unicode scalar.

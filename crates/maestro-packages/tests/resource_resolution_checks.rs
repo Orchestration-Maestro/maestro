@@ -5,6 +5,8 @@ mod resolution_support;
 mod scratch;
 use resolution_support::run as block_on;
 mod support;
+use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
+use std::{fs, rc::Rc};
 /// Explicit inputs select scope bases without extension suffix requirements.
 #[test]
 fn explicit_files_and_empty_inputs_keep_scope_bases() {
@@ -630,4 +632,160 @@ fn ignore_ingress_preserves_a_second_rule_bom() {
         Ok(())
     }))
     .unwrap();
+}
+
+/// Builds installed resources while keeping the package base authored relative.
+async fn resolve_relative_manifest(
+    entries: serde_json::Value,
+    fail_current: bool,
+) -> (
+    std::io::Result<maestro_packages::ResolvedPaths>,
+    usize,
+    String,
+) {
+    let scratch = scratch::Scratch::new().unwrap();
+    let current = std::env::current_dir().unwrap();
+    let agent = maestro_path::relative(
+        &current.to_string_lossy(),
+        &scratch.0.to_string_lossy(),
+        &maestro_path::Cwd {
+            current: "",
+            drive_directories: &[],
+        },
+    );
+    let root = scratch.0.join("git/example.com/org/pkg");
+    fs::create_dir_all(root.join("src")).unwrap();
+    fs::create_dir_all(root.join("skills/demo")).unwrap();
+    fs::write(root.join("src/a.ts"), "").unwrap();
+    fs::write(root.join("skills/demo/SKILL.md"), "").unwrap();
+    fs::write(
+        root.join("package.json"),
+        serde_json::json!({"maestro":entries})
+            .to_string()
+            .replace("$ROOT", &root.to_string_lossy()),
+    )
+    .unwrap();
+    let reads = Rc::new(std::cell::Cell::new(0));
+    let (_, settings, _) = support::manager(&serde_json::json!({}));
+    let manager = DefaultPackageManager::new(
+        PackageManagerOptions {
+            cwd: "/not-the-ambient-directory".into(),
+            agent_dir: agent,
+            settings_manager: settings,
+        },
+        support::Controlled(Rc::new(support::Effects {
+            native_exists: true,
+            resources: Some(Rc::new(resolution_support::Filesystem {
+                fail_current,
+                current_reads: reads.clone(),
+                ..Default::default()
+            })),
+            ..Default::default()
+        })),
+    );
+    let result = manager
+        .resolve_extension_sources(&["git:https://example.com/org/pkg".into()], None)
+        .await;
+    (result, reads.get(), root.to_string_lossy().into_owned())
+}
+
+/// Relative modifiers select candidate and skill parent identities, not configured cwd.
+#[test]
+fn relative_installed_roots_apply_each_override() {
+    block_on(Box::pin(async {
+        for (modifiers, admitted) in [
+            (vec!["!src/a.ts"], false),
+            (vec!["!src/a.ts", "+src/a.ts"], true),
+            (vec!["-src/a.ts"], false),
+        ] {
+            let skill_modifiers: Vec<_> = modifiers
+                .iter()
+                .map(|s| s.replace("src/a.ts", "skills/demo"))
+                .collect();
+            let mut extensions = vec!["$ROOT/src/a.ts".to_owned()];
+            extensions.extend(modifiers.into_iter().map(str::to_owned));
+            let mut skills = vec!["$ROOT/skills/demo/SKILL.md".to_owned()];
+            skills.extend(skill_modifiers);
+            let (result, reads, root) = resolve_relative_manifest(
+                serde_json::json!({"extensions":extensions,"skills":skills}),
+                false,
+            )
+            .await;
+            let result = result.unwrap();
+            assert_eq!(
+                result
+                    .extensions
+                    .iter()
+                    .map(|r| r.path.as_str())
+                    .collect::<Vec<_>>(),
+                if admitted {
+                    vec![maestro_path::join(&[&root, "src/a.ts"])]
+                } else {
+                    vec![]
+                }
+            );
+            assert_eq!(
+                result
+                    .skills
+                    .iter()
+                    .map(|r| r.path.as_str())
+                    .collect::<Vec<_>>(),
+                if admitted {
+                    vec![maestro_path::join(&[&root, "skills/demo/SKILL.md"])]
+                } else {
+                    vec![]
+                }
+            );
+            assert!(reads > 0, "relative matcher views require ambient cwd");
+            for resource in result.extensions.iter().chain(&result.skills) {
+                assert!(!maestro_path::is_absolute(
+                    resource.metadata.base_dir.as_deref().unwrap()
+                ));
+            }
+        }
+
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Empty candidate sets avoid ambient reads; matching propagates required cwd failure.
+#[test]
+fn relative_manifest_matching_reads_ambient_only_for_candidates() {
+    block_on(Box::pin(async {
+        let (result, reads, _) =
+            resolve_relative_manifest(serde_json::json!({"extensions":["!src/a.ts"]}), true).await;
+        assert!(result.unwrap().extensions.is_empty());
+        assert_eq!(reads, 0);
+        let (result, reads, _) = resolve_relative_manifest(
+            serde_json::json!({"extensions":["$ROOT/src/a.ts","!src/a.ts"]}),
+            true,
+        )
+        .await;
+        assert_eq!(
+            result.err().expect("required matcher cwd must fail").kind(),
+            std::io::ErrorKind::PermissionDenied
+        );
+        assert_eq!(reads, 1);
+
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Relative manifest literals and exclusions use the same ambient package root.
+#[test]
+fn relative_manifest_literals_are_excluded_from_installed_packages() {
+    block_on(Box::pin(async {
+    let (result, reads, _) = resolve_relative_manifest(
+        serde_json::json!({"extensions":["src/a.ts","!src/a.ts"],"skills":["skills/demo","!skills/demo"]}),
+        false,
+    ).await;
+    let result = result.unwrap();
+    assert!(result.extensions.is_empty());
+    assert!(result.skills.is_empty());
+    assert!(reads > 0);
+
+        Ok(())
+    })).unwrap();
 }

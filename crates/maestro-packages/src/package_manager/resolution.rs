@@ -124,7 +124,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             let entries = manifest.entries(kind.name())?;
             let files =
                 super::manifest::collect_manifest_entries(&entries, path, kind, operations)?;
-            let enabled = super::resource_patterns::apply_patterns(&files, &entries, path)?;
+            let enabled =
+                super::resource_patterns::apply_patterns(&files, &entries, path, operations)?;
             for file in files.iter().filter(|file| enabled.contains(file.as_str())) {
                 result.insert(kind, file.clone(), metadata);
             }

@@ -55,6 +55,7 @@ pub(super) fn apply_patterns<'a>(
     files: &'a [String],
     entries: &[String],
     root: &str,
+    operations: &dyn maestro_resources::skills::ResourceOperations,
 ) -> io::Result<HashSet<&'a str>> {
     let exclusions: Vec<_> = entries
         .iter()
@@ -64,9 +65,13 @@ pub(super) fn apply_patterns<'a>(
     let includes = exact_patterns(entries, '+');
     let removals = exact_patterns(entries, '-');
     let mut enabled = HashSet::new();
+    if files.is_empty() {
+        return Ok(enabled);
+    }
+    let root = super::resource_discovery::resolve_entry_path(root, "", operations)?;
     for file in files {
-        let views = PathViews::new(file, root);
-        let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), root));
+        let views = PathViews::new(file, &root);
+        let parent = (views.name == "SKILL.md").then(|| PathViews::new(&dirname(file), &root));
         let mut excluded = false;
         for pattern in &exclusions {
             if views.matches(pattern)?
