@@ -261,8 +261,13 @@ impl Driver for ControlledDriver {
             .invoke_setup(handler, self.host.writer("unused"))
             .await
     }
-    async fn setup_drop(&mut self) -> Result<(), String> {
-        let handler = self.identity("command setup")?;
+    async fn notify_continuation(&mut self, handler: u32) -> Result<(), String> {
+        self.exports()
+            .invoke_with_session(handler, self.host.replaced_context("identity-target"))
+            .await
+    }
+    async fn drop_command(&mut self, name: &str, args: &str) -> Result<(), String> {
+        let handler = self.identity(&format!("command {name}"))?;
         let exports = self.exports();
         let context = self.host.command_context("/work");
         let (finished, completion) = tokio::sync::oneshot::channel();
@@ -271,7 +276,7 @@ impl Driver for ControlledDriver {
         self.host.observe().hold_next_idle(hold);
         let main = async {
             let result = exports
-                .invoke_command(handler, super::setup_sessions::drop_input(), context)
+                .invoke_command(handler, args.to_owned(), context)
                 .await;
             completion.await.unwrap();
             result
@@ -279,6 +284,35 @@ impl Driver for ControlledDriver {
         let helper = async {
             entered.await.unwrap();
             let _ = open.send(());
+        };
+        super::join::alongside(main, helper).await
+    }
+    async fn host_drop(&mut self, args: &str) -> Result<(), String> {
+        let handler = self.identity("command replacement")?;
+        let exports = self.exports();
+        let ctx = self.host.command_context("/work");
+        let (done, finished) = tokio::sync::oneshot::channel();
+        let (dropped, drop_seen) = tokio::sync::oneshot::channel();
+        self.host.observe().replacement_finished = Some(done);
+        self.host.observe().replacement_dropped = Some(dropped);
+        let (operation, entered, open) = gate();
+        let (notification, notified, acknowledge) = gate();
+        self.host.observe().hold_next_idle(operation);
+        self.host.observe().hold_next_idle(notification);
+        let (complete, completed) = tokio::sync::oneshot::channel();
+        let main = async {
+            let result = exports.invoke_command(handler, args.to_owned(), ctx).await;
+            completed.await.unwrap();
+            result
+        };
+        let helper = async {
+            entered.await.unwrap();
+            notified.await.unwrap();
+            acknowledge.send(()).unwrap();
+            drop_seen.await.unwrap();
+            let _ = open.send(());
+            finished.await.unwrap();
+            complete.send(()).unwrap();
         };
         super::join::alongside(main, helper).await
     }
@@ -305,6 +339,65 @@ impl Driver for ControlledDriver {
         a?;
         b?;
         super::setup_sessions::pair_completed(&self.host.observed().transcript[start..]);
+        Ok(())
+    }
+    async fn replacement_sends_pair(&mut self) -> Result<(), String> {
+        let handler = self.identity("command replacement")?;
+        let exports = self.exports();
+        let first = self.host.command_context("/A");
+        let second = self.host.command_context("/B");
+        let start = self.host.observed().transcript.len();
+        let (hold_a, entered_a, open_a) = gate();
+        let (hold_b, entered_b, open_b) = gate();
+        self.host.observe().hold_next_idle(hold_a);
+        self.host.observe().hold_next_idle(hold_b);
+        let (a, b) = super::join::reversed(
+            exports.invoke_command(
+                handler,
+                super::replacement_commands::send_pair_input("A"),
+                first,
+            ),
+            exports.invoke_command(
+                handler,
+                super::replacement_commands::send_pair_input("B"),
+                second,
+            ),
+            [(entered_a, open_a), (entered_b, open_b)],
+            |phase| {
+                super::replacement_commands::send_pair_phase(
+                    &self.host.observed().transcript[start..],
+                    phase,
+                );
+                std::future::ready(())
+            },
+        )
+        .await;
+        a?;
+        b?;
+        super::replacement_commands::send_pair_completed(&self.host.observed().transcript[start..]);
+        Ok(())
+    }
+    async fn replacement_triple(&mut self) -> Result<(), String> {
+        let handler = self.identity("command replacement")?;
+        let exports = self.exports();
+        let start = self.transcript().len();
+        let gates = std::array::from_fn(|_| gate());
+        let barriers = gates.map(|(hold, entered, open)| {
+            self.host.observe().hold_next_idle(hold);
+            (entered, open)
+        });
+        let calls = ["newSession", "fork", "switchSession"].map(|group| {
+            exports.invoke_command(
+                handler,
+                super::replacement_commands::triple_input(group),
+                self.host.command_context(group),
+            )
+        });
+        let outcomes = super::replacement_commands::triple(calls, barriers).await;
+        for outcome in outcomes {
+            outcome?;
+        }
+        super::replacement_commands::triple_completed(&self.transcript()[start..]);
         Ok(())
     }
     async fn pending_pair(&mut self, handler: u32, shortcut: bool) -> Result<(), String> {

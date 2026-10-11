@@ -35,8 +35,9 @@ pub use api::{
 pub use context::{
     AbortSignal, CommandContextPort, CompactOptions, CompactionComplete, CompactionError,
     ContextPort, ContextUsage, ExtensionCommandContext, ExtensionContext, ExtensionUIContext,
-    ExtensionUIContextPort, NewSessionCommandOptions, ReplacedSessionContext,
-    ReplacedSessionContextPort, SetupSession, SignalPort, WithSession,
+    ExtensionUIContextPort, ForkData, ForkOptions, NavigateTreeOptions, NewSessionCommandOptions,
+    ReplacedSessionContext, ReplacedSessionContextPort, SetupSession, SignalPort,
+    SwitchSessionOptions, WithSession,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;

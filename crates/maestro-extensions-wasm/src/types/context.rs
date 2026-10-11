@@ -139,6 +139,30 @@ port! {
 ///     let _ = ctx.new_session(None);
 /// }
 /// ```
+///
+/// ```compile_fail,E0599
+/// fn fork(ctx: maestro_extensions_wasm::ExtensionContext) {
+///     let _ = ctx.fork("entry", None);
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// fn navigate_tree(ctx: maestro_extensions_wasm::ExtensionContext) {
+///     let _ = ctx.navigate_tree("entry", None);
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// fn switch_session(ctx: maestro_extensions_wasm::ExtensionContext) {
+///     let _ = ctx.switch_session("session", None);
+/// }
+/// ```
+///
+/// ```compile_fail,E0599
+/// fn reload(ctx: maestro_extensions_wasm::ExtensionContext) {
+///     let _ = ctx.reload();
+/// }
+/// ```
 #[derive(Clone)]
 pub struct ExtensionContext(Rc<dyn ContextPort>);
 
@@ -168,6 +192,27 @@ pub struct NewSessionCommandOptions {
 /// Session-replacing operations of a command context; each method forwards one operation and
 /// resolves to the host's message when the host rejects it.
 pub trait CommandContextPort: ContextPort {
+    /// Forwards fork to the bound host.
+    fn fork<'a>(
+        &'a self,
+        entry_id: &'a str,
+        options: Option<crate::ForkOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards navigate tree to the bound host.
+    fn navigate_tree<'a>(
+        &'a self,
+        target_id: &'a str,
+        options: Option<crate::NavigateTreeOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards switch session to the bound host.
+    fn switch_session<'a>(
+        &'a self,
+        path: &'a str,
+        options: Option<crate::SwitchSessionOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards reload to the bound host.
+    fn reload(&self) -> ExtensionFuture<'_, ()>;
+
     /// Waits for the agent to finish streaming.
     fn wait_for_idle(&self) -> ExtensionFuture<'_, ()>;
     /// Starts a new session.
@@ -187,6 +232,39 @@ pub struct ExtensionCommandContext {
 }
 
 impl ExtensionCommandContext {
+    #[must_use]
+    /// Forwards fork to the bound host.
+    pub fn fork<'a>(
+        &'a self,
+        entry_id: &'a str,
+        options: Option<crate::ForkOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        self.port.fork(entry_id, options)
+    }
+    #[must_use]
+    /// Forwards navigate tree to the bound host.
+    pub fn navigate_tree<'a>(
+        &'a self,
+        target_id: &'a str,
+        options: Option<crate::NavigateTreeOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        self.port.navigate_tree(target_id, options)
+    }
+    #[must_use]
+    /// Forwards switch session to the bound host.
+    pub fn switch_session<'a>(
+        &'a self,
+        path: &'a str,
+        options: Option<crate::SwitchSessionOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        self.port.switch_session(path, options)
+    }
+    #[must_use]
+    /// Forwards reload to the bound host.
+    pub fn reload(&self) -> ExtensionFuture<'_, ()> {
+        self.port.reload()
+    }
+
     /// Wraps the host's command context.
     #[must_use]
     pub fn new(port: Rc<dyn CommandContextPort>) -> Self {
@@ -221,6 +299,19 @@ impl Deref for ExtensionCommandContext {
 
 /// Operations of a [`ReplacedSessionContext`] beyond its command context.
 pub trait ReplacedSessionContextPort {
+    /// Forwards send message to the bound host.
+    fn send_message(
+        &self,
+        message: crate::CustomMessageInput,
+        options: Option<crate::SendMessageOptions>,
+    ) -> ExtensionFuture<'_, ()>;
+    /// Forwards send user message to the bound host.
+    fn send_user_message(
+        &self,
+        content: crate::UserContent,
+        options: Option<crate::SendUserMessageOptions>,
+    ) -> ExtensionFuture<'_, ()>;
+
     /// The command context bound to the replacement session.
     fn command(&self) -> Rc<dyn CommandContextPort>;
 }
@@ -230,14 +321,36 @@ pub trait ReplacedSessionContextPort {
 pub struct ReplacedSessionContext {
     /// The command view bound to the replacement session.
     command: ExtensionCommandContext,
+    /// Retained host replacement capability.
+    port: Rc<dyn ReplacedSessionContextPort>,
 }
 
 impl ReplacedSessionContext {
+    #[must_use]
+    /// Forwards send message to the bound host.
+    pub fn send_message(
+        &self,
+        message: crate::CustomMessageInput,
+        options: Option<crate::SendMessageOptions>,
+    ) -> ExtensionFuture<'_, ()> {
+        self.port.send_message(message, options)
+    }
+    #[must_use]
+    /// Forwards send user message to the bound host.
+    pub fn send_user_message(
+        &self,
+        content: crate::UserContent,
+        options: Option<crate::SendUserMessageOptions>,
+    ) -> ExtensionFuture<'_, ()> {
+        self.port.send_user_message(content, options)
+    }
+
     /// Wraps the host's replacement context.
     #[must_use]
-    pub fn new(port: &dyn ReplacedSessionContextPort) -> Self {
+    pub fn new(port: Rc<dyn ReplacedSessionContextPort>) -> Self {
         Self {
             command: ExtensionCommandContext::new(port.command()),
+            port,
         }
     }
 }
@@ -248,4 +361,43 @@ impl Deref for ReplacedSessionContext {
     fn deref(&self) -> &ExtensionCommandContext {
         &self.command
     }
+}
+
+#[derive(Default, serde::Serialize)]
+/// Optional plain fork data forwarded to the host.
+pub struct ForkData {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Position requested from the host; absence selects no guest default.
+    pub position: Option<crate::ForkPosition>,
+}
+#[derive(Default)]
+/// Fork data and its independently optional continuation.
+pub struct ForkOptions {
+    /// Plain fork data.
+    pub data: ForkData,
+    /// One-shot continuation bound by the host to this operation.
+    pub with_session: Option<WithSession>,
+}
+#[derive(Default)]
+/// Optional continuation of a session switch.
+pub struct SwitchSessionOptions {
+    /// One-shot continuation bound by the host to this operation.
+    pub with_session: Option<WithSession>,
+}
+#[derive(Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+/// Independently optional tree navigation choices.
+pub struct NavigateTreeOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Whether to request summarization.
+    pub summarize: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Literal optional instructions.
+    pub custom_instructions: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Whether to replace the host instructions.
+    pub replace_instructions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Literal optional label.
+    pub label: Option<String>,
 }

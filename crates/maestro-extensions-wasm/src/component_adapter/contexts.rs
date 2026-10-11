@@ -200,6 +200,69 @@ impl<I: Imports> ContextPort for Command<I> {
 }
 
 impl<I: Imports> CommandContextPort for Command<I> {
+    fn fork<'a>(
+        &'a self,
+        entry_id: &'a str,
+        options: Option<crate::ForkOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            let data = options
+                .as_ref()
+                .map(|options| super::exports::encode_value(&options.data))
+                .transpose()?;
+            let continuation = options
+                .and_then(|options| options.with_session)
+                .map(|f| Scoped::new(&self.imports, f));
+            self.imports
+                .fork(
+                    &self.context,
+                    entry_id,
+                    data,
+                    continuation.as_ref().map(|c| &c.handle),
+                )
+                .await
+        })
+    }
+    fn navigate_tree<'a>(
+        &'a self,
+        target_id: &'a str,
+        options: Option<crate::NavigateTreeOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            self.imports
+                .navigate_tree(
+                    &self.context,
+                    target_id,
+                    options
+                        .as_ref()
+                        .map(super::exports::encode_value)
+                        .transpose()?,
+                )
+                .await
+        })
+    }
+    fn switch_session<'a>(
+        &'a self,
+        path: &'a str,
+        options: Option<crate::SwitchSessionOptions>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(async move {
+            let continuation = options
+                .and_then(|o| o.with_session)
+                .map(|f| Scoped::new(&self.imports, f));
+            self.imports
+                .switch_session(
+                    &self.context,
+                    path,
+                    continuation.as_ref().map(|c| &c.handle),
+                )
+                .await
+        })
+    }
+    fn reload(&self) -> ExtensionFuture<'_, ()> {
+        self.imports.reload(&self.context)
+    }
+
     fn wait_for_idle(&self) -> ExtensionFuture<'_, ()> {
         self.imports.wait_for_idle(&self.context)
     }
@@ -254,6 +317,43 @@ struct Replaced<I: Imports> {
 }
 
 impl<I: Imports> ReplacedSessionContextPort for Replaced<I> {
+    fn send_message(
+        &self,
+        message: crate::CustomMessageInput,
+        options: Option<crate::SendMessageOptions>,
+    ) -> ExtensionFuture<'_, ()> {
+        Box::pin(async move {
+            self.imports
+                .replaced_send_message(
+                    &self.context,
+                    super::exports::encode_value(&message)?,
+                    options
+                        .as_ref()
+                        .map(super::exports::encode_value)
+                        .transpose()?,
+                )
+                .await
+        })
+    }
+    fn send_user_message(
+        &self,
+        content: crate::UserContent,
+        options: Option<crate::SendUserMessageOptions>,
+    ) -> ExtensionFuture<'_, ()> {
+        Box::pin(async move {
+            self.imports
+                .replaced_send_user_message(
+                    &self.context,
+                    super::exports::encode_value(&content)?,
+                    options
+                        .as_ref()
+                        .map(super::exports::encode_value)
+                        .transpose()?,
+                )
+                .await
+        })
+    }
+
     fn command(&self) -> Rc<dyn CommandContextPort> {
         Rc::new(Command {
             imports: self.imports.clone(),
@@ -267,8 +367,8 @@ pub(super) fn replaced_context<I: Imports>(
     imports: &I,
     context: I::ReplacedContext,
 ) -> ReplacedSessionContext {
-    ReplacedSessionContext::new(&Replaced {
+    ReplacedSessionContext::new(Rc::new(Replaced {
         imports: imports.clone(),
         context,
-    })
+    }))
 }

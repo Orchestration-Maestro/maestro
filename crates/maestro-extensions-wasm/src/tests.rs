@@ -53,6 +53,8 @@ mod registration_callbacks;
 mod registration_corpus;
 mod registration_fixture;
 mod registration_host;
+mod replacement_commands;
+pub(crate) mod replacement_host;
 mod scenario;
 mod selection_events;
 mod session_actions;
@@ -329,6 +331,8 @@ struct Contract {
     catalog_signatures: Vec<Vec<String>>,
     /// Writable reader acquisition and operation-scoped callback signatures.
     setup_signatures: Vec<Signature>,
+    /// Native-async replacement operations.
+    replacement_signatures: Vec<Signature>,
 }
 
 /// Reads the contract of the built component.
@@ -377,6 +381,7 @@ fn contract() -> Result<Contract, String> {
         .into_iter()
         .map(|(interface, name)| signature(&engine, interface, name, &resources(&engine, &host)))
         .collect::<Result<_, _>>()?,
+        replacement_signatures: replacement_signatures(&engine, &host)?,
         action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         event_params,
@@ -531,12 +536,19 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_registration_contract(&contract);
     assert_action_contract(&contract);
     assert_setup_contract(&contract);
+    assert_replacement_contract(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
+            "[method]command-context.fork",
+            "[method]command-context.navigate-tree",
             "[method]command-context.new-session",
+            "[method]command-context.reload",
+            "[method]command-context.switch-session",
             "[method]command-context.wait-for-idle",
             "[method]model-registry.get-api-key-and-headers",
+            "[method]replaced-session-context.send-message",
+            "[method]replaced-session-context.send-user-message",
             "callback-emit",
             "event-emit",
             "set-model",
@@ -766,4 +778,66 @@ fn assert_setup_contract(contract: &Contract) {
         )
     });
     assert_eq!(contract.setup_signatures, expected);
+}
+
+/// Inspect each actual import signature, including the borrowed callback/context operands.
+fn replacement_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let resources = resources(engine, host);
+    [
+        "command-context.fork",
+        "command-context.navigate-tree",
+        "command-context.switch-session",
+        "command-context.reload",
+        "replaced-session-context.send-message",
+        "replaced-session-context.send-user-message",
+    ]
+    .into_iter()
+    .map(|name| signature(engine, host, &format!("[method]{name}"), &resources))
+    .collect()
+}
+/// Replacement sends remain awaitable while ordinary action sends remain synchronous.
+fn assert_replacement_contract(contract: &Contract) {
+    let change = vec!["result<record {cancelled: bool}, string>".to_owned()];
+    let unit = vec!["result<_, string>".to_owned()];
+    let params = [
+        vec![
+            "self: borrow<command-context>",
+            "entry-id: string",
+            "data: option<string>",
+            "with-session: option<borrow<callback>>",
+        ],
+        vec![
+            "self: borrow<command-context>",
+            "target-id: string",
+            "options: option<string>",
+        ],
+        vec![
+            "self: borrow<command-context>",
+            "path: string",
+            "with-session: option<borrow<callback>>",
+        ],
+        vec!["self: borrow<command-context>"],
+        vec![
+            "self: borrow<replaced-session-context>",
+            "message: string",
+            "options: option<string>",
+        ],
+        vec![
+            "self: borrow<replaced-session-context>",
+            "content: string",
+            "options: option<string>",
+        ],
+    ];
+    for (index, ((actual_params, actual_results), expected)) in contract
+        .replacement_signatures
+        .iter()
+        .zip(params)
+        .enumerate()
+    {
+        assert_eq!(actual_params, &expected);
+        assert_eq!(actual_results, if index < 3 { &change } else { &unit });
+    }
 }

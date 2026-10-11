@@ -9,6 +9,45 @@ use crate::{FlagOptions, FlagValue};
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// Forwards fork through the owned host capability.
+    fn fork<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        entry_id: &'a str,
+        data: Option<String>,
+        with_session: Option<&'a Self::Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards navigate tree through the owned host capability.
+    fn navigate_tree<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        target_id: &'a str,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards switch session through the owned host capability.
+    fn switch_session<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        path: &'a str,
+        with_session: Option<&'a Self::Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult>;
+    /// Forwards reload through the owned host capability.
+    fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()>;
+    /// Forwards replaced send message through the owned host capability.
+    fn replaced_send_message<'a>(
+        &'a self,
+        context: &'a Self::ReplacedContext,
+        message: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()>;
+    /// Forwards replaced send user message through the owned host capability.
+    fn replaced_send_user_message<'a>(
+        &'a self,
+        context: &'a Self::ReplacedContext,
+        content: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()>;
+
     /// The Writer value.
     type Writer: 'static;
     /// Forwards writer reader through the owned host capability.

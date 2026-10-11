@@ -85,6 +85,50 @@ impl Imports for Generated {
         command_cwd(context: &host::CommandContext) -> ExtensionResult<String> => cwd();
         command(context: &host::ReplacedSessionContext) -> host::CommandContext => command();
     }
+    fn fork<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        entry_id: &'a str,
+        data: Option<String>,
+        with_session: Option<&'a Self::Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(context.fork(entry_id.to_owned(), data, with_session))
+    }
+    fn navigate_tree<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        target_id: &'a str,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(context.navigate_tree(target_id.to_owned(), options))
+    }
+    fn switch_session<'a>(
+        &'a self,
+        context: &'a Self::CommandContext,
+        path: &'a str,
+        with_session: Option<&'a Self::Callback>,
+    ) -> ExtensionFuture<'a, SessionChangeResult> {
+        Box::pin(context.switch_session(path.to_owned(), with_session))
+    }
+    fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()> {
+        Box::pin(context.reload())
+    }
+    fn replaced_send_message<'a>(
+        &'a self,
+        context: &'a Self::ReplacedContext,
+        message: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(context.send_message(message, options))
+    }
+    fn replaced_send_user_message<'a>(
+        &'a self,
+        target: &'a Self::ReplacedContext,
+        content: String,
+        options: Option<String>,
+    ) -> ExtensionFuture<'a, ()> {
+        Box::pin(target.send_user_message(content, options))
+    }
 
     type Writer = host::SessionManager;
 
