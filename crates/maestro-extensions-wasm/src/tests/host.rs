@@ -363,6 +363,13 @@ impl host::HostSubscription for State {
         Ok(())
     }
 }
+impl host::HostTheme for State {
+    fn drop(&mut self, this: Resource<super::renderer_host::Theme>) -> wasmtime::Result<()> {
+        let key = self.table.get(&this)?.0.clone();
+        self.observed.log(format!("theme-drop {key}"));
+        self.release(this)
+    }
+}
 impl host::HostCallbackEmitter for State {
     fn drop(&mut self, this: Resource<super::bus_host::Emitter>) -> wasmtime::Result<()> {
         self.table.delete(this)?;
@@ -370,6 +377,22 @@ impl host::HostCallbackEmitter for State {
     }
 }
 impl host::Host for State {
+    fn register_message_renderer(
+        &mut self,
+        custom_type: String,
+        handler: Resource<Identity>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        if let Some(error) = &self.observed.registrations.error {
+            return Ok(Err(error.clone()));
+        }
+        self.observed
+            .register(format!("renderer {custom_type}"), handler.rep());
+        self.observed.log(format!(
+            "renderer-register {}",
+            serde_json::json!(custom_type)
+        ));
+        Ok(Ok(()))
+    }
     fn send_message(
         &mut self,
         message: String,
@@ -978,8 +1001,8 @@ impl host::HostWithStore<State> for Imports {
     ) -> wasmtime::Result<Result<(), String>> {
         let hold = accessor.with(|mut access| access.get().observed.take_hold());
         pause(hold).await;
-        let emitter =
-            accessor.with(|mut access| access.get().table.push(super::bus_host::Emitter))?;
+        let emitter = accessor
+            .with(|mut access| access.get().table.push(super::bus_host::Emitter { key: 0 }))?;
         let result =
             Self::callback_emit(accessor, Resource::new_borrow(emitter.rep()), channel, data).await;
         accessor.with(|mut access| access.get().table.delete(emitter))?;
@@ -993,6 +1016,14 @@ impl host::HostWithStore<State> for Imports {
     ) -> wasmtime::Result<Result<(), String>> {
         let (guest, handlers) = accessor.with(|mut access| {
             let state = access.get();
+            let key = state.table.get(&emitter).expect("borrowed emitter").key;
+            if key != 0 {
+                state.observed.bus.renderer_emissions.push((
+                    key,
+                    channel.clone(),
+                    serde_json::from_str(&data).expect("encoded payload"),
+                ));
+            }
             (
                 state.guest.clone(),
                 state.observed.bus.emit(&channel, &data),

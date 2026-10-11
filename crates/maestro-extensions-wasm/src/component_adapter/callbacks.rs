@@ -87,6 +87,7 @@ macro_rules! kinds {
 kinds! {
     shared {
         Event(ExtensionHandler),
+        Renderer(crate::MessageRenderer),
         CompactionComplete(crate::CompactionComplete),
         CompactionError(crate::CompactionError),
         Listener(crate::EventListener),

@@ -26,6 +26,11 @@ interface host {
     }
 
 
+    /// Independently retained renderer theme.
+    resource theme;
+    /// Registers a renderer without invoking it.
+    register-message-renderer: func(custom-type: string, handler: borrow<callback>) -> result<_, string>;
+
     /// Host-owned identity of one guest closure.
     resource callback {
         constructor();

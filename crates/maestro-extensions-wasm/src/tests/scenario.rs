@@ -56,6 +56,24 @@ pub type Registrations = (
 /// handler answered, or to the message it failed with, and the scenario writes it to the
 /// transcript.
 pub trait Driver {
+    /// Actual invocation-local emitter identities and attempted payloads.
+    fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)>;
+    /// Invokes a renderer with an independently owned theme.
+    async fn renderer(
+        &mut self,
+        handler: u32,
+        message: &str,
+        expanded: bool,
+        theme: &str,
+    ) -> Result<Option<usize>, String>;
+    /// Invokes a retained component method.
+    async fn component(
+        &mut self,
+        id: usize,
+        call: super::renderer_host::Call<'_>,
+    ) -> Result<super::renderer_host::Reply, String>;
+    /// Removes one returned component alias.
+    async fn drop_component(&mut self, id: usize) -> Result<(), String>;
     /// Runs the factory and records the registrations the host observed.
     async fn start(&mut self) -> Result<(), String>;
     /// The identity a handler was registered under, such as `event input`.

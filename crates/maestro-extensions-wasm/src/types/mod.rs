@@ -59,3 +59,6 @@ pub use tool_events::*;
 pub use crate::bindings::maestro::extension::session::{
     NewSessionCommandData, SessionChangeResult,
 };
+
+mod renderers;
+pub use renderers::*;

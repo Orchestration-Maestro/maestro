@@ -1,0 +1,9179 @@
+[
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": false,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": "",
+        "display": true,
+        "timestamp": 0.30000000000000004,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": false,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": " text 雪\n",
+        "display": true,
+        "timestamp": 1.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": false,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [],
+        "display": true,
+        "timestamp": 2.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": false,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "alpha"
+          }
+        ],
+        "display": true,
+        "timestamp": 3.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": false,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": " kind ",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "image/example"
+          }
+        ],
+        "display": true,
+        "timestamp": 4.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": null
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": false
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": 0
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": ""
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": "雪"
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": []
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "z": 1,
+          "a": 2
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": false,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "message",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "kind 雪",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "img",
+            "mimeType": "custom/mime"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true,
+        "timestamp": 5.3,
+        "details": {
+          "list": [
+            1,
+            null,
+            false,
+            {
+              "nested": "x"
+            }
+          ]
+        }
+      },
+      "expanded": true,
+      "theme": "theme-A",
+      "returned": true
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "none",
+      "expanded": false
+    },
+    "expected": {
+      "returned": false,
+      "called": 1
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "none",
+      "expanded": true
+    },
+    "expected": {
+      "returned": false,
+      "called": 1
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "component",
+      "expanded": false
+    },
+    "expected": {
+      "returned": true,
+      "called": 1
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "component",
+      "expanded": true
+    },
+    "expected": {
+      "returned": true,
+      "called": 1
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "error",
+      "expanded": false
+    },
+    "expected": {
+      "error": "render author\n雪",
+      "called": 1
+    }
+  },
+  {
+    "group": "outcome",
+    "input": {
+      "mode": "error",
+      "expanded": true
+    },
+    "expected": {
+      "error": "render author\n雪",
+      "called": 1
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": ""
+    },
+    "expected": {
+      "keys": [
+        "",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": ""
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": " x "
+    },
+    "expected": {
+      "keys": [
+        " x ",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": " x "
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": "雪"
+    },
+    "expected": {
+      "keys": [
+        "雪",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": "雪"
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": "__proto__"
+    },
+    "expected": {
+      "keys": [
+        "__proto__",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": "__proto__"
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": "constructor"
+    },
+    "expected": {
+      "keys": [
+        "constructor",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": "constructor"
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "registration",
+    "input": {
+      "name": "a/b"
+    },
+    "expected": {
+      "keys": [
+        "a/b",
+        "decoy"
+      ],
+      "selected": 2,
+      "missing": true
+    }
+  },
+  {
+    "group": "rejected_registration",
+    "input": {
+      "name": "a/b"
+    },
+    "expected": {
+      "error": "renderer unavailable\n雪",
+      "selected": 2
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 0,
+      "data": ""
+    },
+    "expected": {
+      "before": [
+        "width=0",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=0",
+        "",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 0,
+      "data": "é雪"
+    },
+    "expected": {
+      "before": [
+        "width=0",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=0",
+        "é雪",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 0,
+      "data": "\u0003"
+    },
+    "expected": {
+      "before": [
+        "width=0",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=0",
+        "\u0003",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 0,
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "before": [
+        "width=0",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=0",
+        "\u001b[97;1:3u",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 0,
+      "data": "\u001b[200~paste\n雪\u001b[201~"
+    },
+    "expected": {
+      "before": [
+        "width=0",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=0",
+        "\u001b[200~paste\n雪\u001b[201~",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 1,
+      "data": ""
+    },
+    "expected": {
+      "before": [
+        "width=1",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=1",
+        "",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 1,
+      "data": "é雪"
+    },
+    "expected": {
+      "before": [
+        "width=1",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=1",
+        "é雪",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 1,
+      "data": "\u0003"
+    },
+    "expected": {
+      "before": [
+        "width=1",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=1",
+        "\u0003",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 1,
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "before": [
+        "width=1",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=1",
+        "\u001b[97;1:3u",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 1,
+      "data": "\u001b[200~paste\n雪\u001b[201~"
+    },
+    "expected": {
+      "before": [
+        "width=1",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=1",
+        "\u001b[200~paste\n雪\u001b[201~",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 7,
+      "data": ""
+    },
+    "expected": {
+      "before": [
+        "width=7",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=7",
+        "",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 7,
+      "data": "é雪"
+    },
+    "expected": {
+      "before": [
+        "width=7",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=7",
+        "é雪",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 7,
+      "data": "\u0003"
+    },
+    "expected": {
+      "before": [
+        "width=7",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=7",
+        "\u0003",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 7,
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "before": [
+        "width=7",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=7",
+        "\u001b[97;1:3u",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 7,
+      "data": "\u001b[200~paste\n雪\u001b[201~"
+    },
+    "expected": {
+      "before": [
+        "width=7",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=7",
+        "\u001b[200~paste\n雪\u001b[201~",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 80,
+      "data": ""
+    },
+    "expected": {
+      "before": [
+        "width=80",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=80",
+        "",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 80,
+      "data": "é雪"
+    },
+    "expected": {
+      "before": [
+        "width=80",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=80",
+        "é雪",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 80,
+      "data": "\u0003"
+    },
+    "expected": {
+      "before": [
+        "width=80",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=80",
+        "\u0003",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 80,
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "before": [
+        "width=80",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=80",
+        "\u001b[97;1:3u",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 80,
+      "data": "\u001b[200~paste\n雪\u001b[201~"
+    },
+    "expected": {
+      "before": [
+        "width=80",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=80",
+        "\u001b[200~paste\n雪\u001b[201~",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 240,
+      "data": ""
+    },
+    "expected": {
+      "before": [
+        "width=240",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=240",
+        "",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 240,
+      "data": "é雪"
+    },
+    "expected": {
+      "before": [
+        "width=240",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=240",
+        "é雪",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 240,
+      "data": "\u0003"
+    },
+    "expected": {
+      "before": [
+        "width=240",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=240",
+        "\u0003",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 240,
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "before": [
+        "width=240",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=240",
+        "\u001b[97;1:3u",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "component",
+    "input": {
+      "width": 240,
+      "data": "\u001b[200~paste\n雪\u001b[201~"
+    },
+    "expected": {
+      "before": [
+        "width=240",
+        "before",
+        "invalidations=0",
+        "",
+        "repeat",
+        "repeat"
+      ],
+      "after": [
+        "width=240",
+        "\u001b[200~paste\n雪\u001b[201~",
+        "invalidations=1",
+        "",
+        "repeat",
+        "repeat"
+      ]
+    }
+  },
+  {
+    "group": "release_preference",
+    "input": {},
+    "expected": {
+      "filter_release_before": true,
+      "filter_release_after": false
+    }
+  },
+  {
+    "group": "release_preference",
+    "input": {
+      "preference": false
+    },
+    "expected": {
+      "filter_release_before": true,
+      "filter_release_after": false
+    }
+  },
+  {
+    "group": "release_preference",
+    "input": {
+      "preference": true
+    },
+    "expected": {
+      "filter_release_before": false,
+      "filter_release_after": false
+    }
+  },
+  {
+    "group": "line_sequence",
+    "input": {
+      "lines": []
+    },
+    "expected": {
+      "lines": []
+    }
+  },
+  {
+    "group": "line_sequence",
+    "input": {
+      "lines": [
+        ""
+      ]
+    },
+    "expected": {
+      "lines": [
+        ""
+      ]
+    }
+  },
+  {
+    "group": "line_sequence",
+    "input": {
+      "lines": [
+        "z",
+        "",
+        "a",
+        "z",
+        "\u001b[31m雪\u001b[0m"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "z",
+        "",
+        "a",
+        "z",
+        "\u001b[31m雪\u001b[0m"
+      ]
+    }
+  },
+  {
+    "group": "absent_input",
+    "input": {
+      "data": "literal"
+    },
+    "expected": {
+      "renders": 0
+    }
+  },
+  {
+    "group": "signed_text",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "signed",
+        "content": [
+          {
+            "type": "text",
+            "text": "signed text",
+            "textSignature": ""
+          }
+        ],
+        "display": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "signed",
+        "content": [
+          {
+            "type": "text",
+            "text": "signed text",
+            "textSignature": ""
+          }
+        ],
+        "display": true,
+        "timestamp": 0
+      }
+    }
+  },
+  {
+    "group": "signed_text",
+    "input": {
+      "message": {
+        "role": "custom",
+        "customType": "signed",
+        "content": [
+          {
+            "type": "text",
+            "text": "signed text",
+            "textSignature": "signature 雪"
+          }
+        ],
+        "display": true,
+        "timestamp": 0
+      }
+    },
+    "expected": {
+      "message": {
+        "role": "custom",
+        "customType": "signed",
+        "content": [
+          {
+            "type": "text",
+            "text": "signed text",
+            "textSignature": "signature 雪"
+          }
+        ],
+        "display": true,
+        "timestamp": 0
+      }
+    }
+  },
+  {
+    "group": "timestamp",
+    "input": {
+      "literal": "-0"
+    },
+    "expected": {
+      "literal": "-0"
+    }
+  },
+  {
+    "group": "timestamp",
+    "input": {
+      "literal": "0"
+    },
+    "expected": {
+      "literal": "0"
+    }
+  },
+  {
+    "group": "timestamp",
+    "input": {
+      "literal": "1.25"
+    },
+    "expected": {
+      "literal": "1.25"
+    }
+  },
+  {
+    "group": "timestamp",
+    "input": {
+      "literal": "1728000000000"
+    },
+    "expected": {
+      "literal": "1728000000000"
+    }
+  }
+]

@@ -61,6 +61,8 @@ port! {
         fn get_flag(name: &str) -> Option<FlagValue>;
         /// Registers one tool; rejected registration retains no callbacks.
         fn register_tool(tool: ToolDefinition) -> ();
+        /// Registers a custom-message renderer.
+        fn register_message_renderer(custom_type: &str, renderer: crate::MessageRenderer) -> ();
         /// Forwards a custom entry to the host's session.
         fn append_entry(custom_type: &str, data: Option<Value>) -> ();
         /// Sends the supplied custom message and optional delivery choices.

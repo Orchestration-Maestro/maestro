@@ -2,6 +2,19 @@ package maestro:extension@0.1.0;
 
 /// Callbacks the host invokes on the extension.
 interface guest {
+    use host.{theme};
+    /// Renderer input with owned theme and complete message document.
+    record render-request { message: string, expanded: bool, theme: theme }
+    /// Retained authored component, owned by the receiving host.
+    resource component-view {
+        render: func(width: u32, emitter: borrow<callback-emitter>) -> result<list<string>, string>;
+        handle-input: func(data: string, emitter: borrow<callback-emitter>) -> result<_, string>;
+        wants-key-release: func(emitter: borrow<callback-emitter>) -> result<bool, string>;
+        invalidate: func(emitter: borrow<callback-emitter>) -> result<_, string>;
+    }
+    /// Runs a synchronous renderer and transfers its returned component.
+    invoke-renderer: func(handler: borrow<callback>, request: render-request, emitter: borrow<callback-emitter>) -> result<option<component-view>, string>;
+
     invoke-setup: async func(handler: borrow<callback>, writer: session-manager) -> result<_, string>;
     use host.{autocomplete-item, callback-emitter, tool-update, session-manager, callback, abort-signal, context, command-context, replaced-session-context};
 

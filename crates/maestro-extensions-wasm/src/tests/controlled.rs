@@ -121,6 +121,23 @@ pub struct Node {
     _lease: Lease,
 }
 
+/// Counted theme owner with its literal identity.
+pub struct Theme {
+    /// Supplied identity.
+    key: String,
+    /// Shared observations.
+    observed: Rc<RefCell<Observed>>,
+    /// Owned resource count.
+    _lease: Lease,
+}
+impl Drop for Theme {
+    fn drop(&mut self) {
+        self.observed
+            .borrow_mut()
+            .log(format!("theme-drop {}", self.key));
+    }
+}
+
 /// The controlled host: records registrations and serves contexts from memory.
 #[derive(Clone, Default)]
 pub struct Controlled {
@@ -129,6 +146,14 @@ pub struct Controlled {
 }
 
 impl Controlled {
+    /// Lends an independently owned theme.
+    pub fn theme(&self, key: &str) -> Theme {
+        Theme {
+            key: key.into(),
+            observed: Rc::clone(&self.observed),
+            _lease: Lease::new(&self.observed),
+        }
+    }
     /// What the host observed so far.
     pub fn observed(&self) -> std::cell::Ref<'_, Observed> {
         self.observed.borrow()
@@ -541,7 +566,9 @@ impl Imports for Controlled {
         self.observed.borrow_mut().bus.unsubscribe(subscription)
     }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
-        Box::pin(async move { self.callback_emit(&super::bus_host::Emitter, &channel, &data) })
+        Box::pin(async move {
+            self.callback_emit(&super::bus_host::Emitter { key: 0 }, &channel, &data)
+        })
     }
     fn callback_emit(
         &self,
@@ -549,6 +576,13 @@ impl Imports for Controlled {
         channel: &str,
         data: &str,
     ) -> ExtensionResult<()> {
+        if emitter.key != 0 {
+            self.observed.borrow_mut().bus.renderer_emissions.push((
+                emitter.key,
+                channel.into(),
+                serde_json::from_str(data).unwrap(),
+            ));
+        }
         let handlers = self.observed.borrow_mut().bus.emit(channel, data)?;
         for handler in handlers {
             Exports::new(self.clone()).invoke_listener(handler, data, emitter)?;
@@ -1103,6 +1137,24 @@ impl Imports for Controlled {
 
     fn on(&self, event: &str, handler: &Callback) -> ExtensionResult<()> {
         self.observed.borrow_mut().on(event, handler.id)
+    }
+
+    type Theme = Theme;
+    fn register_message_renderer(
+        &self,
+        custom_type: &str,
+        handler: &Callback,
+    ) -> ExtensionResult<()> {
+        let mut observed = self.observed.borrow_mut();
+        if let Some(error) = &observed.registrations.error {
+            return Err(error.clone());
+        }
+        observed.register(format!("renderer {custom_type}"), handler.id);
+        observed.log(format!(
+            "renderer-register {}",
+            serde_json::json!(custom_type)
+        ));
+        Ok(())
     }
 
     fn register_command(

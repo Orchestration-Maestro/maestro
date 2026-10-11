@@ -234,6 +234,14 @@ impl Imports for Generated {
 
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
+    type Theme = host::Theme;
+    fn register_message_renderer(
+        &self,
+        custom_type: &str,
+        handler: &host::Callback,
+    ) -> ExtensionResult<()> {
+        host::register_message_renderer(custom_type, handler)
+    }
     type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
@@ -314,6 +322,23 @@ impl Imports for Generated {
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
+    type ComponentView = RenderedComponent;
+    fn invoke_renderer(
+        handler: &host::Callback,
+        request: guest::RenderRequest,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<Option<guest::ComponentView>> {
+        let request = super::renderers::RenderRequest {
+            message: &request.message,
+            expanded: request.expanded,
+            theme: request.theme,
+            emitter,
+        };
+        Ok(Exports::new(Generated)
+            .invoke_renderer(handler.id(), request)?
+            .map(|component| guest::ComponentView::new(RenderedComponent(component))))
+    }
+
     async fn invoke_setup(
         handler: &host::Callback,
         writer: host::SessionManager,
@@ -426,5 +451,27 @@ impl<E: Extension> Guest for Glue<E> {
         Exports::new(Generated)
             .invoke_event(handler.id(), event, Capabilities { ctx, signal })
             .await
+    }
+}
+
+/// Guest-owned resource retaining one authored component.
+#[doc(hidden)]
+pub struct RenderedComponent(crate::Component);
+impl guest::GuestComponentView for RenderedComponent {
+    fn render(&self, width: u32, emitter: &host::CallbackEmitter) -> ExtensionResult<Vec<String>> {
+        super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.render(width, emitter))
+    }
+    fn handle_input(&self, data: String, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
+        super::renderers::with_emitter(&Generated, emitter, |emitter| {
+            self.0.handle_input(&data, emitter)
+        })
+    }
+    fn wants_key_release(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<bool> {
+        super::renderers::with_emitter(&Generated, emitter, |emitter| {
+            self.0.wants_key_release(emitter)
+        })
+    }
+    fn invalidate(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
+        super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.invalidate(emitter))
     }
 }
