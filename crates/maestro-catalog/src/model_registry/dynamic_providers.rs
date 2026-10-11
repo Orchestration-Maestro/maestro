@@ -7,7 +7,6 @@ use maestro_models::{
     ApiProvider, Model, OAuthError, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
     register_oauth_provider,
 };
-use std::borrow::Cow;
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Apply incoming operations before descriptor publication and optional transformation.
@@ -118,28 +117,8 @@ impl ModelRegistry {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
-        let models: Vec<_> = handles
-            .iter()
-            .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
-            .collect();
-        let Some(transformed) = oauth.modify_models(&models, &credentials) else {
-            return Ok(());
-        };
-        let transformed = transformed?;
-        self.models = Arc::new(RwLock::new(
-            transformed
-                .into_iter()
-                .map(|model| {
-                    if let Cow::Borrowed(original) = &model
-                        && let Some(index) = models.element_offset(original)
-                    {
-                        Arc::clone(&handles[index])
-                    } else {
-                        Arc::new(RwLock::new(model.into_owned()))
-                    }
-                })
-                .collect(),
-        ));
+        let handles = super::transform_handles(handles, oauth, &credentials)?;
+        self.models = Arc::new(RwLock::new(handles));
         Ok(())
     }
     /// Remove a retained registration before reloading; unknown names are no-ops.

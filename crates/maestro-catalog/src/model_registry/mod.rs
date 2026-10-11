@@ -9,7 +9,10 @@ use std::borrow::Cow;
 mod request_auth;
 use indexmap::IndexMap;
 use maestro_credentials::{AuthCredential, AuthStorage};
-use maestro_models::{Model, OAuthError, get_models, get_oauth_providers, get_providers};
+use maestro_models::{
+    Model, OAuthCredentials, OAuthError, OAuthProviderHandle, get_models, get_oauth_providers,
+    get_providers,
+};
 use request_auth::ProviderRequestConfig;
 pub use request_auth::ResolvedRequestAuth;
 use std::collections::HashMap;
@@ -157,19 +160,16 @@ impl ModelRegistry {
             Ok(None) => {}
             Err(error) => self.load_error = Some(error),
         }
+        let mut handles = models
+            .into_iter()
+            .map(|m| Arc::new(RwLock::new(m)))
+            .collect();
         for provider in get_oauth_providers() {
-            if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id())
-                && let Some(transformed) = provider.modify_models(&models, &credentials)
-            {
-                models = transformed?.into_iter().map(Cow::into_owned).collect();
+            if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id()) {
+                handles = transform_handles(handles, &provider, &credentials)?;
             }
         }
-        self.models = Arc::new(RwLock::new(
-            models
-                .into_iter()
-                .map(|m| Arc::new(RwLock::new(m)))
-                .collect(),
-        ));
+        self.models = Arc::new(RwLock::new(handles));
         Ok(())
     }
     /// Move checked request sources before descriptor composition.
@@ -241,4 +241,33 @@ fn read_provider(model: &Arc<RwLock<Model>>) -> String {
         .unwrap_or_else(PoisonError::into_inner)
         .provider
         .clone()
+}
+
+/// Project borrowed provenance onto current handles without holding descriptor guards.
+fn transform_handles(
+    handles: Vec<Arc<RwLock<Model>>>,
+    oauth: &OAuthProviderHandle,
+    credentials: &OAuthCredentials,
+) -> Result<Vec<Arc<RwLock<Model>>>, OAuthError> {
+    let models: Vec<_> = handles
+        .iter()
+        .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
+        .collect();
+    let Some(transformed) = oauth.modify_models(&models, credentials) else {
+        return Ok(handles);
+    };
+    let mut foreign = HashMap::new();
+    Ok(transformed?
+        .into_iter()
+        .map(|model| match model {
+            Cow::Borrowed(original) => match models.element_offset(original) {
+                Some(index) => Arc::clone(&handles[index]),
+                None => foreign
+                    .entry(std::ptr::from_ref(original))
+                    .or_insert_with(|| Arc::new(RwLock::new(original.clone())))
+                    .clone(),
+            },
+            Cow::Owned(model) => Arc::new(RwLock::new(model)),
+        })
+        .collect())
 }

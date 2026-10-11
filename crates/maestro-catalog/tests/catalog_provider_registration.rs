@@ -1000,23 +1000,27 @@ fn repeated_borrowed_descriptor_keeps_one_shared_alias() {
                 selected,
                 copied,
                 std::borrow::Cow::Borrowed(foreign),
+                std::borrow::Cow::Borrowed(foreign),
             ])
         }),
     }));
     registry.register_provider("p", config).unwrap();
     let published = registry.get_all();
     let live = published.read().unwrap();
-    assert_eq!(live.len(), 4);
+    assert_eq!(live.len(), 5);
     assert!(Arc::ptr_eq(&live[0], &retained));
     assert!(Arc::ptr_eq(&live[1], &retained));
     assert!(!Arc::ptr_eq(&live[2], &retained));
     assert!(!Arc::ptr_eq(&live[3], &retained));
     assert!(!Arc::ptr_eq(&live[2], &live[3]));
+    assert!(Arc::ptr_eq(&live[3], &live[4]));
     retained.write().unwrap().name = "shared edit".into();
     assert_eq!(live[0].read().unwrap().name, "shared edit");
     assert_eq!(live[1].read().unwrap().name, "shared edit");
     assert_eq!(live[2].read().unwrap().name, "Name m");
     assert_eq!(live[3].read().unwrap().name, "Name m");
+    live[3].write().unwrap().name = "foreign edit".into();
+    assert_eq!(live[4].read().unwrap().name, "foreign edit");
 }
 
 #[test]
@@ -1080,4 +1084,68 @@ fn owned_descriptor_preserves_key_order_and_signed_zero() {
         retained.read().unwrap().cost.input.to_bits(),
         0.0_f64.to_bits()
     );
+}
+
+#[test]
+fn constructor_modifier_repeated_input_keeps_one_shared_handle() {
+    if dynamic::isolated("constructor_modifier_repeated_input_keeps_one_shared_handle") {
+        return;
+    }
+    let auth = support::auth();
+    auth.set(
+        "constructor",
+        maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+    );
+    maestro_models::register_oauth_provider(Arc::new(dynamic::OAuth {
+        calls: None,
+        id: "constructor",
+        name: "Constructor aliases",
+        transform: Arc::new(|models| {
+            let selected = models.into_iter().next().unwrap();
+            Ok(vec![selected.clone(), selected])
+        }),
+    }));
+    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let published = registry.get_all();
+    let models = published.read().unwrap();
+    assert_eq!(models.len(), 2);
+    assert!(Arc::ptr_eq(&models[0], &models[1]));
+    models[0].write().unwrap().name = "constructor edit".into();
+    assert_eq!(models[1].read().unwrap().name, "constructor edit");
+}
+
+#[test]
+fn chained_constructor_modifiers_preserve_first_step_alias() {
+    if dynamic::isolated("chained_constructor_modifiers_preserve_first_step_alias") {
+        return;
+    }
+    let auth = support::auth();
+    for id in ["first", "second"] {
+        auth.set(
+            id,
+            maestro_credentials::AuthCredential::OAuth(dynamic::tokens()),
+        );
+    }
+    maestro_models::register_oauth_provider(Arc::new(dynamic::OAuth {
+        calls: None,
+        id: "first",
+        name: "First",
+        transform: Arc::new(|models| {
+            let selected = models.into_iter().next().unwrap();
+            Ok(vec![selected.clone(), selected])
+        }),
+    }));
+    maestro_models::register_oauth_provider(Arc::new(dynamic::OAuth {
+        calls: None,
+        id: "second",
+        name: "Second",
+        transform: Arc::new(|models| Ok(models)),
+    }));
+    let registry = ModelRegistry::in_memory(auth).unwrap();
+    let published = registry.get_all();
+    let models = published.read().unwrap();
+    assert_eq!(models.len(), 2);
+    assert!(Arc::ptr_eq(&models[0], &models[1]));
+    models[0].write().unwrap().name = "chained edit".into();
+    assert_eq!(models[1].read().unwrap().name, "chained edit");
 }
