@@ -62,3 +62,29 @@ package manager turns a nonzero or missing code into the failure
 
 The pure [file-pattern operation](package-patterns.md) is available
 separately from package discovery.
+
+## Conventional resource discovery
+
+`PackageManager::resolve_extension_sources` resolves explicit local sources and
+already-installed unpinned npm or Git sources in user/project scope. `None` selects
+user scope; temporary scope currently admits only local sources.
+
+Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
+A local directory with none of these paths is returned as an extension root;
+an existing conventional path suppresses that fallback even when discovery is empty.
+Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
+paths before `index.ts` or `index.js`. Other extension discovery admits top-level
+source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
+loose Markdown is root-only. Prompts and themes recurse by their suffix.
+
+Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
+case-insensitive rules with literal braces and ignored-parent pruning. Native Unix
+listings use byte-name order; replacement filesystem adapters supply their own
+order through `PackageOperations::resource_operations`. Returned records retain
+the first authored path and provenance after per-kind canonical deduplication.
+Delegated path rules belong to [configured sources](package-sources.md) and
+file-pattern policy to [file patterns](package-patterns.md).
+
+Package-root resource manifests and expansion are tracked in [#452](https://github.com/Orchestration-Maestro/maestro/issues/452),
+missing/pinned/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
+and configured/automatic merging and filters in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).

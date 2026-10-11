@@ -22,8 +22,10 @@ pub use package_manager::{
     CommandCaptureOptions, CommandOutput, ConfiguredPackage, DefaultPackageManager,
     InstalledSourceScope, PackageFuture, PackageManager, PackageManagerOptions, PackageOperations,
     PackageUpdate, PackageUpdateType, ProgressAction, ProgressCallback, ProgressEvent,
-    ProgressEventType,
+    ProgressEventType, ResolvedPaths, ResolvedResource,
 };
 
 mod minimatch;
 pub use minimatch::{PatternError, minimatch};
+
+pub use maestro_resources::{PathMetadata, SourceOrigin, SourceScope};

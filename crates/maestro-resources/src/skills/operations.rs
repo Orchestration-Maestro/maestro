@@ -167,7 +167,7 @@ impl ResourceOperations for NativeResourceOperations {
         path.exists()
     }
     fn read_dir(&self, path: &Path) -> io::Result<Vec<ResourceEntry>> {
-        std::fs::read_dir(path)?
+        let entries: Vec<_> = std::fs::read_dir(path)?
             .map(|entry| {
                 let entry = entry?;
                 Ok(ResourceEntry {
@@ -175,7 +175,14 @@ impl ResourceOperations for NativeResourceOperations {
                     file_type: file_type(entry.file_type()?),
                 })
             })
-            .collect()
+            .collect::<io::Result<_>>()?;
+        #[cfg(unix)]
+        let entries = {
+            let mut entries = entries;
+            entries.sort_by(|left, right| left.name.cmp(&right.name));
+            entries
+        };
+        Ok(entries)
     }
     fn read_file(&self, path: &Path) -> io::Result<String> {
         Ok(String::from_utf8_lossy(&std::fs::read(path)?).into_owned())

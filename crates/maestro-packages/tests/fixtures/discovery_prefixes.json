@@ -1,0 +1,182 @@
+[
+  {
+    "line": "",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": " ",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": " ",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": "﻿",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "﻿",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": "",
+    "prefix": "",
+    "expected": ""
+  },
+  {
+    "line": "",
+    "prefix": "nested/",
+    "expected": "nested/"
+  },
+  {
+    "line": "#comment",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "#comment",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": " #comment",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": " #comment",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": "\\#foo",
+    "prefix": "",
+    "expected": "\\#foo"
+  },
+  {
+    "line": "\\#foo",
+    "prefix": "nested/",
+    "expected": "nested/\\#foo"
+  },
+  {
+    "line": "\\!foo",
+    "prefix": "",
+    "expected": "\\!foo"
+  },
+  {
+    "line": "\\!foo",
+    "prefix": "nested/",
+    "expected": "nested/!foo"
+  },
+  {
+    "line": "!foo",
+    "prefix": "",
+    "expected": "!foo"
+  },
+  {
+    "line": "!foo",
+    "prefix": "nested/",
+    "expected": "!nested/foo"
+  },
+  {
+    "line": "/foo",
+    "prefix": "",
+    "expected": "foo"
+  },
+  {
+    "line": "/foo",
+    "prefix": "nested/",
+    "expected": "nested/foo"
+  },
+  {
+    "line": "foo/",
+    "prefix": "",
+    "expected": "foo/"
+  },
+  {
+    "line": "foo/",
+    "prefix": "nested/",
+    "expected": "nested/foo/"
+  },
+  {
+    "line": "foo ",
+    "prefix": "",
+    "expected": "foo "
+  },
+  {
+    "line": "foo ",
+    "prefix": "nested/",
+    "expected": "nested/foo "
+  },
+  {
+    "line": "foo\\ ",
+    "prefix": "",
+    "expected": "foo\\ "
+  },
+  {
+    "line": "foo\\ ",
+    "prefix": "nested/",
+    "expected": "nested/foo\\ "
+  },
+  {
+    "line": "!!foo",
+    "prefix": "",
+    "expected": "!!foo"
+  },
+  {
+    "line": "!!foo",
+    "prefix": "nested/",
+    "expected": "!nested/!foo"
+  },
+  {
+    "line": "\t#comment",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "\t#comment",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": "\r",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "\r",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": "\r\n",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": "\r\n",
+    "prefix": "nested/",
+    "expected": null
+  },
+  {
+    "line": " ",
+    "prefix": "",
+    "expected": null
+  },
+  {
+    "line": " ",
+    "prefix": "nested/",
+    "expected": null
+  }
+]
