@@ -1027,7 +1027,7 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
     let mut provider = request_support::OAuth::new(id, "controlled");
     provider.fail_key = true;
     let _registration = provider.register();
-    let mut registry = support::registry(&document(r#""apiKey":"configured""#, ""));
+    let mut registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api_key = Some("!never".into());
     registry.register_provider(id, config).unwrap();
