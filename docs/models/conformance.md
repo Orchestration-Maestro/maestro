@@ -253,3 +253,29 @@ cargo test -p maestro-models --locked --test cloud_model_routes \
   --test conversation_tool_schema --test missing_tool_results \
   --test provider_unicode
 ```
+
+## Controlled empty content and streaming
+
+Twenty tests own 468 recorded invocations: 459 injected HTTP exchanges and nine
+native loopback WebSocket exchanges. They call public streaming or completion
+operations with catalog descriptors or an authored custom-endpoint descriptor.
+The socket peer records the actual upgrade URI, application headers and
+`response.create` frame; an HTTP fallback cannot satisfy its successful result.
+
+The empty-content cases compare arrays, strings, whitespace, assistant blocks,
+system presence, tool outputs and stream termination against recorded requests
+and results. Decoder rules remain with [message protocol](messages.md) and
+[response protocols](responses.md), including their premature-EOF errors.
+
+Streaming cases compare ordered text, tool and thinking events, signatures,
+usage and final records. Continuations insert actual returned assistants and
+compute tool results from their arguments. Gated tool cases inspect the live
+arguments after each delta and await a pending body read before releasing the
+next fragment. Image cases compare the original image bytes in converted
+requests. See [response sessions](response-sessions.md) for socket behavior.
+These local observations do not establish live account validity or model quality.
+
+```sh
+cargo test -p maestro-models --locked --test empty_content --test model_streaming
+cargo llvm-cov -p maestro-models --locked --fail-under-lines 80
+```

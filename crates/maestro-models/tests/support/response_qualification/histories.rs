@@ -1,7 +1,9 @@
 //! Continuations retain actual generated assistants and tool identities.
 
 use super::{Context, Input, Row, TestResult, Wire, canonical, invocation, without_clocks};
-use maestro_models::{AssistantContent, AssistantMessage, Message, StopReason};
+use maestro_models::{
+    AssistantContent, AssistantMessage, Message, StopReason, TextContent, ToolCall, UserBlock,
+};
 use std::collections::HashMap;
 
 /// Actual outputs retained only within one test's operation sequence.
@@ -36,7 +38,7 @@ async fn fill_message(
     message: &mut Message,
     all: &[Row],
     results: &mut Results,
-    ids: &mut HashMap<String, String>,
+    ids: &mut HashMap<String, ToolCall>,
 ) -> TestResult {
     match message {
         Message::Assistant(assistant) => {
@@ -54,8 +56,15 @@ async fn fill_message(
             }
         }
         Message::ToolResult(result) => {
-            if let Some(id) = ids.get(&result.tool_call_id) {
-                result.tool_call_id.clone_from(id);
+            if let Some(call) = ids.get(&result.tool_call_id) {
+                result.tool_call_id.clone_from(&call.id);
+                if row.test.contains("model_streaming/") {
+                    result.tool_name.clone_from(&call.name);
+                    result.content = vec![UserBlock::Text(TextContent {
+                        text: arithmetic(call)?,
+                        text_signature: None,
+                    })];
+                }
             }
         }
         Message::User(_) => {}
@@ -67,7 +76,7 @@ async fn fill_message(
 fn remember_ids(
     expected: &AssistantMessage,
     actual: &AssistantMessage,
-    ids: &mut HashMap<String, String>,
+    ids: &mut HashMap<String, ToolCall>,
 ) {
     let calls = |message: &AssistantMessage| {
         message
@@ -75,7 +84,7 @@ fn remember_ids(
             .iter()
             .filter_map(|block| {
                 if let AssistantContent::ToolCall(call) = block {
-                    Some(call.id.clone())
+                    Some(call.clone())
                 } else {
                     None
                 }
@@ -83,7 +92,7 @@ fn remember_ids(
             .collect::<Vec<_>>()
     };
     for (old, new) in calls(expected).into_iter().zip(calls(actual)) {
-        ids.insert(old, new);
+        ids.insert(old.id, new);
     }
 }
 
@@ -107,4 +116,19 @@ async fn generate(id: &str, all: &[Row], results: &mut Results) -> TestResult<As
     let message = result.read().map_err(|_| "result poisoned")?.clone();
     results.insert(id.into(), message.clone());
     Ok(message)
+}
+
+/// Compute the source helper's result from the actual returned call operands.
+fn arithmetic(call: &ToolCall) -> TestResult<String> {
+    assert_eq!(call.name, "math_operation", "selected arithmetic tool");
+    let a = call.arguments["a"].as_f64().ok_or("first operand")?;
+    let b = call.arguments["b"].as_f64().ok_or("second operand")?;
+    let result = match call.arguments["operation"].as_str().ok_or("operation")? {
+        "add" => a + b,
+        "subtract" => a - b,
+        "multiply" => a * b,
+        "divide" => a / b,
+        _ => return Err("unknown arithmetic operation".into()),
+    };
+    Ok(result.to_string())
 }
