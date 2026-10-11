@@ -1,4 +1,27 @@
-# Awaited conversation turns
+# Conversation turns
+
+## Observable raw streams
+
+`agent_loop(prompts, context, Arc<AgentLoopConfig>, options, spawn)` submits one
+owned prompt operation through the caller's `AgentSpawner` and returns an
+`EventStream<AgentEvent, Vec<AgentMessage>>` immediately.
+`agent_loop_continue(context, config, options, spawn)` returns that stream in a
+`Result`: empty history yields `Cannot continue: no messages in context`, and an
+assistant tail yields `Cannot continue from message role: assistant`, before
+submission. Custom tails are not converted for admission.
+
+Observing, pausing or dropping the stream does not delay or cancel submitted work.
+Events are queued without reader acknowledgements. `AgentEnd` publishes its
+ordered messages as the result before the producer's successful `end` call;
+repeated result observations retain the message entry handles.
+The wrappers call the awaited operations below with the supplied configuration
+and invocation overrides. On producer rejection, native execution writes the
+original diagnostic message plus a newline to stderr and leaves the stream
+unsettled without manufacturing a terminal event. Browser-host diagnostic
+visibility is not yet provided; the rejected stream likewise remains unsettled.
+The caller owns execution, including driving submitted tasks to completion.
+
+## Awaited operations
 
 `run_agent_loop` runs prompts over a copy of the supplied outer history, retaining
 its entry handles. It returns the prompts and generated entries.

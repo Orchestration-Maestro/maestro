@@ -1,10 +1,114 @@
-//! Awaited conversation turns.
+//! Awaited and observable conversation turns.
 use crate::{
-    AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, CustomAgentMessages, StreamFn,
+    AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, AgentSpawner, CustomAgentMessages,
+    StreamFn,
 };
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, EventStream};
+use std::io::Write;
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+/// Submit owned prompt work and return its observable stream without awaiting it.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
+    prompts: Vec<AgentMessage<C>>,
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    submit(Some(prompts), context, config, options, spawn)
+}
+/// Submit continuation without replaying the existing tail.
+///
+/// # Errors
+/// Rejects empty or assistant tails before submitting work.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'static>(
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> Result<EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>, DiagnosticErrorInfo> {
+    check_continuation(&context)?;
+    Ok(submit(None, context, config, options, spawn))
+}
+/// Submit owned prompt work and return its observable stream without awaiting it.
+#[cfg(target_arch = "wasm32")]
+pub fn agent_loop<C: CustomAgentMessages + 'static>(
+    prompts: Vec<AgentMessage<C>>,
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    submit(Some(prompts), context, config, options, spawn)
+}
+/// Submit continuation without replaying the existing tail.
+///
+/// # Errors
+/// Rejects empty or assistant tails before submitting work.
+#[cfg(target_arch = "wasm32")]
+pub fn agent_loop_continue<C: CustomAgentMessages + 'static>(
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> Result<EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>, DiagnosticErrorInfo> {
+    check_continuation(&context)?;
+    Ok(submit(None, context, config, options, spawn))
+}
+/// Construct the terminal-selected observation stream.
+fn create_agent_stream<C: CustomAgentMessages + crate::agent::Native + 'static>()
+-> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    EventStream::new(
+        |event| matches!(event, AgentEvent::AgentEnd { .. }),
+        |event| match event {
+            AgentEvent::AgentEnd { messages } => messages.clone(),
+            _ => Vec::new(),
+        },
+    )
+}
+/// Submit one awaited operation, retaining production independently of readers.
+fn submit<C: CustomAgentMessages + crate::agent::Native + 'static>(
+    prompts: Option<Vec<AgentMessage<C>>>,
+    context: AgentContext<C>,
+    config: Arc<AgentLoopConfig<C>>,
+    options: AgentLoopOptions,
+    spawn: AgentSpawner,
+) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    let stream = create_agent_stream();
+    let producer = stream.clone();
+    let sink = stream.clone();
+    let emit: AgentEventSink<C> = Arc::new(move |event| {
+        sink.push(event);
+        Box::pin(std::future::ready(Ok(())))
+    });
+    spawn(Box::pin(async move {
+        let result = match prompts {
+            Some(prompts) => run_agent_loop(prompts, context, &config, emit, options).await,
+            None => run_agent_loop_continue(context, &config, emit, options).await,
+        };
+        match result {
+            Ok(messages) => producer.end(Some(messages)),
+            Err(error) => {
+                let _ = writeln!(std::io::stderr(), "{}", error.message);
+            }
+        }
+    }));
+    drop(spawn);
+    stream
+}
+/// Check continuation admission without converting custom entries.
+fn check_continuation<C: CustomAgentMessages>(
+    context: &AgentContext<C>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let diagnostic = match read(&context.messages).last() {
+        None => Some("Cannot continue: no messages in context"),
+        Some(AgentMessage::Assistant(_)) => Some("Cannot continue from message role: assistant"),
+        _ => None,
+    };
+    diagnostic.map_or(Ok(()), |message| Err(failure(message)))
+}
 /// Await one conversation observation.
 #[cfg(not(target_arch = "wasm32"))]
 pub type AgentEventSink<C = std::convert::Infallible> =
@@ -136,13 +240,7 @@ async fn continue_loop<C: CustomAgentMessages + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    match read(&context.messages).last() {
-        None => return Err(failure("Cannot continue: no messages in context")),
-        Some(AgentMessage::Assistant(_)) => {
-            return Err(failure("Cannot continue from message role: assistant"));
-        }
-        _ => (),
-    }
+    check_continuation(&context)?;
     emit(AgentEvent::AgentStart).await?;
     emit(AgentEvent::TurnStart).await?;
     Driver {
