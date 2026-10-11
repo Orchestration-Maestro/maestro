@@ -20,7 +20,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     ("maestro-resources", &["maestro-request", "maestro-pattern"]),
     ("maestro-settings", &["maestro-lock"]),
-    ("maestro-storage", &[]),
     ("maestro-test-conventions", &[]),
     ("maestro-tooling", &[]),
     ("maestro-tui", &["maestro-cancellation"]),
@@ -40,10 +39,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
         "maestro-catalog",
         &["maestro-models", "maestro-credentials"],
     ),
-    (
-        "maestro-session",
-        &["maestro-models", "maestro-agent", "maestro-storage"],
-    ),
+    ("maestro-session", &["maestro-models", "maestro-agent"]),
     (
         "maestro-tools",
         &[
@@ -83,7 +79,6 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-agent",
             "maestro-credentials",
             "maestro-settings",
-            "maestro-storage",
             "maestro-catalog",
             "maestro-session",
             "maestro-tools",

@@ -83,8 +83,8 @@ adapter, shared request owner, cancellation leaf, watch leaf, lock leaf,
 file-pattern leaf and the
 terminal scenario harness. The edge is ignored when checking a crate's complete
 direct set or leaf
-status, so the graph holds 32 crates and 97 permitted edges: 74 table edges plus
-23 utility edges. Dev-dependencies on the
+status, so the graph holds 31 crates and 94 permitted edges: 72 table edges plus
+22 utility edges. Dev-dependencies on the
 utility, dependencies from the utility, and cycles are rejected like any other
 internal edge.
 

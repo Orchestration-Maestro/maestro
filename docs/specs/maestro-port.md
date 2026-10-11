@@ -183,7 +183,6 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request` | 0 |
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock` | 0 |
-| `maestro-storage` | access transcript bytes | — | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation` | 0 |
@@ -194,11 +193,11 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials` | 2 |
-| `maestro-session` | own conversation history | `maestro-models`, `maestro-agent`, `maestro-storage` | 2 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-storage`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -264,9 +263,9 @@ request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`) and file-pattern leaf (`maestro-pattern`) are excluded from
 this permission.
 
-The graph contains 32 crates: the 31 table entries plus the foundation utility.
-It permits 97 internal production dependency edges: 74 table edges plus 23
-optional utility edges. Nine crates are leaves when utility edges are ignored,
+The graph contains 31 crates: the 30 table entries plus the foundation utility.
+It permits 94 internal production dependency edges: 72 table edges plus 22
+optional utility edges. Eight crates are leaves when utility edges are ignored,
 including the utility itself. The below-layer-0 owners are delivered before
 their consumers; the utility is delivered before its first consumer.
 
@@ -274,7 +273,7 @@ their consumers; the utility is delivered before its first consumer.
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-storage`, `maestro-test-conventions`, `maestro-tooling`, `maestro-tui`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-tooling`, `maestro-tui`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
