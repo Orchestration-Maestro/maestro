@@ -115,7 +115,7 @@ fn validate_provider(name: &str, config: &ProviderConfig, builtin: bool) -> Resu
     } else if !builtin {
         for (field, present) in [
             ("baseUrl", config.base_url.is_some()),
-            ("apiKey", config.api_key),
+            ("apiKey", config.api_key.is_some()),
         ] {
             if !present {
                 return Err(format!(
