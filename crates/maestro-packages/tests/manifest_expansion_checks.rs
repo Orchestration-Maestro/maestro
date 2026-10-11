@@ -321,3 +321,100 @@ fn nofollow_failure() {
     })
     .unwrap();
 }
+
+/// Expansion anchors installed relative roots only when ambient context is needed.
+#[test]
+fn installed_wildcards_resolve_relative_constructor_roots() {
+    use maestro_resources::SourceScope;
+    use std::{cell::Cell, rc::Rc};
+    resolution_support::run(async {
+        let scene = scratch::Scratch::new()?;
+        let package = scene.0.join(".maestro/npm/node_modules/pkg");
+        write(&package.join("a.ts"), "fixture");
+        write(
+            &package.join("package.json"),
+            r#"{"maestro":{"extensions":["*.ts"]}}"#,
+        );
+        let absolute = scene.0.to_str().unwrap();
+        let current = std::env::current_dir()?;
+        let relative = maestro_path::relative(
+            current.to_str().unwrap(),
+            absolute,
+            &maestro_path::Cwd {
+                current: current.to_str().unwrap(),
+                drive_directories: &[],
+            },
+        );
+        for (cwd, fail, expected_reads) in [
+            (absolute, true, 0),
+            (relative.as_str(), false, 1),
+            (relative.as_str(), true, 1),
+        ] {
+            let reads = Rc::new(Cell::new(0));
+            let resources = resolution_support::Filesystem {
+                fail_current: fail,
+                current_reads: Rc::clone(&reads),
+                ..Default::default()
+            };
+            let (manager, _) = resolution_support::manager(cwd, resources);
+            let actual = manager
+                .resolve_extension_sources(&["npm:pkg".into()], Some(SourceScope::Project))
+                .await;
+            if fail && expected_reads == 1 {
+                assert_eq!(
+                    actual.err().unwrap().kind(),
+                    std::io::ErrorKind::PermissionDenied
+                );
+            } else {
+                let actual = actual?;
+                assert_eq!(actual.extensions.len(), 1);
+                assert_eq!(
+                    actual.extensions[0].path,
+                    package.join("a.ts").to_str().unwrap()
+                );
+                assert_eq!(
+                    actual.extensions[0].metadata.base_dir.as_deref(),
+                    Some(format!("{cwd}/.maestro/npm/node_modules/pkg").as_str())
+                );
+            }
+            assert_eq!(reads.get(), expected_reads);
+        }
+        Ok(())
+    })
+    .unwrap();
+}
+
+/// Earlier literal children retain prepared traversal order.
+#[test]
+fn literal_child_promotion_keeps_order() {
+    child_promotion(false);
+}
+
+/// Earlier literal children select the same authored alias during canonical dedup.
+#[test]
+fn literal_child_promotion_keeps_surviving_alias() {
+    child_promotion(true);
+}
+
+/// Compares ordered authored paths and provenance after native promotion.
+fn child_promotion(linked: bool) {
+    resolution_support::run(async {
+            let scene = scratch::Scratch::new()?;
+            write(&scene.0.join("b/preload.ts"), "fixture");
+            write(&scene.0.join("a/u.ts"), "fixture");
+            if linked {
+                std::os::unix::fs::symlink("../a/u.ts", scene.0.join("b/u.ts"))?;
+            } else {
+                write(&scene.0.join("b/u.ts"), "fixture");
+            }
+            write(&scene.0.join("package.json"), r#"{"maestro":{"extensions":["{b/preload.ts,*/*.ts}"]}}"#);
+            let base = scene.0.to_str().unwrap();
+            let (manager, _) = resolution_support::manager(base, resolution_support::Filesystem::default());
+            let actual = manager.resolve_extension_sources(&[base.into()], None).await?;
+            let resource = |name| json!({"path":format!("$BASE/{name}"),"enabled":true,"metadata":{"source":"$BASE","scope":"user","origin":"package","baseDir":"$BASE"}});
+            let mut expected = vec![resource("b/preload.ts"), resource("a/u.ts")];
+            if !linked { expected.push(resource("b/u.ts")); }
+            assert_eq!(resolution_support::output(actual, base), json!({"extensions":expected,"skills":[],"prompts":[],"themes":[]}));
+        Ok(())
+    }).unwrap();
+}

@@ -1,4 +1,7 @@
 //! Synchronous manifest expansion using the shared compiled matcher.
+//!
+//! Source attribution and [BlueOak-1.0.0](https://blueoakcouncil.org/license/1.0.0)
+//! license details are in [third-party notices](https://github.com/Orchestration-Maestro/maestro/blob/main/THIRD-PARTY-NOTICES.md).
 mod pattern;
 mod processor;
 mod walker;
@@ -20,7 +23,7 @@ pub(super) fn glob_sync(
     };
     let matcher = Minimatch::new(pattern, MinimatchOptions::Filesystem(platform))
         .map_err(io::Error::other)?;
-    walker::walk(&matcher, root, operations)
+    walker::walk(&matcher, root, platform, operations)
 }
 #[cfg(test)]
 mod tests;

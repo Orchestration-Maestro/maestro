@@ -24,11 +24,10 @@ impl Target {
         )
     }
     /// Resolves a literal without following its final link.
-    fn resolve(&self, text: &str, operations: &dyn ResourceOperations) -> io::Result<Self> {
-        Ok(Self {
-            path: resolve_entry_path(&self.path, text, operations)?,
-            kind: None,
-        })
+    fn resolve(&self, text: &str, context: &mut Context<'_>) -> io::Result<Self> {
+        let path = resolve_entry_path(&self.path, text, context.operations)?;
+        context.observe(&path);
+        Ok(Self { path, kind: None })
     }
 }
 /// Ordered decisions produced before recursive directory work.
@@ -75,7 +74,7 @@ impl Processor {
         context: &mut Context<'_>,
     ) -> io::Result<()> {
         if let Some((root, index)) = pattern.root(context.matcher) {
-            target = target.resolve(&root, context.operations)?;
+            target = target.resolve(&root, context)?;
             if index >= context.matcher.set()[pattern.alternative].len() {
                 self.add_match(target, false);
                 return Ok(());
@@ -85,12 +84,12 @@ impl Processor {
         while let ParseReturnFiltered::Literal(text) = pattern.part(context.matcher) {
             let Some(rest) = pattern.rest(context.matcher) else {
                 self.add_match(
-                    target.resolve(text, context.operations)?,
+                    target.resolve(text, context)?,
                     matches!(text.as_str(), "" | "." | ".."),
                 );
                 return Ok(());
             };
-            target = target.resolve(text, context.operations)?;
+            target = target.resolve(text, context)?;
             pattern = rest;
         }
         if !context.walked.insert((target.path.clone(), pattern)) {
@@ -99,7 +98,12 @@ impl Processor {
         self.mount(target, pattern, context)
     }
     /// Mounts one magic suffix after literal resolution has finished.
-    fn mount(&mut self, target: Target, pattern: Pattern, context: &Context<'_>) -> io::Result<()> {
+    fn mount(
+        &mut self,
+        target: Target,
+        pattern: Pattern,
+        context: &mut Context<'_>,
+    ) -> io::Result<()> {
         let rest = pattern.rest(context.matcher);
         if matches!(pattern.part(context.matcher), ParseReturnFiltered::Globstar) {
             if target.kind != Some(ResourceFileType::Symlink) || context.follows(pattern) {
@@ -114,7 +118,7 @@ impl Processor {
                     self.add_match(target, true);
                 }
                 Some((rest, ParseReturnFiltered::Literal(text))) if text == ".." => {
-                    let parent = target.resolve("..", context.operations)?;
+                    let parent = target.resolve("..", context)?;
                     self.accept_parent(parent, rest.rest(context.matcher));
                 }
                 _ => {}
@@ -130,7 +134,9 @@ impl Processor {
         let name = maestro_path::basename(&target.path, None);
         match pattern.part(context.matcher) {
             ParseReturnFiltered::Globstar => self.test_globstar(target, pattern, context),
-            ParseReturnFiltered::Literal(text) if *text == name => self.accept(target, rest),
+            ParseReturnFiltered::Literal(text) if context.is_named(text, &name) => {
+                self.accept(target, rest);
+            }
             ParseReturnFiltered::Pattern(segment) if segment.test(&name) => {
                 self.accept(target, rest);
             }
@@ -188,14 +194,43 @@ impl Processor {
 pub(super) struct Context<'a> {
     /// One shared compiled matcher.
     pub(super) matcher: &'a Minimatch,
+    /// Whether native child comparisons ignore case.
+    pub(super) nocase: bool,
     /// Supplied filesystem effects.
     pub(super) operations: &'a dyn ResourceOperations,
+    /// Ordered child identities established by literal resolution or scanning.
+    pub(super) children: HashMap<String, Vec<String>>,
     /// Processed authored-target/suffix transitions.
     pub(super) walked: HashSet<(String, Pattern)>,
     /// Suffixes whose one eligible recursive link transition was consumed.
     pub(super) followed: HashSet<Pattern>,
 }
 impl Context<'_> {
+    /// Retains literal child insertion order along the resolved authored path.
+    fn observe(&mut self, path: &str) {
+        let mut child = path.to_owned();
+        loop {
+            let parent = maestro_path::dirname(&child);
+            if parent == child {
+                break;
+            }
+            let children = self.children.entry(parent.clone()).or_default();
+            let name = maestro_path::basename(&child, None);
+            if children.contains(&name) {
+                break;
+            }
+            children.push(name);
+            child = parent;
+        }
+    }
+    /// Compares names without normalizing or replacing authored identities.
+    fn is_named(&self, expected: &str, name: &str) -> bool {
+        if self.nocase {
+            expected.to_lowercase() == name.to_lowercase()
+        } else {
+            expected == name
+        }
+    }
     /// Initial globstars cannot traverse an encountered link.
     fn follows(&self, pattern: Pattern) -> bool {
         pattern.index > 0 && !self.followed.contains(&pattern)

@@ -108,3 +108,27 @@ fn synchronous_walk_matches_native_filesystem_cases() {
         assert_eq!(actual, row.expected, "{}", row.case);
     }
 }
+
+/// Pending literal components use native case policy without changing identities.
+#[test]
+fn globstar_literals_keep_platform_case_policy() {
+    use maestro_pattern::{Minimatch, MinimatchOptions, Platform};
+    let scene =
+        Scene(std::env::temp_dir().join(format!("maestro-glob-case-{}", std::process::id())));
+    fs::create_dir(&scene.0).unwrap();
+    for name in ["main.ts", "maint.ts"] {
+        fs::write(scene.0.join(name), "fixture").unwrap();
+    }
+    let root = scene.0.to_str().unwrap();
+    for platform in [Platform::Darwin, Platform::Windows, Platform::Posix] {
+        let matcher = Minimatch::new("**/MAIN.ts", MinimatchOptions::Filesystem(platform)).unwrap();
+        let actual =
+            super::walker::walk(&matcher, root, platform, &NativeResourceOperations).unwrap();
+        let expected = if platform == Platform::Posix {
+            vec![]
+        } else {
+            vec![format!("{root}/main.ts")]
+        };
+        assert_eq!(actual, expected);
+    }
+}

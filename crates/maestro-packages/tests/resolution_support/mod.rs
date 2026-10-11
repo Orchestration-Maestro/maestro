@@ -31,7 +31,6 @@ pub struct Filesystem {
     /// Failure suffixes keyed by operation.
     pub fail: BTreeMap<String, Vec<String>>,
 }
-/// Supplied canonicalization operation.
 /// Supplied synchronous directory-observation effect.
 pub type ReadEffect = Rc<dyn Fn(&Path) -> io::Result<()>>;
 /// Supplied canonicalization operation.
