@@ -12,21 +12,6 @@ use std::{fs, io::Write};
 #[test]
 fn manifest_expansion_keeps_native_match_order() {
     cases("manifest_expansion_keeps_native_match_order");
-    resolution_support::run(async {
-        let scene = scratch::Scratch::new()?;
-        for name in ["a.ts", "b.ts", "z.ts", "other.md"] {
-            fs::OpenOptions::new().create_new(true).write(true).open(scene.0.join(name))?;
-        }
-        let mut manifest = fs::OpenOptions::new().create_new(true).write(true).open(scene.0.join("package.json"))?;
-        manifest.write_all(br#"{"maestro":{"extensions":["*.ts"]}}"#)?;
-        drop(manifest);
-        let base = scene.0.to_string_lossy().into_owned();
-        let (manager, _) = resolution_support::manager(&base, resolution_support::Filesystem::default());
-        let actual = manager.resolve_extension_sources(std::slice::from_ref(&base), None).await?;
-        let resource = |name| json!({"path":format!("$BASE/{name}"),"enabled":true,"metadata":{"source":"$BASE","scope":"user","origin":"package","baseDir":"$BASE"}});
-        assert_eq!(resolution_support::output(actual, &base), json!({"extensions":[resource("z.ts"),resource("b.ts"),resource("a.ts")],"skills":[],"prompts":[],"themes":[]}));
-        Ok(())
-    }).unwrap();
 }
 
 /// Native setup recipe shared by its recorded observations.
@@ -417,4 +402,15 @@ fn child_promotion(linked: bool) {
             assert_eq!(resolution_support::output(actual, base), json!({"extensions":expected,"skills":[],"prompts":[],"themes":[]}));
         Ok(())
     }).unwrap();
+}
+
+/// Cwd ancestry determines the first retained canonical alias.
+#[test]
+fn manifest_parent_scan_keeps_seeded_alias() {
+    cases("manifest_parent_scan_keeps_seeded_alias");
+}
+/// Later patterns reuse the established listing and retain its first alias.
+#[test]
+fn manifest_repeated_scan_keeps_listing() {
+    cases("manifest_repeated_scan_keeps_listing");
 }

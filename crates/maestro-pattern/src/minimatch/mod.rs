@@ -441,7 +441,7 @@ fn fast_suffix(pattern: &str) -> Option<(String, Option<usize>)> {
     }
     let count = pattern.chars().take_while(|c| *c == operator).count();
     let suffix = &pattern[count..];
-    if suffix.contains(['+', '@', '!', '?', '*', '[', '(']) {
+    if suffix.contains(['+', '@', '!', '?', '*', '[', '(', '\\']) {
         return None;
     }
     let length = (operator == '?').then_some(count + suffix.chars().count());

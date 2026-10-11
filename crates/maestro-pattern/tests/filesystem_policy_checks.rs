@@ -295,3 +295,21 @@ fn filesystem_preparation_reaches_fixed_point_and_merges_borrowed_suffixes() {
         );
     }
 }
+
+/// Escaped suffixes are interpreted by the parsed component evaluator.
+#[test]
+fn filesystem_escaped_suffixes_use_decoded_tokens() {
+    for platform in [Platform::Darwin, Platform::Windows] {
+        for (pattern, admitted, decoy) in [
+            (r"*\.ts", "main.ts", "mainxts"),
+            (r"?\.ts", "a.ts", "ab.ts"),
+        ] {
+            let matcher = Minimatch::new(pattern, MinimatchOptions::Filesystem(platform)).unwrap();
+            let ParseReturnFiltered::Pattern(segment) = &matcher.set()[0][0] else {
+                panic!("expected magic");
+            };
+            assert!(segment.test(admitted), "{pattern} accepts {admitted}");
+            assert!(!segment.test(decoy), "{pattern} rejects {decoy}");
+        }
+    }
+}

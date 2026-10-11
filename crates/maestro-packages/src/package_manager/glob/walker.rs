@@ -43,6 +43,7 @@ pub(super) fn walk(
         })
         .filter(|pattern| !missing || pattern.root(matcher).is_some())
         .collect();
+    let cwd = target.path.clone();
     let mut pending = vec![Phase::Process(target, patterns)];
     let mut context = Context {
         matcher,
@@ -52,6 +53,7 @@ pub(super) fn walk(
         walked: HashSet::new(),
         followed: HashSet::new(),
     };
+    context.seed_cwd(&cwd);
     let mut seen = HashSet::new();
     let mut result = Vec::new();
     while let Some(phase) = pending.pop() {
@@ -80,43 +82,41 @@ pub(super) fn walk(
     Ok(result)
 }
 
-/// Promotes previously resolved children while reversing newly observed entries.
+/// Establishes a listing once, then tests its retained authored identities.
 fn scan(
     processor: &mut Processor,
     target: &Target,
     patterns: &[Pattern],
     context: &mut Context<'_>,
 ) {
-    let Ok(entries) = context.operations.read_dir(Path::new(&target.path)) else {
-        return;
-    };
     let names = context.children.entry(target.path.clone()).or_default();
-    for (provisional, entry) in entries.iter().enumerate() {
-        let name = entry.name.to_string_lossy().into_owned();
-        let index = names.iter().position(|known| *known == name);
-        if index != Some(provisional) {
-            if let Some(index) = index {
-                names.remove(index);
-            }
-            names.insert(0, name);
-        }
-    }
-    names.truncate(entries.len());
-    let mut by_name: HashMap<_, _> = entries
-        .into_iter()
-        .map(|entry| (entry.name.to_string_lossy().into_owned(), entry))
-        .collect();
-    let entries: Vec<_> = names
-        .iter()
-        .filter_map(|name| by_name.remove(name))
-        .collect();
-    for entry in entries {
-        let child = Target {
-            path: maestro_path::join(&[&target.path, &entry.name.to_string_lossy()]),
-            kind: Some(entry.file_type),
+    let mut kinds = HashMap::new();
+    if !names.complete {
+        let Ok(entries) = context.operations.read_dir(Path::new(&target.path)) else {
+            return;
         };
+        let mut listing = Vec::new();
+        for entry in entries {
+            let name = entry.name.to_string_lossy().into_owned();
+            kinds.insert(name.clone(), entry.file_type);
+            listing.push(name);
+        }
+        names.readdir_sync(listing.into_iter(), context.nocase);
+    }
+    let children: Vec<_> = names
+        .listed()
+        .iter()
+        .map(|child| {
+            let path = maestro_path::join(&[&target.path, &child.authored_name]);
+            let kind = kinds
+                .remove(&child.name)
+                .or_else(|| context.operations.symlink_metadata(Path::new(&path)).ok());
+            (Target { path, kind }, child.name.clone())
+        })
+        .collect();
+    for (child, name) in children {
         for pattern in patterns {
-            processor.test(child.clone(), *pattern, context);
+            processor.test(child.clone(), &name, *pattern, context);
         }
     }
 }

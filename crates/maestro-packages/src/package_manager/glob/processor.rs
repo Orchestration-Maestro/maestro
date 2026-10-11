@@ -1,5 +1,8 @@
 //! Directory-local literal matches and pending component scans.
-use super::pattern::Pattern;
+use super::{
+    path_scurry::{Children, comparison_key},
+    pattern::Pattern,
+};
 use crate::package_manager::resource_discovery::resolve_entry_path;
 use maestro_pattern::{Minimatch, ParseReturnFiltered};
 use maestro_resources::skills::{ResourceFileType, ResourceOperations};
@@ -25,8 +28,17 @@ impl Target {
     }
     /// Resolves a literal without following its final link.
     fn resolve(&self, text: &str, context: &mut Context<'_>) -> io::Result<Self> {
-        let path = resolve_entry_path(&self.path, text, context.operations)?;
-        context.observe(&path);
+        let mut path = resolve_entry_path(&self.path, text, context.operations)?;
+        if !matches!(text, "" | "." | "..") && maestro_path::dirname(&path) != path {
+            let parent = maestro_path::dirname(&path);
+            let name = maestro_path::basename(&path, None);
+            let child = context
+                .children
+                .entry(parent.clone())
+                .or_default()
+                .child(&name, context.nocase);
+            path = maestro_path::join(&[&parent, &child.authored_name]);
+        }
         Ok(Self { path, kind: None })
     }
 }
@@ -129,24 +141,34 @@ impl Processor {
         Ok(())
     }
     /// Tests one native child against a pending component and its continuation.
-    pub(super) fn test(&mut self, target: Target, pattern: Pattern, context: &mut Context<'_>) {
+    pub(super) fn test(
+        &mut self,
+        target: Target,
+        name: &str,
+        pattern: Pattern,
+        context: &mut Context<'_>,
+    ) {
         let rest = pattern.rest(context.matcher);
-        let name = maestro_path::basename(&target.path, None);
         match pattern.part(context.matcher) {
-            ParseReturnFiltered::Globstar => self.test_globstar(target, pattern, context),
-            ParseReturnFiltered::Literal(text) if context.is_named(text, &name) => {
+            ParseReturnFiltered::Globstar => self.test_globstar(target, name, pattern, context),
+            ParseReturnFiltered::Literal(text) if context.is_named(text, name) => {
                 self.accept(target, rest);
             }
-            ParseReturnFiltered::Pattern(segment) if segment.test(&name) => {
+            ParseReturnFiltered::Pattern(segment) if segment.test(name) => {
                 self.accept(target, rest);
             }
             _ => {}
         }
     }
     /// Separates globstar continuation from its next component's independent test.
-    fn test_globstar(&mut self, target: Target, pattern: Pattern, context: &mut Context<'_>) {
+    fn test_globstar(
+        &mut self,
+        target: Target,
+        name: &str,
+        pattern: Pattern,
+        context: &mut Context<'_>,
+    ) {
         let rest = pattern.rest(context.matcher);
-        let name = maestro_path::basename(&target.path, None);
         if !name.starts_with('.') {
             if rest.is_none() {
                 self.add_match(target.clone(), false);
@@ -169,7 +191,7 @@ impl Processor {
                 self.add_walk(parent, rest);
             } else if !matches!(rest.part(context.matcher), ParseReturnFiltered::Literal(text) if matches!(text.as_str(), "" | "."))
             {
-                self.test(target, rest, context);
+                self.test(target, name, rest, context);
             }
         }
     }
@@ -199,37 +221,32 @@ pub(super) struct Context<'a> {
     /// Supplied filesystem effects.
     pub(super) operations: &'a dyn ResourceOperations,
     /// Ordered child identities established by literal resolution or scanning.
-    pub(super) children: HashMap<String, Vec<String>>,
+    pub(super) children: HashMap<String, Children>,
     /// Processed authored-target/suffix transitions.
     pub(super) walked: HashSet<(String, Pattern)>,
     /// Suffixes whose one eligible recursive link transition was consumed.
     pub(super) followed: HashSet<Pattern>,
 }
 impl Context<'_> {
-    /// Retains literal child insertion order along the resolved authored path.
-    fn observe(&mut self, path: &str) {
+    /// Seeds cwd ancestry before any literal resolution or listing.
+    pub(super) fn seed_cwd(&mut self, path: &str) {
         let mut child = path.to_owned();
         loop {
             let parent = maestro_path::dirname(&child);
             if parent == child {
                 break;
             }
-            let children = self.children.entry(parent.clone()).or_default();
             let name = maestro_path::basename(&child, None);
-            if children.contains(&name) {
-                break;
-            }
-            children.push(name);
+            self.children
+                .entry(parent.clone())
+                .or_default()
+                .child(&name, self.nocase);
             child = parent;
         }
     }
-    /// Compares names without normalizing or replacing authored identities.
+    /// Compares names without replacing authored identities.
     fn is_named(&self, expected: &str, name: &str) -> bool {
-        if self.nocase {
-            expected.to_lowercase() == name.to_lowercase()
-        } else {
-            expected == name
-        }
+        comparison_key(expected, self.nocase) == comparison_key(name, self.nocase)
     }
     /// Initial globstars cannot traverse an encountered link.
     fn follows(&self, pattern: Pattern) -> bool {

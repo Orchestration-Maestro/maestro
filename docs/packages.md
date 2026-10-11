@@ -134,10 +134,12 @@ is collected; expansion does not read resource ignore files. Direct files need n
 directories use the [conventional collectors](#conventional-resource-discovery).
 Within each directory phase of an expansion, literal matches precede scans and
 current matches precede recursive subwalks; duplicate authored paths retain their first position.
-Expansion resolves its root before filesystem observations. Earlier literal child
-observations participate in subsequent directory traversal order. Pending literal
-names compare lowercased text on Windows and macOS, and exact text elsewhere;
-authored identities are not Unicode-normalized. The separately
+Expansion resolves its root and seeds its ancestry before walking. Literal child
+lookups participate in the first successful directory listing; subsequent scans
+reuse that listing’s names and order, without caching entry metadata. Pending
+literal names compare lowercased text on Windows and macOS, and exact text
+elsewhere; promotion retains the authored path spelling. Authored identities are
+not Unicode-normalized. The separately
 selected [filesystem policy](package-patterns.md#filesystem-expansion-policy)
 owns pattern preparation and case selection.
 

@@ -116,8 +116,9 @@ parent and adjacent recursive components. Windows drive and UNC roots survive
 parent cancellation. POSIX magic is case-sensitive; Windows and Darwin magic
 select case-insensitive predicates. Literal components remain native lookup
 operands. Named Unicode classes retain Unicode case equivalence; ordinary
-predicates do not fold non-ASCII values into ASCII. Literal-suffix shortcuts
-compare lowercased strings, including expanding lowercase mappings.
+predicates do not fold non-ASCII values into ASCII. Unescaped literal-suffix shortcuts
+compare lowercased strings, including expanding lowercase mappings; escaped
+suffixes use the parsed component evaluator.
 
 [Package discovery](packages.md#package-root-manifests) owns filesystem traversal,
 collection, override order and resource provenance.

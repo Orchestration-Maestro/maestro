@@ -1,5 +1,6 @@
 //! Direct native expansion before collectors and canonical deduplication.
 #![cfg(target_os = "linux")]
+mod mixed_case;
 use super::glob_sync;
 use maestro_resources::NativeResourceOperations;
 use serde::Deserialize;
