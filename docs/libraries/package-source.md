@@ -14,3 +14,7 @@ a caller-owned `Rc<tokio::task::LocalSet>` and retains it weakly. Serde derive i
 here, as is Tokio's runtime builder. Internal dependencies are settings, resources
 and the shared path utility. Native effects use the standard library and Tokio and
 remain outside the browser target; browser callers supply `PackageOperations`.
+
+Deterministic temporary cache names use `sha2 =0.11.0`, defaults off
+(MIT OR Apache-2.0). This direct edge reuses the locked SHA-256 dependency;
+it adds no resolved package or feature.

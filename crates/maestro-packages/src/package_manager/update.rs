@@ -212,7 +212,7 @@ impl<O: PackageOperations + 'static> DefaultPackageManager<O> {
                     super::ProgressAction::Update,
                     &row.source,
                     format!("Updating {}...", row.source),
-                    manager.update_git(&git, row.scope),
+                    manager.update_git(&git, row.scope.resource_scope()),
                 )
                 .await
         })

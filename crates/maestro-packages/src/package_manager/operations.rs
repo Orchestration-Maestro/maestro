@@ -27,6 +27,8 @@ pub trait PackageOperations {
     /// # Errors
     /// Returns a filesystem read failure.
     fn read_file(&self, path: &str) -> io::Result<String>;
+    /// Supplies the temporary base for remote temporary paths.
+    fn temp_dir(&self) -> String;
     /// Reads the current offline setting from the environment.
     fn offline_value(&self) -> Option<String>;
     /// Captures stdout until child exit and both stream EOFs.
@@ -123,6 +125,9 @@ impl PackageOperations for NativePackageOperations {
     }
     fn read_file(&self, path: &str) -> io::Result<String> {
         std::fs::read(path).map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+    }
+    fn temp_dir(&self) -> String {
+        std::env::temp_dir().to_string_lossy().into_owned()
     }
     fn offline_value(&self) -> Option<String> {
         std::env::var("MAESTRO_OFFLINE").ok()

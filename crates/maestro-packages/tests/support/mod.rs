@@ -13,6 +13,14 @@ pub struct Effects {
     pub resources: Option<Rc<dyn maestro_resources::skills::ResourceOperations>>,
     /// Use actual existence observations at installed lookup.
     pub native_exists: bool,
+    /// Complete command observations.
+    pub transcript: RefCell<Vec<Value>>,
+    /// Version file observations.
+    pub file_reads: RefCell<Vec<String>>,
+    /// Offline decision reads.
+    pub offline_reads: std::cell::Cell<usize>,
+    /// Supplied temporary root.
+    pub temp_root: RefCell<Option<String>>,
     /// The runtime that admits this adapter's owned work.
     pub local: RefCell<std::rc::Weak<tokio::task::LocalSet>>,
     /// Manifest text returned at the file seam.
@@ -76,14 +84,27 @@ impl PackageOperations for Controlled {
             .as_deref()
             .unwrap_or(&maestro_resources::NativeResourceOperations)
     }
-    fn read_file(&self, _path: &str) -> io::Result<String> {
+    fn read_file(&self, path: &str) -> io::Result<String> {
+        self.0.file_reads.borrow_mut().push(path.into());
+        if self.0.native_exists {
+            return std::fs::read_to_string(path);
+        }
         self.0
             .manifest
             .borrow()
             .clone()
             .ok_or_else(|| io::Error::other("missing manifest"))
     }
+    fn temp_dir(&self) -> String {
+        self.0.reads.borrow_mut().push("temp");
+        self.0
+            .temp_root
+            .borrow()
+            .clone()
+            .unwrap_or_else(|| "/temporary".into())
+    }
     fn offline_value(&self) -> Option<String> {
+        self.0.offline_reads.set(self.0.offline_reads.get() + 1);
         self.0
             .offline_sequence
             .borrow_mut()
@@ -127,6 +148,23 @@ impl PackageOperations for Controlled {
                 .map(|(k, v)| ((*k).into(), (*v).into()))
                 .collect(),
         ));
+        let mut call = serde_json::json!({"mode":"capture","command":command,"args":args});
+        if let Some(cwd) = options.cwd {
+            call["cwd"] = cwd.into();
+        }
+        if let Some(timeout) = options.timeout {
+            call["timeoutMs"] = serde_json::json!(timeout.as_millis());
+        }
+        if !options.env.is_empty() {
+            call["env"] = serde_json::json!(
+                options
+                    .env
+                    .iter()
+                    .copied()
+                    .collect::<std::collections::BTreeMap<_, _>>()
+            );
+        }
+        self.0.transcript.borrow_mut().push(call);
         let hook = self.0.capture_hook.borrow().clone();
         if let Some(hook) = hook {
             return hook(command, args, options.cwd);
@@ -176,7 +214,10 @@ impl PackageOperations for Controlled {
     fn drive_directory(&self, _drive: char) -> Option<String> {
         None
     }
-    fn create_dir_all(&self, _path: &str) -> io::Result<()> {
+    fn create_dir_all(&self, path: &str) -> io::Result<()> {
+        if self.0.native_exists {
+            return std::fs::create_dir_all(path);
+        }
         Ok(())
     }
     fn write_file(&self, path: &str, text: &str) -> io::Result<()> {
@@ -184,6 +225,9 @@ impl PackageOperations for Controlled {
             return Err(io::Error::other("file write failed"));
         }
         self.0.writes.borrow_mut().push((path.into(), text.into()));
+        if self.0.native_exists {
+            return std::fs::write(path, text);
+        }
         Ok(())
     }
     fn directory_is_empty(&self, _path: &str) -> io::Result<bool> {
@@ -202,6 +246,11 @@ impl PackageOperations for Controlled {
             .calls
             .borrow_mut()
             .push((command.into(), args.to_vec()));
+        let mut call = serde_json::json!({"mode":"run","command":command,"args":args});
+        if let Some(cwd) = cwd {
+            call["cwd"] = cwd.into();
+        }
+        self.0.transcript.borrow_mut().push(call);
         let hook = self.0.run_hook.borrow().clone();
         if let Some(hook) = hook {
             return hook(command, args, cwd);
@@ -213,6 +262,10 @@ impl PackageOperations for Controlled {
             .calls
             .borrow_mut()
             .push((command.into(), args.to_vec()));
+        self.0
+            .transcript
+            .borrow_mut()
+            .push(serde_json::json!({"mode":"sync","command":command,"args":args}));
         let callback = self.0.on_command.borrow_mut().take();
         if let Some(callback) = callback {
             callback();

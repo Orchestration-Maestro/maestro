@@ -2,26 +2,29 @@
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations, npm::GITIGNORE};
 use crate::GitSource;
 use maestro_path::{Cwd, SEP, dirname, is_absolute, join, relative};
+use maestro_resources::SourceScope;
 use std::io;
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// The managed Git root and the repository's directory below it.
-    fn git_locations(&self, git: &GitSource, scope: InstalledSourceScope) -> (String, String) {
-        let root = join(&[&self.base(scope), "git"]);
-        let target = join(&[&root, &git.host, &git.path]);
+    /// The optional managed Git root with the selected repository directory.
+    fn git_locations(&self, git: &GitSource, scope: SourceScope) -> (Option<String>, String) {
+        let root = match scope {
+            SourceScope::User => Some(join(&[&self.options.agent_dir, "git"])),
+            SourceScope::Project => Some(join(&[&self.options.cwd, ".maestro", "git"])),
+            SourceScope::Temporary => None,
+        };
+        let target = self.git_path(git, scope);
         (root, target)
     }
-    /// Clones into the scope's Git root unless the target exists, then checks out and installs.
-    pub(super) async fn install_git(
-        &self,
-        git: &GitSource,
-        scope: InstalledSourceScope,
-    ) -> io::Result<()> {
+    /// Clones a missing checkout, then selects its ref and installs dependencies.
+    pub(super) async fn install_git(&self, git: &GitSource, scope: SourceScope) -> io::Result<()> {
         let (root, target) = self.git_locations(git, scope);
         if self.operations.exists(&target) {
             return Ok(());
         }
-        self.ensure_file(&root, ".gitignore", GITIGNORE)?;
+        if let Some(root) = &root {
+            self.ensure_file(root, ".gitignore", GITIGNORE)?;
+        }
         self.operations.create_dir_all(&dirname(&target))?;
         let clone = ["clone".to_owned(), git.repo.clone(), target.clone()];
         self.run_command("git", &clone, None).await?;
@@ -31,18 +34,32 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         self.install_git_dependencies(&target).await
     }
+    /// Best-effort refresh, with collection left outside the progress catch.
+    pub(super) async fn refresh_temporary_git(&self, git: &GitSource, source: &str) {
+        if self.offline() {
+            return;
+        }
+        let _ = self
+            .with_progress(
+                super::ProgressAction::Pull,
+                source,
+                format!("Refreshing {source}..."),
+                self.update_git(git, SourceScope::Temporary),
+            )
+            .await;
+    }
     /// Removes the repository directory, then the empty parents below the Git root.
     pub(super) fn remove_git(
         &self,
         git: &GitSource,
         scope: InstalledSourceScope,
     ) -> io::Result<()> {
-        let (root, target) = self.git_locations(git, scope);
+        let (root, target) = self.git_locations(git, scope.resource_scope());
         if !self.operations.exists(&target) {
             return Ok(());
         }
         self.operations.remove_path(&target)?;
-        self.prune_empty_parents(&target, &root)
+        root.map_or(Ok(()), |root| self.prune_empty_parents(&target, &root))
     }
     /// Removes an empty directory; a failed removal is reported as not removed.
     fn removed_if_empty(&self, dir: &str) -> io::Result<bool> {
@@ -147,11 +164,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         })
     }
     /// Fetches the selected ref and replaces changed contents without merging.
-    pub(super) async fn update_git(
-        &self,
-        git: &GitSource,
-        scope: InstalledSourceScope,
-    ) -> io::Result<()> {
+    pub(super) async fn update_git(&self, git: &GitSource, scope: SourceScope) -> io::Result<()> {
         let (_, path) = self.git_locations(git, scope);
         if !self.operations.exists(&path) {
             return self.install_git(git, scope).await;

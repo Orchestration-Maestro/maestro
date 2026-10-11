@@ -2,6 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod resolution_support;
+mod resource_output;
 mod scratch;
 use resolution_support::run as block_on;
 mod support;
@@ -419,46 +420,6 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
         assert_eq!(&effects.reads.borrow()[start..], &["home"]);
         #[cfg(unix)]
         resolution_support::ambient_entry_resolution().await;
-        Ok(())
-    }))
-    .unwrap();
-}
-
-/// Pinned npm, missing and temporary remote modes do not admit unchecked contents.
-#[test]
-fn deferred_remote_modes_do_not_admit_unchecked_contents() {
-    block_on(Box::pin(async {
-        use maestro_packages::{PackageManager, SourceScope};
-        let dir = scratch::Scratch::new().unwrap();
-        for folder in [
-            ".maestro/npm/node_modules/pkg/extensions",
-            "git/github.com/team/repo/extensions",
-        ] {
-            let path = dir.0.join(folder);
-            std::fs::create_dir_all(&path).unwrap();
-            std::fs::write(path.join("unchecked.ts"), "").unwrap();
-        }
-        let base = dir.0.to_string_lossy().into_owned();
-        let (manager, effects) =
-            resolution_support::manager(&base, resolution_support::Filesystem::default());
-        for (source, scope) in [
-            ("npm:pkg@1", SourceScope::Project),
-            ("npm:missing", SourceScope::Project),
-            ("git:https://github.com/team/missing", SourceScope::User),
-            ("git:https://github.com/team/repo", SourceScope::Temporary),
-        ] {
-            let start = effects.calls.borrow().len();
-            let result = manager
-                .resolve_extension_sources(&[source.into()], Some(scope))
-                .await
-                .unwrap();
-            assert_eq!(
-                resolution_support::output(result, &base),
-                serde_json::json!({"extensions":[],"skills":[],"prompts":[],"themes":[]})
-            );
-            assert!(effects.calls.borrow()[start..].is_empty());
-            assert_eq!(effects.spawns.get(), 0);
-        }
         Ok(())
     }))
     .unwrap();

@@ -1,24 +1,21 @@
-//! npm install and uninstall in user and project scope.
+//! Scoped npm acquisition and installed-version selection.
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations};
 use maestro_path::join;
+use maestro_resources::SourceScope;
 use std::io;
 
-/// The manifest written into a new project npm root, without a final newline.
+/// The manifest written into a new project or temporary npm root, without a final newline.
 const PACKAGE_JSON: &str = "{\n  \"name\": \"maestro-extensions\",\n  \"private\": true\n}";
 /// The ignore file written into a new managed root.
 pub(super) const GITIGNORE: &str = "*\n!.gitignore\n";
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Installs a spec globally, or into the project root after creating its missing files.
-    pub(super) async fn install_npm(
-        &self,
-        spec: &str,
-        scope: InstalledSourceScope,
-    ) -> io::Result<()> {
-        if scope == InstalledSourceScope::User {
+    /// Installs globally or into a prepared project or temporary root.
+    pub(super) async fn install_npm(&self, spec: &str, scope: SourceScope) -> io::Result<()> {
+        if scope == SourceScope::User {
             return self.run_npm(&["install", "-g", spec], None).await;
         }
-        let root = join(&[&self.base(scope), "npm"]);
+        let root = self.npm_root(scope);
         self.ensure_file(&root, ".gitignore", GITIGNORE)?;
         self.ensure_file(&root, "package.json", PACKAGE_JSON)?;
         self.run_npm(&["install", spec, "--prefix", &root], None)
@@ -93,7 +90,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Reads a nonempty string version, suppressing file and manifest failures.
-    fn installed_npm_version(&self, path: &str) -> Option<String> {
+    pub(super) fn installed_npm_version(&self, path: &str) -> Option<String> {
         let manifest = join(&[path, "package.json"]);
         if !self.operations.exists(&manifest) {
             return None;
@@ -101,13 +98,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.operations
             .read_file(&manifest)
             .ok()
-            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-            .and_then(|value| {
-                value
-                    .as_object()?
-                    .get("version")?
-                    .as_str()
-                    .map(str::to_owned)
+            .and_then(|text| {
+                serde_json::from_str::<
+                    std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
+                >(&text)
+                .ok()
+            })
+            .and_then(|mut fields| {
+                serde_json::from_str::<String>(fields.remove("version")?.get()).ok()
             })
             .filter(|version| !version.is_empty())
     }

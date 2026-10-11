@@ -40,6 +40,15 @@ pub enum InstalledSourceScope {
     /// Sources configured in project settings.
     Project,
 }
+impl InstalledSourceScope {
+    /// Widens an installed scope for internal acquisition and lookup.
+    fn resource_scope(self) -> SourceScope {
+        match self {
+            Self::User => SourceScope::User,
+            Self::Project => SourceScope::Project,
+        }
+    }
+}
 /// One configured source in its original list position.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ConfiguredPackage {
@@ -87,10 +96,13 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 
 /// Source acquisition, removal and configured-source operations.
 pub trait PackageManager {
-    /// Resolves explicit sources using package manifests with conventional fallback.
+    /// Resolves explicit sources sequentially, acquiring missing remote contents when online.
+    /// npm pins require acquisition when the literal installed version differs.
+    /// Only existing, unpinned, online temporary Git refreshes.
+    /// Refresh failures are suppressed before resource collection; acquisition failures propagate.
     /// See the [package guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/packages.md).
     /// # Errors
-    /// Returns required path, installed-source lookup or installed-resource discovery failures.
+    /// Returns required path, acquisition or remote resource-discovery failures.
     fn resolve_extension_sources<'a>(
         &'a self,
         sources: &'a [String],
@@ -178,7 +190,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         sources: &'a [String],
         scope: Option<SourceScope>,
     ) -> PackageFuture<'a, ResolvedPaths> {
-        Box::pin(async move { self.resolve_sources(sources, scope) })
+        Box::pin(async move { self.resolve_sources(sources, scope).await })
     }
     fn add_source_to_settings(
         &self,
