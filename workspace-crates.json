@@ -13,6 +13,7 @@
   "maestro-pattern": "core",
   "maestro-request": "core",
   "maestro-resources": "core",
+  "maestro-session": "core",
   "maestro-settings": "core",
   "maestro-theme": "core",
   "maestro-test-conventions": "dedicated",

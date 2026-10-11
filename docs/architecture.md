@@ -6,9 +6,10 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
-The extension domain may depend directly on resources. Models, resources, themes and
-guest authoring may depend on the shared request-record owner, `maestro-request`, which
-has no workspace dependencies. No reverse dependency or internal dev edge is permitted.
+The extension domain may depend directly on resources. Models, resources, themes,
+sessions and guest authoring may depend on `maestro-request`, whose job is to define shared
+message and model-request records. It has no workspace dependencies.
+No reverse dependency or internal dev edge is permitted.
 
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.

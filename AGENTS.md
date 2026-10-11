@@ -112,10 +112,13 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
-- `maestro-request` owns model-request records below layer 0: model, message,
-  content, usage, stream and diagnostic data, plus `SourceInfo` and `Skill`.
-  Only models, resources, theme and guest authoring may depend on it; it has no internal
-  dependencies. Keep existing models/resources public paths as re-exports.
+- `maestro-request` defines shared message and model-request records below layer 0:
+  model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
+  and `Skill`.
+  Shared application messages include bash execution, custom, branch summary and
+  compaction summary records with their existing `Presence<T>` wrapper.
+  Only models, resources, theme, session and guest authoring may depend on it;
+  it has no internal dependencies. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
   table, inventory, graph policy and architecture tests together with the code.
