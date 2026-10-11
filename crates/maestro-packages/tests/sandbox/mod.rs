@@ -109,6 +109,9 @@ impl Sandbox {
     }
 }
 impl PackageOperations for Sandbox {
+    fn temp_dir(&self) -> String {
+        std::env::temp_dir().to_string_lossy().into_owned()
+    }
     fn resource_operations(&self) -> &dyn maestro_resources::skills::ResourceOperations {
         &maestro_resources::NativeResourceOperations
     }

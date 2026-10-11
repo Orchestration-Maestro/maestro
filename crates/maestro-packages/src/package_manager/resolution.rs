@@ -22,7 +22,7 @@ pub struct ResolvedPaths {
     pub themes: Vec<ResolvedResource>,
 }
 use super::{
-    DefaultPackageManager, InstalledSourceScope, PackageOperations,
+    DefaultPackageManager, PackageOperations,
     resource_discovery::{ResourceType, collect_resource_files},
     sources::{self, Source},
 };
@@ -30,8 +30,8 @@ use maestro_path::{dirname, join};
 use maestro_resources::{SourceOrigin, SourceScope, canonicalize_path, skills::ResourceFileType};
 use std::{collections::HashSet, io, path::Path};
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Resolves local sources before suppressing their filesystem failures.
-    pub(super) fn resolve_sources(
+    /// Resolves each explicit source sequentially before final canonical deduplication.
+    pub(super) async fn resolve_sources(
         &self,
         sources: &[String],
         scope: Option<SourceScope>,
@@ -39,7 +39,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let scope = scope.unwrap_or(SourceScope::User);
         let mut result = Accumulator::default();
         for source in sources {
-            self.resolve_source(source, scope, &mut result)?;
+            self.resolve_source(source, scope, &mut result).await?;
         }
         for kind in ResourceType::ALL {
             let mut seen = HashSet::new();
@@ -52,8 +52,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         Ok(result.paths)
     }
-    /// Admits local sources, installed unpinned npm sources and installed Git sources.
-    fn resolve_source(
+    /// Admits local sources and acquires or refreshes remote contents before collection.
+    async fn resolve_source(
         &self,
         source: &str,
         scope: SourceScope,
@@ -76,19 +76,28 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             self.collect_local(path, &mut metadata, result);
             return Ok(());
         }
-        if scope == SourceScope::Temporary || matches!(parsed,Source::Npm {spec,name} if spec!=name)
+        let path = self.remote_path(&parsed, scope)?;
+        let exists = self.operations.exists(&path);
+        let mismatched = exists
+            && matches!(&parsed, Source::Npm { spec, name } if spec != name && self.installed_npm_version(&path).as_deref() != Some(&spec[name.len()+1..]));
+        if !exists || mismatched {
+            if self.offline() {
+                return Ok(());
+            }
+            match &parsed {
+                Source::Npm { spec, .. } => self.install_npm(spec, scope).await?,
+                Source::Git(git) => self.install_git(git, scope).await?,
+                Source::Local(_) => {}
+            }
+        } else if let Source::Git(git) = &parsed
+            && scope == SourceScope::Temporary
+            && git.r#ref.is_none()
+            && !self.offline()
         {
-            return Ok(());
+            self.refresh_temporary_git(git, source).await;
         }
-        let installed_scope = if scope == SourceScope::Project {
-            InstalledSourceScope::Project
-        } else {
-            InstalledSourceScope::User
-        };
-        if let Some(path) = self.installed_path(source, installed_scope)? {
-            metadata.base_dir = Some(path.clone());
-            self.collect_conventional(&path, &metadata, result)?;
-        }
+        metadata.base_dir = Some(path.clone());
+        self.collect_conventional(&path, &metadata, result)?;
         Ok(())
     }
     /// Suppresses local stat and discovery failures after path resolution.

@@ -72,6 +72,7 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
 }
 
 mod native_git;
+mod native_git_command;
 mod native_support;
 mod scratch;
 

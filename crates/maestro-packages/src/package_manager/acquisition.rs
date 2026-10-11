@@ -17,8 +17,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         let message = format!("Installing {source}...");
         self.with_progress(ProgressAction::Install, source, message, async {
             match parsed {
-                Source::Npm { spec, .. } => self.install_npm(spec, scope).await,
-                Source::Git(git) => self.install_git(&git, scope).await,
+                Source::Npm { spec, .. } => self.install_npm(spec, scope.resource_scope()).await,
+                Source::Git(git) => self.install_git(&git, scope.resource_scope()).await,
                 Source::Local(path) => self.require_local(path),
             }
         })

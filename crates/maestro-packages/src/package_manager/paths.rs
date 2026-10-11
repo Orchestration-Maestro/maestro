@@ -4,6 +4,8 @@ use super::{
     sources::{self, Source},
 };
 use maestro_path::{Cwd, dirname, join, relative, resolve, try_resolve};
+use maestro_resources::SourceScope;
+use sha2::{Digest, Sha256};
 use std::io;
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Finds already-existing contents without acquiring the source.
@@ -14,17 +16,65 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: InstalledSourceScope,
     ) -> io::Result<Option<String>> {
-        let path = match sources::parse(source) {
-            Source::Npm { name, .. } => match scope {
-                InstalledSourceScope::User => join(&[&self.global_npm_root()?, name]),
-                InstalledSourceScope::Project => {
-                    join(&[&self.base(scope), "npm", "node_modules", name])
-                }
-            },
-            Source::Git(git) => join(&[&self.base(scope), "git", &git.host, &git.path]),
-            Source::Local(path) => self.resolve_local(path, &self.base(scope))?,
+        let parsed = sources::parse(source);
+        let path = if let Source::Local(path) = parsed {
+            self.resolve_local(path, &self.base(scope))?
+        } else {
+            self.remote_path(&parsed, scope.resource_scope())?
         };
         Ok(self.operations.exists(&path).then_some(path))
+    }
+    /// Selects a remote path before admission or acquisition.
+    pub(super) fn remote_path(
+        &self,
+        source: &Source<'_>,
+        scope: SourceScope,
+    ) -> io::Result<String> {
+        match source {
+            Source::Npm { name, .. } => {
+                let root = if scope == SourceScope::User {
+                    self.global_npm_root()?
+                } else {
+                    join(&[&self.npm_root(scope), "node_modules"])
+                };
+                Ok(join(&[&root, name]))
+            }
+            Source::Git(git) => Ok(self.git_path(git, scope)),
+            Source::Local(path) => self.resolve_local(path, &self.options.cwd),
+        }
+    }
+    /// Selects the prepared npm root for project or temporary installation.
+    pub(super) fn npm_root(&self, scope: SourceScope) -> String {
+        if scope == SourceScope::Temporary {
+            self.temporary_dir("npm", "")
+        } else {
+            join(&[&self.options.cwd, ".maestro", "npm"])
+        }
+    }
+    /// Selects the Git checkout, excluding refs from cache identity.
+    pub(super) fn git_path(&self, git: &crate::GitSource, scope: SourceScope) -> String {
+        match scope {
+            SourceScope::Temporary => self.temporary_dir(&format!("git-{}", git.host), &git.path),
+            SourceScope::User => join(&[&self.options.agent_dir, "git", &git.host, &git.path]),
+            SourceScope::Project => {
+                join(&[&self.options.cwd, ".maestro", "git", &git.host, &git.path])
+            }
+        }
+    }
+    /// Hashes authored UTF-8 identity before lexical joining.
+    fn temporary_dir(&self, prefix: &str, suffix: &str) -> String {
+        let digest = Sha256::digest(format!("{prefix}-{suffix}").as_bytes());
+        let hash = format!(
+            "{:08x}",
+            u32::from_be_bytes([digest[0], digest[1], digest[2], digest[3]])
+        );
+        join(&[
+            &self.operations.temp_dir(),
+            "maestro-extensions",
+            prefix,
+            &hash,
+            suffix,
+        ])
     }
     /// The authored settings base for one scope.
     pub(super) fn base(&self, scope: InstalledSourceScope) -> std::borrow::Cow<'_, str> {

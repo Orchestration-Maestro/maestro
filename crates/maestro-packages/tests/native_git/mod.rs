@@ -3,26 +3,9 @@ use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
 };
 use maestro_settings::{PackageSource, Settings, SettingsManager};
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
-/// Runs Git without inherited author or signing settings.
-pub fn git(path: &Path, args: &[&str]) -> String {
-    let result = std::process::Command::new("git")
-        .args([
-            "-c",
-            "user.name=Fixture",
-            "-c",
-            "user.email=fixture@example.invalid",
-            "-c",
-            "commit.gpgsign=false",
-        ])
-        .args(args)
-        .current_dir(path)
-        .output()
-        .unwrap();
-    assert!(result.status.success(), "fixture Git command failed");
-    String::from_utf8(result.stdout).unwrap().trim().into()
-}
+pub use super::native_git_command::git;
 /// A retained remote, seed and installed checkout.
 pub struct Repository {
     /// Owns the disposable directories.

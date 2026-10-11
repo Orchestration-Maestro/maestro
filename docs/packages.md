@@ -65,9 +65,33 @@ separately from package discovery.
 
 ## Conventional resource discovery
 
-`PackageManager::resolve_extension_sources` resolves explicit local sources and
-already-installed unpinned npm sources or Git sources in user/project scope. `None` selects
-user scope; temporary scope currently admits only local sources.
+`PackageManager::resolve_extension_sources` processes explicit local, npm and Git
+sources sequentially; `None` selects user scope. Project scope uses the project
+configuration directory, and temporary local sources use the manager's working directory.
+See [configured sources](package-sources.md) for source parsing and local path rules.
+
+Missing remote sources are acquired without install progress or settings edits.
+A pinned npm source is also acquired when its installed nonempty version string
+differs literally from the authored suffix; tags and ranges are not resolved.
+Offline acquisition skips that source, including mismatched installed pins.
+Existing unpinned npm sources are collected without a version probe.
+Acquisition errors stop resolution before later sources.
+
+Temporary npm shares `<temp>/maestro-extensions/npm/f35b2129`.
+Temporary Git uses `<temp>/maestro-extensions/git-<host>/<hash>/<path>`;
+`hash` is the first eight lowercase hexadecimal characters of SHA-256 over
+`git-<host>-<path>` before lexical joining, without the ref.
+The supplied `PackageOperations::temp_dir` selects the temporary base;
+`NativePackageOperations` uses Rust's OS temporary-directory selection.
+Temporary Git creates no managed-root ignore file. Cache files outlive the manager.
+
+Only existing, unpinned, online temporary Git sources refresh. The refresh rechecks
+offline mode, emits pull progress with `Refreshing <source>...`, and delegates to
+[Git update execution](package-updates.md#configured-execution).
+Refresh failures, including progress-callback failures, are suppressed;
+collection uses surviving contents outside that catch. Resource collection errors
+from remote sources propagate. Ordinary install commands have no added deadline;
+[captured commands](package-updates.md) retain their existing deadline.
 
 Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
 Without a present package-root manifest, a local directory with none of these
@@ -121,6 +145,4 @@ keeps earlier local kinds and stops that source's remaining kinds; the next
 local source can still contribute. Installed remote collection propagates the
 malformed-list failure.
 
-Missing/pinned-npm/temporary remote admission is tracked in
-[#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
-and configured/automatic merging and filters in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).
+Configured/automatic merging and filters are tracked in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).
