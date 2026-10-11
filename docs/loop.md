@@ -14,8 +14,10 @@ Observing, pausing or dropping the stream does not delay or cancel submitted wor
 Events are queued without reader acknowledgements. `AgentEnd` publishes its
 ordered messages as the result before the producer's successful `end` call;
 repeated result observations retain the message entry handles.
-The wrappers call the awaited operations below with the supplied configuration
-and invocation overrides. On producer rejection, native execution writes the
+The wrappers share execution with the awaited operations below, using the supplied
+configuration and invocation overrides. Prompt history is copied at submission,
+retaining its entry handles; admitted continuations keep the supplied history live.
+On producer rejection, native execution attempts to write the
 original diagnostic message plus a newline to stderr and leaves the stream
 unsettled without manufacturing a terminal event. Browser-host diagnostic
 visibility is not yet provided; the rejected stream likewise remains unsettled.

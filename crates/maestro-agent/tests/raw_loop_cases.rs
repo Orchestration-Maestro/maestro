@@ -10,7 +10,7 @@ use maestro_agent::{
 use maestro_models::{Message, UserContent};
 use std::sync::{
     Arc, Mutex, RwLock,
-    atomic::{AtomicUsize, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
 };
 use support::{observable::*, *};
 
@@ -294,7 +294,7 @@ fn maestro_tool_events_follow_completion_results_follow_source() {
     assert_source_results(&recorded.events);
 }
 
-/// Steering arrives after every execution and artifact of the admitted batch.
+/// Steering available after the first execution waits for the batch artifacts.
 #[test]
 fn maestro_steering_waits_for_all_tools() {
     let executed = Arc::new(AtomicUsize::new(0));
@@ -307,10 +307,11 @@ fn maestro_steering_waits_for_all_tools() {
         }),
     );
     let mut config = config();
+    config.tool_execution = Some(ToolExecutionMode::Sequential);
+    let delivered = AtomicBool::new(false);
     config.get_steering_messages = Some(Arc::new(move || {
         let n = executed.load(Ordering::SeqCst);
-        ready(Ok(if n == 2 {
-            executed.store(3, Ordering::SeqCst);
+        ready(Ok(if n >= 1 && !delivered.swap(true, Ordering::SeqCst) {
             vec![user("interrupt")]
         } else {
             vec![]
@@ -496,7 +497,7 @@ fn maestro_mixed_termination_continues() {
 fn maestro_after_hook_can_terminate_batch() {
     termination(Termination::All, true);
 }
-/// Observe request cardinality through exhaustion of a controlled response queue.
+/// Observe request cardinality through controlled producer completion.
 fn termination(termination: Termination, after: bool) {
     let all = matches!(termination, Termination::All);
     let echo = tool(

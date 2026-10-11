@@ -15,7 +15,7 @@ use std::{
 };
 use support::{observable::*, *};
 
-/// Both entrypoints submit exactly one operation before any callback executes.
+/// The capturing spawner retains one operation before request conversion runs.
 #[test]
 fn maestro_raw_stream_returns_before_work_is_driven() {
     for continuation in [false, true] {
@@ -45,6 +45,97 @@ fn maestro_raw_stream_returns_before_work_is_driven() {
         );
     }
 }
+/// Prompt submission captures the outer history while retaining entry aliases.
+#[test]
+fn maestro_submission_captures_prompt_history() {
+    let context = context();
+    let history = Arc::clone(&context.messages);
+    let old = user("old");
+    *history.write().unwrap() = vec![old.clone()];
+    let mut config = config();
+    let retained = old.clone();
+    let convert = Arc::clone(&config.convert_to_llm);
+    config.convert_to_llm = Arc::new(move |entries| {
+        let entries_read = entries.read().unwrap();
+        assert_eq!(
+            entries_read.iter().map(text).collect::<Vec<_>>(),
+            ["edited", "prompt"]
+        );
+        same_entry(&entries_read[0], &old);
+        drop(entries_read);
+        convert(entries)
+    });
+    let tasks = Arc::new(owned::Tasks::default());
+    let stream = start(
+        false,
+        context,
+        config,
+        responses(vec![assistant("done")]),
+        &tasks,
+    );
+    let AgentMessage::User(entry) = &retained else {
+        panic!("user expected")
+    };
+    entry.write().unwrap().content = maestro_models::UserContent::Text("edited".into());
+    *history.write().unwrap() = vec![user("late")];
+    run(tasks.take());
+    assert_eq!(
+        drain(&stream).messages.iter().map(text).collect::<Vec<_>>(),
+        ["prompt", "done"]
+    );
+    assert_eq!(
+        history.read().unwrap().iter().map(text).collect::<Vec<_>>(),
+        ["late"]
+    );
+}
+
+/// Already admitted continuations keep live history after another operation finishes.
+#[test]
+fn maestro_overlapping_continuations_keep_admission_and_live_history() {
+    let context = context();
+    let history = Arc::clone(&context.messages);
+    let tasks = Arc::new(owned::Tasks::default());
+    let config = Arc::new(config());
+    let first = agent_loop_continue(
+        context.clone(),
+        Arc::clone(&config),
+        responses(vec![assistant("first")]),
+        tasks.spawner(),
+    )
+    .unwrap();
+    let first_task = tasks.take();
+    let mut options = responses(vec![assistant("second")]);
+    let source = options.stream_fn.take().unwrap();
+    options.stream_fn = Some(Arc::new(move |model, request, options, extra| {
+        assert_eq!(request.messages.len(), 2);
+        let maestro_models::Message::Assistant(previous) = &request.messages[1] else {
+            panic!("live assistant missing")
+        };
+        assert_eq!(previous.content, assistant("first").read().unwrap().content);
+        source(model, request, options, extra)
+    }));
+    let second = agent_loop_continue(context, config, options, tasks.spawner()).unwrap();
+    run(first_task);
+    assert_eq!(
+        drain(&first).messages.iter().map(text).collect::<Vec<_>>(),
+        ["first"]
+    );
+    run(tasks.take());
+    let mut result = Box::pin(second.result());
+    assert!(
+        poll(result.as_mut()).is_ready(),
+        "admitted continuation must settle"
+    );
+    assert_eq!(
+        drain(&second).messages.iter().map(text).collect::<Vec<_>>(),
+        ["second"]
+    );
+    assert_eq!(
+        history.read().unwrap().iter().map(text).collect::<Vec<_>>(),
+        ["earlier", "first", "second"]
+    );
+}
+
 /// Absent and paused consumers do not delay production.
 #[test]
 fn maestro_slow_observers_do_not_block_production() {
@@ -227,68 +318,80 @@ fn maestro_raw_continue_rejects_assistant_before_submission() {
 /// Invocation overrides preserve model, options and executable tool operands.
 #[test]
 fn maestro_wrapper_overrides_reach_request_and_tool() {
-    for continuation in [false, true] {
-        for present in [false, true] {
-            let signal = present.then(Cancellation::new);
-            let configured = Cancellation::new();
-            configured.abort();
-            let mut config = config();
-            config.options.common.signal = Some(configured);
-            config.extra.insert(
-                "ordered".into(),
-                serde_json::json!(["zulu", "alpha", "zulu"]),
-            );
-            let model = Arc::clone(&config.model);
-            let expected = signal.clone();
-            config.transform_context = Some(Arc::new(move |history, actual| {
-                check_signal(actual.as_ref(), expected.as_ref());
-                ready(Ok(history))
-            }));
-            let expected = signal.clone();
-            let executed = Arc::new(AtomicUsize::new(0));
-            let count = Arc::clone(&executed);
-            let context = with_execute(Arc::new(move |_, _, actual, _| {
-                check_signal(actual.as_ref(), expected.as_ref());
-                count.fetch_add(1, Ordering::SeqCst);
-                ready(Ok(result()))
-            }));
-            let expected = signal.clone();
-            let requests = Arc::new(AtomicUsize::new(0));
-            let count = Arc::clone(&requests);
-            let options = AgentLoopOptions {
-                signal,
-                stream_fn: Some(Arc::new(move |descriptor, request, options, extra| {
-                    assert_eq!(descriptor.id, model.read().unwrap().id);
-                    assert_eq!(request.system_prompt.as_deref(), Some("instructions"));
-                    assert_eq!(
-                        extra.extra["ordered"],
-                        serde_json::json!(["zulu", "alpha", "zulu"])
-                    );
-                    check_signal(options.common.signal.as_ref(), expected.as_ref());
-                    count.fetch_add(1, Ordering::SeqCst);
-                    let stream = AssistantMessageEventStream::new();
-                    stream.end(Some(tool_call()));
-                    ready(Ok(stream))
-                })),
-            };
-            let tasks = Arc::new(owned::Tasks::default());
-            let stream = start(continuation, context, config, options, &tasks);
-            run(tasks.take());
-            assert_eq!(executed.load(Ordering::SeqCst), 1);
-            assert_eq!(requests.load(Ordering::SeqCst), 1);
-            assert!(matches!(
-                drain(&stream).messages.last().unwrap(),
-                AgentMessage::ToolResult(_)
-            ));
-        }
+    for (continuation, present, stage) in [false, true].into_iter().flat_map(|c| {
+        [false, true]
+            .into_iter()
+            .flat_map(move |p| ["transform", "model", "tool"].map(|s| (c, p, s)))
+    }) {
+        check_overrides(continuation, present.then(Cancellation::new), stage);
     }
+}
+/// Probe one consuming stage with a fresh caller signal.
+fn check_overrides(continuation: bool, signal: Option<Cancellation>, stage: &'static str) {
+    let configured = Cancellation::new();
+    configured.abort();
+    let mut config = config();
+    config.options.common.signal = Some(configured);
+    config.extra.insert(
+        "ordered".into(),
+        serde_json::json!(["zulu", "alpha", "zulu"]),
+    );
+    let model = Arc::clone(&config.model);
+    let expected = signal.clone();
+    config.transform_context = Some(Arc::new(move |history, actual| {
+        if stage == "transform" {
+            check_signal(actual.as_ref(), expected.as_ref());
+        }
+        ready(Ok(history))
+    }));
+    let expected = signal.clone();
+    let executed = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&executed);
+    let context = with_execute(Arc::new(move |_, _, actual, _| {
+        if stage == "tool" {
+            check_signal(actual.as_ref(), expected.as_ref());
+        }
+        count.fetch_add(1, Ordering::SeqCst);
+        ready(Ok(result()))
+    }));
+    let expected = signal.clone();
+    let requests = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&requests);
+    let options = AgentLoopOptions {
+        signal,
+        stream_fn: Some(Arc::new(move |descriptor, request, options, extra| {
+            assert_eq!(descriptor.id, model.read().unwrap().id);
+            assert_eq!(request.system_prompt.as_deref(), Some("instructions"));
+            assert_eq!(
+                extra.extra["ordered"],
+                serde_json::json!(["zulu", "alpha", "zulu"])
+            );
+            if stage == "model" {
+                check_signal(options.common.signal.as_ref(), expected.as_ref());
+            }
+            count.fetch_add(1, Ordering::SeqCst);
+            let stream = AssistantMessageEventStream::new();
+            stream.end(Some(tool_call()));
+            ready(Ok(stream))
+        })),
+    };
+    let tasks = Arc::new(owned::Tasks::default());
+    let stream = start(continuation, context, config, options, &tasks);
+    run(tasks.take());
+    assert_eq!(executed.load(Ordering::SeqCst), 1);
+    assert_eq!(requests.load(Ordering::SeqCst), 1);
+    assert!(matches!(
+        drain(&stream).messages.last().unwrap(),
+        AgentMessage::ToolResult(_)
+    ));
 }
 /// Distinguish omission, state and shared cancellation identity.
 fn check_signal(actual: Option<&Cancellation>, expected: Option<&Cancellation>) {
     match (actual, expected) {
         (None, None) => (),
         (Some(a), Some(b)) => {
-            assert_eq!(a.is_aborted(), b.is_aborted());
+            assert!(!a.is_aborted());
+            assert!(!b.is_aborted());
             a.abort();
             assert!(b.is_aborted());
         }
@@ -434,6 +537,7 @@ fn maestro_awaited_and_observable_share_adapters() {
         recorded.events.iter().map(kind).collect::<Vec<_>>()
     );
     assert_eq!(text(&recorded.messages[2]), "echo operand");
+    assert_eq!(text(&messages[3]), "done");
     assert_eq!(text(&recorded.messages[3]), "done");
 }
 /// Empty and repeated prompts preserve authored order without old history.
@@ -491,8 +595,11 @@ fn maestro_raw_continue_accepts_tool_result_tail() {
         },
     )))];
     let mut config = config();
+    let conversions = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&conversions);
     let convert = Arc::clone(&config.convert_to_llm);
     config.convert_to_llm = Arc::new(move |entries| {
+        count.fetch_add(1, Ordering::SeqCst);
         assert!(matches!(
             entries.read().unwrap()[0],
             AgentMessage::ToolResult(_)
@@ -518,7 +625,9 @@ fn maestro_raw_continue_accepts_tool_result_tail() {
         })),
     };
     let stream = start(true, context, config, options, &tasks);
+    assert_eq!(conversions.load(Ordering::SeqCst), 0);
     run(tasks.take());
+    assert_eq!(conversions.load(Ordering::SeqCst), 1);
     let recorded = drain(&stream);
     assert_eq!(
         recorded.messages.iter().map(text).collect::<Vec<_>>(),

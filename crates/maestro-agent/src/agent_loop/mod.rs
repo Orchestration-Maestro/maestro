@@ -71,11 +71,15 @@ fn create_agent_stream<C: CustomAgentMessages + crate::agent::Native + 'static>(
 /// Submit one awaited operation, retaining production independently of readers.
 fn submit<C: CustomAgentMessages + crate::agent::Native + 'static>(
     prompts: Option<Vec<AgentMessage<C>>>,
-    context: AgentContext<C>,
+    mut context: AgentContext<C>,
     config: Arc<AgentLoopConfig<C>>,
     options: AgentLoopOptions,
     spawn: AgentSpawner,
 ) -> EventStream<AgentEvent<C>, Vec<AgentMessage<C>>> {
+    if let Some(prompts) = &prompts {
+        context = prepare_prompt(prompts, context);
+    }
+    let prompts = prompts.unwrap_or_default();
     let stream = create_agent_stream();
     let producer = stream.clone();
     let sink = stream.clone();
@@ -84,10 +88,7 @@ fn submit<C: CustomAgentMessages + crate::agent::Native + 'static>(
         Box::pin(std::future::ready(Ok(())))
     });
     spawn(Box::pin(async move {
-        let result = match prompts {
-            Some(prompts) => run_agent_loop(prompts, context, &config, emit, options).await,
-            None => run_agent_loop_continue(context, &config, emit, options).await,
-        };
+        let result = prepared_loop(prompts, context, &config, emit, options).await;
         match result {
             Ok(messages) => producer.end(Some(messages)),
             Err(error) => {
@@ -155,7 +156,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + Send + Sync + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    prompt(prompts, context, config, emit, options).await
+    let context = prepare_prompt(&prompts, context);
+    prepared_loop(prompts, context, config, emit, options).await
 }
 /// Continue through retained history without replaying its tail.
 ///
@@ -169,7 +171,8 @@ pub async fn run_agent_loop_continue<C: CustomAgentMessages + Send + Sync + 'sta
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    continue_loop(context, config, emit, options).await
+    check_continuation(&context)?;
+    prepared_loop(Vec::new(), context, config, emit, options).await
 }
 /// Run prompts over a copied outer history, retaining shared entries.
 ///
@@ -183,7 +186,8 @@ pub async fn run_agent_loop<C: CustomAgentMessages + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    prompt(prompts, context, config, emit, options).await
+    let context = prepare_prompt(&prompts, context);
+    prepared_loop(prompts, context, config, emit, options).await
 }
 /// Continue through retained history without replaying its tail.
 ///
@@ -197,22 +201,17 @@ pub async fn run_agent_loop_continue<C: CustomAgentMessages + 'static>(
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    continue_loop(context, config, emit, options).await
+    check_continuation(&context)?;
+    prepared_loop(Vec::new(), context, config, emit, options).await
 }
-/// Emit prompt observations over a copied outer history, returning new entries.
-async fn prompt<C: CustomAgentMessages + 'static>(
+/// Execute prepared prompt or admitted continuation observations.
+async fn prepared_loop<C: CustomAgentMessages + 'static>(
     prompts: Vec<AgentMessage<C>>,
-    mut context: AgentContext<C>,
+    context: AgentContext<C>,
     config: &AgentLoopConfig<C>,
     emit: AgentEventSink<C>,
     options: AgentLoopOptions,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    let history = read(&context.messages)
-        .iter()
-        .chain(&prompts)
-        .cloned()
-        .collect();
-    context.messages = Arc::new(RwLock::new(history));
     emit(AgentEvent::AgentStart).await?;
     emit(AgentEvent::TurnStart).await?;
     for prompt in &prompts {
@@ -233,24 +232,18 @@ async fn prompt<C: CustomAgentMessages + 'static>(
     };
     driver.run(prompts).await
 }
-/// Continue through the supplied history without replaying its existing tail.
-async fn continue_loop<C: CustomAgentMessages + 'static>(
-    context: AgentContext<C>,
-    config: &AgentLoopConfig<C>,
-    emit: AgentEventSink<C>,
-    options: AgentLoopOptions,
-) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
-    check_continuation(&context)?;
-    emit(AgentEvent::AgentStart).await?;
-    emit(AgentEvent::TurnStart).await?;
-    Driver {
-        context,
-        config,
-        emit,
-        options,
-    }
-    .run(Vec::new())
-    .await
+/// Capture the prompt history's outer collection without copying its entries.
+fn prepare_prompt<C: CustomAgentMessages>(
+    prompts: &[AgentMessage<C>],
+    mut context: AgentContext<C>,
+) -> AgentContext<C> {
+    let history = read(&context.messages)
+        .iter()
+        .chain(prompts)
+        .cloned()
+        .collect();
+    context.messages = Arc::new(RwLock::new(history));
+    context
 }
 /// Inputs retained for the operation's turn progression.
 struct Driver<'a, C: CustomAgentMessages> {
