@@ -54,3 +54,7 @@ mod events;
 mod loop_config;
 pub use events::*;
 pub use loop_config::*;
+
+/// Tool callback records.
+mod hooks;
+pub use hooks::*;

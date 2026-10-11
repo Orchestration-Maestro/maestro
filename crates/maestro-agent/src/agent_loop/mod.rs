@@ -1,4 +1,4 @@
-//! Awaited sequential conversation turns.
+//! Awaited conversation turns.
 use crate::{
     AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, CustomAgentMessages, StreamFn,
 };
@@ -17,7 +17,7 @@ pub type AgentEventSink<C = std::convert::Infallible> =
 mod assistant;
 /// Concurrent settlement of admitted tool progress.
 mod progress;
-/// Sequential tool execution.
+/// Tool execution.
 mod tools;
 /// Optional invocation signal and replacement model stream.
 #[derive(Default)]
@@ -166,17 +166,22 @@ struct Driver<'a, C: CustomAgentMessages> {
     options: AgentLoopOptions,
 }
 impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
-    /// Complete assistant turns until no tool continuation remains.
+    /// Complete turns until controls and ordinary continuation are exhausted.
     async fn run(
         &self,
         mut messages: Vec<AgentMessage<C>>,
     ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
         let mut first = true;
+        let mut pending = self
+            .poll_messages(self.config.get_steering_messages.as_ref())
+            .await?;
         loop {
             if !first {
                 (self.emit)(AgentEvent::TurnStart).await?;
             }
             first = false;
+            self.inject_messages(std::mem::take(&mut pending), &mut messages)
+                .await?;
             let response = self.assistant().await?;
             messages.push(AgentMessage::Assistant(Arc::clone(&response)));
             let failed = matches!(
@@ -188,17 +193,13 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             } else {
                 self.tools(&response).await?
             };
-            for result in &results {
-                let message = AgentMessage::ToolResult(Arc::clone(result));
-                write(&self.context.messages).push(message.clone());
-                messages.push(message);
+            self.complete_turn(&response, &results, &mut messages)
+                .await?;
+            if failed || self.stop_after_turn(&response, &results, &messages).await? {
+                break;
             }
-            (self.emit)(AgentEvent::TurnEnd {
-                message: response,
-                tool_results: results.iter().map(|result| read(result).clone()).collect(),
-            })
-            .await?;
-            if !again {
+            pending = self.next_messages(again).await?;
+            if !again && pending.is_empty() {
                 break;
             }
         }
@@ -209,6 +210,9 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         Ok(messages)
     }
 }
+
+/// Queue injection and completed-turn decisions.
+mod controls;
 
 /// Construct a loop-owned diagnostic without changing caller diagnostics.
 fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
