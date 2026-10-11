@@ -6,23 +6,24 @@ use super::{
 };
 use maestro_models::{
     AssistantMessageEvent, Cancellation, OnPayload, ProviderStreamOptions, SharedAssistantMessage,
-    SimpleStreamOptions, StreamOptions, complete, complete_simple, stream,
+    SimpleStreamOptions, StreamOptions, complete, complete_simple, stream, stream_simple,
 };
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
 /// Native event framing uses the existing protocol helpers.
-fn body(wire: &Wire) -> Vec<u8> {
-    if wire.model["api"] == "anthropic-messages" {
-        wire.events
+fn body(wire: &Wire) -> TestResult<Vec<u8>> {
+    let events = wire.events.as_ref().ok_or("event body")?;
+    Ok(if wire.model["api"] == "anthropic-messages" {
+        events
             .iter()
             .map(messages::sse)
             .collect::<String>()
             .into_bytes()
     } else {
-        bundled::sse_frames(&wire.events)
-    }
+        bundled::sse_frames(events)
+    })
 }
 
 /// Account fixtures hold a marker; the existing helper assembles the synthetic token.
@@ -54,6 +55,8 @@ fn common(
     });
     StreamOptions {
         api_key: Some(key(wire)),
+        max_tokens: wire.options.max_tokens,
+        temperature: wire.options.temperature,
         session_id: wire.options.session_id.clone(),
         cache_retention: wire.options.cache_retention,
         transport: wire.options.transport.clone(),
@@ -113,7 +116,7 @@ fn raw(wire: &Wire, common: StreamOptions) -> ProviderStreamOptions {
 fn controlled(wire: &Wire) -> TestResult<(transport::Transport, Option<messages::Feed>)> {
     if wire.phase == Phase::Mid {
         let (feed, body_stream) = messages::feed();
-        feed.chunks.send(body(wire))?;
+        feed.chunks.send(body(wire)?)?;
         let body = Mutex::new(Some(body_stream));
         let attempt = transport::Attempt::streaming(move || {
             body.lock()
@@ -127,9 +130,20 @@ fn controlled(wire: &Wire) -> TestResult<(transport::Transport, Option<messages:
         });
         Ok((transport::transport(vec![attempt]), Some(feed)))
     } else {
-        let chunks = body(wire);
+        assert_ne!(
+            wire.events.is_some(),
+            wire.chunks.is_some(),
+            "one body source"
+        );
+        let chunks = if let Some(chunks) = &wire.chunks {
+            chunks.clone()
+        } else {
+            vec![body(wire)?]
+        };
         let attempt = transport::Attempt::streaming(move || {
-            Box::pin(futures_util::stream::iter([Ok(chunks.clone())]))
+            Box::pin(futures_util::stream::iter(
+                chunks.clone().into_iter().map(Ok),
+            ))
         });
         Ok((transport::transport(vec![attempt]), None))
     }
@@ -195,29 +209,50 @@ async fn dispatch(
             };
             (complete_simple(model, context, Some(simple)).await?, None)
         }
-        Route::Stream => {
-            let started = stream(model, context, Some(raw(wire, common)))?;
-            let events = collect(&started, feed, signal).await?;
-            let result = started.result().await;
-            assert!(
-                events
-                    .iter()
-                    .all(|event| Arc::ptr_eq(handle(event), &result)),
-                "{} shared result handle",
-                "stream"
-            );
-            (
-                result,
-                Some(
-                    events
-                        .iter()
-                        .map(event_record)
-                        .collect::<TestResult<Vec<_>>>()?,
-                ),
-            )
+        Route::Stream | Route::StreamSimple => {
+            let started = if matches!(wire.route, Route::StreamSimple) {
+                stream_simple(
+                    model,
+                    context,
+                    Some(SimpleStreamOptions {
+                        common,
+                        reasoning: wire.options.reasoning,
+                        ..SimpleStreamOptions::default()
+                    }),
+                )?
+            } else {
+                stream(model, context, Some(raw(wire, common)))?
+            };
+            streamed(&started, feed, signal).await?
         }
     };
     Ok(output)
+}
+
+/// Drain one streaming operation and observe its shared result object.
+async fn streamed(
+    started: &maestro_models::AssistantMessageEventStream,
+    feed: Option<messages::Feed>,
+    signal: &Cancellation,
+) -> TestResult<(SharedAssistantMessage, Option<Vec<Value>>)> {
+    let events = collect(started, feed, signal).await?;
+    let result = started.result().await;
+    assert!(
+        events
+            .iter()
+            .all(|event| Arc::ptr_eq(handle(event), &result)),
+        "{} shared result handle",
+        "stream"
+    );
+    Ok((
+        result,
+        Some(
+            events
+                .iter()
+                .map(event_record)
+                .collect::<TestResult<Vec<_>>>()?,
+        ),
+    ))
 }
 
 /// Observe a public text delta before cancellation, then drain terminal and await body release.
