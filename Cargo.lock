@@ -1662,8 +1662,11 @@ name = "maestro-app"
 version = "0.1.0"
 dependencies = [
  "maestro-path",
+ "maestro-watch",
+ "num-traits",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

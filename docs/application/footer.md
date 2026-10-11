@@ -4,8 +4,8 @@
 branch, extension status texts and a supplied available-provider count.
 `FooterDataProvider` holds them; a frontend reads them through the
 `ReadonlyFooterDataProvider` trait, which is re-exported at the crate root.
-Automatic refresh from the file system is not part of this delivery: the branch
-changes only when `set_cwd` is called.
+Available repository watches refresh Git metadata asynchronously. Frontends
+subscribe to working-directory changes and changed cached branches.
 
 ```rust
 use std::rc::Rc;
@@ -14,11 +14,16 @@ use maestro_app::presentation_data::footer_data_provider::{
     FooterDataProvider, NativeFooterOperations,
 };
 
-let provider = FooterDataProvider::new(".".to_owned(), Rc::new(NativeFooterOperations));
+let runtime = tokio::runtime::Builder::new_current_thread()
+    .enable_all().build().unwrap();
+let local = Rc::new(tokio::task::LocalSet::new());
+let operations = Rc::new(NativeFooterOperations::new(Rc::clone(&local)));
+let provider = FooterDataProvider::new(".".to_owned(), operations);
 provider.set_extension_status("build", Some("passing"));
 let _branch = provider.get_git_branch();
 let statuses = provider.get_extension_statuses();
 assert_eq!(statuses.get("build").as_deref(), Some("passing"));
+local.block_on(&runtime, async { provider.dispose(); });
 ```
 
 ## Branch
@@ -35,17 +40,47 @@ starts with `gitdir: `, and any other file or entry kind continues the walk. A
 cannot be followed and a repository without `HEAD` each end the walk with no
 branch instead of falling back to an enclosing repository. `HEAD` is checked
 before a worktree link's `commondir`, which a plain directory never reads, and the working directory is read only when a worktree path
-still needs it after the recorded drive directories are applied. Reading `HEAD` waits for
-the first `get_git_branch` call, and its result, absence included, is cached
-until the working directory changes.
+still needs it after the recorded drive directories are applied. A getter performs
+the first synchronous branch lookup if a refresh has not already populated the
+cache. The cached result, absence included, is replaced by subsequent refreshes
+or invalidated by a working-directory change.
 
 The branch is `None` outside a repository, the text after `ref: refs/heads/`
 unchanged (even when empty) and `detached` for any other readable `HEAD`; an unreadable `HEAD` gives no branch. A repository
 that stores the placeholder `.invalid` asks `git --no-optional-locks
 symbolic-ref --quiet --short HEAD` in the directory that holds `.git`; a
 failed or empty answer gives `detached`. Whitespace around file text is trimmed
-as JavaScript's `String.prototype.trim` does, so U+FEFF is trimmed while U+0085,
-U+180E and U+200B are kept.
+with Unicode whitespace rules that trim U+FEFF while retaining U+0085,
+U+180E and U+200B.
+
+## Live refresh
+
+Until disposed, the provider watches the directory containing `HEAD`. Registration
+proceeds in order and stops at the first failure or absent path: when the common
+metadata directory's `reftable` directory is present and registered, it is watched
+too, and when its `tables.list` file is then present and registered, that file is
+watched and polled every 250 ms. Native polling paths and asynchronous Git query
+directories are anchored when their operations are called, before the task set
+runs; if absolute resolution fails, the original path is retained.
+HEAD-directory events with an unknown,
+empty or exact `HEAD` filename request refresh; reference-table events need no
+filename filter. Polling requests refresh when modification time, metadata change
+time or size differs. The native poll retains the last successful sample through
+a missing file and compares reappearance against that sample.
+
+The first event schedules a 500-ms refresh; later events do not move that
+deadline. Events during an unresolved query queue one follow-up, scheduled after
+completion. Refresh publishes before notifying subscribers, and an initial
+refresh that populates an unread cache does not notify. Unchanged results stay
+silent. A completion from an old working directory or a disposed provider cannot
+publish, and an event or watch error arriving after disposal neither queues a
+refresh nor schedules a retry.
+
+Watch registration or asynchronous watch failure releases the registered sources
+and schedules another attempt in five seconds. A watch failure leaves an already
+scheduled branch refresh intact. Native notification and timer effects use
+[Filesystem watching](../filesystem-watch.md); callers must drive the supplied
+`LocalSet` for their lifetime.
 
 ## Statuses, count and subscriptions
 
@@ -56,8 +91,13 @@ removed before its turn, reaches entries added before it ends and stays ended
 once it returns `None`.
 
 `set_cwd` does nothing for the same spelling. Otherwise it rediscovers the
-repository, invalidates the cached branch and then calls the branch-change
-callbacks in registration order, including callbacks added during the walk.
+repository, cancels old watch deadlines, invalidates the cached branch and
+rebinds available watches before calling the branch-change callbacks in
+registration order, including callbacks added during the walk.
 `on_branch_change` registers each `Rc` once; the returned function removes
-that registration, dropping it does not. `dispose` removes every subscription
-and leaves the branch, statuses and count readable.
+that registration; holding it retains the watch lifecycle, and dropping it does
+not unsubscribe. `dispose` ends watch work and clears subscriptions while leaving
+the branch, statuses and count readable. Changing the working directory after
+disposal retains synchronous metadata and notification behavior without opening
+new watch resources. Closing one provider's polling registration leaves other
+providers' registrations intact.

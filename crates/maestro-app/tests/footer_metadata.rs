@@ -69,7 +69,9 @@ fn footer_head_records_keep_exact_branch_text() {
                 let scratch = Scratch::new();
                 std::fs::create_dir(scratch.join(".git")).expect("metadata directory");
                 std::fs::write(scratch.join(".git/HEAD"), bytes).expect("HEAD written");
-                let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
+                let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations::new(
+                    Rc::new(tokio::task::LocalSet::new()),
+                ));
                 FooterDataProvider::new(scratch.join(""), native).get_git_branch()
             }
             #[cfg(not(unix))]
@@ -153,7 +155,9 @@ fn command_dirs(commands: &[Command], args: &[String]) -> Vec<String> {
 fn footer_symbolic_lookup_uses_exact_command_and_fallback() {
     #[cfg(unix)]
     if let Ok(repo) = std::env::var("FOOTER_PROBE_REPO") {
-        let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
+        let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations::new(Rc::new(
+            tokio::task::LocalSet::new(),
+        )));
         let branch = FooterDataProvider::new(repo, native).get_git_branch();
         println!("\nPROBE branch={}", branch.unwrap_or_default());
         return;
@@ -964,7 +968,9 @@ struct NativeExpected {
 
 #[cfg(unix)]
 fn native_branch(cwd: &str) -> Branch {
-    let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations);
+    let native: Rc<dyn FooterOperations> = Rc::new(NativeFooterOperations::new(Rc::new(
+        tokio::task::LocalSet::new(),
+    )));
     FooterDataProvider::new(cwd.to_owned(), native).get_git_branch()
 }
 
@@ -987,7 +993,7 @@ fn footer_native_and_controlled_adapters_agree() {
     assert_eq!(scenarios.len(), 4);
     let nested_case = &scenarios["real nested unborn repository"];
     assert_eq!(native_branch(&nested), Some(nested_case.branch.clone()));
-    let output = NativeFooterOperations
+    let output = NativeFooterOperations::new(Rc::new(tokio::task::LocalSet::new()))
         .symbolic_ref_sync(&repo)
         .expect("git runs");
     assert_eq!(output, nested_case.git_output);

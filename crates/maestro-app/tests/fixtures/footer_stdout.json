@@ -1,0 +1,151 @@
+[
+  {
+    "stdout": "﻿topic﻿",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "topic",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "",
+    "branch": "detached",
+    "outcome": "success"
+  },
+  {
+    "branch": "detached",
+    "outcome": "failure"
+  },
+  {
+    "stdout": "\ttopic\t",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "\ntopic\n",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "\u000btopic\u000b",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "\ftopic\f",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "\rtopic\r",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": " topic ",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "　topic　",
+    "branch": "topic",
+    "outcome": "success"
+  },
+  {
+    "stdout": "᠎topic᠎",
+    "branch": "᠎topic᠎",
+    "outcome": "success"
+  },
+  {
+    "stdout": "​topic​",
+    "branch": "​topic​",
+    "outcome": "success"
+  }
+]

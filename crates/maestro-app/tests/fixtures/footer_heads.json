@@ -1,0 +1,182 @@
+[
+  {
+    "head": "ref: refs/heads/main\n",
+    "branch": "main"
+  },
+  {
+    "head": "ref: refs/heads/topic/nested\r\n",
+    "branch": "topic/nested"
+  },
+  {
+    "head": "ref: refs/heads/unborn\n",
+    "branch": "unborn"
+  },
+  {
+    "head": "ref: refs/heads/\n",
+    "branch": ""
+  },
+  {
+    "head": "ref: refs/heads/.invalidsuffix\n",
+    "branch": ".invalidsuffix"
+  },
+  {
+    "head": "﻿ref: refs/heads/main﻿",
+    "branch": "main"
+  },
+  {
+    "head": "ref: refs/heads/main",
+    "branch": "detached"
+  },
+  {
+    "head": " ref: refs/heads/main ",
+    "branch": "main"
+  },
+  {
+    "head": "ref: refs/heads/topic",
+    "branch": "topic"
+  },
+  {
+    "head": "ref: refs/heads/topic​",
+    "branch": "topic​"
+  },
+  {
+    "head": "ref: refs/heads/topic with space\n",
+    "branch": "topic with space"
+  },
+  {
+    "head": "0123456789abcdef\n",
+    "branch": "detached"
+  },
+  {
+    "head": "ref: refs/tags/v1\n",
+    "branch": "detached"
+  },
+  {
+    "head": "ref: refs/remotes/origin/main\n",
+    "branch": "detached"
+  },
+  {
+    "head": "",
+    "branch": "detached"
+  },
+  {
+    "head": " \n",
+    "branch": "detached"
+  },
+  {
+    "head": "ref:refs/heads/main\n",
+    "branch": "detached"
+  },
+  {
+    "head": "\tref: refs/heads/space\t",
+    "branch": "space"
+  },
+  {
+    "head": "\nref: refs/heads/space\n",
+    "branch": "space"
+  },
+  {
+    "head": "\u000bref: refs/heads/space\u000b",
+    "branch": "space"
+  },
+  {
+    "head": "\fref: refs/heads/space\f",
+    "branch": "space"
+  },
+  {
+    "head": "\rref: refs/heads/space\r",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": " ref: refs/heads/space ",
+    "branch": "space"
+  },
+  {
+    "head": "　ref: refs/heads/space　",
+    "branch": "space"
+  },
+  {
+    "head": "﻿ref: refs/heads/space﻿",
+    "branch": "space"
+  },
+  {
+    "head": "ref: refs/heads/space",
+    "branch": "detached"
+  },
+  {
+    "head": "᠎ref: refs/heads/space᠎",
+    "branch": "detached"
+  },
+  {
+    "head": "​ref: refs/heads/space​",
+    "branch": "detached"
+  }
+]
