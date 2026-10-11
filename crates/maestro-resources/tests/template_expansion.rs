@@ -143,6 +143,11 @@ impl ResourceOperations for Observations<'_> {
         }
         Ok(self.target(path)?.kind())
     }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        let path = support::text(path);
+        self.call("lstat", path)?;
+        Ok(self.node(path)?.kind())
+    }
     fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
         panic!("prompt loading must not canonicalize")
     }

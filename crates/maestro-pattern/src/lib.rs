@@ -3,7 +3,9 @@
 /// Ordered ignore rules with literal directory scopes.
 pub mod ignore;
 mod minimatch;
-pub use minimatch::{PatternError, minimatch};
+pub use minimatch::{
+    Minimatch, MinimatchOptions, MmRegExp, ParseReturnFiltered, PatternError, Platform, minimatch,
+};
 
 /// Recognizes authored whitespace, including BOM but not the next-line control.
 fn whitespace(c: char) -> bool {

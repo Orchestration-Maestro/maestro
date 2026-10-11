@@ -1,0 +1,606 @@
+[
+  {
+    "case": "star_order",
+    "cwd": "$SCENE/tree",
+    "pattern": "*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "all_entry_order",
+    "cwd": "$SCENE/tree",
+    "pattern": "*",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/nested",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/m.js",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/empty",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/alias",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/Case.TS",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "directory_suffix",
+    "cwd": "$SCENE/tree",
+    "pattern": "*/",
+    "expected": [
+      "$SCENE/tree/nested",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/empty",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/alias"
+    ]
+  },
+  {
+    "case": "recursive_order",
+    "cwd": "$SCENE/tree",
+    "pattern": "**/*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts",
+      "$SCENE/tree/nested/z.ts",
+      "$SCENE/tree/nested/b.ts",
+      "$SCENE/tree/nested/deeper/c.ts"
+    ]
+  },
+  {
+    "case": "recursive_all",
+    "cwd": "$SCENE/tree",
+    "pattern": "**",
+    "expected": [
+      "$SCENE/tree",
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/nested",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/m.js",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/empty",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/alias",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/Case.TS",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts",
+      "$SCENE/tree/nested/z.ts",
+      "$SCENE/tree/nested/skip.md",
+      "$SCENE/tree/nested/deeper",
+      "$SCENE/tree/nested/b.ts",
+      "$SCENE/tree/nested/deeper/c.ts"
+    ]
+  },
+  {
+    "case": "recursive_directories",
+    "cwd": "$SCENE/tree",
+    "pattern": "**/",
+    "expected": [
+      "$SCENE/tree",
+      "$SCENE/tree/nested",
+      "$SCENE/tree/nested/deeper",
+      "$SCENE/tree/empty"
+    ]
+  },
+  {
+    "case": "brace_order",
+    "cwd": "$SCENE/tree",
+    "pattern": "{z,a,main}.ts",
+    "expected": [
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/main.ts"
+    ]
+  },
+  {
+    "case": "brace_overlap",
+    "cwd": "$SCENE/tree",
+    "pattern": "{*.ts,a.ts,z.ts}",
+    "expected": [
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "brace_multiple_roots",
+    "cwd": "$SCENE",
+    "pattern": "{tree,other}/*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts",
+      "$SCENE/other/other.ts"
+    ]
+  },
+  {
+    "case": "brace_range",
+    "cwd": "$SCENE/tree",
+    "pattern": "q{3..1}.ts",
+    "expected": [
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts"
+    ]
+  },
+  {
+    "case": "extglob_optional",
+    "cwd": "$SCENE/tree",
+    "pattern": "?(extra-)main.ts",
+    "expected": [
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/extra-main.ts"
+    ]
+  },
+  {
+    "case": "extglob_alternative",
+    "cwd": "$SCENE/tree",
+    "pattern": "@(main|a).ts",
+    "expected": [
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/a.ts"
+    ]
+  },
+  {
+    "case": "extglob_negative",
+    "cwd": "$SCENE/tree",
+    "pattern": "!(main|a).ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "extglob_many",
+    "cwd": "$SCENE/tree",
+    "pattern": "*(a|b).ts",
+    "expected": [
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/.ts"
+    ]
+  },
+  {
+    "case": "question_unicode",
+    "cwd": "$SCENE/tree",
+    "pattern": "?.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/a.ts"
+    ]
+  },
+  {
+    "case": "named_class",
+    "cwd": "$SCENE/tree",
+    "pattern": "[[:alpha:]].ts",
+    "expected": [
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/a.ts"
+    ]
+  },
+  {
+    "case": "explicit_hidden_file",
+    "cwd": "$SCENE/tree",
+    "pattern": ".*.ts",
+    "expected": [
+      "$SCENE/tree/.hidden.ts"
+    ]
+  },
+  {
+    "case": "explicit_hidden_parent",
+    "cwd": "$SCENE/tree",
+    "pattern": ".hidden/*.ts",
+    "expected": [
+      "$SCENE/tree/.hidden/inside.ts"
+    ]
+  },
+  {
+    "case": "hidden_parent_globstar",
+    "cwd": "$SCENE/tree",
+    "pattern": "**/.hidden/*.ts",
+    "expected": [
+      "$SCENE/tree/.hidden/inside.ts"
+    ]
+  },
+  {
+    "case": "parent_path",
+    "cwd": "$SCENE/tree",
+    "pattern": "../*.ts",
+    "expected": [
+      "$SCENE/outside.ts"
+    ]
+  },
+  {
+    "case": "absolute_path",
+    "cwd": "$SCENE/tree",
+    "pattern": "$SCENE/other/*.ts",
+    "expected": [
+      "$SCENE/other/other.ts"
+    ]
+  },
+  {
+    "case": "dot_root",
+    "cwd": "$SCENE/tree",
+    "pattern": "./*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "repeated_separator",
+    "cwd": "$SCENE/tree",
+    "pattern": "nested//*.ts",
+    "expected": [
+      "$SCENE/tree/nested/z.ts",
+      "$SCENE/tree/nested/b.ts"
+    ]
+  },
+  {
+    "case": "literal_parent_collapse",
+    "cwd": "$SCENE/tree",
+    "pattern": "nested/../*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "wildcard_parent",
+    "cwd": "$SCENE/tree",
+    "pattern": "*/../a.ts",
+    "expected": [
+      "$SCENE/tree/a.ts"
+    ]
+  },
+  {
+    "case": "trailing_file_slash",
+    "cwd": "$SCENE/tree",
+    "pattern": "a.ts/",
+    "expected": []
+  },
+  {
+    "case": "escaped_star",
+    "cwd": "$SCENE/tree",
+    "pattern": "a\\*.ts",
+    "expected": [
+      "$SCENE/tree/a*.ts"
+    ]
+  },
+  {
+    "case": "unclosed_bracket",
+    "cwd": "$SCENE/tree",
+    "pattern": "literal[.ts",
+    "expected": [
+      "$SCENE/tree/literal[.ts"
+    ]
+  },
+  {
+    "case": "unclosed_brace",
+    "cwd": "$SCENE/tree",
+    "pattern": "{open.ts",
+    "expected": [
+      "$SCENE/tree/{open.ts"
+    ]
+  },
+  {
+    "case": "literal_bang",
+    "cwd": "$SCENE/tree",
+    "pattern": "!bang.ts",
+    "expected": [
+      "$SCENE/tree/!bang.ts"
+    ]
+  },
+  {
+    "case": "literal_hash",
+    "cwd": "$SCENE/tree",
+    "pattern": "#hash.ts",
+    "expected": [
+      "$SCENE/tree/#hash.ts"
+    ]
+  },
+  {
+    "case": "directory_named_literal",
+    "cwd": "$SCENE/tree",
+    "pattern": "nested",
+    "expected": [
+      "$SCENE/tree/nested"
+    ]
+  },
+  {
+    "case": "broken_link_literal",
+    "cwd": "$SCENE/tree",
+    "pattern": "broken.ts",
+    "expected": [
+      "$SCENE/tree/broken.ts"
+    ]
+  },
+  {
+    "case": "missing_path",
+    "cwd": "$SCENE/tree",
+    "pattern": "missing/*.ts",
+    "expected": []
+  },
+  {
+    "case": "empty_pattern",
+    "cwd": "$SCENE/tree",
+    "pattern": "",
+    "expected": []
+  },
+  {
+    "case": "denied_read",
+    "cwd": "$SCENE",
+    "pattern": "denied/*.ts",
+    "expected": []
+  },
+  {
+    "case": "not_directory",
+    "cwd": "$SCENE/tree",
+    "pattern": "a.ts/*",
+    "expected": []
+  },
+  {
+    "case": "two_aliases",
+    "cwd": "$SCENE/links",
+    "pattern": "*/*.ts",
+    "expected": [
+      "$SCENE/links/second/one.ts",
+      "$SCENE/links/real/one.ts",
+      "$SCENE/links/first/one.ts"
+    ]
+  },
+  {
+    "case": "globstar_link_budget",
+    "cwd": "$SCENE/links",
+    "pattern": "**/*.ts",
+    "expected": [
+      "$SCENE/links/real/one.ts",
+      "$SCENE/links/real/deep/two.ts"
+    ]
+  },
+  {
+    "case": "explicit_link_root",
+    "cwd": "$SCENE/links",
+    "pattern": "first/**/*.ts",
+    "expected": [
+      "$SCENE/links/first/one.ts",
+      "$SCENE/links/first/repeat/one.ts",
+      "$SCENE/links/first/deep/two.ts"
+    ]
+  },
+  {
+    "case": "finite_repeated_link",
+    "cwd": "$SCENE/links",
+    "pattern": "real/repeat/repeat/*.ts",
+    "expected": [
+      "$SCENE/links/real/repeat/repeat/one.ts"
+    ]
+  },
+  {
+    "case": "star_then_globstar",
+    "cwd": "$SCENE/links",
+    "pattern": "*/**/*.ts",
+    "expected": [
+      "$SCENE/links/second/one.ts",
+      "$SCENE/links/second/repeat/one.ts",
+      "$SCENE/links/second/deep/two.ts",
+      "$SCENE/links/real/one.ts",
+      "$SCENE/links/real/repeat/one.ts",
+      "$SCENE/links/real/deep/two.ts",
+      "$SCENE/links/first/one.ts",
+      "$SCENE/links/first/repeat/one.ts",
+      "$SCENE/links/first/deep/two.ts"
+    ]
+  },
+  {
+    "case": "cycle_globstar",
+    "cwd": "$SCENE/cycle",
+    "pattern": "**/*.ts",
+    "expected": [
+      "$SCENE/cycle/root.ts"
+    ]
+  },
+  {
+    "case": "cycle_explicit_finite",
+    "cwd": "$SCENE/cycle",
+    "pattern": "self/self/*.ts",
+    "expected": [
+      "$SCENE/cycle/self/self/root.ts"
+    ]
+  },
+  {
+    "case": "overlapping_globstars",
+    "cwd": "$SCENE/links",
+    "pattern": "**/**/one.ts",
+    "expected": [
+      "$SCENE/links/real/one.ts"
+    ]
+  },
+  {
+    "case": "globstar_parent",
+    "cwd": "$SCENE/tree",
+    "pattern": "**/../a.ts",
+    "expected": [
+      "$SCENE/tree/a.ts"
+    ]
+  },
+  {
+    "case": "nonexistent_absolute_cwd",
+    "cwd": "$SCENE/missing",
+    "pattern": "../tree/a.ts",
+    "expected": []
+  },
+  {
+    "case": "empty_cwd_anchored",
+    "cwd": "$SCENE",
+    "pattern": "tree/*.ts",
+    "expected": [
+      "$SCENE/tree/😀.ts",
+      "$SCENE/tree/é.ts",
+      "$SCENE/tree/{open.ts",
+      "$SCENE/tree/z.ts",
+      "$SCENE/tree/space name.ts",
+      "$SCENE/tree/q3.ts",
+      "$SCENE/tree/q2.ts",
+      "$SCENE/tree/q1.ts",
+      "$SCENE/tree/main.ts",
+      "$SCENE/tree/literal[.ts",
+      "$SCENE/tree/file-link.ts",
+      "$SCENE/tree/extra-main.ts",
+      "$SCENE/tree/broken.ts",
+      "$SCENE/tree/a{b,c}.ts",
+      "$SCENE/tree/ab.ts",
+      "$SCENE/tree/a.ts",
+      "$SCENE/tree/a*.ts",
+      "$SCENE/tree/#hash.ts",
+      "$SCENE/tree/!bang.ts"
+    ]
+  }
+]

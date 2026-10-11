@@ -1,0 +1,538 @@
+[
+  {
+    "pattern": "a/**/../b/c/**/../d/e/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/x/../../**/../b/c/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "..",
+        "b",
+        "c",
+        "*.ts"
+      ],
+      [
+        ".",
+        "**",
+        "b",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a,a/**}/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "**",
+        "a",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b,a/b/**}/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a,*,b}/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "*",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/*,*/b}/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "a",
+        "*",
+        "*.ts"
+      ],
+      [
+        "*",
+        "b",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a/x,a/x/**}/*",
+    "platform": "linux",
+    "expected": [
+      [
+        "**",
+        "a",
+        "x",
+        "**",
+        "*"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b/c,a/b/**/c}/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "C:/../*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//host/share/../*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "",
+        "host",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//?/C:/../*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        "",
+        "?",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/../**/*.ts",
+    "platform": "linux",
+    "expected": [
+      [
+        ".",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/**/../b/c/**/../d/e/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/x/../../**/../b/c/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "..",
+        "b",
+        "c",
+        "*.ts"
+      ],
+      [
+        ".",
+        "**",
+        "b",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a,a/**}/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "**",
+        "a",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b,a/b/**}/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a,*,b}/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "*",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/*,*/b}/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "a",
+        "*",
+        "*.ts"
+      ],
+      [
+        "*",
+        "b",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a/x,a/x/**}/*",
+    "platform": "darwin",
+    "expected": [
+      [
+        "**",
+        "a",
+        "x",
+        "**",
+        "*"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b/c,a/b/**/c}/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "C:/../*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//host/share/../*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "",
+        "host",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//?/C:/../*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        "",
+        "?",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/../**/*.ts",
+    "platform": "darwin",
+    "expected": [
+      [
+        ".",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/**/../b/c/**/../d/e/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ],
+      [
+        "a",
+        "**",
+        "b",
+        "c",
+        "**",
+        "d",
+        "e",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/x/../../**/../b/c/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "..",
+        "b",
+        "c",
+        "*.ts"
+      ],
+      [
+        ".",
+        "**",
+        "b",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a,a/**}/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "**",
+        "a",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b,a/b/**}/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a,*,b}/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "*",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/*,*/b}/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "a",
+        "*",
+        "*.ts"
+      ],
+      [
+        "*",
+        "b",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "{**/a/x,a/x/**}/*",
+    "platform": "win32",
+    "expected": [
+      [
+        "**",
+        "a",
+        "x",
+        "**",
+        "*"
+      ]
+    ]
+  },
+  {
+    "pattern": "{a/**/b/c,a/b/**/c}/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "a",
+        "**",
+        "b",
+        "**",
+        "c",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "C:/../*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "C:",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//host/share/../*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "",
+        "",
+        "host",
+        "share",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "//?/C:/../*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        "",
+        "",
+        "?",
+        "C:",
+        "*.ts"
+      ]
+    ]
+  },
+  {
+    "pattern": "a/../**/*.ts",
+    "platform": "win32",
+    "expected": [
+      [
+        ".",
+        "**",
+        "*.ts"
+      ]
+    ]
+  }
+]

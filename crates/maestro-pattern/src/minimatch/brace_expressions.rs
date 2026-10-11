@@ -31,7 +31,7 @@ impl Class {
     /// Evaluates prepared membership, then applies outer negation.
     pub(super) fn matches(&self, scalar: char) -> bool {
         if let Some(canonical) = &self.canonical {
-            return canonical.contains(&scalar) ^ self.negated;
+            return canonical.contains(&super::canonical(scalar)) ^ self.negated;
         }
         let end = self.ranges.partition_point(|(start, _)| *start <= scalar);
         let member = end
@@ -127,27 +127,31 @@ impl NamedClass {
             .find_map(|(text, name)| tail.starts_with(text).then_some((name, text.len())))
     }
 
+    /// Library predicate source indexed by the named-member vocabulary.
+    fn expressions() -> [&'static str; 14] {
+        [
+            r"^[\p{L}\p{Nl}\p{Nd}]$",
+            r"^[\p{L}\p{Nl}]$",
+            r"^[\x00-\x7f]$",
+            r"^[\p{Zs}\t]$",
+            r"^\p{Cc}$",
+            r"^\p{Nd}$",
+            r"^[^\p{Z}\p{C}]$",
+            r"^\p{Ll}$",
+            r"^[^\p{C}]$",
+            r"^\p{P}$",
+            r"^[\p{Z}\t\r\n\v\f]$",
+            r"^\p{Lu}$",
+            r"^[\p{L}\p{Nl}\p{Nd}\p{Pc}]$",
+            r"^[A-Fa-f0-9]$",
+        ]
+    }
+
     /// Tests one named predicate against scalar text.
     fn matches(self, scalar: char) -> bool {
         /// Fixed expressions indexed by the named-member vocabulary.
         static EXPRESSIONS: LazyLock<[Option<regress::Regex>; 14]> = LazyLock::new(|| {
-            [
-                r"^[\p{L}\p{Nl}\p{Nd}]$",
-                r"^[\p{L}\p{Nl}]$",
-                r"^[\x00-\x7f]$",
-                r"^[\p{Zs}\t]$",
-                r"^\p{Cc}$",
-                r"^\p{Nd}$",
-                r"^[^\p{Z}\p{C}]$",
-                r"^\p{Ll}$",
-                r"^[^\p{C}]$",
-                r"^\p{P}$",
-                r"^[\p{Z}\t\r\n\v\f]$",
-                r"^\p{Lu}$",
-                r"^[\p{L}\p{Nl}\p{Nd}\p{Pc}]$",
-                r"^[A-Fa-f0-9]$",
-            ]
-            .map(|pattern| regress::Regex::with_flags(pattern, "u").ok())
+            NamedClass::expressions().map(|pattern| regress::Regex::with_flags(pattern, "u").ok())
         });
         let mut bytes = [0; 4];
         EXPRESSIONS[self as usize]
@@ -310,23 +314,7 @@ pub(super) fn parse_ignore_class(pattern: &str) -> (ParsedClass, usize) {
 impl Class {
     /// Expands normalized original intervals once, before case conversion.
     fn canonicalize(mut self) -> ParsedClass {
-        let mut values: HashSet<_> = self
-            .ranges
-            .drain(..)
-            .flat_map(|(start, end)| {
-                (u32::from(start)..=u32::from(end))
-                    .filter_map(char::from_u32)
-                    .map(super::canonical)
-            })
-            .collect();
-        values.extend(
-            (0u8..=127)
-                .map(char::from)
-                .filter(|c| self.named.iter().any(|named| named.ascii(*c)))
-                .map(super::canonical),
-        );
-        self.named.clear();
-        self.canonical = Some(values);
+        self.fold_ordinary_case();
         ParsedClass::Class(self)
     }
 }
@@ -348,6 +336,64 @@ impl NamedClass {
             Self::Upper => scalar.is_ascii_uppercase(),
             Self::Word => scalar.is_ascii_alphanumeric() || scalar == '_',
             Self::Xdigit => scalar.is_ascii_hexdigit(),
+        }
+    }
+}
+
+impl Class {
+    /// Whether named Unicode predicates participate in this class.
+    pub(super) fn unicode(&self) -> bool {
+        self.named
+            .iter()
+            .any(|n| !matches!(n, NamedClass::Ascii | NamedClass::Xdigit))
+    }
+    /// Reuses ordinary canonical membership without Unicode-to-ASCII folding.
+    pub(super) fn fold_ordinary_case(&mut self) {
+        let mut values: HashSet<_> = self
+            .ranges
+            .drain(..)
+            .flat_map(|(start, end)| {
+                (u32::from(start)..=u32::from(end))
+                    .filter_map(char::from_u32)
+                    .map(super::canonical)
+            })
+            .collect();
+        values.extend(
+            (0u8..=127)
+                .map(char::from)
+                .filter(|c| self.named.iter().any(|n| n.ascii(*c)))
+                .map(super::canonical),
+        );
+        self.named.clear();
+        self.canonical = Some(values);
+    }
+    /// Builds a scalar predicate with case selection owned by the library.
+    pub(super) fn expression(&self) -> String {
+        let ranges = self
+            .ranges
+            .iter()
+            .fold(String::new(), |mut ranges, (start, end)| {
+                ranges.push_str(&super::ast::scalar_expression(*start));
+                ranges.push('-');
+                ranges.push_str(&super::ast::scalar_expression(*end));
+                ranges
+            });
+        let mut members: Vec<_> = self
+            .named
+            .iter()
+            .map(|n| {
+                let expression = NamedClass::expressions()[*n as usize];
+                expression[1..expression.len() - 1].to_owned()
+            })
+            .collect();
+        if !ranges.is_empty() {
+            members.push(format!("[{ranges}]"));
+        }
+        let union = members.join("|");
+        if self.negated {
+            format!("^(?!(?:{union})$)[\\s\\S]$")
+        } else {
+            format!("^(?:{union})$")
         }
     }
 }

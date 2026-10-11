@@ -49,6 +49,11 @@ pub trait ResourceOperations {
     /// # Errors
     /// Returns the metadata I/O cause.
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType>;
+    /// Observe a path's kind without following its final link.
+    ///
+    /// # Errors
+    /// Returns the metadata I/O cause.
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType>;
     /// Resolve a real path.
     ///
     /// Native operations fold `.` and `..` lexically and replace each link
@@ -189,6 +194,9 @@ impl ResourceOperations for NativeResourceOperations {
     }
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
         Ok(file_type(std::fs::metadata(path)?.file_type()))
+    }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        Ok(file_type(std::fs::symlink_metadata(path)?.file_type()))
     }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         super::real_path::real_path(path, self)

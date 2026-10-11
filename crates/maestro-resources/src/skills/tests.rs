@@ -93,6 +93,19 @@ impl ResourceOperations for Process {
             Err(io::ErrorKind::NotFound.into())
         }
     }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        if self.text(path).is_some() {
+            Ok(ResourceFileType::File)
+        } else if self
+            .directories
+            .iter()
+            .any(|(directory, _)| Path::new(directory) == path)
+        {
+            Ok(ResourceFileType::Directory)
+        } else {
+            Err(io::ErrorKind::NotFound.into())
+        }
+    }
     fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
         Err(io::ErrorKind::NotFound.into())
     }
@@ -401,6 +414,9 @@ impl ResourceOperations for NativeRealPath<'_> {
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
         self.0.metadata(path)
     }
+    fn symlink_metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        self.0.symlink_metadata(path)
+    }
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         real_path(path, self)
     }
@@ -616,4 +632,67 @@ fn real_path_continues_from_the_drive_directory() {
     let resolved = real_path(Path::new(&format!("{letter}:item.md")), &adapter);
     std::fs::remove_dir_all(&directory).unwrap();
     assert_eq!(resolved.unwrap(), directory.join("item.md"));
+}
+
+/// Native link observations do not substitute the target's kind.
+#[cfg(unix)]
+#[test]
+fn native_nofollow_metadata_distinguishes_links() {
+    use super::NativeResourceOperations;
+    use std::os::unix::fs::symlink;
+    let root = std::env::temp_dir().join(format!("maestro-nofollow-{}", std::process::id()));
+    std::fs::create_dir(&root).unwrap();
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(root.join("file"))
+        .unwrap();
+    std::fs::create_dir(root.join("dir")).unwrap();
+    for (name, target) in [
+        ("file-link", "file"),
+        ("dir-link", "dir"),
+        ("dangling", "missing"),
+    ] {
+        symlink(target, root.join(name)).unwrap();
+    }
+    for (name, expected, following) in [
+        ("file", ResourceFileType::File, Some(ResourceFileType::File)),
+        (
+            "dir",
+            ResourceFileType::Directory,
+            Some(ResourceFileType::Directory),
+        ),
+        (
+            "file-link",
+            ResourceFileType::Symlink,
+            Some(ResourceFileType::File),
+        ),
+        (
+            "dir-link",
+            ResourceFileType::Symlink,
+            Some(ResourceFileType::Directory),
+        ),
+        ("dangling", ResourceFileType::Symlink, None),
+    ] {
+        assert_eq!(
+            NativeResourceOperations
+                .symlink_metadata(&root.join(name))
+                .unwrap(),
+            expected,
+            "{name}: no-follow"
+        );
+        assert_eq!(
+            NativeResourceOperations.metadata(&root.join(name)).ok(),
+            following,
+            "{name}: following"
+        );
+    }
+    assert_eq!(
+        NativeResourceOperations
+            .symlink_metadata(&root.join("missing"))
+            .unwrap_err()
+            .kind(),
+        io::ErrorKind::NotFound
+    );
+    std::fs::remove_dir_all(root).unwrap();
 }

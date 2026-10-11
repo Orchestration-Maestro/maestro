@@ -1,0 +1,92 @@
+[
+  {
+    "case": "before_collection",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/phase/a/first.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/phase",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/phase"
+          }
+        },
+        {
+          "path": "$SCENE/phase/b/early.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/phase",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/phase"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "next_resolution",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/phase/a/first.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/phase",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/phase"
+          }
+        },
+        {
+          "path": "$SCENE/phase/b/late.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/phase",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/phase"
+          }
+        },
+        {
+          "path": "$SCENE/phase/b/early.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/phase",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/phase"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "nofollow_failure",
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/failure/okay.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/failure",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/failure"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  }
+]

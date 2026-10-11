@@ -126,11 +126,22 @@ conventional discovery; missing, null, false, zero or empty-string members use
 conventions. Object members select `extensions`, `skills`, `prompts` and `themes`;
 other present shapes have no named lists. Omitted lists add no resources.
 
-Manifest source paths are literal, resolved against the package root without
-trimming. Direct files need no suffix check; directories use the
-[conventional collectors](#conventional-resource-discovery).
-Positive wildcard source expansion is tracked in
-[#548](https://github.com/Orchestration-Maestro/maestro/issues/548).
+Positive manifest entries containing `*` or `?` expand against the package root
+without trimming. Other entries, including brace-only or bracket-only forms,
+remain literal paths. Override prefixes are classified before expansion.
+Within each selected resource list, positive entries expand before that list
+is collected; expansion does not read resource ignore files. Direct files need no suffix check; matched
+directories use the [conventional collectors](#conventional-resource-discovery).
+Within each directory phase of an expansion, literal matches precede scans and
+current matches precede recursive subwalks; duplicate authored paths retain their first position.
+Expansion resolves its root and seeds its ancestry before walking. Literal child
+lookups participate in the first successful directory listing; subsequent scans
+reuse that listing’s names and order, without caching entry metadata. Pending
+literal names compare lowercased text on Windows and macOS, and exact text
+elsewhere; promotion retains the authored path spelling. Authored identities are
+not Unicode-normalized. The separately
+selected [filesystem policy](package-patterns.md#filesystem-expansion-policy)
+owns pattern preparation and case selection.
 
 Exclusions (`!pattern`) run before exact restorations (`+path`), with exact
 removals (`-path`) last. Exclusions use the existing

@@ -1,0 +1,5492 @@
+[
+  {
+    "case": "qualified_star_order",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_all_entry_order",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "*"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/package.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/m.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/alias/other.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/Case.TS",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_directory_suffix",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "*/"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/alias/other.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_recursive_order",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/deeper/c.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_recursive_all",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "**"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/m.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/package.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/alias/other.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/Case.TS",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/skip.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/deeper/c.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_recursive_directories",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "**/"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/m.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/deeper/c.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_brace_order",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "{z,a,main}.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_brace_overlap",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "{*.ts,a.ts,z.ts}"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_brace_multiple_roots",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{tree,other}/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/other/other.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_brace_range",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "q{3..1}.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_extglob_optional",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "?(extra-)main.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_extglob_alternative",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "@(main|a).ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_extglob_negative",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "!(main|a).ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_extglob_many",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "*(a|b).ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_question_unicode",
+    "test": "manifest_unicode_wildcards_keep_scalar_results",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "?.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_named_class",
+    "test": "manifest_unicode_wildcards_keep_scalar_results",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "[[:alpha:]].ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_explicit_hidden_file",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        ".*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/.hidden.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_explicit_hidden_parent",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        ".hidden/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/.hidden/inside.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_hidden_parent_globstar",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "**/.hidden/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/.hidden/inside.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_parent_path",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "../*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/outside.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_absolute_path",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "$SCENE/other/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/other/other.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_dot_root",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "./*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_repeated_separator",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "nested//*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_literal_parent_collapse",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "nested/../*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_wildcard_parent",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "*/../a.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_trailing_file_slash",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "a.ts/"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_escaped_star",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "a\\*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_unclosed_bracket",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "literal[.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_unclosed_brace",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "{open.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_literal_bang",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "!bang.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_literal_hash",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "#hash.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_directory_named_literal",
+    "test": "manifest_patterns_expand_before_kind_collection",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "nested"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/nested/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        },
+        {
+          "path": "$SCENE/tree/nested/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_broken_link_literal",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "broken.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_missing_path",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "missing/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_empty_pattern",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        ""
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_denied_read",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "denied/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": null,
+    "denied": true,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_not_directory",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "a.ts/*"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_two_aliases",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "*/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/second/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_globstar_link_budget",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/real/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        },
+        {
+          "path": "$SCENE/links/real/deep/two.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_explicit_link_root",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "first/**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/first/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        },
+        {
+          "path": "$SCENE/links/first/deep/two.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_finite_repeated_link",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "real/repeat/repeat/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/real/repeat/repeat/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_star_then_globstar",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "*/**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/second/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        },
+        {
+          "path": "$SCENE/links/second/deep/two.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_cycle_globstar",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/cycle",
+    "manifest": {
+      "extensions": [
+        "**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/cycle"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/cycle/root.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/cycle",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/cycle"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_cycle_explicit_finite",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/cycle",
+    "manifest": {
+      "extensions": [
+        "self/self/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/cycle"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/cycle/self/self/root.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/cycle",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/cycle"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_overlapping_globstars",
+    "test": "manifest_expansion_keeps_native_match_order",
+    "root": "$SCENE/links",
+    "manifest": {
+      "extensions": [
+        "**/**/one.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/links"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/links/real/one.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/links",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/links"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_globstar_parent",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE/tree",
+    "manifest": {
+      "extensions": [
+        "**/../a.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/tree"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/tree",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/tree"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_nonexistent_absolute_cwd",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE/missing",
+    "manifest": {
+      "extensions": [
+        "../tree/a.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/missing"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/missing",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/missing"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "qualified_empty_cwd_anchored",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "tree/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": null,
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/tree/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/{open.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/space name.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q3.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q2.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/q1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/literal[.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/file-link.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/extra-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a{b,c}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/ab.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/#hash.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/tree/!bang.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "dispatch_literal",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{a,z}.ts",
+        "[az].ts",
+        "@(a|z).ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "{a,z}.ts": "fixture",
+        "[az].ts": "fixture",
+        "@(a|z).ts": "fixture",
+        "a.ts": "fixture",
+        "z.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/{a,z}.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/[az].ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/@(a|z).ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "dispatch_modifiers",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "+*.ts",
+        "-*.ts",
+        "!*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "+a.ts": "fixture",
+        "-a.ts": "fixture",
+        "!a.ts": "fixture",
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "leading_hash",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "#*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "#a.ts": "fixture",
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/#a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "embedded_negation",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/!(a)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/a.ts": "fixture",
+        "src/b.ts": "fixture",
+        "src/ab.ts": "fixture",
+        "src/.h.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/src/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "optional_group",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "?(pre-)main.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "main.ts": "fixture",
+        "pre-main.ts": "fixture",
+        "pre-pre-main.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/pre-main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "repeated_group",
+    "test": "positive_manifest_entries_route_before_expansion",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "+(a|b)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "abba.ts": "fixture",
+        "c.ts": "fixture",
+        "+a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "brace_range_order",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "q{3..1}?.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "q1x.ts": "fixture",
+        "q2x.ts": "fixture",
+        "q3x.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/q3x.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/q2x.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/q1x.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "overlap_order",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{z,*,a}.ts",
+        "z.ts",
+        "*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "b.ts": "fixture",
+        "z.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "preparation_parent",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "missing/../*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "z.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/z.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "preparation_split",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "x/**/../a/b/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a/b/up.ts": "fixture",
+        "x/a/b/down.ts": "fixture",
+        "x/deep/a/b/deep.ts": "fixture",
+        "x/no.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a/b/up.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/x/deep/a/b/deep.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/x/a/b/down.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "directory_guard",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "*.ts/"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "dir.ts/index.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/dir.ts/index.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "kind_collectors",
+    "test": "manifest_patterns_expand_before_kind_collection",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "plugins/*/extensions"
+      ],
+      "skills": [
+        "plugins/*/skills"
+      ],
+      "prompts": [
+        "plugins/*/prompts"
+      ],
+      "themes": [
+        "plugins/*/themes"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "plugins/z/extensions/index.js": "fixture",
+        "plugins/a/extensions/main.ts": "fixture",
+        "plugins/z/skills/z/SKILL.md": "fixture",
+        "plugins/a/skills/a/SKILL.md": "fixture",
+        "plugins/z/prompts/p.md": "fixture",
+        "plugins/a/prompts/p.md": "fixture",
+        "plugins/z/themes/t.json": "fixture",
+        "plugins/a/themes/t.json": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/plugins/z/extensions/index.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/plugins/a/extensions/main.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "path": "$SCENE/plugins/z/skills/z/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/plugins/a/skills/a/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "path": "$SCENE/plugins/z/prompts/p.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/plugins/a/prompts/p.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "themes": [
+        {
+          "path": "$SCENE/plugins/z/themes/t.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/plugins/a/themes/t.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "ignore_after_expansion",
+    "test": "manifest_ignore_rules_apply_only_during_collection",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/*.ts"
+      ],
+      "prompts": [
+        "templates/*"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/yes.ts": "fixture",
+        "src/no.ts": "fixture",
+        "templates/folder/yes.md": "fixture",
+        "templates/folder/no.md": "fixture",
+        "src/.gitignore": "*.ts\n",
+        "templates/.gitignore": "*\n",
+        "templates/folder/.gitignore": "no.md\n"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/src/yes.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/no.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$SCENE/templates/folder/yes.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "arbitrary_direct_files",
+    "test": "manifest_patterns_expand_before_kind_collection",
+    "root": "$SCENE",
+    "manifest": {
+      "skills": [
+        "src/*.data"
+      ],
+      "prompts": [
+        "src/*.data"
+      ],
+      "themes": [
+        "src/*.data"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/z.data": "fixture",
+        "src/a.data": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [
+        {
+          "path": "$SCENE/src/z.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/a.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "path": "$SCENE/src/z.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/a.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "themes": [
+        {
+          "path": "$SCENE/src/z.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/a.data",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "overrides_after_expansion",
+    "test": "manifest_wildcards_keep_overrides_and_provenance",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "*.ts",
+        "!*.ts",
+        "+a.ts",
+        "-z.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "b.ts": "fixture",
+        "z.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "unicode_question",
+    "test": "manifest_unicode_wildcards_keep_scalar_results",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "?.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "é.ts": "fixture",
+        "😀.ts": "fixture",
+        "ab.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/😀.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "unicode_class",
+    "test": "manifest_unicode_wildcards_keep_scalar_results",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "[[:alpha:]]*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "é.ts": "fixture",
+        "é.ts": "fixture",
+        "a.ts": "fixture",
+        "1.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "identity_literals_before_scan",
+    "test": "manifest_literal_scan_overlap_keeps_distinct_names",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{é.ts,*.ts}"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "é.ts": "fixture",
+        "é.ts": "fixture",
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/é.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "identity_compatibility",
+    "test": "manifest_literal_scan_overlap_keeps_distinct_names",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{①.ts,*.ts}"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "①.ts": "fixture",
+        "1.ts": "fixture",
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/①.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/1.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "dots_and_whitespace",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        " *.ts",
+        "﻿*.ts",
+        "*.ts",
+        ".*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        " a.ts": "fixture",
+        "﻿b.ts": "fixture",
+        "c.ts": "fixture",
+        ".hidden.ts": "fixture",
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/ a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/﻿b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/c.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/.hidden.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "aliases_before_exclusions",
+    "test": "manifest_wildcards_keep_overrides_and_provenance",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "*.ts",
+        "!z-link.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "b.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "z-link.ts": "a.ts"
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "explicit_link_globstar",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "alias/**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "real/a.ts": "fixture",
+        "real/deep/b.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "alias": "real"
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/alias/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/alias/deep/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "finite_parent_reentry",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "real/back/real/back/real/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "real/a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "real/back": ".."
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/real/back/real/back/real/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "growing_link_cycle",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "root.ts": "fixture",
+        "dir/a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "self": "self/child",
+        "dir/back": ".."
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/root.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/dir/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "consumed_parent_rewrite",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "**/../root.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "root.ts": "fixture",
+        "dir/a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "dir/back": ".."
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/root.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "same_state_cycle",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "root.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "self": "."
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/root.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "branch_identity",
+    "test": "manifest_globstars_keep_symlink_progress",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{real,alias}/**/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "real/a.ts": "fixture",
+        "real/deep/b.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "alias": "real",
+        "real/repeat": "."
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/real/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/real/deep/b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "all_kinds_metadata",
+    "test": "manifest_wildcards_keep_overrides_and_provenance",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "files/*.ts"
+      ],
+      "skills": [
+        "files/*.md"
+      ],
+      "prompts": [
+        "files/*.md"
+      ],
+      "themes": [
+        "files/*.json"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "files/a.ts": "fixture",
+        "files/a.md": "fixture",
+        "files/a.json": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/files/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [
+        {
+          "path": "$SCENE/files/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "prompts": [
+        {
+          "path": "$SCENE/files/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "themes": [
+        {
+          "path": "$SCENE/files/a.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "case": "empty_expansion",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "missing/*.ts"
+      ],
+      "skills": [
+        "missing/*"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "source_then_error",
+    "test": "manifest_wildcards_keep_failure_boundaries",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "*.ts"
+      ],
+      "skills": [
+        7
+      ],
+      "prompts": [
+        "*.md"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a.ts": "fixture",
+        "p.md": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "nested_nullable_group",
+    "test": "manifest_groups_keep_existing_corrections",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "@(a|*(b))*"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a": "fixture",
+        "b": "fixture",
+        "bb": "fixture",
+        "ab": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/package.json",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/bb",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/b",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/ab",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "embedded_positive_repeat",
+    "test": "manifest_alternatives_keep_preparation_order",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/+(a|b)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/a.ts": "fixture",
+        "src/abba.ts": "fixture",
+        "src/c.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/src/abba.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/a.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "corrected_negative_empty",
+    "test": "manifest_groups_keep_existing_corrections",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/x!(a|)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/xa.ts": "fixture",
+        "src/xb.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "corrected_escaped_bar",
+    "test": "manifest_groups_keep_existing_corrections",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/x@(a\\|b|c)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/xa|b.ts": "fixture",
+        "src/xa.ts": "fixture",
+        "src/xb.ts": "fixture",
+        "src/xc.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/src/xc.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/src/xa|b.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "escaped_metachar",
+    "test": "manifest_patterns_keep_dots_and_authored_roots",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "a\\*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a*.ts": "fixture",
+        "ax.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a*.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "negative_continuation_neighbor",
+    "test": "manifest_groups_keep_existing_corrections",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "src/x!(a|b)*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "src/xa.ts": "fixture",
+        "src/xb.ts": "fixture",
+        "src/x.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/src/x.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "cwd_parent_alias",
+    "test": "manifest_parent_scan_keeps_seeded_alias",
+    "root": "$SCENE/b",
+    "manifest": {
+      "extensions": [
+        "../*/*.ts"
+      ]
+    },
+    "sources": [
+      "$SCENE/b"
+    ],
+    "setup": {
+      "files": {
+        "a/u.ts": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "b/u.ts": "../a/u.ts"
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a/u.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE/b",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE/b"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "repeat_scan",
+    "test": "manifest_repeated_scan_keeps_listing",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{a/*.ts,**/*.js}"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a/t.ts": "fixture",
+        "a/u.js": "fixture",
+        "a/v.js": "fixture"
+      },
+      "dirs": [],
+      "links": {}
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a/t.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a/v.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a/u.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "repeat_scan_alias",
+    "test": "manifest_repeated_scan_keeps_listing",
+    "root": "$SCENE",
+    "manifest": {
+      "extensions": [
+        "{a/*.ts,**/*.js}"
+      ]
+    },
+    "sources": [
+      "$SCENE"
+    ],
+    "setup": {
+      "files": {
+        "a/t.ts": "fixture",
+        "a/v.js": "fixture"
+      },
+      "dirs": [],
+      "links": {
+        "a/u.js": "v.js"
+      }
+    },
+    "denied": false,
+    "expected": {
+      "extensions": [
+        {
+          "path": "$SCENE/a/t.ts",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        },
+        {
+          "path": "$SCENE/a/v.js",
+          "enabled": true,
+          "metadata": {
+            "source": "$SCENE",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$SCENE"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  }
+]

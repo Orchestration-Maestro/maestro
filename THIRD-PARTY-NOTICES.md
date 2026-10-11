@@ -37,3 +37,14 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+
+## Package filesystem expansion
+
+The synchronous filesystem expansion in
+`crates/maestro-packages/src/package_manager/glob/` derives from glob 13.0.6 and
+path-scurry 2.0.2 by Isaac Z. Schlueter and contributors, licensed under the
+[Blue Oak Model License 1.0.0](https://blueoakcouncil.org/license/1.0.0).
+The compiled filesystem-pattern policy uses the matcher attribution above.
+
+These are owned implementations; the original packages are not runtime
+dependencies.
