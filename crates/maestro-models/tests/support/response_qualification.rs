@@ -81,6 +81,10 @@ struct Options {
     thinking_enabled: Option<bool>,
     /// Raw message budget.
     thinking_budget_tokens: Option<f64>,
+    /// Raw adaptive message effort.
+    effort: Option<maestro_models::AnthropicEffort>,
+    /// Raw conversation reasoning mode.
+    prompt_mode: Option<maestro_models::MistralPromptMode>,
     /// Account transport selection.
     transport: Option<maestro_models::Transport>,
     /// Deployment override.
@@ -182,6 +186,24 @@ struct Expected {
     result: Option<Value>,
     /// Ordered stream events without their shared handles.
     events: Option<Vec<Value>>,
+    /// Arguments observed before releasing each subsequent input fragment.
+    progress: Option<Vec<Progress>>,
+}
+
+/// A tool delta and its live partial call at the producer gate.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Progress {
+    /// Exact fragment emitted by the public stream.
+    delta: String,
+    /// Position in the assistant's content.
+    index: usize,
+    /// Actual call identity.
+    id: String,
+    /// Selected tool name.
+    name: String,
+    /// Live parsed arguments.
+    arguments: Value,
 }
 
 /// Closed ownership counts prevent silently dropped fixture cases.
@@ -347,7 +369,12 @@ pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) ->
 
 /// Translate the corpus's source-owned nested module into its Cargo test name.
 fn test_path(owner: &str, test: &str) -> TestResult<String> {
-    for directory in ["history_handoffs", "provider_unicode"] {
+    for directory in [
+        "history_handoffs",
+        "provider_unicode",
+        "empty_content",
+        "model_streaming",
+    ] {
         if let Some((_, module)) = owner.split_once(&format!("{directory}/")) {
             return Ok(format!(
                 "{directory}::{}::{test}",
@@ -404,14 +431,20 @@ fn catalog_rows(row: &Row, catalog: &Catalog) {
     assert_eq!(Some(apis), row.expected.apis, "{} ordered routes", row.id);
 }
 
-/// Verify descriptor provenance before applying source-authored overrides.
+/// Accept authored custom descriptors; verify catalog descriptors with source-authored overrides.
 fn descriptor(wire: &Wire) -> TestResult<Model> {
     let expected: Model = serde_json::from_value(wire.model.clone())?;
+    if expected.provider == "ollama" {
+        return Ok(expected);
+    }
     let mut model =
         maestro_models::get_model(&expected.provider, &expected.id).ok_or("catalog model")?;
     if expected.provider == "openai" && expected.api == "openai-completions" {
         model.api.clone_from(&expected.api);
         model.compat = None;
+    }
+    if wire.options.transport == Some(maestro_models::Transport::Websocket) {
+        model.base_url.clone_from(&expected.base_url);
     }
     if wire.model["input"] == json!(["text"]) {
         model.input.clone_from(&expected.input);

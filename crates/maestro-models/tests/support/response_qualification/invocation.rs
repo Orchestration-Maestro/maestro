@@ -1,5 +1,12 @@
 //! Public invocation, controlled cancellation and complete observation comparison.
 
+#[path = "progress.rs"]
+mod progress;
+#[path = "socket.rs"]
+mod socket;
+#[path = "../socket_server.rs"]
+mod socket_server;
+
 use super::{
     Context, Phase, Route, Row, TestResult, Wire, bundled, canonical, descriptor, messages,
     transport,
@@ -14,8 +21,12 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 /// Native event framing uses the existing protocol helpers.
 fn body(wire: &Wire) -> TestResult<Vec<u8>> {
-    let events = wire.events.as_ref().ok_or("event body")?;
-    Ok(if wire.model["api"] == "anthropic-messages" {
+    Ok(framed(wire, wire.events.as_ref().ok_or("event body")?))
+}
+
+/// Frame the selected slice without changing protocol event identity.
+fn framed(wire: &Wire, events: &[Value]) -> Vec<u8> {
+    if wire.model["api"] == "anthropic-messages" {
         events
             .iter()
             .map(messages::sse)
@@ -23,7 +34,7 @@ fn body(wire: &Wire) -> TestResult<Vec<u8>> {
             .into_bytes()
     } else {
         bundled::sse_frames(events)
-    })
+    }
 }
 
 /// Account fixtures hold a marker; the existing helper assembles the synthetic token.
@@ -78,6 +89,22 @@ fn raw(wire: &Wire, common: StreamOptions) -> ProviderStreamOptions {
     let mut extra = maestro_models::JsonObject::new();
     for (name, value) in [
         (
+            "effort",
+            wire.options.effort.map(|effort| {
+                json!(match effort {
+                    maestro_models::AnthropicEffort::Low => "low",
+                    maestro_models::AnthropicEffort::Medium => "medium",
+                    maestro_models::AnthropicEffort::High => "high",
+                    maestro_models::AnthropicEffort::Xhigh => "xhigh",
+                    maestro_models::AnthropicEffort::Max => "max",
+                })
+            }),
+        ),
+        (
+            "promptMode",
+            wire.options.prompt_mode.as_ref().map(|v| json!(v)),
+        ),
+        (
             "reasoningEffort",
             wire.options.reasoning_effort.as_ref().map(|v| json!(v)),
         ),
@@ -113,10 +140,15 @@ fn raw(wire: &Wire, common: StreamOptions) -> ProviderStreamOptions {
 }
 
 /// Existing one-shot transport owns body capture and release.
-fn controlled(wire: &Wire) -> TestResult<(transport::Transport, Option<messages::Feed>)> {
-    if wire.phase == Phase::Mid {
+fn controlled(
+    wire: &Wire,
+    gated: bool,
+) -> TestResult<(transport::Transport, Option<messages::Feed>)> {
+    if wire.phase == Phase::Mid || gated {
         let (feed, body_stream) = messages::feed();
-        feed.chunks.send(body(wire)?)?;
+        if !gated {
+            feed.chunks.send(body(wire)?)?;
+        }
         let body = Mutex::new(Some(body_stream));
         let attempt = transport::Attempt::streaming(move || {
             body.lock()
@@ -156,25 +188,24 @@ pub(super) async fn invoke(
     context: Context,
 ) -> TestResult<SharedAssistantMessage> {
     let history = serde_json::to_value(&context)?;
-    let (transport, feed) = controlled(wire)?;
+    let mut model = descriptor(wire)?;
+    let peer = if wire.options.transport == Some(maestro_models::Transport::Websocket) {
+        let (base, peer) = socket::serve(wire.events.clone().ok_or("socket events")?).await?;
+        model.base_url = base;
+        Some(peer)
+    } else {
+        None
+    };
+    let (transport, feed) = controlled(wire, row.expected.progress.is_some())?;
+    let gate = progress::Gate::new(wire, row.expected.progress.as_deref(), feed)?;
     let payloads = Arc::new(Mutex::new(Vec::new()));
     let signal = Cancellation::new();
     if wire.phase == Phase::Pre {
         signal.abort();
     }
-    let inner = Arc::clone(&transport.fetch);
-    let fetch: maestro_models::Fetch = Arc::new(move |request| {
-        let response = inner(request);
-        Box::pin(async move {
-            let mut response = response.await?;
-            response
-                .headers
-                .insert("content-type".into(), "text/event-stream".into());
-            Ok(response)
-        })
-    });
+    let fetch = fetch_for(&transport, peer.is_some());
     let common = common(wire, fetch, Arc::clone(&payloads), signal.clone());
-    let (result, events) = dispatch(wire, context, common, feed, &signal).await?;
+    let (result, events) = dispatch(wire, context, common, gate, model).await?;
     let diagnostic = json!({
         "model": {"id": wire.model["id"], "provider": wire.model["provider"],
             "api": wire.model["api"]},
@@ -183,8 +214,36 @@ pub(super) async fn invoke(
         "actualResult": &*result.read().map_err(|_| "result poisoned")?,
     });
     compare_stream(row, &result, events, &diagnostic)?;
+    if let Some(peer) = peer {
+        let request = peer
+            .await?
+            .map_err(|error| error as Box<dyn std::error::Error>)?;
+        transport
+            .requests
+            .lock()
+            .map_err(|_| "requests poisoned")?
+            .push(request);
+    }
     compare_requests(row, wire, &transport, &payloads, &diagnostic)?;
     Ok(result)
+}
+
+/// Reject HTTP fallback for native sockets; label controlled HTTP responses as SSE.
+fn fetch_for(transport: &transport::Transport, socket: bool) -> maestro_models::Fetch {
+    if socket {
+        return Arc::new(|_| Box::pin(async { Err(maestro_models::FetchError::Aborted) }));
+    }
+    let inner = Arc::clone(&transport.fetch);
+    Arc::new(move |request| {
+        let response = inner(request);
+        Box::pin(async move {
+            let mut response = response.await?;
+            response
+                .headers
+                .insert("content-type".into(), "text/event-stream".into());
+            Ok(response)
+        })
+    })
 }
 
 /// Dispatch preserves the raw versus simple public entry point.
@@ -192,10 +251,10 @@ async fn dispatch(
     wire: &Wire,
     context: Context,
     common: StreamOptions,
-    feed: Option<messages::Feed>,
-    signal: &Cancellation,
+    gate: progress::Gate<'_>,
+    model: maestro_models::Model,
 ) -> TestResult<(SharedAssistantMessage, Option<Vec<Value>>)> {
-    let model = descriptor(wire)?;
+    let signal = common.signal.clone().ok_or("signal")?;
     let output = match wire.route {
         Route::Complete => (
             complete(model, context, Some(raw(wire, common))).await?,
@@ -223,7 +282,7 @@ async fn dispatch(
             } else {
                 stream(model, context, Some(raw(wire, common)))?
             };
-            streamed(&started, feed, signal).await?
+            streamed(&started, gate, &signal).await?
         }
     };
     Ok(output)
@@ -232,10 +291,10 @@ async fn dispatch(
 /// Drain one streaming operation and observe its shared result object.
 async fn streamed(
     started: &maestro_models::AssistantMessageEventStream,
-    feed: Option<messages::Feed>,
+    gate: progress::Gate<'_>,
     signal: &Cancellation,
 ) -> TestResult<(SharedAssistantMessage, Option<Vec<Value>>)> {
-    let events = collect(started, feed, signal).await?;
+    let events = collect(started, gate, signal).await?;
     let result = started.result().await;
     assert!(
         events
@@ -255,27 +314,19 @@ async fn streamed(
     ))
 }
 
-/// Observe a public text delta before cancellation, then drain terminal and await body release.
+/// Collect public events through the gate and await producer release.
+/// Cancellation gates observe a text delta before cancelling; argument gates release fragments.
 async fn collect(
     started: &maestro_models::AssistantMessageEventStream,
-    mut feed: Option<messages::Feed>,
+    mut gate: progress::Gate<'_>,
     signal: &Cancellation,
 ) -> TestResult<Vec<AssistantMessageEvent>> {
     let mut events = Vec::new();
     while let Some(event) = started.next().await {
-        let text =
-            matches!(&event, AssistantMessageEvent::TextDelta { delta, .. } if delta.len() > 50);
+        gate.observe(&event, signal).await?;
         events.push(event);
-        if text && let Some(feed) = feed.as_mut() {
-            feed.read_pending().await?;
-            signal.abort();
-            break;
-        }
     }
-    events.extend(bundled::drain(started).await);
-    if let Some(feed) = feed {
-        feed.released.await?;
-    }
+    gate.finish().await?;
     Ok(events)
 }
 
@@ -398,6 +449,18 @@ fn request_record(request: &maestro_models::HttpRequest, wire: &Wire) -> TestRes
             "account authentication"
         );
         *auth = "Bearer account-fixture".into();
+    }
+    if wire.options.transport == Some(maestro_models::Transport::Websocket) {
+        let session = headers.get("session_id").ok_or("socket session")?;
+        let parsed = uuid::Uuid::parse_str(session)?;
+        assert_eq!(parsed.to_string(), *session, "canonical socket identifier");
+        assert_eq!(
+            headers.get("x-client-request-id"),
+            Some(session),
+            "paired socket identifiers"
+        );
+        headers.insert("session_id".into(), "generated-request-id".into());
+        headers.insert("x-client-request-id".into(), "generated-request-id".into());
     }
     Ok(
         json!({"url":request.url,"headers":headers,"body":serde_json::from_slice::<Value>(&request.body)?}),
