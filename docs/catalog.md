@@ -76,7 +76,11 @@ OAuth registration forces the installed ID to the registration name. Raw and
 simple protocol calls forward to the supplied callback under `provider:<name>`;
 see [invocation records](records.md) for option carriers. Incoming OAuth model
 transforms run after nonempty replacement when a modifier and stored OAuth
-credentials exist. Without a modifier, unrelated descriptor handles stay shared.
+credentials exist. Without a modifier, descriptor handles stay shared. A modifier
+preserves handles
+for returned descriptors whose provider, ID and values match their pre-call
+snapshots; changed descriptors receive new handles. Returned order and duplicates
+are retained.
 A transform failure leaves installed handlers, request sources and the replacement
 list visible, but the failed call does not upsert the incoming configuration.
 Prior edits through an already-retained configuration alias remain visible.

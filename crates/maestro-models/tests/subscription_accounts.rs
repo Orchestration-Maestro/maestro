@@ -243,12 +243,7 @@ fn subscription_provider_delegates_without_model_changes() {
             assert_eq!(models.len(), 2);
             models[0].name = "first custom".into();
             models[1].name = "second custom".into();
-            let allocation = models.as_ptr();
             assert!(provider.modify_models(&models, &credentials).is_none());
-            let result = models;
-            assert_eq!(result.as_ptr(), allocation);
-            assert_eq!(result[0].name, "first custom");
-            assert_eq!(result[1].name, "second custom");
             assert_eq!(
                 provider
                     .refresh_token(credentials, Some(fetch))

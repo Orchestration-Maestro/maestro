@@ -7,6 +7,7 @@ use maestro_models::{
     ApiProvider, Model, OAuthError, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
     register_oauth_provider,
 };
+use std::collections::HashMap;
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Apply incoming operations before descriptor publication and optional transformation.
@@ -109,25 +110,46 @@ impl ModelRegistry {
         provider: &str,
         oauth: &OAuthProviderHandle,
     ) -> Result<(), OAuthError> {
-        if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider) {
-            let models: Vec<_> = self
-                .models
-                .read()
-                .unwrap_or_else(PoisonError::into_inner)
-                .iter()
-                .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
-                .collect();
-            let Some(transformed) = oauth.modify_models(&models, &credentials) else {
-                return Ok(());
-            };
-            let transformed = transformed?;
-            self.models = Arc::new(RwLock::new(
-                transformed
-                    .into_iter()
-                    .map(|model| Arc::new(RwLock::new(model)))
-                    .collect(),
-            ));
+        let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider) else {
+            return Ok(());
+        };
+        let handles = self
+            .models
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        let models: Vec<_> = handles
+            .iter()
+            .map(|model| model.read().unwrap_or_else(PoisonError::into_inner).clone())
+            .collect();
+        let Some(transformed) = oauth.modify_models(&models, &credentials) else {
+            return Ok(());
+        };
+        let transformed = transformed?;
+        let mut originals: HashMap<_, Vec<_>> = HashMap::new();
+        for (snapshot, handle) in models.iter().zip(&handles) {
+            originals
+                .entry((&snapshot.provider, &snapshot.id))
+                .or_default()
+                .push((snapshot, handle));
         }
+        self.models = Arc::new(RwLock::new(
+            transformed
+                .into_iter()
+                .map(|model| {
+                    if let Some((_, handle)) = originals
+                        .get(&(&model.provider, &model.id))
+                        .and_then(|candidates| {
+                            candidates.iter().find(|(snapshot, _)| **snapshot == model)
+                        })
+                    {
+                        Arc::clone(handle)
+                    } else {
+                        Arc::new(RwLock::new(model))
+                    }
+                })
+                .collect(),
+        ));
         Ok(())
     }
     /// Remove a retained registration before reloading; unknown names are no-ops.

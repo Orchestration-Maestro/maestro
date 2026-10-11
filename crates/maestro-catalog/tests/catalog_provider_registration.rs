@@ -578,21 +578,16 @@ fn builtin_oauth_transform_changes_only_matching_values() {
         "github-copilot",
         maestro_credentials::AuthCredential::OAuth(credentials),
     );
-    let mut registry = ModelRegistry::in_memory(auth).unwrap();
+    let mut registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
     registry
         .register_provider("other", dynamic::config(&["unrelated"]))
         .unwrap();
-    let unrelated = registry
-        .find("other", "unrelated")
-        .unwrap()
-        .read()
-        .unwrap()
-        .clone();
+    let unrelated = registry.find("other", "unrelated").unwrap();
+    let published = registry.get_all();
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().oauth = Some(oauth);
-    let supplied = config.read().unwrap().models.as_ref().unwrap()[0].clone();
+    config.write().unwrap().oauth = Some(Arc::clone(&oauth));
     registry
-        .register_provider("github-copilot", config)
+        .register_provider("github-copilot", Arc::clone(&config))
         .unwrap();
     assert_eq!(
         registry
@@ -603,16 +598,67 @@ fn builtin_oauth_transform_changes_only_matching_values() {
             .base_url,
         "https://api.example.invalid"
     );
+    assert!(Arc::ptr_eq(
+        &registry.find("other", "unrelated").unwrap(),
+        &unrelated,
+    ));
+    assert!(
+        published
+            .read()
+            .unwrap()
+            .iter()
+            .any(|model| Arc::ptr_eq(model, &unrelated))
+    );
+    unrelated.write().unwrap().name = "edited through retained alias".into();
     assert_eq!(
         registry
             .find("other", "unrelated")
             .unwrap()
             .read()
             .unwrap()
-            .clone(),
-        unrelated
+            .name,
+        "edited through retained alias"
     );
-    assert!(supplied.base_url.is_none());
+    assert!(
+        config.read().unwrap().models.as_ref().unwrap()[0]
+            .base_url
+            .is_none()
+    );
+}
+
+#[test]
+fn builtin_oauth_transform_detaches_changed_descriptors() {
+    if dynamic::isolated("builtin_oauth_transform_detaches_changed_descriptors") {
+        return;
+    }
+    let oauth = maestro_models::get_oauth_provider("github-copilot").unwrap();
+    let auth = support::auth();
+    let mut registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
+    registry
+        .register_provider("github-copilot", dynamic::config(&["m"]))
+        .unwrap();
+    let matching = registry.find("github-copilot", "m").unwrap();
+    let mut credentials = dynamic::tokens();
+    credentials.access = "proxy-ep=proxy.changed.invalid;".into();
+    auth.set(
+        "transform",
+        maestro_credentials::AuthCredential::OAuth(credentials),
+    );
+    let transform = dynamic::config(&["trigger"]);
+    transform.write().unwrap().oauth = Some(oauth);
+    registry.register_provider("transform", transform).unwrap();
+    let changed = registry.find("github-copilot", "m").unwrap();
+    assert!(!Arc::ptr_eq(&matching, &changed));
+    matching.write().unwrap().name = "detached edit".into();
+    assert_eq!(changed.read().unwrap().name, "Name m");
+    assert_eq!(
+        changed.read().unwrap().base_url,
+        "https://api.changed.invalid"
+    );
+    assert_eq!(
+        matching.read().unwrap().base_url,
+        "https://dynamic.invalid/v1"
+    );
 }
 
 #[test]
