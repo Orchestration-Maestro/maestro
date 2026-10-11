@@ -1,4 +1,5 @@
 //! Conventional resource collection over replaceable filesystem observations.
+use crate::ignore::{Ignore, TestResult};
 use maestro_path::join;
 use maestro_resources::skills::{ResourceEntry, ResourceFileType, ResourceOperations};
 use std::{io, path::Path};
@@ -56,7 +57,7 @@ fn collect_files(
     if !operations.exists(Path::new(dir)) {
         return result;
     }
-    let mut local = IgnoreRules::new();
+    let mut local = Ignore::new();
     local.load(dir, operations);
     rules.stack.push((dir.to_owned(), local));
     let entries = operations.read_dir(Path::new(dir)).unwrap_or_default();
@@ -160,7 +161,7 @@ fn relative_path(root: &str, path: &str) -> String {
 #[derive(Default)]
 struct ScopedIgnoreRules {
     /// Ancestor matchers followed by the current directory's matcher.
-    stack: Vec<(String, IgnoreRules)>,
+    stack: Vec<(String, Ignore)>,
 }
 impl ScopedIgnoreRules {
     /// The deepest matching rule decides; pruned parents are never traversed.
@@ -168,44 +169,17 @@ impl ScopedIgnoreRules {
         self.stack
             .iter()
             .rev()
-            .find_map(|(dir, rules)| {
-                let decision = rules
-                    .matcher
-                    .matched(fold_non_ascii(&relative_path(dir, path)), directory);
-                (!decision.is_none()).then(|| decision.is_ignore())
-            })
+            .find_map(
+                |(dir, rules)| match rules.test(&relative_path(dir, path), directory) {
+                    TestResult::Unmatched => None,
+                    TestResult::Ignored => Some(true),
+                    TestResult::Unignored => Some(false),
+                },
+            )
             .unwrap_or(false)
     }
 }
-/// Ordered ignore rules belonging to one directory.
-pub(super) struct IgnoreRules {
-    /// Incrementally accumulated rules.
-    builder: ignore::gitignore::GitignoreBuilder,
-    /// The compiled rules after the latest directory load.
-    matcher: ignore::gitignore::Gitignore,
-}
-impl IgnoreRules {
-    /// Starts an ASCII case-insensitive matcher for non-ASCII folded input.
-    pub(super) fn new() -> Self {
-        let mut builder = ignore::gitignore::GitignoreBuilder::new("");
-        let _ = builder.case_insensitive(true);
-        Self {
-            builder,
-            matcher: ignore::gitignore::Gitignore::empty(),
-        }
-    }
-    /// Adds a rule without replacing accumulated rules; invalid lines are skipped.
-    pub(super) fn add(&mut self, rule: &str) {
-        let _ = self
-            .builder
-            .add_line(None, &fold_non_ascii(&encode_ignore_rule(rule)));
-    }
-    /// Publishes accumulated rules when they compile.
-    pub(super) fn compile(&mut self) {
-        if let Ok(matcher) = self.builder.build() {
-            self.matcher = matcher;
-        }
-    }
+impl Ignore {
     /// Reads the three conventional ignore files in declaration order.
     fn load(&mut self, dir: &str, operations: &dyn ResourceOperations) {
         for name in [".gitignore", ".ignore", ".fdignore"] {
@@ -222,100 +196,7 @@ impl IgnoreRules {
                 self.add(line);
             }
         }
-        self.compile();
     }
-    /// Tests parent exclusions before the entry itself.
-    #[cfg(test)]
-    pub(super) fn ignored(&self, path: &str, directory: bool) -> bool {
-        Path::new(path)
-            .ancestors()
-            .skip(1)
-            .filter(|path| !path.as_os_str().is_empty())
-            .any(|parent| {
-                self.matcher
-                    .matched(fold_non_ascii(&parent.to_string_lossy()), true)
-                    .is_ignore()
-            })
-            || self
-                .matcher
-                .matched(fold_non_ascii(path), directory)
-                .is_ignore()
-    }
-}
-/// Folds non-ASCII characters while preserving native ASCII syntax and case matching.
-fn fold_non_ascii(text: &str) -> String {
-    let mut folded = String::with_capacity(text.len());
-    for c in text.chars() {
-        if c.is_ascii() {
-            folded.push(c);
-        } else {
-            folded.extend(c.to_lowercase());
-        }
-    }
-    folded
-}
-/// Encodes literal braces and C-locale named bracket classes for the native matcher.
-fn encode_ignore_rule(pattern: &str) -> String {
-    let mut result = String::new();
-    let mut escaped = false;
-    let mut bracket = false;
-    let mut chars = pattern.char_indices().peekable();
-    while let Some((index, c)) = chars.next() {
-        if escaped {
-            result.push(c);
-            escaped = false;
-            continue;
-        }
-        if bracket
-            && c == '['
-            && let Some((length, range)) = named_class(&pattern[index..])
-        {
-            result.push_str(range);
-            for _ in 1..length {
-                chars.next();
-            }
-            continue;
-        }
-        match c {
-            '\\' => {
-                result.push(c);
-                escaped = true;
-            }
-            '[' => {
-                bracket = true;
-                result.push(c);
-            }
-            ']' => {
-                bracket = false;
-                result.push(c);
-            }
-            '{' | '}' if !bracket => {
-                result.push('\\');
-                result.push(c);
-            }
-            _ => result.push(c),
-        }
-    }
-    result
-}
-/// Selects the twelve Git C-locale classes without adding slash or a leading negation.
-fn named_class(pattern: &str) -> Option<(usize, &'static str)> {
-    [
-        ("[:alnum:]", "a-zA-Z0-9"),
-        ("[:alpha:]", "a-zA-Z"),
-        ("[:blank:]", " \t"),
-        ("[:cntrl:]", "\u{0}-\u{1f}\u{7f}"),
-        ("[:digit:]", "0-9"),
-        ("[:graph:]", "#-~!\""),
-        ("[:lower:]", "a-z"),
-        ("[:print:]", " -~"),
-        ("[:punct:]", ":-@[-`{-~!-."),
-        ("[:space:]", " \t\r\n\u{b}\u{c}"),
-        ("[:upper:]", "A-Z"),
-        ("[:xdigit:]", "a-fA-F0-9"),
-    ]
-    .into_iter()
-    .find_map(|(name, range)| pattern.starts_with(name).then_some((name.len(), range)))
 }
 
 /// Follows only link entries, skipping failed target observations.

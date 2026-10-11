@@ -58,7 +58,7 @@ fn match_platform(path: &str, pattern: &str, platform: Platform) -> Result<bool,
         let pattern = optimize_pattern(slash_split(alternative, platform));
         let mut parts = compile_parts(&pattern, platform);
         let (file_start, pattern_start) = align_roots(&file, &mut parts, platform);
-        match_one(&file[file_start..], &parts[pattern_start..])
+        match_one(&file[file_start..], &parts[pattern_start..], false)
     });
     Ok(hit ^ (bangs % 2 == 1))
 }
@@ -200,7 +200,7 @@ fn close_globstars(parts: &[Part], states: &mut BTreeSet<usize>) {
 }
 
 /// Walks finite component-position states without a recursion cutoff.
-fn match_one(file: &[&str], parts: &[Part]) -> bool {
+fn match_one(file: &[&str], parts: &[Part], dot: bool) -> bool {
     let mut globstars = parts
         .iter()
         .enumerate()
@@ -208,7 +208,7 @@ fn match_one(file: &[&str], parts: &[Part]) -> bool {
     if let Some(index) = globstars.next()
         && globstars.next().is_none()
     {
-        return match_single_globstar(file, parts, index);
+        return match_single_globstar(file, parts, index, dot);
     }
     let mut states = BTreeSet::from([0]);
     close_globstars(parts, &mut states);
@@ -218,7 +218,7 @@ fn match_one(file: &[&str], parts: &[Part]) -> bool {
         }
         let mut next = BTreeSet::new();
         for &i in &states {
-            advance_part(parts, i, text, &mut next);
+            advance_part(parts, i, text, &mut next, dot);
         }
         close_globstars(parts, &mut next);
         states = next;
@@ -227,31 +227,37 @@ fn match_one(file: &[&str], parts: &[Part]) -> bool {
 }
 
 /// Anchors the head and tail before checking the globstar's middle once.
-fn match_single_globstar(file: &[&str], parts: &[Part], index: usize) -> bool {
+fn match_single_globstar(file: &[&str], parts: &[Part], index: usize, dot: bool) -> bool {
     let tail = &parts[index + 1..];
-    if index + tail.len() > file.len() || !match_one(&file[..index], &parts[..index]) {
+    if index + tail.len() > file.len() || !match_one(&file[..index], &parts[..index], dot) {
         return false;
     }
     let mut tail_start = file.len() - tail.len();
-    if !tail.is_empty() && !match_one(&file[tail_start..], tail) {
+    if !tail.is_empty() && !match_one(&file[tail_start..], tail, dot) {
         if file.last() != Some(&"") || tail_start == index {
             return false;
         }
         tail_start -= 1;
-        if !match_one(&file[tail_start..], tail) {
+        if !match_one(&file[tail_start..], tail, dot) {
             return false;
         }
     }
     (tail_start > index || !tail.is_empty())
         && file[index..tail_start]
             .iter()
-            .all(|text| !text.starts_with('.'))
+            .all(|text| dot || !text.starts_with('.'))
 }
 
 /// Consumes a component at an active pattern position.
-fn advance_part(parts: &[Part], position: usize, text: &str, next: &mut BTreeSet<usize>) {
+fn advance_part(
+    parts: &[Part],
+    position: usize,
+    text: &str,
+    next: &mut BTreeSet<usize>,
+    dot: bool,
+) {
     match parts.get(position) {
-        Some(Part::Globstar) if !text.starts_with('.') => {
+        Some(Part::Globstar) if dot || !text.starts_with('.') => {
             next.insert(position);
             if position + 1 == parts.len() {
                 next.insert(position + 1);
@@ -280,6 +286,43 @@ fn slash_split(text: &str, platform: Platform) -> Vec<&str> {
         parts.push("");
     }
     parts
+}
+
+/// Compiled slash-relative ignore syntax without public file-pattern defaults.
+pub(crate) struct IgnorePattern {
+    /// Shared component and globstar states.
+    parts: Vec<Part>,
+}
+impl IgnorePattern {
+    /// Compiles authored components, collapsing adjacent recursive wildcards.
+    pub(crate) fn new(pattern: &str) -> Self {
+        let mut parts: Vec<_> = pattern
+            .split('/')
+            .map(|part| {
+                if part == "**" {
+                    Part::Globstar
+                } else {
+                    Part::Segment(ast::Ast::parse_ignore(part))
+                }
+            })
+            .collect();
+        parts.dedup_by(|a, b| matches!(a, Part::Globstar) && matches!(b, Part::Globstar));
+        Self { parts }
+    }
+    /// Matches components already prepared by the rule owner.
+    pub(crate) fn matches(&self, components: &[&str]) -> bool {
+        match_one(components, &self.parts, true)
+    }
+}
+/// Canonicalizes one scalar without expansions or non-ASCII-to-ASCII mappings.
+pub(crate) fn canonical(scalar: char) -> char {
+    let mut uppercase = scalar.to_uppercase();
+    let first = uppercase.next().unwrap_or(scalar);
+    if uppercase.next().is_some() || (!scalar.is_ascii() && first.is_ascii()) {
+        scalar
+    } else {
+        first
+    }
 }
 
 #[cfg(test)]

@@ -219,29 +219,3 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
         "Failed to determine remote HEAD"
     );
 }
-
-/// Qualified native ignore decisions include literal braces and named classes.
-#[test]
-fn ignore_rules_match_qualified_native_cases() {
-    #[derive(serde::Deserialize)]
-    #[serde(deny_unknown_fields)]
-    struct Row {
-        rules: Vec<String>,
-        input: String,
-        expected: bool,
-    }
-    let rows: Vec<Row> =
-        serde_json::from_str(include_str!("../../tests/fixtures/discovery_ignores.json")).unwrap();
-    for (index, row) in rows.into_iter().enumerate() {
-        let mut rules = super::resource_discovery::IgnoreRules::new();
-        for rule in &row.rules {
-            rules.add(rule);
-        }
-        rules.compile();
-        assert_eq!(
-            rules.ignored(&row.input, false),
-            row.expected,
-            "case {index}"
-        );
-    }
-}

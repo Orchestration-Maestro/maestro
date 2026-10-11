@@ -1774,7 +1774,6 @@ version = "0.1.0"
 dependencies = [
  "brace-expansion",
  "git-url-parse",
- "ignore",
  "maestro-path",
  "maestro-resources",
  "maestro-settings",
