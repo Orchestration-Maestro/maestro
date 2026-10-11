@@ -16,7 +16,7 @@ use std::{
 /// Native filesystem with selected read/stat failures.
 #[derive(Default)]
 pub struct Filesystem {
-    /// Native observations are restricted to this fixture tree when supplied.
+    /// Path-taking resource operations reject lexically outside-root operands when supplied.
     pub owned_root: Option<PathBuf>,
     /// Reject ambient resource-directory reads.
     pub fail_current: bool,
