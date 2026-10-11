@@ -52,9 +52,9 @@ results once admitted progress has settled; a progress failure rejects the
 operation first.
 After hooks replace supplied content and nonnull details wholesale and may replace
 error and termination flags, including false. An after-hook failure becomes a
-tool-error result; request callback and observation failures reject the
-operation. In a parallel batch, sibling calls settle before that rejection
-returns.
+tool-error result; request callback, observation, steering, follow-up and
+stop-callback failures reject the operation. In a parallel batch, sibling calls
+settle before that rejection returns.
 
 Progress futures run alongside execution and may overlap. A callback reserves
 admission before invoking the synchronous observer outside locks. Execution

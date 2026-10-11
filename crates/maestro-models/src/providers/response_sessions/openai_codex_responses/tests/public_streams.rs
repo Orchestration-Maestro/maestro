@@ -52,7 +52,10 @@ async fn maestro_response_sessions_stream_public_sse_scenario() {
                 ("originator", "maestro"),
                 ("accept", "text/event-stream"),
             ] {
-                assert_eq!(request.headers.get(name).map(String::as_str), Some(value));
+                assert!(
+                    request.headers.get(name).map(String::as_str) == Some(value),
+                    "header {name} differs"
+                );
             }
             assert!(!request.headers.contains_key("x-api-key"));
             let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
@@ -235,19 +238,19 @@ async fn maestro_response_sessions_finish_open_bodies_scenario() {
             StopReason::Length,
         ),
     ] {
-        let mut bytes =
-            format!("data: {{\"type\":\"{kind}\",\"response\":{{\"status\":\"{status}\"}}}}\n\n")
-                .into_bytes();
+        let mut frames = super::loopback::response_events(None, "open body retained Ω😀");
+        *frames.last_mut().unwrap() =
+            format!("{{\"type\":\"{kind}\",\"response\":{{\"status\":\"{status}\"}}}}");
+        let mut bytes = frames_bytes(&frames);
         if done {
             bytes.extend_from_slice(b"data: [DONE]\n\n");
         }
+        let result = open_body_result(bytes, false).await;
+        let result = result.read().unwrap();
+        assert_eq!(result.stop_reason, expected);
         assert_eq!(
-            open_body_result(bytes, false)
-                .await
-                .read()
-                .unwrap()
-                .stop_reason,
-            expected
+            serde_json::to_value(&*result).unwrap()["content"][0]["text"],
+            "open body retained Ω😀"
         );
     }
 }

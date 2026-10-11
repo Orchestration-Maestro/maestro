@@ -81,6 +81,7 @@ fn git_native_current_preserves_dirty_and_untracked_contents() {
     let repo = native_git::Repository::new();
     std::fs::write(repo.target.join("content"), "dirty").unwrap();
     std::fs::write(repo.target.join("untracked"), "retained").unwrap();
+    std::fs::write(repo.target.join("package.json"), "{\"dependencies\":{}}").unwrap();
     repo.update(false);
     assert!(
         std::fs::read_to_string(repo.target.join(".git/FETCH_HEAD"))
@@ -546,5 +547,25 @@ fn clone_acquires_dependencies() {
             ),
             ("npm".into(), vec!["install".into(), "--omit=dev".into()]),
         ]
+    );
+}
+
+#[test]
+fn current_git_checkout_with_manifest_skips_dependency_install() {
+    let responses = ["origin/main", "stale", "same", "same"]
+        .into_iter()
+        .map(|text| Ok(text.into()))
+        .collect();
+    let (effects, result) = controlled_refresh(responses, |_, _| {});
+    result.unwrap();
+    assert!(effects.absent_under.borrow().is_empty());
+    assert!(effects.exists.get());
+    assert_eq!(effects.calls.borrow().len(), 5);
+    assert!(
+        effects
+            .calls
+            .borrow()
+            .iter()
+            .all(|(command, _)| command == "git")
     );
 }

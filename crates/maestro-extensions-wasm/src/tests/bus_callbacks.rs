@@ -73,6 +73,21 @@ async fn literal_cases(driver: &mut impl Driver) -> ExtensionResult<()> {
             "{}",
             case.name
         );
+        if let Some(input) = case.input.as_object() {
+            let callback = emitted.last().expect("callback emission");
+            assert_eq!(callback.0, "received");
+            assert_eq!(
+                callback
+                    .1
+                    .as_object()
+                    .expect("object emission")
+                    .keys()
+                    .collect::<Vec<_>>(),
+                input.keys().collect::<Vec<_>>(),
+                "callback-emitted key order: {}",
+                case.name
+            );
+        }
         for (actual, expected) in received.iter().zip(&case.expected) {
             if let (Some(actual), Some(expected)) = (actual.as_object(), expected.as_object()) {
                 assert_eq!(
@@ -106,11 +121,36 @@ async fn signed_zero(driver: &mut impl Driver, signed: SignedZero) -> ExtensionR
         value.as_f64().expect("number").is_sign_negative(),
         signed.expected
     );
+    let emitted = driver.bus_emissions();
+    let callback = emitted.last().expect("signed-zero callback emission");
+    assert_eq!(callback.0, "received");
+    assert_eq!(
+        callback
+            .1
+            .as_f64()
+            .expect("number emission")
+            .is_sign_negative(),
+        signed.expected,
+        "callback-emitted signed zero"
+    );
     Ok(())
 }
 #[test]
 fn maestro_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
-    on_both_adapters!(literal_cases)
+    let component = super::path_of_component()?;
+    let mut driver = super::ComponentDriver::new(component);
+    super::block_on(async {
+        driver.start().await?;
+        literal_cases(&mut driver).await
+    })
+}
+#[test]
+fn maestro_controlled_bus_channels_and_payloads_remain_literal() -> ExtensionResult<()> {
+    let mut driver = super::ControlledDriver::new();
+    super::block_on(async {
+        driver.start().await?;
+        literal_cases(&mut driver).await
+    })
 }
 
 #[test]

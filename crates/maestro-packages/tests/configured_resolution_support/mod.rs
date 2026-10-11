@@ -86,7 +86,12 @@ struct Fixture {
 /// Restricts native resource path operands to one owned fixture tree.
 pub fn owned_filesystem(root: &Path) -> resolution_support::Filesystem {
     resolution_support::Filesystem {
-        owned_root: Some(root.canonicalize().unwrap()),
+        owned_root: Some(std::path::PathBuf::from(maestro_path::normalize(
+            &std::env::current_dir()
+                .unwrap()
+                .join(root)
+                .to_string_lossy(),
+        ))),
         ..Default::default()
     }
 }

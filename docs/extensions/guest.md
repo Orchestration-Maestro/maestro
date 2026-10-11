@@ -149,8 +149,8 @@ Clones of bus and subscription facades share their supplied ports.
 
 A listener's synchronous prefix returns `ExtensionResult<Option<ExtensionFuture<'static, ()>>>`:
 `Ok(None)` has no tail, `Ok(Some(future))` carries an independently owned tail, and
-`Err(message)` is forwarded to the host as the author's error. Failed callback lookup and
-payload decoding or encoding return local diagnostics before or instead of the author's call.
+`Err(message)` is forwarded to the host as the author's error. Failed listener lookup or payload
+decoding returns a local diagnostic before listener invocation.
 The adapter announces that future without polling it;
 the host invokes the tail separately. Releasing the listener does not release a tail
 already announced. The callback emitter cannot be retained by that tail: capture an

@@ -501,12 +501,14 @@ fn assert_matrix(
     );
     if delta {
         assert_eq!(request["previous_response_id"], "seed");
-        assert_eq!(request["input"].as_array().unwrap().len(), 1);
+        assert_eq!(request["input"], expected_user_input("next"));
     } else {
-        assert_eq!(
-            request["input"].as_array().unwrap().len(),
-            if state == "none" { 1 } else { 3 }
-        );
+        let expected = if state == "none" {
+            expected_user_input("hello Ω")
+        } else {
+            expected_full_input("seed reply", "next")
+        };
+        assert_eq!(request["input"], expected);
     }
     assert_eq!(after.requests - before.requests, u64::from(!sse));
     assert_eq!(
@@ -799,7 +801,8 @@ fn hook_observations(
 fn assert_default_context(sent: &[serde_json::Value]) {
     assert!(sent[0].get("previous_response_id").is_none());
     assert_eq!(sent[1]["previous_response_id"], "r1");
-    assert_eq!(sent[1]["input"].as_array().unwrap().len(), 1);
+    assert_eq!(sent[0]["input"], expected_user_input("hello Ω"));
+    assert_eq!(sent[1]["input"], expected_user_input("next Ω😀"));
     assert_eq!(sent[2]["previous_response_id"], "r2");
     assert_eq!(sent[2]["input"], serde_json::json!([]));
     assert!(sent.iter().all(|body| body["store"] == false));
@@ -863,7 +866,10 @@ async fn cached_hook_failure() {
     let delta = peer.await.unwrap();
     let full = receiver.recv().unwrap();
     let request: serde_json::Value = serde_json::from_slice(&full).unwrap();
-    assert_eq!(request["input"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        request["input"],
+        expected_full_input("first reply", "next Ω😀")
+    );
     assert_eq!(request["ordered"], serde_json::json!([2, 1, 2]));
     assert_eq!(hooks.load(Ordering::SeqCst), 2);
     let message = output.read().unwrap();
@@ -894,7 +900,7 @@ async fn cached_failure_peer(listener: TcpListener) -> String {
         .to_string();
     let body: serde_json::Value = serde_json::from_str(&delta).unwrap();
     assert_eq!(body["previous_response_id"], "seed");
-    assert_eq!(body["input"].as_array().unwrap().len(), 1);
+    assert_eq!(body["input"], expected_user_input("next Ω😀"));
     socket.close(None).await.unwrap();
     while socket.next().await.is_some() {}
     delta
@@ -926,4 +932,17 @@ fn context_stream(
         .unwrap(),
         _ => crate::stream_simple(model.clone(), context, simple).unwrap(),
     }
+}
+
+/// Literal user wire item, independent of production conversion.
+fn expected_user_input(text: &str) -> serde_json::Value {
+    serde_json::json!([{"role":"user","content":[{"type":"input_text","text":text}]}])
+}
+/// Complete retained history with distinguishable user and assistant payloads.
+fn expected_full_input(reply: &str, next: &str) -> serde_json::Value {
+    serde_json::json!([
+        {"role":"user","content":[{"type":"input_text","text":"hello Ω"}]},
+        {"type":"message","role":"assistant","content":[{"type":"output_text","text":reply,"annotations":[]}],"status":"completed","id":"m1"},
+        {"role":"user","content":[{"type":"input_text","text":next}]}
+    ])
 }
