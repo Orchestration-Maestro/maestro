@@ -36,7 +36,7 @@ pub use context::{
     AbortSignal, CommandContextPort, CompactOptions, CompactionComplete, CompactionError,
     ContextPort, ContextUsage, ExtensionCommandContext, ExtensionContext, ExtensionUIContext,
     ExtensionUIContextPort, NewSessionCommandOptions, ReplacedSessionContext,
-    ReplacedSessionContextPort, SignalPort, WithSession,
+    ReplacedSessionContextPort, SetupSession, SignalPort, WithSession,
 };
 #[cfg(any(test, target_arch = "wasm32"))]
 pub(crate) use event_data::EventData;

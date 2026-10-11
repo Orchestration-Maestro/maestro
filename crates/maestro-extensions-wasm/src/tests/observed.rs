@@ -73,6 +73,10 @@ impl Session {
 /// still lends out, and the registrations it received.
 #[derive(Default)]
 pub struct Observed {
+    /// Setup-session host decisions.
+    pub setup: super::setup_host::Bank,
+    /// Completion witness after the admitted setup future releases its capture.
+    pub setup_finished: Option<oneshot::Sender<()>>,
     /// Total admitted compaction requests.
     pub compactions: usize,
     /// Ordinary action controls.
@@ -202,6 +206,15 @@ impl Observed {
 
     /// Records a custom session entry.
     pub fn entry(&mut self, custom_type: &str, data: Option<&str>) {
+        if custom_type == "setup-drop"
+            && data == Some("\"setup-future\"")
+            && let Some(finished) = self.setup_finished.take()
+        {
+            let _ = finished.send(());
+        }
+        if custom_type == "setup-control" {
+            self.setup = serde_json::from_str(data.expect("setup control")).unwrap();
+        }
         if custom_type == "action-control" {
             self.actions.control(data.expect("action control"));
         }

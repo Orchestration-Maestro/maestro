@@ -107,6 +107,7 @@ async fn replacement(
     }
     .into();
     ctx.new_session(Some(NewSessionCommandOptions {
+        setup: None,
         data: NewSessionCommandData {
             parent_session: None,
         },

@@ -9,6 +9,99 @@ use crate::{FlagOptions, FlagValue};
 ///
 /// Owner handles are released by dropping them. Each method stands for one host call.
 pub trait Imports: Clone + 'static {
+    /// The Writer value.
+    type Writer: 'static;
+    /// Forwards writer reader through the owned host capability.
+    fn writer_reader(&self, resource: &Self::Writer) -> Self::Reader;
+    /// Forwards writer set session file through the owned host capability.
+    fn writer_set_session_file(&self, resource: &Self::Writer, path: &str) -> ExtensionResult<()>;
+    /// Forwards writer new session through the owned host capability.
+    fn writer_new_session(
+        &self,
+        resource: &Self::Writer,
+        options: Option<&str>,
+    ) -> ExtensionResult<Option<String>>;
+    /// Forwards writer is persisted through the owned host capability.
+    fn writer_is_persisted(&self, resource: &Self::Writer) -> ExtensionResult<bool>;
+    /// Forwards writer get children through the owned host capability.
+    fn writer_get_children(
+        &self,
+        resource: &Self::Writer,
+        parent_id: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer build session context through the owned host capability.
+    fn writer_build_session_context(&self, resource: &Self::Writer) -> ExtensionResult<String>;
+    /// Forwards writer append message through the owned host capability.
+    fn writer_append_message(
+        &self,
+        resource: &Self::Writer,
+        message: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append thinking level change through the owned host capability.
+    fn writer_append_thinking_level_change(
+        &self,
+        resource: &Self::Writer,
+        level: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append model change through the owned host capability.
+    fn writer_append_model_change(
+        &self,
+        resource: &Self::Writer,
+        provider: &str,
+        model_id: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append compaction through the owned host capability.
+    fn writer_append_compaction(
+        &self,
+        resource: &Self::Writer,
+        compaction: &str,
+        from_hook: Option<bool>,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append custom entry through the owned host capability.
+    fn writer_append_custom_entry(
+        &self,
+        resource: &Self::Writer,
+        custom_type: &str,
+        data: Option<&str>,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append session info through the owned host capability.
+    fn writer_append_session_info(
+        &self,
+        resource: &Self::Writer,
+        name: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append custom message entry through the owned host capability.
+    fn writer_append_custom_message_entry(
+        &self,
+        resource: &Self::Writer,
+        message: &str,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer append label change through the owned host capability.
+    fn writer_append_label_change(
+        &self,
+        resource: &Self::Writer,
+        target_id: &str,
+        label: Option<&str>,
+    ) -> ExtensionResult<String>;
+    /// Forwards writer branch through the owned host capability.
+    fn writer_branch(&self, resource: &Self::Writer, from_id: &str) -> ExtensionResult<()>;
+    /// Forwards writer reset leaf through the owned host capability.
+    fn writer_reset_leaf(&self, resource: &Self::Writer) -> ExtensionResult<()>;
+    /// Forwards writer branch with summary through the owned host capability.
+    fn writer_branch_with_summary(
+        &self,
+        resource: &Self::Writer,
+        from_id: Option<&str>,
+        summary: &str,
+        metadata: (Option<&str>, Option<bool>),
+    ) -> ExtensionResult<String>;
+    /// Forwards writer create branched session through the owned host capability.
+    fn writer_create_branched_session(
+        &self,
+        resource: &Self::Writer,
+        leaf_id: &str,
+    ) -> ExtensionResult<Option<String>>;
+
     /// Forwards the ordinary action.
     fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()>;
     /// Forwards the ordinary action.
@@ -171,6 +264,7 @@ pub trait Imports: Clone + 'static {
         &'a self,
         context: &'a Self::CommandContext,
         data: NewSessionCommandData,
+        setup: Option<&'a Self::Callback>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
 

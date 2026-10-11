@@ -416,7 +416,9 @@ Handlers run with an `ExtensionContext`, which reads the working directory. Comm
 an `ExtensionCommandContext`, which adds `wait_for_idle` and `new_session`; the ordinary
 context has neither method, which the rustdoc examples check at compile time.
 
-`new_session` takes a `with_session` continuation. The host runs it against a
+`new_session` accepts optional `setup` and `with_session` callbacks. Setup receives a
+writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
+ordinary contexts still expose a reader. The host runs the continuation against a
 `ReplacedSessionContext` bound to the replacement session while the operation is pending. The
 host calls the continuation closure once. Captures the closure keeps drop when that call
 returns; captures moved into the returned future drop when the future completes. The identity
@@ -425,6 +427,19 @@ ran is released then. The facade forwards the host's answers: after the operatio
 context that started it returns whatever the host reports, which the test host makes a
 stale-context message, while the replacement context keeps working. Errors are the plain text
 the host supplies, so an author can catch one and continue.
+
+The writer exposes `set_session_file`, `new_session`, `is_persisted`, `get_children`,
+`build_session_context`, the message/thinking/model/compaction/custom/name/label append
+operations, `branch`, `reset_leaf`, `branch_with_summary` and `create_branched_session`.
+Writer operations delegate to the host; required encoding and selected-response decoding
+can fail locally. `NewSessionOptions` carries optional writer-chosen `id` and
+`parent_session` strings, separately from command options. `SessionContext` contains the
+host's ordered messages, open thinking-level string and optional provider/model identity.
+
+Setup and continuation entries belong to their new-session operation and are removed
+when its future ends or is dropped. Setup's writer and its reader address the capability
+supplied for that invocation; independently retained capability handles keep their own
+owners. The guest implements no persistence, context projection or navigation policy.
 
 ## Example
 

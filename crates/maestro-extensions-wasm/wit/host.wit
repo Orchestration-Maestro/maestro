@@ -3,6 +3,28 @@ package maestro:extension@0.1.0;
 /// Capabilities and resources the host provides to an extension.
 interface host {
     use session.{new-session-command-data, session-change-result};
+    /// Writable session capability supplied to new-session setup.
+    resource session-manager {
+        reader: func() -> readonly-session-manager;
+        set-session-file: func(path: string) -> result<_, string>;
+        new-session: func(options: option<string>) -> result<option<string>, string>;
+        is-persisted: func() -> result<bool, string>;
+        get-children: func(parent-id: string) -> result<string, string>;
+        build-session-context: func() -> result<string, string>;
+        append-message: func(message: string) -> result<string, string>;
+        append-thinking-level-change: func(level: string) -> result<string, string>;
+        append-model-change: func(provider: string, model-id: string) -> result<string, string>;
+        append-compaction: func(compaction: string, from-hook: option<bool>) -> result<string, string>;
+        append-custom-entry: func(custom-type: string, data: option<string>) -> result<string, string>;
+        append-session-info: func(name: string) -> result<string, string>;
+        append-custom-message-entry: func(message: string) -> result<string, string>;
+        append-label-change: func(target-id: string, label: option<string>) -> result<string, string>;
+        branch: func(from-id: string) -> result<_, string>;
+        reset-leaf: func() -> result<_, string>;
+        branch-with-summary: func(from-id: option<string>, summary: string, metadata: tuple<option<string>, option<bool>>) -> result<string, string>;
+        create-branched-session: func(leaf-id: string) -> result<option<string>, string>;
+    }
+
 
     /// Host-owned identity of one guest closure.
     resource callback {
@@ -104,6 +126,7 @@ interface host {
 
     /// Context with the session-replacing operations; only commands receive it.
     resource command-context {
+
         ui: func() -> result<extension-ui-context, string>;
         has-ui: func() -> result<bool, string>;
         model-registry: func() -> result<model-registry, string>;
@@ -121,12 +144,14 @@ interface host {
         session-manager: func() -> result<readonly-session-manager, string>;
         wait-for-idle: async func() -> result<_, string>;
         new-session: async func(
-            data: new-session-command-data, with-session: option<borrow<callback>>,
+            data: new-session-command-data, setup: option<borrow<callback>>, with-session: option<borrow<callback>>,
         ) -> result<session-change-result, string>;
     }
 
     /// Context bound to the session an operation created.
     resource replaced-session-context {
+
+
         command: func() -> command-context;
     }
 

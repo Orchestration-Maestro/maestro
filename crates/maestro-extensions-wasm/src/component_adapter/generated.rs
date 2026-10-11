@@ -18,6 +18,76 @@ use crate::{AutocompleteItem, FlagOptions, FlagValue};
 struct Generated;
 
 impl Imports for Generated {
+    forward_resources! {
+        writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
+        writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
+        writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
+        writer_is_persisted(resource: &Self::Writer) -> ExtensionResult<bool> => is_persisted();
+        writer_get_children(resource: &Self::Writer, parent_id: &str) -> ExtensionResult<String> => get_children(parent_id);
+        writer_build_session_context(resource: &Self::Writer) -> ExtensionResult<String> => build_session_context();
+        writer_append_message(resource: &Self::Writer, message: &str) -> ExtensionResult<String> => append_message(message);
+        writer_append_thinking_level_change(resource: &Self::Writer, level: &str) -> ExtensionResult<String> => append_thinking_level_change(level);
+        writer_append_model_change(resource: &Self::Writer, provider: &str, model_id: &str) -> ExtensionResult<String> => append_model_change(provider, model_id);
+        writer_append_compaction(resource: &Self::Writer, compaction: &str, from_hook: Option<bool>) -> ExtensionResult<String> => append_compaction(compaction, from_hook);
+        writer_append_custom_entry(resource: &Self::Writer, custom_type: &str, data: Option<&str>) -> ExtensionResult<String> => append_custom_entry(custom_type, data);
+        writer_append_session_info(resource: &Self::Writer, name: &str) -> ExtensionResult<String> => append_session_info(name);
+        writer_append_custom_message_entry(resource: &Self::Writer, message: &str) -> ExtensionResult<String> => append_custom_message_entry(message);
+        writer_append_label_change(resource: &Self::Writer, target_id: &str, label: Option<&str>) -> ExtensionResult<String> => append_label_change(target_id, label);
+        writer_branch(resource: &Self::Writer, from_id: &str) -> ExtensionResult<()> => branch(from_id);
+        writer_reset_leaf(resource: &Self::Writer) -> ExtensionResult<()> => reset_leaf();
+        writer_branch_with_summary(resource: &Self::Writer, from_id: Option<&str>, summary: &str, metadata: (Option<&str>, Option<bool>)) -> ExtensionResult<String> => branch_with_summary(from_id, summary, metadata);
+        writer_create_branched_session(resource: &Self::Writer, leaf_id: &str) -> ExtensionResult<Option<String>> => create_branched_session(leaf_id);
+        command_compact(context: &Self::CommandContext, instructions: Option<&str>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
+        registry_get_available(resource: &Self::Registry) -> ExtensionResult<String> => get_available();
+        registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
+        ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
+        has_ui(context: &Self::Context) -> ExtensionResult<bool> => has_ui();
+        model_registry(context: &Self::Context) -> ExtensionResult<Self::Registry> => model_registry();
+        model(context: &Self::Context) -> ExtensionResult<Option<String>> => model();
+        is_idle(context: &Self::Context) -> ExtensionResult<bool> => is_idle();
+        signal(context: &Self::Context) -> ExtensionResult<Option<Self::Signal>> => signal();
+        abort(context: &Self::Context) -> ExtensionResult<()> => abort();
+        has_pending_messages(context: &Self::Context) -> ExtensionResult<bool> => has_pending_messages();
+        shutdown(context: &Self::Context) -> ExtensionResult<()> => shutdown();
+        get_context_usage(context: &Self::Context) -> ExtensionResult<Option<crate::ContextUsage>> => get_context_usage();
+        get_system_prompt(context: &Self::Context) -> ExtensionResult<String> => get_system_prompt();
+        command_ui(context: &Self::CommandContext) -> ExtensionResult<Self::Ui> => ui();
+        command_has_ui(context: &Self::CommandContext) -> ExtensionResult<bool> => has_ui();
+        command_model_registry(context: &Self::CommandContext) -> ExtensionResult<Self::Registry> => model_registry();
+        command_model(context: &Self::CommandContext) -> ExtensionResult<Option<String>> => model();
+        command_is_idle(context: &Self::CommandContext) -> ExtensionResult<bool> => is_idle();
+        command_signal(context: &Self::CommandContext) -> ExtensionResult<Option<Self::Signal>> => signal();
+        command_abort(context: &Self::CommandContext) -> ExtensionResult<()> => abort();
+        command_has_pending_messages(context: &Self::CommandContext) -> ExtensionResult<bool> => has_pending_messages();
+        command_shutdown(context: &Self::CommandContext) -> ExtensionResult<()> => shutdown();
+        command_get_context_usage(context: &Self::CommandContext) -> ExtensionResult<Option<crate::ContextUsage>> => get_context_usage();
+        command_get_system_prompt(context: &Self::CommandContext) -> ExtensionResult<String> => get_system_prompt();
+        session_manager(context: &Self::Context) -> ExtensionResult<Self::Reader> => session_manager();
+        command_session_manager(context: &Self::CommandContext) -> ExtensionResult<Self::Reader> => session_manager();
+        reader_get_cwd(resource: &Self::Reader) -> ExtensionResult<String> => get_cwd();
+        reader_get_session_dir(resource: &Self::Reader) -> ExtensionResult<String> => get_session_dir();
+        reader_get_session_id(resource: &Self::Reader) -> ExtensionResult<String> => get_session_id();
+        reader_get_session_file(resource: &Self::Reader) -> ExtensionResult<Option<String>> => get_session_file();
+        reader_get_leaf_id(resource: &Self::Reader) -> ExtensionResult<Option<String>> => get_leaf_id();
+        reader_get_leaf_entry(resource: &Self::Reader) -> ExtensionResult<Option<String>> => get_leaf_entry();
+        reader_get_entry(resource: &Self::Reader, id: &str) -> ExtensionResult<Option<String>> => get_entry(id);
+        reader_get_label(resource: &Self::Reader, id: &str) -> ExtensionResult<Option<String>> => get_label(id);
+        reader_get_branch(resource: &Self::Reader, from_id: Option<&str>) -> ExtensionResult<String> => get_branch(from_id);
+        reader_get_header(resource: &Self::Reader) -> ExtensionResult<Option<String>> => get_header();
+        reader_get_entries(resource: &Self::Reader) -> ExtensionResult<String> => get_entries();
+        reader_get_tree(resource: &Self::Reader) -> ExtensionResult<Vec<Self::Node>> => get_tree();
+        reader_get_session_name(resource: &Self::Reader) -> ExtensionResult<Option<String>> => get_session_name();
+        node_entry(resource: &Self::Node) -> ExtensionResult<String> => entry();
+        node_children(resource: &Self::Node) -> ExtensionResult<Vec<Self::Node>> => children();
+        node_label(resource: &Self::Node) -> ExtensionResult<Option<String>> => label();
+        node_label_timestamp(resource: &Self::Node) -> ExtensionResult<Option<String>> => label_timestamp();
+        cwd(context: &host::Context) -> ExtensionResult<String> => cwd();
+        command_cwd(context: &host::CommandContext) -> ExtensionResult<String> => cwd();
+        command(context: &host::ReplacedSessionContext) -> host::CommandContext => command();
+    }
+
+    type Writer = host::SessionManager;
+
     fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
         host::send_message(message, options)
     }
@@ -63,15 +133,6 @@ impl Imports for Generated {
     ) -> ExtensionResult<()> {
         context.compact(instructions, complete, error)
     }
-    fn command_compact(
-        &self,
-        context: &Self::CommandContext,
-        instructions: Option<&str>,
-        complete: Option<&Self::Callback>,
-        error: Option<&Self::Callback>,
-    ) -> ExtensionResult<()> {
-        context.compact(instructions, complete, error)
-    }
 
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
@@ -108,17 +169,7 @@ impl Imports for Generated {
     fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String> {
         resource.get_all()
     }
-    fn registry_get_available(&self, resource: &Self::Registry) -> ExtensionResult<String> {
-        resource.get_available()
-    }
-    fn registry_find(
-        &self,
-        resource: &Self::Registry,
-        provider: &str,
-        model_id: &str,
-    ) -> ExtensionResult<Option<String>> {
-        resource.find(provider, model_id)
-    }
+
     fn registry_get_api_key_and_headers<'a>(
         &'a self,
         resource: &'a Self::Registry,
@@ -136,87 +187,6 @@ impl Imports for Generated {
             })
         })
     }
-    fn ui(&self, context: &Self::Context) -> ExtensionResult<Self::Ui> {
-        context.ui()
-    }
-    fn has_ui(&self, context: &Self::Context) -> ExtensionResult<bool> {
-        context.has_ui()
-    }
-    fn model_registry(&self, context: &Self::Context) -> ExtensionResult<Self::Registry> {
-        context.model_registry()
-    }
-    fn model(&self, context: &Self::Context) -> ExtensionResult<Option<String>> {
-        context.model()
-    }
-    fn is_idle(&self, context: &Self::Context) -> ExtensionResult<bool> {
-        context.is_idle()
-    }
-    fn signal(&self, context: &Self::Context) -> ExtensionResult<Option<Self::Signal>> {
-        context.signal()
-    }
-    fn abort(&self, context: &Self::Context) -> ExtensionResult<()> {
-        context.abort()
-    }
-    fn has_pending_messages(&self, context: &Self::Context) -> ExtensionResult<bool> {
-        context.has_pending_messages()
-    }
-    fn shutdown(&self, context: &Self::Context) -> ExtensionResult<()> {
-        context.shutdown()
-    }
-    fn get_context_usage(
-        &self,
-        context: &Self::Context,
-    ) -> ExtensionResult<Option<crate::ContextUsage>> {
-        context.get_context_usage()
-    }
-    fn get_system_prompt(&self, context: &Self::Context) -> ExtensionResult<String> {
-        context.get_system_prompt()
-    }
-    fn command_ui(&self, context: &Self::CommandContext) -> ExtensionResult<Self::Ui> {
-        context.ui()
-    }
-    fn command_has_ui(&self, context: &Self::CommandContext) -> ExtensionResult<bool> {
-        context.has_ui()
-    }
-    fn command_model_registry(
-        &self,
-        context: &Self::CommandContext,
-    ) -> ExtensionResult<Self::Registry> {
-        context.model_registry()
-    }
-    fn command_model(&self, context: &Self::CommandContext) -> ExtensionResult<Option<String>> {
-        context.model()
-    }
-    fn command_is_idle(&self, context: &Self::CommandContext) -> ExtensionResult<bool> {
-        context.is_idle()
-    }
-    fn command_signal(
-        &self,
-        context: &Self::CommandContext,
-    ) -> ExtensionResult<Option<Self::Signal>> {
-        context.signal()
-    }
-    fn command_abort(&self, context: &Self::CommandContext) -> ExtensionResult<()> {
-        context.abort()
-    }
-    fn command_has_pending_messages(
-        &self,
-        context: &Self::CommandContext,
-    ) -> ExtensionResult<bool> {
-        context.has_pending_messages()
-    }
-    fn command_shutdown(&self, context: &Self::CommandContext) -> ExtensionResult<()> {
-        context.shutdown()
-    }
-    fn command_get_context_usage(
-        &self,
-        context: &Self::CommandContext,
-    ) -> ExtensionResult<Option<crate::ContextUsage>> {
-        context.get_context_usage()
-    }
-    fn command_get_system_prompt(&self, context: &Self::CommandContext) -> ExtensionResult<String> {
-        context.get_system_prompt()
-    }
 
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
@@ -227,78 +197,7 @@ impl Imports for Generated {
 
     type Reader = host::ReadonlySessionManager;
     type Node = host::SessionTreeNode;
-    fn session_manager(&self, context: &Self::Context) -> ExtensionResult<Self::Reader> {
-        context.session_manager()
-    }
-    fn command_session_manager(
-        &self,
-        context: &Self::CommandContext,
-    ) -> ExtensionResult<Self::Reader> {
-        context.session_manager()
-    }
-    fn reader_get_cwd(&self, resource: &Self::Reader) -> ExtensionResult<String> {
-        resource.get_cwd()
-    }
-    fn reader_get_session_dir(&self, resource: &Self::Reader) -> ExtensionResult<String> {
-        resource.get_session_dir()
-    }
-    fn reader_get_session_id(&self, resource: &Self::Reader) -> ExtensionResult<String> {
-        resource.get_session_id()
-    }
-    fn reader_get_session_file(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
-        resource.get_session_file()
-    }
-    fn reader_get_leaf_id(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
-        resource.get_leaf_id()
-    }
-    fn reader_get_leaf_entry(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
-        resource.get_leaf_entry()
-    }
-    fn reader_get_entry(
-        &self,
-        resource: &Self::Reader,
-        id: &str,
-    ) -> ExtensionResult<Option<String>> {
-        resource.get_entry(id)
-    }
-    fn reader_get_label(
-        &self,
-        resource: &Self::Reader,
-        id: &str,
-    ) -> ExtensionResult<Option<String>> {
-        resource.get_label(id)
-    }
-    fn reader_get_branch(
-        &self,
-        resource: &Self::Reader,
-        from_id: Option<&str>,
-    ) -> ExtensionResult<String> {
-        resource.get_branch(from_id)
-    }
-    fn reader_get_header(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
-        resource.get_header()
-    }
-    fn reader_get_entries(&self, resource: &Self::Reader) -> ExtensionResult<String> {
-        resource.get_entries()
-    }
-    fn reader_get_tree(&self, resource: &Self::Reader) -> ExtensionResult<Vec<Self::Node>> {
-        resource.get_tree()
-    }
-    fn reader_get_session_name(&self, resource: &Self::Reader) -> ExtensionResult<Option<String>> {
-        resource.get_session_name()
-    }
-    fn node_entry(&self, resource: &Self::Node) -> ExtensionResult<String> {
-        resource.entry()
-    }
-    fn node_children(&self, resource: &Self::Node) -> ExtensionResult<Vec<Self::Node>> {
-        resource.children()
-    }
-    fn node_label(&self, resource: &Self::Node) -> ExtensionResult<Option<String>> {
-        resource.label()
-    }
-    fn node_label_timestamp(&self, resource: &Self::Node) -> ExtensionResult<Option<String>> {
-        resource.label_timestamp()
-    }
+
     fn new_callback(&self) -> (u32, host::Callback) {
         let handle = host::Callback::new();
         (handle.id(), handle)
@@ -351,14 +250,6 @@ impl Imports for Generated {
         signal.aborted()
     }
 
-    fn cwd(&self, context: &host::Context) -> ExtensionResult<String> {
-        context.cwd()
-    }
-
-    fn command_cwd(&self, context: &host::CommandContext) -> ExtensionResult<String> {
-        context.cwd()
-    }
-
     fn wait_for_idle<'a>(&'a self, context: &'a host::CommandContext) -> ExtensionFuture<'a, ()> {
         Box::pin(context.wait_for_idle())
     }
@@ -366,14 +257,11 @@ impl Imports for Generated {
     fn new_session<'a>(
         &'a self,
         context: &'a host::CommandContext,
-        data: NewSessionCommandData,
+        session_data: NewSessionCommandData,
+        setup: Option<&'a host::Callback>,
         with_session: Option<&'a host::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.new_session(data, with_session))
-    }
-
-    fn command(&self, context: &host::ReplacedSessionContext) -> host::CommandContext {
-        context.command()
+        Box::pin(context.new_session(session_data, setup, with_session))
     }
 }
 
@@ -382,6 +270,14 @@ impl Imports for Generated {
 pub struct Glue<E>(PhantomData<E>);
 
 impl<E: Extension> Guest for Glue<E> {
+    async fn invoke_setup(
+        handler: &host::Callback,
+        writer: host::SessionManager,
+    ) -> ExtensionResult<()> {
+        Exports::new(Generated)
+            .invoke_setup(handler.id(), writer)
+            .await
+    }
     fn invoke_compaction_complete(
         handler: &host::Callback,
         result: String,

@@ -66,3 +66,37 @@ where
     };
     alongside(main, helper).await
 }
+
+/// Completes the second admitted call before releasing the first call's named gate.
+pub async fn reversed<A, B, F, O>(
+    first: A,
+    second: B,
+    barriers: [(
+        tokio::sync::oneshot::Receiver<()>,
+        tokio::sync::oneshot::Sender<()>,
+    ); 2],
+    mut observe: O,
+) -> (A::Output, B::Output)
+where
+    A: Future,
+    B: Future,
+    O: FnMut(bool) -> F,
+    F: Future<Output = ()>,
+{
+    let [(entered_first, open_first), (entered_second, open_second)] = barriers;
+    let (done, finished) = tokio::sync::oneshot::channel();
+    let main = async { (first.await, finished.await.unwrap()) };
+    let helper = async {
+        entered_first.await.unwrap();
+        let control = async {
+            entered_second.await.unwrap();
+            observe(false).await;
+            open_second.send(()).unwrap();
+        };
+        let second = alongside(second, control).await;
+        observe(true).await;
+        open_first.send(()).unwrap();
+        assert!(done.send(second).is_ok());
+    };
+    alongside(main, helper).await
+}

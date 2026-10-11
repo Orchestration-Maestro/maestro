@@ -98,6 +98,7 @@ kinds! {
     }
     once {
         WithSession(WithSession),
+        Setup(crate::SetupSession),
         Tail(crate::ExtensionFuture<'static, ()>),
     }
 }

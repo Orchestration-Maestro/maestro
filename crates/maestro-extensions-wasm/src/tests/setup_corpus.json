@@ -1,0 +1,3014 @@
+[
+  {
+    "name": "payloads-18",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": false
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-19",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-20",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-21",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-22",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-23",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": false
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-24",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": false
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-25",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": false
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-26",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": null,
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": null
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-27",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "null"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "null"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-28",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "null"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "null"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-29",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "null"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "null"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-30",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "null"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "null"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-31",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": null,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": null
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-32",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": null,
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": null
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-33",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": null,
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": null
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-34",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": false,
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": false
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-35",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "false"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "false"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-36",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "false"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "false"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-37",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "false"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "false"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-38",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "false"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "false"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-39",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": false
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-40",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": false,
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": false
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-41",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": false,
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": false
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-42",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": 0,
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": 0
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-43",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "0"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "0"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-44",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "0"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "0"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-45",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "0"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "0"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-46",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "0"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "0"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-47",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": 0,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": 0
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-48",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": 0,
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": 0
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-49",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": 0,
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": 0
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-50",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": "",
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": ""
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-51",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"\""
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"\""
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-52",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"\""
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"\""
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-53",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"\""
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"\""
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-54",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "\"\""
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "\"\""
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-55",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "",
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": ""
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-56",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "",
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": ""
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-57",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "",
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": ""
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-58",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": [],
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": []
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-59",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "[]"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "[]"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-60",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "[]"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "[]"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-61",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "[]"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "[]"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-62",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "[]"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "[]"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-63",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": [],
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": []
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-64",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": [],
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": []
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-65",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": [],
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": []
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-66",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": {},
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": {}
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-67",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{}"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{}"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-68",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{}"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{}"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-69",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{}"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{}"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-70",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "{}"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "{}"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-71",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {},
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {}
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-72",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {},
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {}
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-73",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {},
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {}
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-74",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": {
+        "z": [
+          true,
+          null,
+          "Ω"
+        ],
+        "a": 2
+      },
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": {
+          "z": [
+            true,
+            null,
+            "Ω"
+          ],
+          "a": 2
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-75",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-76",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-77",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-78",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "{\"z\":[true,null,\"Ω\"],\"a\":2}"
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-79",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {
+        "z": [
+          true,
+          null,
+          "Ω"
+        ],
+        "a": 2
+      },
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {
+          "z": [
+            true,
+            null,
+            "Ω"
+          ],
+          "a": 2
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-80",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {
+        "z": [
+          true,
+          null,
+          "Ω"
+        ],
+        "a": 2
+      },
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {
+          "z": [
+            true,
+            null,
+            "Ω"
+          ],
+          "a": 2
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-81",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": {
+        "z": [
+          true,
+          null,
+          "Ω"
+        ],
+        "a": 2
+      },
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": {
+          "z": [
+            true,
+            null,
+            "Ω"
+          ],
+          "a": 2
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-82",
+    "input": {
+      "args": [
+        "kind Ω"
+      ],
+      "data": "null",
+      "method": "appendCustomEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_entry",
+    "args": [
+      "kind Ω",
+      {
+        "present": true,
+        "value": "null"
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-83",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"null\""
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"null\""
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-84",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"null\""
+      },
+      "fromHook": false,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"null\""
+        }
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-85",
+    "input": {
+      "compaction": {
+        "summary": "summary Ω",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 12.5,
+        "details": "\"null\""
+      },
+      "fromHook": true,
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "summary Ω",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 12.5,
+          "details": "\"null\""
+        }
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-86",
+    "input": {
+      "message": {
+        "customType": "kind Ω",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false,
+        "details": "\"null\""
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "kind Ω",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false,
+          "details": "\"null\""
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-87",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "null",
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": "null"
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-88",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "null",
+      "fromHook": false,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": "null"
+      },
+      false
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "payloads-89",
+    "input": {
+      "fromId": null,
+      "args": [
+        "summary Ω"
+      ],
+      "details": "null",
+      "fromHook": true,
+      "method": "branchWithSummary",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "branch_with_summary",
+    "args": [
+      null,
+      "summary Ω",
+      {
+        "present": true,
+        "value": "null"
+      },
+      true
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "numbers-90",
+    "input": {
+      "compaction": {
+        "summary": "number",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 0
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "number",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 0
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "numbers-91",
+    "input": {
+      "compaction": {
+        "summary": "number",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "number",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": -0.0
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "numbers-92",
+    "input": {
+      "compaction": {
+        "summary": "number",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 1.25
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "number",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 1.25
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "numbers-93",
+    "input": {
+      "compaction": {
+        "summary": "number",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": 0.30000000000000004
+      },
+      "method": "appendCompaction",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_compaction",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "summary": "number",
+          "firstKeptEntryId": "cut",
+          "tokensBefore": 0.30000000000000004
+        }
+      },
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-94",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": "",
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": "",
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-95",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": "",
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": "",
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-96",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": " text Ω ",
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": " text Ω ",
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-97",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": " text Ω ",
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": " text Ω ",
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-98",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [],
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [],
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-99",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [],
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [],
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-100",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-101",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-102",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          }
+        ],
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            }
+          ],
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-103",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          }
+        ],
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            }
+          ],
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-104",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": false
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": false
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "messageContent-105",
+    "input": {
+      "message": {
+        "customType": "content-kind",
+        "content": [
+          {
+            "type": "text",
+            "text": "z"
+          },
+          {
+            "type": "image",
+            "data": "YWJj",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "z"
+          }
+        ],
+        "display": true
+      },
+      "method": "appendCustomMessageEntry",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_custom_message_entry",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "customType": "content-kind",
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "YWJj",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ],
+          "display": true
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "labels-106",
+    "input": {
+      "args": [
+        "target"
+      ],
+      "method": "appendLabelChange",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_label_change",
+    "args": [
+      "target",
+      null
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "labels-107",
+    "input": {
+      "args": [
+        "target"
+      ],
+      "label": "",
+      "method": "appendLabelChange",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_label_change",
+    "args": [
+      "target",
+      ""
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "labels-108",
+    "input": {
+      "args": [
+        "target"
+      ],
+      "label": "  label﻿\nΩ",
+      "method": "appendLabelChange",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_label_change",
+    "args": [
+      "target",
+      "  label﻿\nΩ"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "names-109",
+    "input": {
+      "args": [
+        ""
+      ],
+      "method": "appendSessionInfo",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_session_info",
+    "args": [
+      ""
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "names-110",
+    "input": {
+      "args": [
+        "  literal  "
+      ],
+      "method": "appendSessionInfo",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_session_info",
+    "args": [
+      "  literal  "
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "names-111",
+    "input": {
+      "args": [
+        "﻿name"
+      ],
+      "method": "appendSessionInfo",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_session_info",
+    "args": [
+      "﻿name"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "names-112",
+    "input": {
+      "args": [
+        "name﻿"
+      ],
+      "method": "appendSessionInfo",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_session_info",
+    "args": [
+      "name﻿"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "names-113",
+    "input": {
+      "args": [
+        "line\nnext"
+      ],
+      "method": "appendSessionInfo",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_session_info",
+    "args": [
+      "line\nnext"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "plainWrites-114",
+    "input": {
+      "args": [
+        "custom-level Ω"
+      ],
+      "method": "appendThinkingLevelChange",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_thinking_level_change",
+    "args": [
+      "custom-level Ω"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "plainWrites-115",
+    "input": {
+      "args": [
+        "provider Ω",
+        "model/ID"
+      ],
+      "method": "appendModelChange",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_model_change",
+    "args": [
+      "provider Ω",
+      "model/ID"
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "plainWrites-116",
+    "input": {
+      "message": {
+        "role": "user",
+        "content": "literal Ω",
+        "timestamp": 0
+      },
+      "method": "appendMessage",
+      "control": {
+        "value": "entry-result"
+      }
+    },
+    "method": "append_message",
+    "args": [
+      {
+        "present": true,
+        "value": {
+          "role": "user",
+          "content": "literal Ω",
+          "timestamp": 0
+        }
+      }
+    ],
+    "answer": "entry-result"
+  },
+  {
+    "name": "persisted-120",
+    "input": {
+      "method": "isPersisted",
+      "control": {
+        "value": false
+      }
+    },
+    "method": "is_persisted",
+    "args": [],
+    "answer": false
+  },
+  {
+    "name": "persisted-121",
+    "input": {
+      "method": "isPersisted",
+      "control": {
+        "value": true
+      }
+    },
+    "method": "is_persisted",
+    "args": [],
+    "answer": true
+  },
+  {
+    "name": "branch-123",
+    "input": {
+      "args": [
+        "a"
+      ],
+      "method": "branch",
+      "control": {
+        "value": null
+      }
+    },
+    "method": "branch",
+    "args": [
+      "a"
+    ],
+    "answer": null
+  },
+  {
+    "name": "resetLeaf-124",
+    "input": {
+      "method": "resetLeaf",
+      "control": {
+        "value": null
+      }
+    },
+    "method": "reset_leaf",
+    "args": [],
+    "answer": null
+  }
+]

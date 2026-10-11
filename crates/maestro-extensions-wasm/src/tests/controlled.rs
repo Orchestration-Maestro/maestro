@@ -11,6 +11,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::observed::{Observed, Session, pause};
+use super::setup_host::document;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::component_adapter::{Exports, Imports};
 use crate::types::{ExtensionFuture, ExtensionResult};
@@ -85,6 +86,8 @@ pub struct Context {
 
 /// Command context lent to the extension.
 pub struct CommandContext {
+    /// Operation-bound setup reader, when supplied.
+    setup: Option<super::reader_host::Reader>,
     /// Captured model supplier.
     model: super::reader_host::Reader,
     /// The session the context is bound to.
@@ -95,6 +98,8 @@ pub struct CommandContext {
 
 /// Replacement context lent to the extension.
 pub struct ReplacedContext {
+    /// Operation-bound setup reader.
+    setup: Option<super::reader_host::Reader>,
     /// The session the context is bound to.
     session: Session,
     /// Marks the resource as lent.
@@ -134,6 +139,14 @@ impl Controlled {
         self.observed.borrow_mut()
     }
 
+    /// Owned writer fixture counted until its last alias is dropped.
+    pub fn writer(&self, name: &str) -> Reader {
+        Reader {
+            data: super::setup_host::reader(name),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+
     /// A cancellation signal reading `flag`.
     pub fn signal(&self, flag: &Flag) -> Signal {
         Signal {
@@ -164,6 +177,7 @@ impl Controlled {
     pub fn command_context(&self, cwd: &str) -> CommandContext {
         let model = self.observed.borrow().catalog.model.clone();
         CommandContext {
+            setup: None,
             model,
             session: Session::new(cwd),
             _lease: Lease::new(&self.observed),
@@ -173,16 +187,10 @@ impl Controlled {
     /// A replacement context in `cwd`.
     pub fn replaced_context(&self, cwd: &str) -> ReplacedContext {
         ReplacedContext {
+            setup: None,
             session: Session::new(cwd),
             _lease: Lease::new(&self.observed),
         }
-    }
-
-    /// Runs the continuation announced for an operation against a fresh replacement context.
-    async fn continue_with(&self, callback: &Callback, cwd: &str) -> ExtensionResult<()> {
-        Exports::new(self.clone())
-            .invoke_with_session(callback.id, self.replaced_context(cwd))
-            .await
     }
 }
 
@@ -370,9 +378,214 @@ impl Imports for Controlled {
         self.observed.borrow_mut().bus.tail(tail.id)
     }
 
+    fn writer_reader(&self, resource: &Reader) -> Reader {
+        Reader {
+            data: resource.data.clone(),
+            _lease: Lease::new(&self.observed),
+        }
+    }
+    fn writer_set_session_file(&self, resource: &Reader, path: &str) -> ExtensionResult<()> {
+        let _value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "set_session_file",
+            &serde_json::json!([path]),
+        )?;
+        Ok(())
+    }
+    fn writer_new_session(
+        &self,
+        resource: &Reader,
+        options: Option<&str>,
+    ) -> ExtensionResult<Option<String>> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "new_session",
+            &serde_json::json!([document(options)]),
+        )?;
+        Ok(value.as_str().map(str::to_owned))
+    }
+    fn writer_is_persisted(&self, resource: &Reader) -> ExtensionResult<bool> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "is_persisted",
+            &serde_json::json!([]),
+        )?;
+        Ok(value.as_bool().unwrap())
+    }
+    fn writer_get_children(&self, resource: &Reader, parent_id: &str) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "get_children",
+            &serde_json::json!([parent_id]),
+        )?;
+        let raw = self.observed.borrow().setup.raw.clone();
+        Ok(raw.unwrap_or_else(|| value.to_string()))
+    }
+    fn writer_build_session_context(&self, resource: &Reader) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "build_session_context",
+            &serde_json::json!([]),
+        )?;
+        let raw = self.observed.borrow().setup.raw.clone();
+        Ok(raw.unwrap_or_else(|| value.to_string()))
+    }
+    fn writer_append_message(&self, resource: &Reader, message: &str) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_message",
+            &serde_json::json!([document(Some(message))]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_thinking_level_change(
+        &self,
+        resource: &Reader,
+        level: &str,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_thinking_level_change",
+            &serde_json::json!([level]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_model_change(
+        &self,
+        resource: &Reader,
+        provider: &str,
+        model_id: &str,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_model_change",
+            &serde_json::json!([provider, model_id]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_compaction(
+        &self,
+        resource: &Reader,
+        compaction: &str,
+        from_hook: Option<bool>,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_compaction",
+            &serde_json::json!([document(Some(compaction)), from_hook]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_custom_entry(
+        &self,
+        resource: &Reader,
+        custom_type: &str,
+        data: Option<&str>,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_custom_entry",
+            &serde_json::json!([custom_type, document(data)]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_session_info(&self, resource: &Reader, name: &str) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_session_info",
+            &serde_json::json!([name]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_custom_message_entry(
+        &self,
+        resource: &Reader,
+        message: &str,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_custom_message_entry",
+            &serde_json::json!([document(Some(message))]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_append_label_change(
+        &self,
+        resource: &Reader,
+        target_id: &str,
+        label: Option<&str>,
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "append_label_change",
+            &serde_json::json!([target_id, label]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_branch(&self, resource: &Reader, from_id: &str) -> ExtensionResult<()> {
+        let _value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "branch",
+            &serde_json::json!([from_id]),
+        )?;
+        Ok(())
+    }
+    fn writer_reset_leaf(&self, resource: &Reader) -> ExtensionResult<()> {
+        let _value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "reset_leaf",
+            &serde_json::json!([]),
+        )?;
+        Ok(())
+    }
+    fn writer_branch_with_summary(
+        &self,
+        resource: &Reader,
+        from_id: Option<&str>,
+        summary: &str,
+        metadata: (Option<&str>, Option<bool>),
+    ) -> ExtensionResult<String> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "branch_with_summary",
+            &serde_json::json!([from_id, summary, document(metadata.0), metadata.1]),
+        )?;
+        Ok(value.as_str().unwrap().to_owned())
+    }
+    fn writer_create_branched_session(
+        &self,
+        resource: &Reader,
+        leaf_id: &str,
+    ) -> ExtensionResult<Option<String>> {
+        let value = super::setup_host::call(
+            &mut self.observed.borrow_mut(),
+            &resource.data,
+            "create_branched_session",
+            &serde_json::json!([leaf_id]),
+        )?;
+        Ok(value.as_str().map(str::to_owned))
+    }
+
     type Ui = Ui;
     type Registry = Reader;
     type Reader = Reader;
+    type Writer = Reader;
     type Node = Node;
     type Update = Update;
     type Callback = Callback;
@@ -388,8 +601,11 @@ impl Imports for Controlled {
             _lease: Lease::new(&self.observed),
         })
     }
-    fn command_session_manager(&self, _context: &CommandContext) -> ExtensionResult<Reader> {
-        let data = self.observed.borrow().readers.acquire()?;
+    fn command_session_manager(&self, context: &CommandContext) -> ExtensionResult<Reader> {
+        let data = context
+            .setup
+            .clone()
+            .map_or_else(|| self.observed.borrow().readers.acquire(), Ok)?;
         Ok(Reader {
             data,
             _lease: Lease::new(&self.observed),
@@ -815,18 +1031,51 @@ impl Imports for Controlled {
         &'a self,
         context: &'a CommandContext,
         data: NewSessionCommandData,
+        setup: Option<&'a Callback>,
         with_session: Option<&'a Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
         Box::pin(async move {
             let parent = data.parent_session.as_deref().unwrap_or("none");
+            let hold = super::setup_host::command_start(
+                &mut self.observed.borrow_mut(),
+                data.parent_session.as_deref(),
+                (setup.is_some(), with_session.is_some()),
+            );
+            pause(hold).await;
+            if let Some(error) = self.observed.borrow().setup.session_error.clone() {
+                return Err(error);
+            }
             self.observed
                 .borrow_mut()
                 .log(format!("new-session start parent={parent}"));
             if self.observed.borrow_mut().take_rejection() {
                 return Err("session rejected".to_owned());
             }
+            if self.observed.borrow().setup.cancelled {
+                return Ok(SessionChangeResult { cancelled: true });
+            }
+            if self.observed.borrow().setup.unused {
+                return Ok(SessionChangeResult { cancelled: false });
+            }
+            let bound = setup.map(|_| super::setup_host::reader(parent));
+            if let Some(callback) = setup {
+                let data = bound.clone().unwrap();
+                Exports::new(self.clone())
+                    .invoke_setup(
+                        callback.id,
+                        Reader {
+                            data,
+                            _lease: Lease::new(&self.observed),
+                        },
+                    )
+                    .await?;
+            }
             if let Some(callback) = with_session {
-                self.continue_with(callback, "/replacement").await?;
+                let mut replaced = self.replaced_context("/replacement");
+                replaced.setup = bound;
+                Exports::new(self.clone())
+                    .invoke_with_session(callback.id, replaced)
+                    .await?;
             }
             context.session.stale.set(true);
             self.observed
@@ -837,6 +1086,8 @@ impl Imports for Controlled {
     }
 
     fn command(&self, context: &ReplacedContext) -> CommandContext {
-        self.command_context(&context.session.cwd)
+        let mut command = self.command_context(&context.session.cwd);
+        command.setup = context.setup.clone();
+        command
     }
 }

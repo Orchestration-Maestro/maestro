@@ -26,9 +26,13 @@ pub struct Update;
 /// Host type of the ordinary context resource.
 pub struct Ordinary(Session, super::reader_host::Reader);
 /// Host type of the command context resource.
-pub struct Command(Session, super::reader_host::Reader);
+pub struct Command(
+    Session,
+    super::reader_host::Reader,
+    Option<super::reader_host::Reader>,
+);
 /// Host type of the replacement context resource.
-pub struct Replaced(Session);
+pub struct Replaced(Session, Option<super::reader_host::Reader>);
 
 /// Host state shared by every import.
 pub struct State {
@@ -39,7 +43,7 @@ pub struct State {
     /// What the host observed.
     pub observed: Observed,
     /// The guest, once instantiated, so imports can call back into it.
-    guest: Option<Guest>,
+    pub(super) guest: Option<Guest>,
 }
 
 impl WasiView for State {
@@ -280,9 +284,9 @@ macro_rules! context_methods {
 
         fn session_manager(
             &mut self,
-            _this: Resource<$kind>,
+            this: Resource<$kind>,
         ) -> wasmtime::Result<Result<Resource<super::reader_host::Reader>, String>> {
-            match self.observed.readers.acquire() {
+            match self.session_reader(&this)? {
                 Ok(reader) => Ok(Ok(self.push(reader)?)),
                 Err(error) => Ok(Err(error)),
             }
@@ -294,6 +298,33 @@ macro_rules! context_methods {
     };
 }
 
+/// Obtain an ordinary reader through the current host decision.
+trait BoundReader {
+    fn reader(&self) -> Option<super::reader_host::Reader>;
+}
+impl BoundReader for Ordinary {
+    fn reader(&self) -> Option<super::reader_host::Reader> {
+        None
+    }
+}
+impl BoundReader for Command {
+    fn reader(&self) -> Option<super::reader_host::Reader> {
+        self.2.clone()
+    }
+}
+impl State {
+    /// Use a captured setup reader rather than the latest host context.
+    fn session_reader<T: BoundReader + 'static>(
+        &self,
+        this: &Resource<T>,
+    ) -> wasmtime::Result<Result<super::reader_host::Reader, String>> {
+        Ok(self
+            .table
+            .get(this)?
+            .reader()
+            .map_or_else(|| self.observed.readers.acquire(), Ok))
+    }
+}
 impl host::HostContext for State {
     context_methods!(Ordinary);
 }
@@ -308,6 +339,7 @@ impl host::HostReplacedSessionContext for State {
         self.push(Command(
             Session::new(&cwd),
             self.observed.catalog.model.clone(),
+            self.table.get(&this)?.1.clone(),
         ))
     }
 
@@ -582,11 +614,37 @@ impl Imports {
                 .guest
                 .clone()
                 .ok_or_else(|| wasmtime::format_err!("no guest recorded"))?;
-            Ok((guest, state.push(Replaced(Session::new(cwd)))?))
+            Ok((guest, state.push(Replaced(Session::new(cwd), None))?))
         })?;
         guest
             .call_invoke_with_session(accessor, Resource::new_borrow(callback.rep()), replaced)
             .await
+    }
+}
+
+impl Imports {
+    /// Invoke continuation against the same reader supplied to setup.
+    async fn continue_bound(
+        accessor: &Accessor<State, Self>,
+        bound: Option<super::reader_host::Reader>,
+        with_session: Option<Resource<Identity>>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(
+            if let (Some(bound), Some(callback)) = (bound, with_session.as_ref()) {
+                let (guest, replaced) = accessor.with(|mut a| -> wasmtime::Result<_> {
+                    let state = a.get();
+                    Ok((
+                        state.guest.clone().unwrap(),
+                        state.push(Replaced(Session::new("/replacement"), Some(bound)))?,
+                    ))
+                })?;
+                guest
+                    .call_invoke_with_session(accessor, borrow(callback.rep()), replaced)
+                    .await?
+            } else {
+                Self::continue_with(accessor, with_session, "/replacement").await?
+            },
+        )
     }
 }
 
@@ -609,15 +667,50 @@ impl host::HostCommandContextWithStore<State> for Imports {
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
         data: NewSessionCommandData,
+        setup: Option<Resource<Identity>>,
         with_session: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
         let parent = data.parent_session.as_deref().unwrap_or("none");
+        let hold = accessor.with(|mut a| {
+            super::setup_host::command_start(
+                &mut a.get().observed,
+                data.parent_session.as_deref(),
+                (setup.is_some(), with_session.is_some()),
+            )
+        });
+        pause(hold).await;
+        if let Some(error) = accessor.with(|mut a| a.get().observed.setup.session_error.clone()) {
+            return Ok(Err(error));
+        }
         let line = format!("new-session start parent={parent}");
         accessor.with(|mut access| access.get().observed.log(line));
         if accessor.with(|mut access| access.get().observed.take_rejection()) {
             return Ok(Err("session rejected".to_owned()));
         }
-        if let Err(message) = Self::continue_with(accessor, with_session, "/replacement").await? {
+        if accessor.with(|mut a| a.get().observed.setup.cancelled) {
+            return Ok(Ok(SessionChangeResult { cancelled: true }));
+        }
+        if accessor.with(|mut a| a.get().observed.setup.unused) {
+            return Ok(Ok(SessionChangeResult { cancelled: false }));
+        }
+        let bound = setup.as_ref().map(|_| super::setup_host::reader(parent));
+        if let Some(callback) = setup {
+            let (guest, writer) = accessor.with(|mut a| -> wasmtime::Result<_> {
+                let state = a.get();
+                Ok((
+                    state.guest.clone().unwrap(),
+                    state.push(bound.clone().unwrap())?,
+                ))
+            })?;
+            if let Err(error) = guest
+                .call_invoke_setup(accessor, borrow(callback.rep()), writer)
+                .await?
+            {
+                return Ok(Err(error));
+            }
+        }
+        let continuation = Self::continue_bound(accessor, bound, with_session).await?;
+        if let Err(message) = continuation {
             return Ok(Err(message));
         }
         accessor.with(|mut access| -> wasmtime::Result<_> {
@@ -746,7 +839,9 @@ impl Harness {
 
     /// A fresh replacement context in `cwd`.
     pub fn replaced(&mut self, cwd: &str) -> wasmtime::Result<Resource<Replaced>> {
-        self.store.data_mut().push(Replaced(Session::new(cwd)))
+        self.store
+            .data_mut()
+            .push(Replaced(Session::new(cwd), None))
     }
 
     /// A fresh command context in `cwd`.
@@ -755,7 +850,7 @@ impl Harness {
             let model = self.store.data().observed.catalog.model.clone();
             self.store
                 .data_mut()
-                .push(Command(Session::new(cwd), model))
+                .push(Command(Session::new(cwd), model, None))
         }
     }
 

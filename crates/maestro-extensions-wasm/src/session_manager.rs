@@ -299,3 +299,97 @@ port! {
         fn label_timestamp() -> Option<String>;
     }
 }
+
+/// Plain parameters of a setup-created session.
+#[derive(Debug, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewSessionOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional caller-supplied session identity.
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional literal parent-session path.
+    pub parent_session: Option<String>,
+}
+/// Selected model identity in a built context.
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionContextModel {
+    /// Provider identity chosen by the host.
+    pub provider: String,
+    /// Model identity chosen by the host.
+    pub model_id: String,
+}
+/// Host-built conversation context.
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionContext {
+    /// Messages supplied by the host projection.
+    pub messages: Vec<AgentMessage>,
+    /// Open thinking-level string supplied by the host.
+    pub thinking_level: String,
+    /// Optional selected model identity.
+    pub model: Option<SessionContextModel>,
+}
+/// Writable setup capability, retaining its read view over the same session.
+#[derive(Clone)]
+pub struct SessionManager {
+    /// Retained writable host capability.
+    port: Rc<dyn SessionWriterPort>,
+    /// Retained reader over the same host session.
+    reader: ReadonlySessionManager,
+}
+impl SessionManager {
+    /// Retains the writer and its read view over the same host session.
+    pub fn new(port: Rc<dyn SessionWriterPort>) -> Self {
+        let reader = port.reader();
+        Self { port, reader }
+    }
+}
+impl std::ops::Deref for SessionManager {
+    type Target = ReadonlySessionManager;
+    fn deref(&self) -> &Self::Target {
+        &self.reader
+    }
+}
+port! {
+ /// Setup-only writes to a supplied session.
+ SessionWriterPort for SessionManager via port {
+ /// Forwards set session file to the host.
+ fn set_session_file(path: &str) -> ();
+ /// Forwards new session to the host.
+ fn new_session(options: Option<NewSessionOptions>) -> Option<String>;
+ /// Forwards is persisted to the host.
+ fn is_persisted() -> bool;
+ /// Forwards get children to the host.
+ fn get_children(parent_id: &str) -> Vec<SessionEntry>;
+ /// Forwards build session context to the host.
+ fn build_session_context() -> SessionContext;
+ /// Forwards append message to the host.
+ fn append_message(message: AgentMessage) -> String;
+ /// Forwards append thinking level change to the host.
+ fn append_thinking_level_change(level: &str) -> String;
+ /// Forwards append model change to the host.
+ fn append_model_change(provider: &str, model_id: &str) -> String;
+ /// Forwards append compaction to the host.
+ fn append_compaction(compaction: crate::CompactionResult, from_hook: Option<bool>) -> String;
+ /// Forwards append custom entry to the host.
+ fn append_custom_entry(custom_type: &str, data: Option<serde_json::Value>) -> String;
+ /// Forwards append session info to the host.
+ fn append_session_info(name: &str) -> String;
+ /// Forwards append custom message entry to the host.
+ fn append_custom_message_entry(message: crate::CustomMessageInput) -> String;
+ /// Forwards append label change to the host.
+ fn append_label_change(target_id: &str, label: Option<&str>) -> String;
+ /// Forwards branch to the host.
+ fn branch(from_id: &str) -> ();
+ /// Forwards reset leaf to the host.
+ fn reset_leaf() -> ();
+ /// Forwards branch with summary to the host.
+ fn branch_with_summary(from_id: Option<&str>, summary: &str, details: Option<serde_json::Value>, from_hook: Option<bool>) -> String;
+ /// Forwards create branched session to the host.
+ fn create_branched_session(leaf_id: &str) -> Option<String>;
+ }
+ infallible { /// Acquires a read view bound to the same session.
+ fn reader() -> ReadonlySessionManager; }
+}

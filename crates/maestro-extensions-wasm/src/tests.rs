@@ -61,6 +61,8 @@ mod session_events;
 mod session_reader;
 mod session_records;
 mod session_summary;
+pub(crate) mod setup_host;
+mod setup_sessions;
 mod shared_records;
 mod stream_events;
 mod tool_callbacks;
@@ -325,6 +327,8 @@ struct Contract {
     registration_signatures: Vec<Signature>,
     /// Signatures of the new retained-capability and usage routes.
     catalog_signatures: Vec<Vec<String>>,
+    /// Writable reader acquisition and operation-scoped callback signatures.
+    setup_signatures: Vec<Signature>,
 }
 
 /// Reads the contract of the built component.
@@ -365,6 +369,14 @@ fn contract() -> Result<Contract, String> {
             signature(&engine, &host, name, &resources(&engine, &host)).map(|(_, result)| result)
         })
         .collect::<Result<_, _>>()?,
+        setup_signatures: [
+            (&host, "[method]session-manager.reader"),
+            (&host, "[method]command-context.new-session"),
+            (&guest, "invoke-setup"),
+        ]
+        .into_iter()
+        .map(|(interface, name)| signature(&engine, interface, name, &resources(&engine, &host)))
+        .collect::<Result<_, _>>()?,
         action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
         event_params,
@@ -402,6 +414,7 @@ fn assert_reader_imports(contract: &Contract) {
         .filter(|(name, _)| {
             name.starts_with("[method]")
                 && (name.contains("session-manager") || name.contains("session-tree-node"))
+                && !name.starts_with("[method]session-manager.")
         })
         .collect();
     assert!(methods.iter().all(|(_, asynchronous)| !asynchronous));
@@ -411,6 +424,7 @@ fn assert_reader_imports(contract: &Contract) {
             .filter(|name| {
                 name.starts_with("[method]")
                     && (name.contains("session-manager") || name.contains("session-tree-node"))
+                    && !name.starts_with("[method]session-manager.")
             })
             .collect::<Vec<_>>(),
         [
@@ -491,6 +505,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "invoke-command",
             "invoke-completion",
             "invoke-event",
+            "invoke-setup",
             "invoke-shortcut",
             "invoke-tail",
             "invoke-tool",
@@ -515,6 +530,7 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_catalog_imports(&contract);
     assert_registration_contract(&contract);
     assert_action_contract(&contract);
+    assert_setup_contract(&contract);
     assert_eq!(
         names(&contract.imports, true),
         [
@@ -693,4 +709,61 @@ fn expected_action_signatures() -> [Signature; 7] {
             results.into_iter().map(str::to_owned).collect::<Vec<_>>(),
         )
     })
+}
+
+/// Writer methods remain synchronous while setup crosses the native async callback seam.
+fn assert_setup_contract(contract: &Contract) {
+    let methods: Vec<_> = names(&contract.imports, false)
+        .into_iter()
+        .filter_map(|n| n.strip_prefix("[method]session-manager."))
+        .collect();
+    assert_eq!(
+        methods,
+        [
+            "append-compaction",
+            "append-custom-entry",
+            "append-custom-message-entry",
+            "append-label-change",
+            "append-message",
+            "append-model-change",
+            "append-session-info",
+            "append-thinking-level-change",
+            "branch",
+            "branch-with-summary",
+            "build-session-context",
+            "create-branched-session",
+            "get-children",
+            "is-persisted",
+            "new-session",
+            "reader",
+            "reset-leaf",
+            "set-session-file"
+        ]
+    );
+    let expected = [
+        (
+            vec!["self: borrow<session-manager>"],
+            vec!["own<readonly-session-manager>"],
+        ),
+        (
+            vec![
+                "self: borrow<command-context>",
+                "data: record {parent-session: option<string>}",
+                "setup: option<borrow<callback>>",
+                "with-session: option<borrow<callback>>",
+            ],
+            vec!["result<record {cancelled: bool}, string>"],
+        ),
+        (
+            vec!["handler: borrow<callback>", "writer: own<session-manager>"],
+            vec!["result<_, string>"],
+        ),
+    ]
+    .map(|(p, r)| {
+        (
+            p.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+            r.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+        )
+    });
+    assert_eq!(contract.setup_signatures, expected);
 }
