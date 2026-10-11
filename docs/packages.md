@@ -72,7 +72,8 @@ See [configured sources](package-sources.md) for source parsing and local path r
 
 Missing remote sources are acquired without install progress or settings edits.
 A pinned npm source is also acquired when its installed nonempty version string
-differs literally from the authored suffix; tags and ranges are not resolved.
+differs literally from the authored suffix. Pin comparison does not resolve tags or
+ranges; acquisition forwards the authored spec to the configured package command.
 Offline acquisition skips that source, including mismatched installed pins.
 Existing unpinned npm sources are collected without a version probe.
 Acquisition errors stop resolution before later sources.

@@ -98,13 +98,14 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.operations
             .read_file(&manifest)
             .ok()
-            .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
-            .and_then(|value| {
-                value
-                    .as_object()?
-                    .get("version")?
-                    .as_str()
-                    .map(str::to_owned)
+            .and_then(|text| {
+                serde_json::from_str::<
+                    std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
+                >(&text)
+                .ok()
+            })
+            .and_then(|mut fields| {
+                serde_json::from_str::<String>(fields.remove("version")?.get()).ok()
             })
             .filter(|version| !version.is_empty())
     }

@@ -43,7 +43,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             Source::Local(path) => self.resolve_local(path, &self.options.cwd),
         }
     }
-    /// Selects the prepared npm root for project or temporary installation.
+    /// Selects the npm root path for project or temporary installation.
     pub(super) fn npm_root(&self, scope: SourceScope) -> String {
         if scope == SourceScope::Temporary {
             self.temporary_dir("npm", "")
