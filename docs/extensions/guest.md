@@ -6,7 +6,7 @@ canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model and resource records.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
-event channels, live context observations, model catalog queries, ordinary actions and compaction notifications.
+event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.
 
 ## Build a component
 
@@ -38,7 +38,8 @@ so the host has seen it before the
 factory's next statement runs. Whether and when the host treats the extension as active is
 the host's decision; the `start` export resolves when the factory's future completes. `on`
 forwards each handler under its event name, including names the host does not define, and
-`register_command` forwards a command and `register_tool` forwards one tool definition. A rejected registration returns the host's message and
+`register_command` forwards a command, `register_tool` forwards one tool definition and
+`register_message_renderer` forwards a custom message renderer. A rejected registration returns the host's message and
 adds no callbacks to the guest table.
 
 Releasing a callback table entry removes that registration's ownership. Independent authored
@@ -522,3 +523,19 @@ For cancellation instead, return a `SessionBeforeCompactResult` with
 handler. Do not put a summary return after an unconditional cancellation return.
 The tests invoke the summary handler on empty, mixed-role and repeated inputs,
 ASCII boundaries, emoji and combining marks through both adapters.
+
+## Custom message components
+
+`register_message_renderer` forwards the literal custom type and its `MessageRenderer` to
+the host. The callback receives a complete `CustomMessage`, `MessageRenderOptions.expanded`,
+an owned opaque `Theme` and a borrowed `CallbackEmitter`. See [the data boundary](#events-and-results)
+for shared records and [event channels](#event-channels) for emission.
+
+Returning `None` leaves fallback selection to the host; returning a `Component` retains
+its authored `ComponentView`. Cloned components share that view. Its synchronous `render`,
+`handle_input`, `wants_key_release` and `invalidate` methods forward to the retained view;
+input defaults to a no-op and the release preference defaults to false. Rendering receives
+the supplied width; successful rendering returns the author's ordered lines. Returned errors remain errors.
+
+Cloned themes retain the supplied host owner independently of renderer registration.
+Theme is currently opaque: styling methods and widget composition are not exposed here.

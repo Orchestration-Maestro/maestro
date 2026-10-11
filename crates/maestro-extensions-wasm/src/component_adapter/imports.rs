@@ -212,6 +212,14 @@ pub trait Imports: Clone + 'static {
 
     /// Owner handle of a host-owned callback identity.
     type Callback: 'static;
+    /// Independently retained theme owner.
+    type Theme: 'static;
+    /// Registers a renderer against its host callback identity.
+    fn register_message_renderer(
+        &self,
+        custom_type: &str,
+        handler: &Self::Callback,
+    ) -> ExtensionResult<()>;
     /// Host-owned progress resource.
     type Update: 'static;
     /// Host-owned cancellation flag.

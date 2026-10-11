@@ -18,7 +18,10 @@ impl Drop for Subscription {
     }
 }
 /// Invocation-local emitter resource.
-pub struct Emitter;
+pub struct Emitter {
+    /// Invocation identity supplied by the renderer driver.
+    pub key: usize,
+}
 /// Shared bus observations and controlled failures.
 #[derive(Default)]
 pub struct Bank {
@@ -26,6 +29,8 @@ pub struct Bank {
     pub subscription_drops: Arc<AtomicUsize>,
     /// Ordinary and callback emissions.
     pub emissions: Vec<(String, Value)>,
+    /// Actual emitter resource and attempted payload, including rejected emission.
+    pub renderer_emissions: Vec<(usize, String, Value)>,
     /// Registered channel and callback pairs.
     pub listeners: Vec<(String, u32)>,
     /// Announced independent tails.

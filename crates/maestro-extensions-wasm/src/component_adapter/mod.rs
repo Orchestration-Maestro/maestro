@@ -10,6 +10,7 @@
 mod callbacks;
 mod compaction;
 mod event_bus;
+pub(crate) mod renderers;
 #[cfg(test)]
 pub(crate) use event_bus::events;
 mod contexts;

@@ -1,0 +1,885 @@
+[
+  {
+    "name": "complete",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "role-missing",
+    "raw": "{\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "role-null",
+    "raw": "{\"role\":null,\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "role-wrong",
+    "raw": "{\"role\":{\"bad\":true},\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "customType-missing",
+    "raw": "{\"role\":\"custom\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "missing field `customType` at line 1 column 63"
+    }
+  },
+  {
+    "name": "customType-null",
+    "raw": "{\"role\":\"custom\",\"customType\":null,\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "invalid type: null, expected a string at line 1 column 34"
+    }
+  },
+  {
+    "name": "customType-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":{\"bad\":true},\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "invalid type: map, expected a string at line 1 column 30"
+    }
+  },
+  {
+    "name": "content-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "missing field `content` at line 1 column 66"
+    }
+  },
+  {
+    "name": "content-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":null,\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 48"
+    }
+  },
+  {
+    "name": "content-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":{\"bad\":true},\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 56"
+    }
+  },
+  {
+    "name": "display-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"timestamp\":1.25}",
+    "native": {
+      "error": "missing field `display` at line 1 column 65"
+    }
+  },
+  {
+    "name": "display-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":null,\"timestamp\":1.25}",
+    "native": {
+      "error": "invalid type: null, expected a boolean at line 1 column 62"
+    }
+  },
+  {
+    "name": "display-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":{\"bad\":true},\"timestamp\":1.25}",
+    "native": {
+      "error": "invalid type: map, expected a boolean at line 1 column 58"
+    }
+  },
+  {
+    "name": "timestamp-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true}",
+    "native": {
+      "error": "missing field `timestamp` at line 1 column 63"
+    }
+  },
+  {
+    "name": "timestamp-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":null}",
+    "native": {
+      "error": "invalid type: null, expected f64 at line 1 column 79"
+    }
+  },
+  {
+    "name": "timestamp-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":{\"bad\":true}}",
+    "native": {
+      "error": "invalid type: map, expected f64 at line 1 column 75"
+    }
+  },
+  {
+    "name": "details-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":null}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": null,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"null\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"null\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "null",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"false\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"false\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "false",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"[]\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"[]\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "[]",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"{\\\"z\\\":1,\\\"a\\\":2}\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"{\\\"z\\\":1,\\\"a\\\":2}\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "{\"z\":1,\"a\":2}",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-\"\\u96ea\"",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":\"雪\"}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": "雪",
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "details-false",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":false}",
+    "native": {
+      "error": "invalid type: boolean `false`, expected a string at line 1 column 95"
+    }
+  },
+  {
+    "name": "details-0",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":0}",
+    "native": {
+      "error": "invalid type: integer `0`, expected a string at line 1 column 91"
+    }
+  },
+  {
+    "name": "details-[]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":[]}",
+    "native": {
+      "error": "invalid type: sequence, expected a string at line 1 column 90"
+    }
+  },
+  {
+    "name": "details-{}",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"details\":{}}",
+    "native": {
+      "error": "invalid type: map, expected a string at line 1 column 90"
+    }
+  },
+  {
+    "name": "content-[]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"text\", \"text\": \"a\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"a\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "a"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"image\", \"data\": \"d\", \"mimeType\": \"x\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"text\", \"text\": \"x\"}, {\"type\": \"image\", \"data\": \"d\", \"mimeType\": \"x\"}, {\"type\": \"text\", \"text\": \"x\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\"},{\"type\":\"image\",\"data\":\"d\",\"mimeType\":\"x\"},{\"type\":\"text\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          },
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "x"
+          },
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "content-{\"type\": \"text\", \"text\": \"x\"}",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":{\"type\":\"text\",\"text\":\"x\"},\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 70"
+    }
+  },
+  {
+    "name": "content-[[\"text\", \"x\"]]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[[\"text\",\"x\"]],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"other\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"other\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 62"
+    }
+  },
+  {
+    "name": "content-[{\"type\": {\"text\": null}, \"text\": \"x\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":{\"text\":null},\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 79"
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"text\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 61"
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"text\", \"text\": null}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":null}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 73"
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"image\", \"data\": \"d\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 73"
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"image\", \"data\": 0, \"mimeType\": \"x\"}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":0,\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 86"
+    }
+  },
+  {
+    "name": "content-[{\"type\": \"text\", \"text\": \"x\", \"future\": {\"deep\": [1, 2]}}]",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"future\":{\"deep\":[1,2]}}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-type-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 58"
+    }
+  },
+  {
+    "name": "text-type-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":null,\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 70"
+    }
+  },
+  {
+    "name": "text-type-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":{\"bad\":true},\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 78"
+    }
+  },
+  {
+    "name": "text-type-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 68"
+    }
+  },
+  {
+    "name": "text-type-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"雪\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 71"
+    }
+  },
+  {
+    "name": "text-text-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":{\"bad\":true}}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 81"
+    }
+  },
+  {
+    "name": "text-text-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-text-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"雪\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "雪"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-textSignature-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-textSignature-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"textSignature\":null}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-textSignature-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"textSignature\":{\"bad\":true}}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 101"
+    }
+  },
+  {
+    "name": "text-textSignature-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"textSignature\":\"\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x",
+            "textSignature": ""
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "text-textSignature-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"text\",\"text\":\"x\",\"textSignature\":\"雪\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "text",
+            "text": "x",
+            "textSignature": "雪"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "image-type-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 73"
+    }
+  },
+  {
+    "name": "image-type-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":null,\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 85"
+    }
+  },
+  {
+    "name": "image-type-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":{\"bad\":true},\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 93"
+    }
+  },
+  {
+    "name": "image-type-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"\",\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 83"
+    }
+  },
+  {
+    "name": "image-type-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"雪\",\"data\":\"d\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 86"
+    }
+  },
+  {
+    "name": "image-data-missing",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 77"
+    }
+  },
+  {
+    "name": "image-data-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":null,\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 89"
+    }
+  },
+  {
+    "name": "image-data-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":{\"bad\":true},\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 97"
+    }
+  },
+  {
+    "name": "image-data-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "image",
+            "data": "",
+            "mimeType": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "image-data-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"雪\",\"mimeType\":\"x\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "image",
+            "data": "雪",
+            "mimeType": "x"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "image-mimeType-null",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\",\"mimeType\":null}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 89"
+    }
+  },
+  {
+    "name": "image-mimeType-wrong",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\",\"mimeType\":{\"bad\":true}}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "error": "data did not match any variant of untagged enum UserContent at line 1 column 97"
+    }
+  },
+  {
+    "name": "image-mimeType-empty",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\",\"mimeType\":\"\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": ""
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "image-mimeType-unicode",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":[{\"type\":\"image\",\"data\":\"d\",\"mimeType\":\"雪\"}],\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": [
+          {
+            "type": "image",
+            "data": "d",
+            "mimeType": "雪"
+          }
+        ],
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "unknown-members",
+    "raw": "{\"role\":\"custom\",\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25,\"future\":{\"nested\":[1,{\"a\":true}]}}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "record-array",
+    "raw": "[\"custom\",\"z\",\"x\",true,1.25]",
+    "native": {
+      "error": "invalid type: string \"x\", expected a boolean at line 1 column 17"
+    }
+  },
+  {
+    "name": "record-positional-admitted",
+    "raw": "[\"z\",\"x\",true,null,1.25]",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "details": null,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "record-positional-too-short",
+    "raw": "[\"z\",\"x\",true]",
+    "native": {
+      "error": "invalid length 4, expected struct CustomMessage with 5 elements at line 1 column 14"
+    }
+  },
+  {
+    "name": "record-positional-extra",
+    "raw": "[\"z\",\"x\",true,null,1.25,0]",
+    "native": {
+      "error": "trailing characters at line 1 column 25"
+    }
+  },
+  {
+    "name": "object-role",
+    "raw": "{\"role\":{\"custom\":null},\"customType\":\"z\",\"content\":\"x\",\"display\":true,\"timestamp\":1.25}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "z",
+        "content": "x",
+        "display": true,
+        "timestamp": 1.25
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "raw-73",
+    "raw": "{\"role\":\"custom\",\"customType\":\"x\",\"content\":\"a\",\"display\":false,\"timestamp\":-0}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "x",
+        "content": "a",
+        "display": false,
+        "timestamp": -0.0
+      },
+      "negative_zero": true
+    }
+  },
+  {
+    "name": "raw-74",
+    "raw": "{\"role\":\"custom\",\"customType\":\"x\",\"content\":\"a\",\"display\":false,\"timestamp\":1e400}",
+    "native": {
+      "error": "number out of range at line 1 column 81"
+    }
+  },
+  {
+    "name": "raw-75",
+    "raw": "{\"role\":\"custom\",\"customType\":\"wrong\",\"customType\":\"right\",\"content\":\"a\",\"display\":true,\"timestamp\":0}",
+    "native": {
+      "error": "duplicate field `customType` at line 1 column 50"
+    }
+  },
+  {
+    "name": "raw-76",
+    "raw": "{\"role\":\"custom\",\"customType\":\"x\",\"content\":\"a\",\"display\":true,\"timestamp\":0,\"details\":null,\"details\":\"last\"}",
+    "native": {
+      "error": "duplicate field `details` at line 1 column 101"
+    }
+  },
+  {
+    "name": "raw-77",
+    "raw": "{\"role\":\"custom\",\"customType\":\"x\",\"content\":\"a\",\"display\":true,\"timestamp\":0,\"future\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "x",
+        "content": "a",
+        "display": true,
+        "timestamp": 0.0
+      },
+      "negative_zero": false
+    }
+  },
+  {
+    "name": "raw-78",
+    "raw": "{\"role\":\"custom\",\"customType\":\"x\",\"content\":\"a\",\"display\":true,\"timestamp\":0,\"future\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "native": {
+      "ok": {
+        "role": "custom",
+        "customType": "x",
+        "content": "a",
+        "display": true,
+        "timestamp": 0.0
+      },
+      "negative_zero": false
+    }
+  }
+]

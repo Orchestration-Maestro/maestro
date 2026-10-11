@@ -53,6 +53,8 @@ mod registration_callbacks;
 mod registration_corpus;
 mod registration_fixture;
 mod registration_host;
+mod renderer_callbacks;
+pub(crate) mod renderer_host;
 mod replacement_commands;
 pub(crate) mod replacement_host;
 mod scenario;
@@ -232,6 +234,7 @@ fn spell(ty: &Type, resources: &[(String, ResourceType)]) -> String {
     };
     let optional = |ty: Option<Type>| ty.map_or_else(|| "_".to_owned(), |ty| spell(&ty, resources));
     match ty {
+        Type::U32 => "u32".to_owned(),
         Type::String => "string".to_owned(),
         Type::Float64 => "f64".to_owned(),
         Type::Bool => "bool".to_owned(),
@@ -327,6 +330,8 @@ struct Contract {
     action_signatures: Vec<Signature>,
     /// Typed registration imports and callback exports.
     registration_signatures: Vec<Signature>,
+    /// Renderer registration, invocation and exported resource methods.
+    renderer_signatures: Vec<Signature>,
     /// Signatures of the new retained-capability and usage routes.
     catalog_signatures: Vec<Vec<String>>,
     /// Writable reader acquisition and operation-scoped callback signatures.
@@ -384,6 +389,7 @@ fn contract() -> Result<Contract, String> {
         replacement_signatures: replacement_signatures(&engine, &host)?,
         action_signatures: action_signatures(&engine, &host, &guest)?,
         registration_signatures: registration_signatures(&engine, &host, &guest)?,
+        renderer_signatures: renderer_signatures(&engine, &host, &guest)?,
         event_params,
         event_results,
     })
@@ -522,14 +528,20 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_eq!(
         names(&contract.exports, false),
         [
+            "[method]component-view.handle-input",
+            "[method]component-view.invalidate",
+            "[method]component-view.render",
+            "[method]component-view.wants-key-release",
             "invoke-compaction-complete",
             "invoke-compaction-error",
             "invoke-listener",
             "invoke-prepare",
+            "invoke-renderer",
             "release"
         ],
-        "preparation and release stay synchronous"
+        "component methods, preparation and release stay synchronous"
     );
+    assert_renderer_contract(&contract);
     assert_typed_event_export(&contract);
     assert_reader_imports(&contract);
     assert_catalog_imports(&contract);
@@ -840,4 +852,87 @@ fn assert_replacement_contract(contract: &Contract) {
         assert_eq!(actual_params, &expected);
         assert_eq!(actual_results, if index < 3 { &change } else { &unit });
     }
+}
+
+/// Reads imported and exported resource signatures using their declared ownership direction.
+fn renderer_signatures(
+    engine: &wasmtime::Engine,
+    host: &ComponentInstance,
+    guest: &ComponentInstance,
+) -> Result<Vec<Signature>, String> {
+    let mut declared = resources(engine, host);
+    declared.extend(resources(engine, guest));
+    [
+        (host, "register-message-renderer"),
+        (guest, "invoke-renderer"),
+        (guest, "[method]component-view.render"),
+        (guest, "[method]component-view.handle-input"),
+        (guest, "[method]component-view.wants-key-release"),
+        (guest, "[method]component-view.invalidate"),
+    ]
+    .into_iter()
+    .map(|(interface, name)| signature(engine, interface, name, &declared))
+    .collect()
+}
+/// Checks actual guest resource methods, not just the free-function inventory.
+fn assert_renderer_contract(contract: &Contract) {
+    let expected = [
+        (
+            vec!["custom-type: string", "handler: borrow<callback>"],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec![
+                "handler: borrow<callback>",
+                "request: record {message: string, expanded: bool, theme: own<theme>}",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<option<own<component-view>>, string>"],
+        ),
+        (
+            vec![
+                "self: borrow<component-view>",
+                "width: u32",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<list<string>, string>"],
+        ),
+        (
+            vec![
+                "self: borrow<component-view>",
+                "data: string",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<_, string>"],
+        ),
+        (
+            vec![
+                "self: borrow<component-view>",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<bool, string>"],
+        ),
+        (
+            vec![
+                "self: borrow<component-view>",
+                "emitter: borrow<callback-emitter>",
+            ],
+            vec!["result<_, string>"],
+        ),
+    ];
+    let expected = expected
+        .into_iter()
+        .map(|(params, results)| {
+            (
+                params.into_iter().map(str::to_owned).collect(),
+                results.into_iter().map(str::to_owned).collect(),
+            )
+        })
+        .collect::<Vec<Signature>>();
+    assert_eq!(contract.renderer_signatures, expected);
+    assert!(
+        contract
+            .imports
+            .contains(&("register-message-renderer".into(), false))
+    );
 }

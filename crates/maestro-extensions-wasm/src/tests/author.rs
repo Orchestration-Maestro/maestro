@@ -31,6 +31,8 @@ mod registration_author;
 #[cfg(target_arch = "wasm32")]
 #[path = "registration_fixture.rs"]
 mod registration_fixture;
+#[path = "renderer_author.rs"]
+mod renderer_author;
 #[path = "replacement_author.rs"]
 mod replacement_author;
 #[path = "setup_author.rs"]
@@ -413,7 +415,7 @@ fn register_probe(api: &ExtensionAPI) -> Result<(), String> {
                     if let Some(request) = args.strip_prefix("bus ") {
                         return bus_author::run(&api, request).await;
                     }
-                    if let Some(result) = registration_author::dispatch(&api, &args, &ctx) {
+                    if let Some(result) = capture_registration(&api, &args, &ctx) {
                         return result;
                     }
                     if args == "catalog" {
@@ -882,4 +884,13 @@ fn register_helpers(api: &ExtensionAPI, args: &str) -> Option<ExtensionResult<()
         "replacement-register" => Some(replacement_author::register(api)),
         _ => None,
     }
+}
+
+/// Routes independently named capture registrations without altering earlier branches.
+fn capture_registration(
+    api: &ExtensionAPI,
+    args: &str,
+    ctx: &ExtensionCommandContext,
+) -> Option<Result<(), String>> {
+    renderer_author::dispatch(api, args).or_else(|| registration_author::dispatch(api, args, ctx))
 }

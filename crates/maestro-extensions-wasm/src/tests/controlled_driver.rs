@@ -24,6 +24,10 @@ impl Extension for Author {
 pub struct ControlledDriver {
     /// The host the extension registers with.
     host: Controlled,
+    /// Independently returned component resources.
+    /// Next invocation-local emitter identity.
+    emitter_key: usize,
+    components: Vec<Option<crate::Component>>,
     /// The flags lent so far, by handle.
     flags: Vec<Flag>,
     /// The flag of the previous compaction, which the driver cancels before the next one.
@@ -35,6 +39,8 @@ impl ControlledDriver {
     pub fn new() -> Self {
         Self {
             host: Controlled::default(),
+            components: Vec::new(),
+            emitter_key: 0,
             flags: Vec::new(),
             previous: None,
         }
@@ -94,6 +100,58 @@ impl Drop for ControlledDriver {
 }
 
 impl Driver for ControlledDriver {
+    fn renderer_emissions(&self) -> Vec<(usize, String, serde_json::Value)> {
+        self.host.observed().bus.renderer_emissions.clone()
+    }
+    fn renderer(
+        &mut self,
+        handler: u32,
+        message: &str,
+        expanded: bool,
+        theme: &str,
+    ) -> impl Future<Output = Result<Option<usize>, String>> {
+        self.emitter_key += 1;
+        let result = self
+            .exports()
+            .invoke_renderer(
+                handler,
+                crate::component_adapter::renderers::RenderRequest {
+                    message,
+                    expanded,
+                    theme: self.host.theme(theme),
+                    emitter: &super::bus_host::Emitter {
+                        key: self.emitter_key,
+                    },
+                },
+            )
+            .map(|component| {
+                component.map(|component| {
+                    let id = self.components.len();
+                    self.components.push(Some(component));
+                    id
+                })
+            });
+        std::future::ready(result)
+    }
+    fn component(
+        &mut self,
+        id: usize,
+        call: super::renderer_host::Call<'_>,
+    ) -> impl Future<Output = Result<super::renderer_host::Reply, String>> {
+        self.emitter_key += 1;
+        std::future::ready(
+            self.components[id]
+                .as_ref()
+                .ok_or_else(|| "component absent".into())
+                .and_then(|view| {
+                    super::renderer_host::invoke(view, call, &self.host, self.emitter_key)
+                }),
+        )
+    }
+    fn drop_component(&mut self, id: usize) -> impl Future<Output = Result<(), String>> {
+        drop(self.components[id].take());
+        std::future::ready(Ok(()))
+    }
     fn repeat_release(&mut self, handler: u32) -> impl Future<Output = Result<(), String>> {
         release(handler);
         std::future::ready(Ok(()))
@@ -106,13 +164,16 @@ impl Driver for ControlledDriver {
         complete: bool,
     ) -> impl Future<Output = Result<(), String>> {
         std::future::ready(if complete {
-            self.exports()
-                .invoke_compaction_complete(handler, payload, &super::bus_host::Emitter)
+            self.exports().invoke_compaction_complete(
+                handler,
+                payload,
+                &super::bus_host::Emitter { key: 0 },
+            )
         } else {
             self.exports().invoke_compaction_error(
                 handler,
                 payload.to_owned(),
-                &super::bus_host::Emitter,
+                &super::bus_host::Emitter { key: 0 },
             )
         })
     }
@@ -179,10 +240,11 @@ impl Driver for ControlledDriver {
         handler: u32,
         args: &str,
     ) -> impl Future<Output = Result<String, String>> {
-        std::future::ready(
-            self.exports()
-                .invoke_prepare(handler, args, &super::bus_host::Emitter),
-        )
+        std::future::ready(self.exports().invoke_prepare(
+            handler,
+            args,
+            &super::bus_host::Emitter { key: 0 },
+        ))
     }
     fn reborrow(&mut self, id: u32) -> Result<u32, String> {
         Ok(id)

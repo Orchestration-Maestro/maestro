@@ -10,6 +10,18 @@ use crate::{FlagOptions, FlagValue, ShortcutOptions, ToolDefinition};
 pub(super) struct Host<I: Imports>(pub(super) I);
 
 impl<I: Imports> ExtensionHost for Host<I> {
+    fn register_message_renderer(
+        &self,
+        custom_type: &str,
+        renderer: crate::MessageRenderer,
+    ) -> ExtensionResult<()> {
+        let identity = Identity::new(&self.0);
+        self.0
+            .register_message_renderer(custom_type, &identity.handle)?;
+        identity.keep(renderer);
+        Ok(())
+    }
+
     fn send_message(
         &self,
         message: crate::CustomMessageInput,

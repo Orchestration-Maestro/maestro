@@ -406,6 +406,7 @@ fn tail_capture_release(host: &Controlled, bus: &crate::EventBus) -> ExtensionRe
 
 #[test]
 fn maestro_bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
+    let emitter = Emitter { key: 0 };
     let host = Controlled::default();
     let bus = events(host.clone());
     let calls = Rc::new(RefCell::new(0));
@@ -426,27 +427,27 @@ fn maestro_bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
     )?;
     let id = host.observed().bus.listeners[0].1;
     let exports = Exports::new(host.clone());
-    assert!(exports.invoke_listener(id, "{", &Emitter).is_err());
+    assert!(exports.invoke_listener(id, "{", &emitter).is_err());
     assert_eq!(*calls.borrow(), 0);
-    exports.invoke_listener(id, "null", &Emitter)?;
-    exports.invoke_listener(id, "false", &Emitter)?;
+    exports.invoke_listener(id, "null", &emitter)?;
+    exports.invoke_listener(id, "false", &emitter)?;
     assert_eq!(*calls.borrow(), 2);
     assert_eq!(
-        exports.invoke_listener(id, "\"prefix-error\"", &Emitter),
+        exports.invoke_listener(id, "\"prefix-error\"", &emitter),
         Err("prefix failure Ω".into())
     );
     assert_eq!(
         host.observed().bus.emissions,
         [("completed".into(), json!(7))]
     );
-    exports.invoke_listener(id, "\"tail-error\"", &Emitter)?;
+    exports.invoke_listener(id, "\"tail-error\"", &emitter)?;
     let tail = host.observed().bus.tails[0];
     assert_eq!(
         super::block_on(Exports::<Controlled>::invoke_tail(tail)),
         Err("tail failure Ω".into())
     );
     assert_eq!(
-        exports.invoke_listener(tail, "null", &Emitter),
+        exports.invoke_listener(tail, "null", &emitter),
         Err(format!("no callback registered for identity {tail}"))
     );
     assert_eq!(
@@ -460,7 +461,7 @@ fn maestro_bus_errors_leave_later_calls_usable() -> ExtensionResult<()> {
     release(id);
     release(tail);
     assert_eq!(
-        exports.invoke_listener(id, "null", &Emitter),
+        exports.invoke_listener(id, "null", &emitter),
         Err(format!("no callback registered for identity {id}"))
     );
     Ok(())
@@ -473,7 +474,7 @@ fn emission_failures(host: &Controlled, bus: &crate::EventBus, subscription: &cr
         Err("emit rejected Ω".into())
     );
     assert_eq!(
-        host.callback_emit(&Emitter, "channel", "0"),
+        host.callback_emit(&Emitter { key: 0 }, "channel", "0"),
         Err("emit rejected Ω".into())
     );
     host.observe().bus.emission_error = None;

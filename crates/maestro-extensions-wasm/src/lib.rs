@@ -33,7 +33,11 @@ mod system_prompt;
 #[cfg(test)]
 mod tests;
 
+mod tui;
 mod types;
+pub use tui::*;
+mod theme;
+pub use theme::*;
 
 pub use agent::*;
 pub use compaction::*;
