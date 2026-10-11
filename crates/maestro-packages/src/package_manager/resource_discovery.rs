@@ -27,7 +27,7 @@ impl ResourceType {
         }
     }
 }
-/// Collects suffix-selected files, retaining adapter traversal order.
+/// Collects resources according to their kind and extension entry points.
 pub(super) fn collect_resource_files(
     dir: &str,
     kind: ResourceType,
@@ -227,7 +227,7 @@ impl IgnoreRules {
             || self.matcher.matched(path, directory).is_ignore()
     }
 }
-/// Prefixes authored rules, retaining a root escaped operator as literal text.
+/// Scopes authored rules to literal directories, preserving anchors and basename descent.
 pub(super) fn prefix_ignore_pattern(line: &str, prefix: &str) -> Option<String> {
     let trimmed = crate::trim(line);
     if trimmed.is_empty() || trimmed.starts_with('#') {
@@ -241,9 +241,24 @@ pub(super) fn prefix_ignore_pattern(line: &str, prefix: &str) -> Option<String> 
     } else {
         &pattern[1..]
     };
+    if prefix.is_empty() {
+        return Some(line.to_owned());
+    }
+    let descendant = if pattern.trim_end_matches('/').contains('/') {
+        ""
+    } else {
+        "**/"
+    };
     let pattern = pattern.strip_prefix('/').unwrap_or(pattern);
+    let mut literal_prefix = String::new();
+    for character in prefix.chars() {
+        if matches!(character, '\\' | '*' | '?' | '[' | ']' | '!' | '#') {
+            literal_prefix.push('\\');
+        }
+        literal_prefix.push(character);
+    }
     Some(format!(
-        "{}{prefix}{pattern}",
+        "{}{literal_prefix}{descendant}{pattern}",
         if negative { "!" } else { "" }
     ))
 }

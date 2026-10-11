@@ -83,6 +83,7 @@ fn ignore_files_keep_declared_order_and_directory_prefixes() {
             "ignore_order",
             "ignore_parent_pruning",
             "ignore_nested",
+            "ignore_nested_basename",
             "ignore_read_failure",
         ])
         .await;
@@ -231,7 +232,7 @@ fn entry_item_failures_keep_their_source_catch_boundaries() {
     }))
     .unwrap();
 }
-/// Native links follow targets, excluding only broken targets and final duplicates.
+/// The link fixture follows file targets and skips broken entries.
 #[cfg(unix)]
 #[test]
 fn native_links_follow_targets_and_skip_broken_entries() {
@@ -258,7 +259,7 @@ fn native_cycles_use_filesystem_failures_without_global_visited_sets() {
     }))
     .unwrap();
 }
-/// Installed unpinned remote sources reuse scoped lookup without acquisition.
+/// Installed unpinned npm and Git sources reuse scoped lookup without acquisition.
 #[test]
 fn installed_sources_keep_scope_paths_without_acquisition() {
     block_on(Box::pin(async {
@@ -417,7 +418,7 @@ fn ambient_inputs_are_observed_only_at_their_consuming_branch() {
     .unwrap();
 }
 
-/// Pinned, missing and temporary remote modes neither collect unchecked contents nor acquire them.
+/// Pinned npm, missing and temporary remote modes do not admit unchecked contents.
 #[test]
 fn deferred_remote_modes_do_not_admit_unchecked_contents() {
     block_on(Box::pin(async {
@@ -452,6 +453,16 @@ fn deferred_remote_modes_do_not_admit_unchecked_contents() {
             assert!(effects.calls.borrow()[start..].is_empty());
             assert_eq!(effects.spawns.get(), 0);
         }
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// Ignore-file directory identities remain literal beside authored glob syntax.
+#[test]
+fn ignore_directory_prefixes_are_literal_identities() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_literal_directories"]).await;
         Ok(())
     }))
     .unwrap();

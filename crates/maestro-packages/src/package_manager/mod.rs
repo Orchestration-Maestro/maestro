@@ -88,7 +88,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
 pub trait PackageManager {
     /// Resolves explicit sources using conventional resource discovery.
     /// # Errors
-    /// Returns required path or installed-source lookup failures.
+    /// Returns required path, installed-source lookup or installed-resource discovery failures.
     fn resolve_extension_sources<'a>(
         &'a self,
         sources: &'a [String],

@@ -1238,6 +1238,16 @@
       "extensions": [],
       "skills": [
         {
+          "path": "$BASE/pkg/skills/child/SKILL.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
           "path": "$BASE/pkg/skills/root.md",
           "enabled": true,
           "metadata": {
@@ -2179,6 +2189,108 @@
       ],
       "skills": [],
       "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_nested_basename",
+    "files": {
+      "pkg/prompts/sub/a.md": "fixture",
+      "pkg/prompts/sub/deep/a.md": "fixture",
+      "pkg/prompts/other/a.md": "fixture",
+      "pkg/prompts/sub/.ignore": "*.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/other/a.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_literal_directories",
+    "files": {
+      "pkg/prompts/[draft]/skip.md": "fixture",
+      "pkg/prompts/d/skip.md": "fixture",
+      "pkg/prompts/#notes/skip.md": "fixture",
+      "pkg/prompts/!notes/skip.md": "fixture",
+      "pkg/prompts/[draft]/keep.md": "fixture",
+      "pkg/prompts/#notes/keep.md": "fixture",
+      "pkg/prompts/!notes/keep.md": "fixture",
+      "pkg/prompts/[draft]/.ignore": "/skip.md\n",
+      "pkg/prompts/#notes/.ignore": "/skip.md\n",
+      "pkg/prompts/!notes/.ignore": "/skip.md\n"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/!notes/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/#notes/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/[draft]/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        },
+        {
+          "path": "$BASE/pkg/prompts/d/skip.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
       "themes": []
     }
   }

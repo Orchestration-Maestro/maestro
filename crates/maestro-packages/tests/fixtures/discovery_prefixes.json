@@ -37,7 +37,7 @@
   {
     "line": "",
     "prefix": "nested/",
-    "expected": "nested/"
+    "expected": "nested/**/"
   },
   {
     "line": "#comment",
@@ -67,7 +67,7 @@
   {
     "line": "\\#foo",
     "prefix": "nested/",
-    "expected": "nested/\\#foo"
+    "expected": "nested/**/\\#foo"
   },
   {
     "line": "\\!foo",
@@ -77,7 +77,7 @@
   {
     "line": "\\!foo",
     "prefix": "nested/",
-    "expected": "nested/!foo"
+    "expected": "nested/**/!foo"
   },
   {
     "line": "!foo",
@@ -87,12 +87,12 @@
   {
     "line": "!foo",
     "prefix": "nested/",
-    "expected": "!nested/foo"
+    "expected": "!nested/**/foo"
   },
   {
     "line": "/foo",
     "prefix": "",
-    "expected": "foo"
+    "expected": "/foo"
   },
   {
     "line": "/foo",
@@ -107,7 +107,7 @@
   {
     "line": "foo/",
     "prefix": "nested/",
-    "expected": "nested/foo/"
+    "expected": "nested/**/foo/"
   },
   {
     "line": "foo ",
@@ -117,7 +117,7 @@
   {
     "line": "foo ",
     "prefix": "nested/",
-    "expected": "nested/foo "
+    "expected": "nested/**/foo "
   },
   {
     "line": "foo\\ ",
@@ -127,7 +127,7 @@
   {
     "line": "foo\\ ",
     "prefix": "nested/",
-    "expected": "nested/foo\\ "
+    "expected": "nested/**/foo\\ "
   },
   {
     "line": "!!foo",
@@ -137,7 +137,7 @@
   {
     "line": "!!foo",
     "prefix": "nested/",
-    "expected": "!nested/!foo"
+    "expected": "!nested/**/!foo"
   },
   {
     "line": "\t#comment",

@@ -52,7 +52,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         }
         Ok(result.paths)
     }
-    /// Admits local or already-installed unpinned remote sources.
+    /// Admits local sources, installed unpinned npm sources and installed Git sources.
     fn resolve_source(
         &self,
         source: &str,

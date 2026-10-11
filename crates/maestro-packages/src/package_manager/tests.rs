@@ -220,7 +220,7 @@ fn remote_head_rejects_unmatched_head_with_authored_message() {
     );
 }
 
-/// All recorded prefix inputs preserve authored rule text except the corrected escape.
+/// Prefix cases preserve authored syntax while correcting filesystem scope.
 #[test]
 fn ignore_prefixes_preserve_authored_rule_text() {
     #[derive(serde::Deserialize)]

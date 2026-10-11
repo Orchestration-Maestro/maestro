@@ -66,7 +66,7 @@ separately from package discovery.
 ## Conventional resource discovery
 
 `PackageManager::resolve_extension_sources` resolves explicit local sources and
-already-installed unpinned npm or Git sources in user/project scope. `None` selects
+already-installed unpinned npm sources or Git sources in user/project scope. `None` selects
 user scope; temporary scope currently admits only local sources.
 
 Conventional directories are `extensions`, `skills`, `prompts` and `themes`.
@@ -86,5 +86,5 @@ Delegated path rules belong to [configured sources](package-sources.md) and
 file-pattern policy to [file patterns](package-patterns.md).
 
 Package-root resource manifests and expansion are tracked in [#452](https://github.com/Orchestration-Maestro/maestro/issues/452),
-missing/pinned/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
+missing/pinned-npm/temporary remote admission in [#453](https://github.com/Orchestration-Maestro/maestro/issues/453),
 and configured/automatic merging and filters in [#454](https://github.com/Orchestration-Maestro/maestro/issues/454).
