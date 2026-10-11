@@ -300,3 +300,11 @@ next release's history from conventional commits. PRs never edit CHANGELOG.md.
 
 Approved libraries live in [docs/libraries/](docs/libraries/), one file per area.
 A ticket that adds a library adds or edits only its area's file.
+
+Tests wait for completion signals; shared CI bounds the job, not each test.
+Conventions reject recognized test-owned timer calls (Tokio `timeout`/`timeout_at`,
+standard timed receives, condition-variable waits and thread parking), including
+file-level import aliases. Production deadlines remain allowed. The scan does not
+model local shadowing, expand macros, infer receiver types, resolve arbitrary
+re-exports/function values or evaluate compound configurations; those forms and
+sleep-based watchdogs require source review.

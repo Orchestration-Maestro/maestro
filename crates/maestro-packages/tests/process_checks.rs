@@ -99,14 +99,14 @@ fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
     );
     let (finished, outcome) = std::sync::mpsc::channel();
     let mut text = String::new();
-    let finished_in_time = std::thread::scope(|scope| {
+    let completion = std::thread::scope(|scope| {
         scope.spawn(|| {
             let manager = manager_running(&script, &root);
             let result = self::runtime().block_on(manager.install("npm:x", None));
             finished.send(result.is_ok()).unwrap();
         });
-        let verdict = outcome.recv_timeout(std::time::Duration::from_secs(20));
-        // Release and drain the background holder so the scope can join even when the wait failed.
+        let verdict = outcome.recv();
+        // Release the background holder after observing install completion, then drain it.
         drop(std::fs::OpenOptions::new().write(true).open(&held).unwrap());
         std::fs::File::open(&done)
             .unwrap()
@@ -115,7 +115,7 @@ fn ordinary_commands_finish_at_exit_with_exact_failure_text() {
         verdict
     });
     assert_eq!(
-        finished_in_time,
+        completion,
         Ok(true),
         "install must settle at child exit while a background process holds its streams"
     );

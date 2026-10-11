@@ -16,6 +16,8 @@ mod quality;
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
+/// Test-owned timed-wait checks.
+mod time_limits;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
 ///
@@ -23,6 +25,11 @@ mod source;
 /// features for the compiler host so it reads only crates a normal build fetched.
 /// Complete direct sets are checked over both passes; absent future owners are
 /// inactive. Source/WIT checks are structural and do not replace semantic review.
+///
+/// Recognized test-owned timer calls receive file/line diagnostics. Timer aliases
+/// apply file-wide; local shadowing is not modelled. Production deadlines remain
+/// allowed. This scan does not expand macros, infer receiver types, resolve
+/// arbitrary re-exports/function values or evaluate compound configurations.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
@@ -43,5 +50,6 @@ pub fn check_workspace(root: &Path) -> Result<(), String> {
     boundaries::check(&members)?;
     comments::check(&members)?;
     repetition::check(&members)?;
-    quality::check(root, &members)
+    quality::check(root, &members)?;
+    time_limits::check(&members)
 }

@@ -692,18 +692,12 @@ impl std::task::Wake for ReentrantWaker {
         let Some(callback) = self.callback.lock().unwrap().clone() else {
             return;
         };
-        let (done, waited) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            callback(result());
-            let _ = done.send(());
-        });
-        if waited
-            .recv_timeout(std::time::Duration::from_secs(5))
-            .is_ok()
-        {
+        std::thread::scope(|scope| {
+            let worker = scope.spawn(move || callback(result()));
+            worker.join().unwrap();
             self.reentered
                 .store(true, std::sync::atomic::Ordering::SeqCst);
-        }
+        });
     }
 }
 
