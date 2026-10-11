@@ -26,7 +26,7 @@ struct Row {
     expected: Expected,
 }
 
-/// Catalog lookup or wire invocation.
+/// Catalog lookup, raw-unit sanitization or wire invocation.
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Input {

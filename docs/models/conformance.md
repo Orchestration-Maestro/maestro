@@ -224,9 +224,9 @@ cargo test -p maestro-models --locked --test response_identity \
 
 The reasoning and text cases own 185 recorded inputs: 164 finite wire invocations,
 one ordered cloud catalog query and 20 raw UTF-16 sanitizer inputs. Fifteen tests
-compare these local observations through the shipped adapters; catalog presence
-does not establish remote availability. The missing-result and Unicode input
-groups each retain 23 model/account routes, including separate ordinary and
+compare these local observations through public operations. Wire cases use the
+shipped adapters; catalog presence does not establish remote availability. The
+missing-result and Unicode input groups each retain 23 model/account routes, including separate ordinary and
 account-authenticated message cases.
 
 The cases compare native conversation reasoning controls and their omission when

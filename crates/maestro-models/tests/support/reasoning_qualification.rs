@@ -66,7 +66,7 @@ const OWNERS: [(&str, usize); 15] = [
     ),
 ];
 
-/// Run the owning test through the shared public-dispatch observations.
+/// Compare the owning test through the shared public-operation observations.
 pub fn assert_rows(test: &str) -> TestResult {
     crate::response_qualification::assert_corpus_rows(
         include_str!("../fixtures/reasoning_qualification.json"),
