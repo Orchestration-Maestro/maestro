@@ -460,6 +460,39 @@ fn forbidden_direct_edges_are_rejected() {
 }
 
 #[test]
+fn session_shared_records_edge_is_scoped() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-session", "maestro-request"]);
+    check_permitted_declarations(
+        &workspace,
+        "maestro-session",
+        "maestro-request",
+        &["maestro-request"],
+    );
+    workspace.member(
+        "maestro-session",
+        "maestro-session",
+        "[dev-dependencies]\nalias = { package = \"maestro-request\", path = \"../maestro-request\" }",
+    );
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-request".into())
+    );
+    workspace.member("maestro-session", "maestro-session", "");
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-request",
+            "maestro-request",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-session\", path = \"../maestro-session\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("maestro-request must not depend on workspace crate maestro-session".into())
+        );
+    }
+}
+
+#[test]
 fn theme_shared_records_edge_is_scoped() {
     let allowed = Workspace::new();
     allowed.foundation(&["maestro-theme", "maestro-request"]);
@@ -506,7 +539,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        72
+        73
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();

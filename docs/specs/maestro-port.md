@@ -78,7 +78,7 @@ The protocol requires: revise the WIT/SDK for recoverable errors, owned persiste
 
 Extension events: an event emitted from inside a synchronous callback (an event-bus listener, or a footer, widget, header, editor or component builder) reaches listeners in other extensions right after that callback returns. Every other ordering follows the reference behavior.
 
-Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's only allowed internal dependency is maestro-request, the shared owner of model-request records. The runtime adapter depends only toward the domain and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
+Use three jobs: maestro-extensions governs semantics; maestro-extensions-wasmtime executes components through those ports; maestro-extensions-wasm provides guest authoring and the canonical WIT. The guest's only allowed internal dependency is maestro-request, the shared owner of message and model-request records. The runtime adapter depends only toward the domain and is wired by the executable. The host reads shared WIT build input without linking the guest crate. Real host capabilities, event/discovery conformance, UI lifetimes, SDK/examples/docs and platform gates remain acceptance, not claims proven by ABI probes.
 
 Event payloads and results cross the existing generic native-async export as plain JSON beside their typed capability envelope. Use the shared records' existing serde_json representation, not duplicate guest models or a second serializer format. Finite floating-point numbers roundtrip exactly, including signed zero. Ordinary host serialization turns nonfinite numbers into null; this does not promise that null decodes into a required number. An extension writing Infinity or NaN receives a clear error before its edited event or result is encoded. This explicit error is the accepted difference from retaining the nonfinite value until serialization. No bit-encoded numbers, numeric transport wrappers or compatibility decoder are permitted. Shared records retain their existing optional-field semantics without added Presence wrappers; unshared event fields still preserve their meaningful missing/null distinctions. Preserve separate event-edit and callback-result outcomes when either fails.
 
@@ -175,7 +175,7 @@ dependencies apart from the optional foundation utility described below.
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
-| `maestro-request` | define model-request records | — | below 0 |
+| `maestro-request` | define shared message and model-request records | — | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | acquire file-write locks | — | below 0 |
 | `maestro-pattern` | match file patterns | — | below 0 |
@@ -193,7 +193,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials` | 2 |
-| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent` | 2 |
+| `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
@@ -208,19 +208,22 @@ dependencies apart from the optional foundation utility described below.
 `maestro-cancellation` owns cooperative cancellation below layer 0, with no
 internal dependencies. Only models and the terminal toolkit may depend on it.
 
-`maestro-request` defines model-request records: model descriptors, messages,
-content, usage, stream events and diagnostics, plus `SourceInfo` and `Skill` for
-instruction inputs. It owns the declarations and their serialization. Existing
-models and resources public paths re-export their moved records. Provider
+`maestro-request` defines shared message and model-request records: model
+descriptors, messages, content, usage, stream events and diagnostics, plus
+`SourceInfo` and `Skill` for
+instruction inputs. Shared application messages include `BashExecutionMessage`,
+`CustomMessage`, `BranchSummaryMessage` and `CompactionSummaryMessage`, with the
+existing `Presence<T>` optional-field wrapper. It owns the declarations and their
+serialization. Existing models and resources public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
-`maestro-path`. Only `maestro-models`, `maestro-resources`, `maestro-theme` and
-`maestro-extensions-wasm` may depend on it. The guest still cannot depend on models or resources, the runtime adapter still
-targets extensions only, and no internal dev edge is added. Existing delivery
-layers stay unchanged; the shared owner precedes its four consumers.
+`maestro-path`. Only `maestro-models`, `maestro-resources`, `maestro-theme`,
+`maestro-session` and `maestro-extensions-wasm` may depend on it. The guest still cannot
+depend on models or resources, the runtime adapter still targets extensions only, and no internal dev edge is added. Existing delivery
+layers stay unchanged; the shared owner precedes its consumers.
 
 `maestro-pattern` is a core leaf below layer 0 whose one job is matching file
 patterns: glob patterns and ignore rules. It has no workspace dependencies,
