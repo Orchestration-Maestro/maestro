@@ -68,7 +68,7 @@ pub trait Driver {
     async fn shell_exec(&mut self, run: super::shell_host::Run) -> Result<Option<f64>, String>;
     /// Drops one returned operation alias.
     async fn drop_bash(&mut self, id: usize) -> Result<(), String>;
-    /// Closed producer's complete byte observation.
+    /// Successfully received chunks observed so far.
     fn shell_chunks(&self, id: usize) -> Vec<Vec<u8>>;
     /// Signal final-owner count for the supplied handle.
     fn shell_signal_drops(&self, id: usize) -> usize;

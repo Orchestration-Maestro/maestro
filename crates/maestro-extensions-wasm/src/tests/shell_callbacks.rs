@@ -359,7 +359,7 @@ async fn assert_reentered(driver: &mut impl Driver) -> Result<(), String> {
     assert_eq!(event["text"], "reentered");
     Ok(())
 }
-/// Counts destruction only after the relevant final producer has been removed.
+/// Counts matching destruction observations since `before`.
 fn releases(driver: &impl Driver, before: usize, label: &str) -> usize {
     driver.transcript()[before..]
         .iter()

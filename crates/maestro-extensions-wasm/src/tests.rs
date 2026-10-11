@@ -405,7 +405,7 @@ fn contract() -> Result<Contract, String> {
 }
 
 /// The event export takes the callback, the document and the typed capabilities, and answers
-/// with the two independent parts or a refusal.
+/// with independent event, decision and operations channels or a refusal.
 fn assert_typed_event_export(contract: &Contract) {
     assert_eq!(
         contract.event_params,
@@ -422,7 +422,7 @@ fn assert_typed_event_export(contract: &Contract) {
             "result<record {event: result<option<string>, string>, ",
             "decision: variant {returned(result<option<string>, string>), failed(string)}, operations: option<own<bash-operations>>}, string>"
         )],
-        "the event export answers with the two independent parts or a refusal"
+        "the event export answers with independent event, decision and operations channels or a refusal"
     );
 }
 
