@@ -187,3 +187,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
 }
 ```
+
+## Controlled response lifetimes and handoffs
+
+The response qualification cases use catalog models with injected, finite server
+responses through public streaming and completion operations. They compare
+payload callbacks, application-owned request headers and bodies, terminal records
+and recorded stream events. Continuations use actual returned assistants and
+returned tool identifiers, with caller histories checked after dispatch.
+
+The cases exercise response identity on successful and failed turns, compatible
+and foreign reasoning replay, cache/session request affinity, native tool-result
+images, interleaved reasoning and pre-cancelled or partially cancelled streams.
+Partial cancellation waits for a public text delta and a pending body read;
+terminal observations follow draining and body release. Ordered handoff histories
+keep the separate regional routes and tool occurrences, including missing results.
+See [response protocols](responses.md),
+[response sessions](response-sessions.md) and
+[history projection](../conversation-projection.md) for the owning behavior.
+
+These controlled responses establish local request and decoding observations,
+not live authentication acceptance, cache hits or remote answer quality.
+
+```sh
+cargo test -p maestro-models --locked --test response_identity \
+  --test response_reasoning_replay --test response_affinity \
+  --test response_session_affinity --test response_tool_images \
+  --test interleaved_reasoning --test invocation_cancellation \
+  --test history_handoffs --test handoff_tool_ids
+```
