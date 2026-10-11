@@ -107,3 +107,32 @@ fn class_platform_framing_precedes_scalar_matching() {
         );
     }
 }
+
+/// Native framing resolves before group recognition on both policies.
+#[test]
+fn group_platform_framing_precedes_matching() {
+    let groups: std::collections::BTreeMap<String, Vec<serde_json::Value>> =
+        serde_json::from_str(include_str!("../../tests/pattern_group_vectors.json")).unwrap();
+    let rows = &groups["group_platform_framing_precedes_matching"];
+    assert_eq!(rows.len(), 122);
+    for (index, row) in rows.iter().enumerate() {
+        let (pattern, input, posix, windows): (String, String, bool, bool) =
+            serde_json::from_value(row.clone()).unwrap();
+        assert_eq!(
+            match_platform(&input, &pattern, Platform::Posix),
+            Ok(posix),
+            "posix case {index}"
+        );
+        assert_eq!(
+            match_platform(&input, &pattern, Platform::Windows),
+            Ok(windows),
+            "windows case {index}"
+        );
+        let expected = if cfg!(windows) { windows } else { posix };
+        assert_eq!(
+            super::minimatch(&input, &pattern),
+            Ok(expected),
+            "native case {index}"
+        );
+    }
+}

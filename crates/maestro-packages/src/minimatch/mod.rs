@@ -10,11 +10,10 @@ mod ast;
 mod brace_expressions;
 pub use assert_valid_pattern::PatternError;
 
-/// Matches a path against a package file pattern, including bracket classes.
+/// Matches a path against a package file pattern, including classes and nested groups.
 ///
-/// Extended groups are not yet implemented.
 /// See the [file-pattern guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/package-patterns.md)
-/// for class forms and named-category definitions.
+/// for group cardinality, exclusion context and named-class definitions.
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.

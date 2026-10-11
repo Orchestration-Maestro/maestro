@@ -2,6 +2,9 @@
 
 use std::collections::BTreeSet;
 
+mod matching;
+mod parse;
+
 use super::brace_expressions::{Class, ParsedClass, parse_class};
 
 /// One basic segment token.
@@ -17,6 +20,8 @@ pub(super) enum Token {
     Class(Class),
     /// An impossible component selection.
     Never,
+    /// A group in the flat syntax arena.
+    Group(usize),
 }
 
 /// A parsed path component.
@@ -25,11 +30,21 @@ pub(super) enum Ast {
     Literal(String),
     /// Tokens including at least one nonliteral token.
     Pattern(Vec<Token>),
+    /// Nested syntax held without recursive ownership.
+    Groups(parse::Groups),
 }
 
 impl Ast {
     /// Parses one component without interpreting separators.
     pub(super) fn parse(pattern: &str) -> Self {
+        if let Some(groups) = parse::Groups::parse(pattern) {
+            return Self::Groups(groups);
+        }
+        Self::basic(pattern)
+    }
+
+    /// Parses scalar tokens without recognizing groups.
+    fn basic(pattern: &str) -> Self {
         let mut tokens = Vec::new();
         let mut tail = pattern;
         while let Some(c) = tail.chars().next() {
@@ -53,7 +68,11 @@ impl Ast {
             .iter()
             .map(|t| match t {
                 Token::Literal(c) => Some(*c),
-                Token::Star | Token::Question | Token::Class(_) | Token::Never => None,
+                Token::Star
+                | Token::Question
+                | Token::Class(_)
+                | Token::Never
+                | Token::Group(_) => None,
             })
             .collect();
         literal.map_or(Self::Pattern(tokens), Self::Literal)
@@ -63,7 +82,7 @@ impl Ast {
     pub(super) fn literal(&self) -> Option<&str> {
         match self {
             Self::Literal(text) => Some(text),
-            Self::Pattern(_) => None,
+            Self::Pattern(_) | Self::Groups(_) => None,
         }
     }
 
@@ -72,6 +91,7 @@ impl Ast {
         match self {
             Self::Literal(literal) => literal == text,
             Self::Pattern(tokens) => match_pattern(tokens, text),
+            Self::Groups(groups) => matching::matches(groups, text),
         }
     }
 }
@@ -106,7 +126,11 @@ fn match_pattern(tokens: &[Token], text: &str) -> bool {
             .iter()
             .map(|token| match token {
                 Token::Literal(c) => Some(*c),
-                Token::Star | Token::Question | Token::Class(_) | Token::Never => None,
+                Token::Star
+                | Token::Question
+                | Token::Class(_)
+                | Token::Never
+                | Token::Group(_) => None,
             })
             .collect::<Option<String>>()
     {
