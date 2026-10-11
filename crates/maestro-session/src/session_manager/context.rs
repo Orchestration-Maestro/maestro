@@ -1,4 +1,5 @@
-//! Pure projection of caller-supplied session entries.
+//! Projection of caller-supplied entries without session-file reads or writes.
+//! Generated timestamps use the existing [`crate::messages`] formatting owner.
 use super::types::{SessionContext, SessionContextModel, SessionEntry};
 use maestro_request::presence::Presence;
 use serde::de::Error as _;
@@ -17,7 +18,7 @@ fn property<'a>(
     }
 }
 
-/// Collect a reachable ancestry, stopping before a repeated identifier.
+/// Collect a reachable ancestry, stopping before revisiting the same entry.
 pub(crate) fn ancestor_path<'a, S: BuildHasher>(
     leaf: &'a SessionEntry,
     by_id: &HashMap<String, &'a SessionEntry, S>,
@@ -26,8 +27,8 @@ pub(crate) fn ancestor_path<'a, S: BuildHasher>(
     let mut visited = HashSet::new();
     let mut current = Some(leaf);
     while let Some(entry) = current {
-        let id = property(Some(entry), "id")?.and_then(Value::as_str);
-        if !visited.insert(id) {
+        property(Some(entry), "id")?;
+        if !visited.insert(std::ptr::from_ref(entry)) {
             break;
         }
         path.push(entry);

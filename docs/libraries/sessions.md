@@ -1,7 +1,8 @@
 # Session projection libraries
 
 `maestro-session` uses the existing agent/model interfaces and the shared request
-record owner. It adds no execution runtime or filesystem operations.
+record owner. It adds no execution runtime or session-file operations. Timestamp conversion
+uses the existing [message formatting](../sessions/messages.md) owner.
 
 | Dependency | Version/features | Purpose |
 | --- | --- | --- |

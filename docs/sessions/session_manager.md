@@ -1,7 +1,8 @@
 # Stored-entry context
 
 `maestro-session::session_manager` parses supplied JSONL text and projects a
-selected ancestry into context. It performs no filesystem I/O.
+selected ancestry into context without session-file reads or writes.
+Generated timestamps delegate to [message formatting](messages.md).
 
 ## Raw entries and explicit views
 
@@ -41,8 +42,8 @@ Without a supplied index, indexing runs before explicit-null selection and the
 last entry with a given ID owns lookup. A supplied index is authoritative, even
 when empty, and may refer to entries outside the slice. Explicit null selects
 before-first; missing, empty or unknown leaf IDs fall back to the last supplied
-entry. A missing parent stops the reachable ancestry. A repeated identifier stops
-before being added again, retaining the reachable suffix rather than looping.
+entry. A missing parent stops the reachable ancestry. Revisiting the same entry stops
+before adding it again, retaining the reachable suffix rather than looping.
 
 Settings are observed across the selected root-to-leaf path before message
 emission. Later thinking and model observations overwrite earlier ones. The

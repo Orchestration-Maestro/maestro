@@ -3026,6 +3026,51 @@
     }
   },
   {
+    "id": "precompaction-thinking-survives",
+    "test": "settings_observe_the_entire_selected_path",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "thinking_level_change",
+          "id": "t",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "thinkingLevel": "high"
+        },
+        {
+          "type": "compaction",
+          "id": "c",
+          "parentId": "t",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "summary c",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "absent"
+        }
+      ],
+      {
+        "$undefined": true
+      },
+      {
+        "$undefined": true
+      }
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "summary c",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          }
+        ],
+        "thinkingLevel": "high",
+        "model": null
+      }
+    }
+  },
+  {
     "id": "settings-sequence",
     "test": "settings_observe_the_entire_selected_path",
     "operation": "context",
@@ -6148,9 +6193,31 @@
     "args": [
       [
         {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
           "type": "compaction",
           "id": "compaction-firstKeptEntryId-missing",
-          "parentId": null,
+          "parentId": "keep",
           "timestamp": "2025-01-02T03:04:05.678Z",
           "summary": "summary",
           "tokensBefore": 1
@@ -6185,9 +6252,31 @@
     "args": [
       [
         {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
           "type": "compaction",
           "id": "compaction-firstKeptEntryId-null",
-          "parentId": null,
+          "parentId": "keep",
           "timestamp": "2025-01-02T03:04:05.678Z",
           "summary": "summary",
           "tokensBefore": 1,
@@ -6223,13 +6312,35 @@
     "args": [
       [
         {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
           "type": "compaction",
           "id": "compaction-firstKeptEntryId-admitted",
-          "parentId": null,
+          "parentId": "keep",
           "timestamp": "2025-01-02T03:04:05.678Z",
           "summary": "summary",
           "tokensBefore": 1,
-          "firstKeptEntryId": "none"
+          "firstKeptEntryId": "keep"
         }
       ],
       {
@@ -6247,6 +6358,11 @@
             "summary": "summary",
             "tokensBefore": 1,
             "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
           }
         ],
         "thinkingLevel": "off",
@@ -6261,9 +6377,31 @@
     "args": [
       [
         {
+          "type": "message",
+          "id": "discard",
+          "parentId": null,
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "discarded",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "keep",
+          "parentId": "discard",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "message": {
+            "role": "user",
+            "content": "kept",
+            "timestamp": 1
+          }
+        },
+        {
           "type": "compaction",
           "id": "compaction-firstKeptEntryId-wrong",
-          "parentId": null,
+          "parentId": "keep",
           "timestamp": "2025-01-02T03:04:05.678Z",
           "summary": "summary",
           "tokensBefore": 1,

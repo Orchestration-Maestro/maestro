@@ -404,3 +404,49 @@ fn optional_entry_fields() {
         }
     }
 }
+
+#[test]
+fn distinct_entries_with_equal_ids_keep_finite_ancestry() {
+    use serde_json::{Value, json};
+    use std::collections::HashMap;
+    let entries = [
+        json!({"type":"message", "id":"same", "parentId":"root", "message":{"role":"user", "content":"leaf"}}),
+    ];
+    let root = json!({"type":"message", "id":"same", "parentId":null, "message":{"role":"user", "content":"root"}});
+    let index = HashMap::from([("root".to_owned(), &root)]);
+    for project in [
+        maestro_session::build_session_context,
+        maestro_session::session_manager::build_session_context,
+    ] {
+        let context = project(&entries, Presence::Missing, Some(&index)).unwrap();
+        let contents: Vec<&Value> = context
+            .messages
+            .iter()
+            .map(|message| &message["content"])
+            .collect();
+        assert_eq!(contents, [&json!("root"), &json!("leaf")]);
+    }
+}
+
+#[test]
+fn corpus_rejects_unowned_rows_and_duplicate_queries() {
+    use support::session_context::{cases, validate_corpus};
+    let mut rows = cases();
+    rows[0].test = "unknown_owner".into();
+    assert!(
+        validate_corpus(&rows)
+            .unwrap_err()
+            .contains("unknown owner")
+    );
+    rows = cases();
+    rows[1].id = rows[0].id.clone();
+    assert!(validate_corpus(&rows).unwrap_err().contains("duplicate id"));
+    rows = cases();
+    rows[1].operation = rows[0].operation.clone();
+    rows[1].args = rows[0].args.clone();
+    assert!(
+        validate_corpus(&rows)
+            .unwrap_err()
+            .contains("duplicate query")
+    );
+}

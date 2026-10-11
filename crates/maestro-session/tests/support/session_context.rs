@@ -22,7 +22,39 @@ pub struct Case {
 }
 /// Read the strict corpus.
 pub fn cases() -> Vec<Case> {
-    serde_json::from_str(include_str!("../fixtures/session_context.json")).unwrap()
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("../fixtures/session_context.json")).unwrap();
+    validate_corpus(&cases).unwrap();
+    cases
+}
+/// Reject unowned or duplicate recorded queries.
+pub fn validate_corpus(cases: &[Case]) -> Result<(), String> {
+    let source: Vec<_> = include_str!("../context_projection.rs").lines().collect();
+    let owners: std::collections::HashSet<_> = source
+        .windows(2)
+        .filter(|lines| lines[0] == "#[test]")
+        .filter_map(|lines| {
+            lines[1]
+                .strip_prefix("fn ")?
+                .split_once('(')
+                .map(|(name, _)| name)
+        })
+        .collect();
+    let mut ids = std::collections::HashSet::new();
+    let mut queries = std::collections::HashSet::new();
+    for case in cases {
+        if !owners.contains(case.test.as_str()) {
+            return Err(format!("{}: unknown owner {}", case.id, case.test));
+        }
+        if !ids.insert(&case.id) {
+            return Err(format!("{}: duplicate id", case.id));
+        }
+        let query = serde_json::to_string(&(&case.operation, &case.args)).unwrap();
+        if !queries.insert(query) {
+            return Err(format!("{}: duplicate query", case.id));
+        }
+    }
+    Ok(())
 }
 /// Remove undefined metadata at property boundaries and decode signed zero.
 pub fn decode(value: &Value) -> Value {
