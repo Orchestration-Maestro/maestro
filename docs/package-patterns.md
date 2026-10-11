@@ -34,7 +34,9 @@ syntax. Leading/trailing hyphens can be literal.
 
 Descending ranges discard their own members. A class with no surviving members,
 or a range ending at a recognized named class, cannot match that alternative.
-An unclosed opening bracket is literal; following syntax still parses normally.
+An unclosed opening bracket is literal unless a recognized named range endpoint
+has already made the alternative impossible; otherwise following syntax still
+parses normally.
 A lone surviving ordinary member without negation becomes a literal, including
 `[.]` and `[a-a]`; authored duplicates such as `[..]` remain magic. Magic classes
 use the component guards described above.

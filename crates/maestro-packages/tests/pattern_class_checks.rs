@@ -51,7 +51,7 @@ fn combined_classes_keep_positive_and_negative_members() {
     check_group("combined_classes_keep_positive_and_negative_members");
 }
 
-/// Unclosed class openers leave the following token grammar active.
+/// Unclosed openers leave following tokens active except for named range endpoints.
 #[test]
 fn unclosed_classes_preserve_following_tokens() {
     check_group("unclosed_classes_preserve_following_tokens");

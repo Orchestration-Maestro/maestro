@@ -23,7 +23,7 @@ pub(super) enum Token {
 pub(super) enum Ast {
     /// Decoded text with no wildcard syntax.
     Literal(String),
-    /// Tokens including at least one wildcard.
+    /// Tokens including at least one nonliteral token.
     Pattern(Vec<Token>),
 }
 
@@ -76,7 +76,8 @@ impl Ast {
     }
 }
 
-/// Decodes a closed class token without consuming an unclosed opener.
+/// Decodes a class token, including named range endpoint rejection.
+/// Otherwise, an unclosed opener falls back to ordinary token parsing.
 fn class_token(pattern: &str) -> Option<(Token, usize)> {
     if !pattern.starts_with('[') {
         return None;
