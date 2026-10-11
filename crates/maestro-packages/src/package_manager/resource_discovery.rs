@@ -171,7 +171,7 @@ impl ScopedIgnoreRules {
             .find_map(|(dir, rules)| {
                 let decision = rules
                     .matcher
-                    .matched(relative_path(dir, path).to_lowercase(), directory);
+                    .matched(fold_non_ascii(&relative_path(dir, path)), directory);
                 (!decision.is_none()).then(|| decision.is_ignore())
             })
             .unwrap_or(false)
@@ -185,19 +185,20 @@ pub(super) struct IgnoreRules {
     matcher: ignore::gitignore::Gitignore,
 }
 impl IgnoreRules {
-    /// Starts an empty case-sensitive matcher for folded input.
+    /// Starts an ASCII case-insensitive matcher for non-ASCII folded input.
     pub(super) fn new() -> Self {
-        let builder = ignore::gitignore::GitignoreBuilder::new("");
+        let mut builder = ignore::gitignore::GitignoreBuilder::new("");
+        let _ = builder.case_insensitive(true);
         Self {
             builder,
             matcher: ignore::gitignore::Gitignore::empty(),
         }
     }
-    /// Adds a rule without replacing already accumulated rules.
+    /// Adds a rule without replacing accumulated rules; invalid lines are skipped.
     pub(super) fn add(&mut self, rule: &str) {
         let _ = self
             .builder
-            .add_line(None, &encode_ignore_rule(rule).to_lowercase());
+            .add_line(None, &fold_non_ascii(&encode_ignore_rule(rule)));
     }
     /// Publishes accumulated rules when they compile.
     pub(super) fn compile(&mut self) {
@@ -232,14 +233,26 @@ impl IgnoreRules {
             .filter(|path| !path.as_os_str().is_empty())
             .any(|parent| {
                 self.matcher
-                    .matched(parent.to_string_lossy().to_lowercase(), true)
+                    .matched(fold_non_ascii(&parent.to_string_lossy()), true)
                     .is_ignore()
             })
             || self
                 .matcher
-                .matched(path.to_lowercase(), directory)
+                .matched(fold_non_ascii(path), directory)
                 .is_ignore()
     }
+}
+/// Folds non-ASCII characters while preserving native ASCII syntax and case matching.
+fn fold_non_ascii(text: &str) -> String {
+    let mut folded = String::with_capacity(text.len());
+    for c in text.chars() {
+        if c.is_ascii() {
+            folded.push(c);
+        } else {
+            folded.extend(c.to_lowercase());
+        }
+    }
+    folded
 }
 /// Encodes literal braces and C-locale named bracket classes for the native matcher.
 fn encode_ignore_rule(pattern: &str) -> String {

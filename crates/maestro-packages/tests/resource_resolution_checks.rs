@@ -512,3 +512,23 @@ fn nonroot_skill_entry_stops_deeper_skill_discovery() {
     }))
     .unwrap();
 }
+
+/// Authored ascending ranges retain punctuation and their case-equivalent members.
+#[test]
+fn ignore_case_matching_preserves_authored_range_members() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_cross_case_range", "ignore_ascii_range"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}
+
+/// An invalid range matches nothing without preventing later rules from applying.
+#[test]
+fn invalid_ignore_range_keeps_following_rules_active() {
+    block_on(Box::pin(async {
+        resolution_support::cases(&["ignore_invalid_range_continuation"]).await;
+        Ok(())
+    }))
+    .unwrap();
+}

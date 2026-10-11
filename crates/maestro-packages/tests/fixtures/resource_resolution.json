@@ -2473,5 +2473,103 @@
       "prompts": [],
       "themes": []
     }
+  },
+  {
+    "case": "ignore_ascii_range",
+    "files": {
+      "pkg/prompts/.ignore": "[A-z]*.md\n",
+      "pkg/prompts/_note.md": "_note.md",
+      "pkg/prompts/Note.md": "Note.md",
+      "pkg/prompts/1note.md": "1note.md"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/1note.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_cross_case_range",
+    "files": {
+      "pkg/prompts/.ignore": "[Z-a]*.md\n",
+      "pkg/prompts/_note.md": "_note.md",
+      "pkg/prompts/Znote.md": "Znote.md",
+      "pkg/prompts/1note.md": "1note.md"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/1note.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
+  },
+  {
+    "case": "ignore_invalid_range_continuation",
+    "files": {
+      "pkg/prompts/.ignore": "[z-a]*.md\nx.md\n",
+      "pkg/prompts/x.md": "hidden",
+      "pkg/prompts/keep.md": "retained"
+    },
+    "dirs": [],
+    "links": {},
+    "fail": {},
+    "sources": [
+      "$BASE/pkg"
+    ],
+    "scope": "user",
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [
+        {
+          "path": "$BASE/pkg/prompts/keep.md",
+          "enabled": true,
+          "metadata": {
+            "source": "$BASE/pkg",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$BASE/pkg"
+          }
+        }
+      ],
+      "themes": []
+    }
   }
 ]
