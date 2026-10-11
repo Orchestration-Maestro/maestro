@@ -5,7 +5,8 @@ use exif::{Exif, In, Reader, Tag};
 use photon_rs::transform::{fliph, flipv};
 use std::io::Cursor;
 
-/// Apply the first primary JPEG/WebP orientation; unreadable orientation leaves pixels unchanged.
+/// Apply the first primary JPEG/WebP orientation retained by the metadata reader.
+/// A retained unreadable or out-of-range value leaves pixels unchanged.
 #[must_use]
 pub fn apply_exif_orientation(
     mut image: PhotonImageType,

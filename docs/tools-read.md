@@ -117,9 +117,10 @@ The shared decoder accepts standard or URL-safe, padded or unpadded base64 with
 ASCII whitespace. Fitting input keeps its authored spelling.
 
 [`utils::exif_orientation`](../crates/maestro-tools/src/utils/exif_orientation.rs)
-selects the first primary JPEG/WebP orientation, including optional WebP EXIF
-prefixes and padded chunks. Unreadable or out-of-range orientation leaves pixels
-unchanged; unrelated later metadata errors do not discard a readable first value.
+selects the first primary JPEG/WebP orientation retained by the metadata reader,
+including optional WebP EXIF prefixes and padded chunks. A retained unreadable or
+out-of-range value leaves pixels unchanged. Metadata decoding follows the
+[EXIF reader](libraries/tools-output.md#image-libraries).
 The eight orientations use flips and integer quarter-turn pixel permutations.
 Pixel decoding, Lanczos3 resampling and encoding are delegated to the
 [image libraries](libraries/tools-output.md#image-libraries).

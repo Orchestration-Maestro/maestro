@@ -28,8 +28,9 @@ transform module supplies Lanczos3 resizing and axis flips. Quarter-turn pixel
 permutation belongs to the orientation utility rather than general-angle rotation.
 
 `kamadak-exif =0.6.1` (BSD-2-Clause) owns TIFF/JPEG metadata decoding. Ordered
-`fields()` selection and partial-result recovery preserve the first primary
-orientation. The utility owns only the WebP chunk envelope and optional prefix.
+`fields()` selection uses the first retained primary orientation, with
+partial-result recovery for metadata errors. The utility owns only the WebP chunk
+envelope and optional prefix.
 `base64 =0.23.1` uses defaults off plus `std` here (MIT or Apache-2.0); shared
 workspace features also enable its defaults. `jpeg-decoder =0.3.2` (MIT or
 Apache-2.0), defaults off plus `platform_independent`, enables deterministic color
