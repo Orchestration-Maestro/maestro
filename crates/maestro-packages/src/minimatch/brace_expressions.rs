@@ -151,46 +151,103 @@ impl NamedClass {
     }
 }
 
+/// One member or the outer closing delimiter.
+enum Member {
+    /// A decoded scalar, including escaped delimiters.
+    Scalar(char),
+    /// A complete recognized named member.
+    Named(NamedClass),
+    /// The outer closing bracket.
+    End,
+}
+
+/// Shared class grammar without membership normalization.
+struct Members<'a> {
+    /// Remaining authored bytes.
+    tail: &'a str,
+    /// Whether a member has preceded the next closing bracket.
+    saw_start: bool,
+    /// Whether the member union is complemented.
+    negated: bool,
+}
+
+impl<'a> Members<'a> {
+    /// Starts after the opening bracket and optional negation marker.
+    fn new(pattern: &'a str) -> Self {
+        let tail = &pattern[1..];
+        let negated = tail.starts_with(['!', '^']);
+        Self {
+            tail: if negated { &tail[1..] } else { tail },
+            saw_start: false,
+            negated,
+        }
+    }
+
+    /// Recognizes one complete member without evaluating its predicate.
+    fn next(&mut self) -> Option<Member> {
+        let scalar = take_scalar(&mut self.tail)?;
+        if scalar == ']' && self.saw_start {
+            return Some(Member::End);
+        }
+        self.saw_start = true;
+        if scalar == '\\' {
+            return take_scalar(&mut self.tail).map(Member::Scalar);
+        }
+        if scalar == '['
+            && let Some((named, consumed)) = NamedClass::parse(self.tail)
+        {
+            self.tail = &self.tail[consumed..];
+            return Some(Member::Named(named));
+        }
+        Some(Member::Scalar(scalar))
+    }
+}
+
+/// Finds the outer closing bracket, shielding an unclosed region to component end.
+pub(super) fn class_boundary(pattern: &str) -> usize {
+    let mut members = Members::new(pattern);
+    while let Some(member) = members.next() {
+        if matches!(member, Member::End) {
+            return pattern.len() - members.tail.len();
+        }
+    }
+    pattern.len()
+}
+
 /// Parses a class at the start of a component suffix, returning consumed bytes.
 pub(super) fn parse_class(pattern: &str) -> (ParsedClass, usize) {
-    let mut tail = &pattern[1..];
-    let negated = tail.starts_with(['!', '^']);
-    if negated {
-        tail = &tail[1..];
-    }
+    let mut members = Members::new(pattern);
     let mut class = Class {
         ranges: Vec::new(),
         named: Vec::new(),
-        negated,
+        negated: members.negated,
     };
-    let mut saw_start = false;
+    let mut invalid = false;
     let mut range_start = None;
-    while let Some(mut scalar) = take_scalar(&mut tail) {
-        if scalar == ']' && saw_start {
-            return (class.finish(), pattern.len() - tail.len());
-        }
-        saw_start = true;
-        let escaped = scalar == '\\';
-        if escaped {
-            let Some(next) = take_scalar(&mut tail) else {
-                break;
-            };
-            scalar = next;
-        }
-        if scalar == '['
-            && !escaped
-            && let Some((named, consumed)) = NamedClass::parse(tail)
-        {
-            if range_start.is_some() {
-                return (ParsedClass::Never, pattern.len());
+    while let Some(member) = members.next() {
+        match member {
+            Member::End => {
+                let parsed = if invalid {
+                    ParsedClass::Never
+                } else {
+                    class.finish()
+                };
+                return (parsed, pattern.len() - members.tail.len());
             }
-            class.named.push(named);
-            tail = &tail[consumed..];
-        } else {
-            add_scalar(&mut class, &mut range_start, scalar, &mut tail);
+            Member::Named(named) => {
+                invalid |= range_start.take().is_some();
+                class.named.push(named);
+            }
+            Member::Scalar(scalar) => {
+                add_scalar(&mut class, &mut range_start, scalar, &mut members.tail);
+            }
         }
     }
-    (ParsedClass::Unclosed, 0)
+    if invalid {
+        (ParsedClass::Never, pattern.len())
+    } else {
+        (ParsedClass::Unclosed, 0)
+    }
 }
 
 /// Adds one ordinary member or completes a pending range.
