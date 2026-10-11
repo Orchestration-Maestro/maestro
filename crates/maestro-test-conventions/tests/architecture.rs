@@ -30,7 +30,6 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         ("maestro", "dedicated"),
         ("maestro-models", "core"),
         ("maestro-test-conventions", "dedicated"),
-        ("maestro-storage", "core"),
         ("maestro-tooling", "dedicated"),
     ] {
         workspace.member("models", name, "");
@@ -201,7 +200,6 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-lock", "core"),
         ("maestro-pattern", "core"),
         ("maestro-models", "core"),
-        ("maestro-storage", "core"),
         ("maestro-resources", "core"),
         ("maestro-settings", "core"),
         ("maestro-extensions-wasm", "core"),
@@ -353,13 +351,13 @@ fn metadata_command_failure_is_reported_not_accepted() {
 #[test]
 fn workspace_package_names_require_direct_member_paths_even_when_patched() {
     let workspace = Workspace::new();
-    workspace.list(&[("maestro-session", "core"), ("maestro-storage", "core")]);
-    workspace.member("storage", "maestro-storage", "");
+    workspace.list(&[("maestro-session", "core"), ("maestro-agent", "core")]);
+    workspace.member("agent", "maestro-agent", "");
     let manifest = workspace.root.join("Cargo.toml");
     let text = std::fs::read_to_string(&manifest).unwrap();
     std::fs::write(
         &manifest,
-        format!("{text}[patch.crates-io]\nmaestro-storage = {{ path = \"crates/storage\" }}\n"),
+        format!("{text}[patch.crates-io]\nmaestro-agent = {{ path = \"crates/agent\" }}\n"),
     )
     .unwrap();
     for kind in [
@@ -371,25 +369,25 @@ fn workspace_package_names_require_direct_member_paths_even_when_patched() {
     ] {
         let mut sources = vec![
             "version = \"0.1\"",
-            "git = \"https://example.invalid/storage\"",
+            "git = \"https://example.invalid/agent\"",
         ];
         if kind != "dev-dependencies" {
             sources.extend([
                 "version = \"0.1\", optional = true",
-                "git = \"https://example.invalid/storage\", optional = true",
+                "git = \"https://example.invalid/agent\", optional = true",
             ]);
         }
         for source in sources {
             workspace.member(
                 "session",
                 "maestro-session",
-                &format!("[{kind}]\nrenamed = {{ package = \"maestro-storage\", {source} }}"),
+                &format!("[{kind}]\nrenamed = {{ package = \"maestro-agent\", {source} }}"),
             );
-            assert_eq!(check_workspace(&workspace.root), Err("dependency maestro-session -> maestro-storage must use a path to that workspace member".into()));
+            assert_eq!(check_workspace(&workspace.root), Err("dependency maestro-session -> maestro-agent must use a path to that workspace member".into()));
         }
-        workspace.member("session", "maestro-session", &format!("[{kind}]\nrenamed = {{ package = \"maestro-storage\", path = \"../storage/../storage\" }}"));
+        workspace.member("session", "maestro-session", &format!("[{kind}]\nrenamed = {{ package = \"maestro-agent\", path = \"../agent/../agent\" }}"));
         let expected = if kind == "dev-dependencies" {
-            Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-storage".into())
+            Err("internal dev dependency requires declared dependency-free test support: maestro-session -> maestro-agent".into())
         } else {
             Ok(())
         };
@@ -414,7 +412,7 @@ fn forbidden_direct_edges_are_rejected() {
     core_to_dedicated_dependency_is_rejected();
     forbidden_policy_matrix();
     for (from, to) in [
-        ("maestro-agent", "maestro-storage"),
+        ("maestro-agent", "maestro-settings"),
         ("maestro-session", "maestro-tools"),
         ("maestro-cli", "maestro-session"),
         ("maestro-chat", "maestro-rpc"),
@@ -502,13 +500,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 32);
+    assert_eq!(support::policy::POLICY.len(), 31);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        74
+        72
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -587,9 +585,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 32);
-    assert_eq!(consumers.len(), 23);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
+    assert_eq!(rows.len(), 31);
+    assert_eq!(consumers.len(), 22);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 8);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }
@@ -884,7 +882,7 @@ fn metadata_graph_failures_cross_the_public_interface() {
         return;
     }
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-agent", "maestro-models", "maestro-storage"]);
+    workspace.foundation(&["maestro-agent", "maestro-models", "maestro-settings"]);
     workspace.member(
         "maestro-agent",
         "maestro-agent",
@@ -952,7 +950,7 @@ fn invalid_resolved_edges(workspace: &Workspace, valid: &serde_json::Value) {
     workspace.metadata_probe(
         valid,
         &value,
-        "forbidden production dependency: maestro-agent -> maestro-storage",
+        "forbidden production dependency: maestro-agent -> maestro-settings",
     );
     let mut value = valid.clone();
     value["packages"][1]["name"] = json!("maestro-unknown");
