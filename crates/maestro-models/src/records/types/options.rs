@@ -164,6 +164,14 @@ pub struct SimpleStreamOptions {
     pub tool_choice: Option<ToolChoice>,
 }
 
+/// Original options supplied to a dynamic callback, without conversion between forms.
+pub enum StreamOptionsInput {
+    /// Open provider-specific options.
+    Raw(ProviderStreamOptions),
+    /// Typed simple invocation options.
+    Simple(SimpleStreamOptions),
+}
+
 /// Select whether and which tool the model must call.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(from = "ToolChoiceWire")]

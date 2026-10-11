@@ -45,18 +45,49 @@ removes previous custom data and uses offline descriptors as the transformation
 input. Refresh clears
 the preceding file diagnostic before reloading.
 
-Stored OAuth credentials select the registered
-[OAuth model transformations](models/oauth.md). Transformations run in
-registration order before publication. A transformation failure propagates and
-keeps the previously published list, without restoring an earlier file error.
-Reload clears previous request configuration before loading; an OAuth
-transformation failure keeps the newly loaded request sources. Dynamic provider
-registration is not exposed by this module.
+Construction loads without resetting shared account or protocol registrations.
+`refresh` clears request sources and the preceding file diagnostic, resets shared
+registrations, loads the underlying catalog, then replays this registry's retained
+providers in initial registration order. A transformation failure stops replay
+with earlier effects still visible. See [OAuth transformations](models/oauth.md)
+for the delegated account behavior.
+
+## Dynamic providers
+
+`register_provider(name, Arc<RwLock<ProviderConfigInput>>)` validates the incoming
+record, applies it, then retains it. A callback requires a nonempty provider API;
+a nonempty model list requires a provider endpoint, key or OAuth, and an API on
+each model or its provider. Validation failure changes nothing. Dynamic
+`ProviderModelInput` values do not use the file loader's defaults or limit checks.
+
+Nonempty model lists replace this provider's descriptors and append definitions
+in supplied order, including duplicates. Missing or empty lists do not replace
+immediately. Endpoint/header-only updates publish replacement matching descriptors
+while retaining unrelated handles; a no-op retains the list itself. Model headers
+are request sources rather than descriptor metadata.
+
+Repeat registration applies only the incoming record immediately, then merges its
+defined fields into the first retained configuration handle without moving its
+slot. Empty strings, lists and maps, and false flags are defined values. Provider
+request sources instead replace as a whole when an incoming key is nonempty,
+headers are present, or the auth-header flag is true.
+
+OAuth registration forces the installed ID to the registration name. Raw and
+simple protocol calls forward to the supplied callback under `provider:<name>`;
+see [invocation records](records.md) for option carriers. Incoming OAuth model
+transforms run after nonempty replacement when stored OAuth credentials exist.
+A transform failure leaves installed handlers, request sources and the replacement
+list visible, but does not retain the failed configuration.
+
+`unregister_provider` does nothing for unknown names. A known name is removed
+before refresh restores the underlying catalog and replays surviving providers;
+a replay failure does not undo removal. Retained old descriptors and callback
+handles remain independent of later publication or registration changes.
 
 ## Request authentication
 
 `get_api_key_for_provider(provider, operations)` selects a credential key with
-its fallback resolver disabled, then tries the model file's configured key.
+its fallback resolver disabled, then tries the configured nonempty provider key.
 A present empty credential key suppresses the configured fallback.
 `get_api_key_and_headers(model, operations)` accepts a shared descriptor, including
 one outside the catalog, and returns `ResolvedRequestAuth::Success` or
@@ -87,11 +118,12 @@ request sources use both provider and model ID as their identity.
 `has_configured_auth` checks credential presence then configured key presence.
 `get_available` returns a separate list of shared descriptors, preserving selected
 slot order and duplicates. `get_provider_auth_status` prefers credential metadata,
-otherwise describes a configured command, environment variable or literal key.
+otherwise describes a nonempty configured command, environment variable or literal key.
 These metadata operations do not execute stored/configured helpers or refresh
 tokens; a credential fallback callback supplied by the caller runs as given.
 `is_using_oauth` inspects the accepted stored credential kind, not the selected key.
 
-`get_provider_display_name` uses current OAuth metadata, the shared mutable
+`get_provider_display_name` uses the retained name, retained OAuth name, current
+OAuth metadata, the shared mutable
 `BUILT_IN_PROVIDER_DISPLAY_NAMES` table, then the provider ID. Empty names are
 present values.

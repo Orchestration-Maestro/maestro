@@ -47,6 +47,7 @@ impl ModelRegistry {
             .provider_configs
             .get(provider)
             .and_then(|c| c.api_key.as_ref())
+            .filter(|key| !key.is_empty())
         else {
             return status;
         };
@@ -66,9 +67,21 @@ impl ModelRegistry {
             label,
         }
     }
-    /// Prefer the current OAuth label, then the shared shipped table, then the identifier.
+    /// Prefer retained labels, then current OAuth, shipped labels and the identifier.
     #[must_use]
     pub fn get_provider_display_name(&self, provider: &str) -> String {
+        let registered = self.registered_providers.get(provider).map(|config| {
+            let config = config.read().unwrap_or_else(PoisonError::into_inner);
+            (config.name.clone(), config.oauth.clone())
+        });
+        if let Some((name, oauth)) = registered {
+            if let Some(name) = name {
+                return name;
+            }
+            if let Some(oauth) = oauth {
+                return oauth.name().to_owned();
+            }
+        }
         if let Some(oauth) = maestro_models::get_oauth_provider(provider) {
             return oauth.name().to_owned();
         }

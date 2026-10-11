@@ -20,6 +20,12 @@ keep, edit or replace it. When an adapter calls a response hook, it supplies sta
 and headers before consuming the response body; provider-specific policy is documented
 on each provider page. Both receive the invocation's model, shared and read-only.
 
+Dynamic catalog callbacks accept `StreamOptionsInput::Raw(ProviderStreamOptions)`
+or `StreamOptionsInput::Simple(SimpleStreamOptions)`. The carrier retains the
+original form, including open raw fields, typed objects and hooks; an absent
+outer options operand stays absent. See [dynamic providers](catalog.md#dynamic-providers)
+for registration and replay.
+
 The [offline model catalog](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/catalog.md) provides owned embedded descriptors,
 exact lookup, thinking-level selection, identity comparison and flat-rate costs.
 
