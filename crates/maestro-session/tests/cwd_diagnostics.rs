@@ -72,7 +72,27 @@ fn cwd_diagnosis_skips_memory_empty_and_existing_paths() {
 }
 
 #[test]
-fn cwd_diagnosis_accepts_existing_files_and_symlink_targets() {
+fn cwd_diagnosis_accepts_existing_files_and_unpublished_sessions() {
+    let scratch = Scratch::new();
+    let dir = Path::new(scratch.text());
+    let file = stored_history(&scratch, "/unused");
+    let plain = dir.join("plain");
+    std::fs::write(&plain, "x").unwrap();
+    let manager = SessionManager::open(&file, None, plain.to_str()).unwrap();
+    assert_eq!(get_missing_session_cwd_issue(&manager, "/fallback"), None);
+    let unpublished = SessionManager::create(
+        dir.join("absent").to_str().unwrap(),
+        Some(scratch.text()),
+        "unused",
+    )
+    .unwrap();
+    assert!(unpublished.get_session_file().is_some());
+    assert!(get_missing_session_cwd_issue(&unpublished, "/fallback").is_some());
+}
+
+#[cfg(unix)]
+#[test]
+fn cwd_diagnosis_follows_symlinks_to_existing_targets_only() {
     let scratch = Scratch::new();
     let dir = Path::new(scratch.text());
     let file = stored_history(&scratch, "/unused");
@@ -82,7 +102,7 @@ fn cwd_diagnosis_accepts_existing_files_and_symlink_targets() {
     let dangling = dir.join("dangling");
     std::os::unix::fs::symlink(&plain, &live).unwrap();
     std::os::unix::fs::symlink(dir.join("nowhere"), &dangling).unwrap();
-    for (cwd, diagnosed) in [(&plain, false), (&live, false), (&dangling, true)] {
+    for (cwd, diagnosed) in [(&live, false), (&dangling, true)] {
         let manager = SessionManager::open(&file, None, cwd.to_str()).unwrap();
         assert_eq!(
             get_missing_session_cwd_issue(&manager, "/fallback").is_some(),
@@ -91,14 +111,6 @@ fn cwd_diagnosis_accepts_existing_files_and_symlink_targets() {
             cwd.display()
         );
     }
-    let unpublished = SessionManager::create(
-        dir.join("absent").to_str().unwrap(),
-        Some(scratch.text()),
-        "unused",
-    )
-    .unwrap();
-    assert!(unpublished.get_session_file().is_some());
-    assert!(get_missing_session_cwd_issue(&unpublished, "/fallback").is_some());
 }
 
 #[test]

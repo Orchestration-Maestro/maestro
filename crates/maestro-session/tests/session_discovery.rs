@@ -12,6 +12,7 @@ use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
 use serde_json::{Value, json};
 use std::io;
 use std::path::Path;
+#[cfg(unix)]
 use std::sync::mpsc;
 use support::discovery::replay;
 use support::scratch::Scratch;
@@ -268,6 +269,7 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
     write_session(&scratch, "UPPER.JSONL", "upper", &[("user", "x", 9000)]);
     write_session(&scratch, "note.jsonl.bak", "bak", &[("user", "x", 9000)]);
     write_session(&elsewhere, "target.jsonl", "linked", &[("user", "x", 4000)]);
+    #[cfg(unix)]
     std::os::unix::fs::symlink(
         Path::new(elsewhere.text()).join("target.jsonl"),
         dir.join("link.jsonl"),
@@ -288,16 +290,19 @@ fn directory_listing_filters_jsonl_and_keeps_stable_activity_ties() {
             Some(&mut record),
         ))
         .unwrap();
+    let total = if cfg!(unix) { 7 } else { 6 };
     assert_eq!(
         progress,
-        (1..=7).map(|loaded| (loaded, 7)).collect::<Vec<_>>()
+        (1..=total)
+            .map(|loaded| (loaded, total))
+            .collect::<Vec<_>>()
     );
     let tied: Vec<_> = native_order(scratch.text())
         .into_iter()
         .filter(|name| name == "aa.jsonl" || name == "zz.jsonl")
         .map(|name| name.trim_end_matches(".jsonl").to_owned())
         .collect();
-    let mut expected = vec!["linked"];
+    let mut expected = if cfg!(unix) { vec!["linked"] } else { vec![] };
     expected.extend(tied.iter().map(String::as_str));
     expected.extend(["mid", "old"]);
     assert_eq!(ids(&listed), expected);
@@ -360,22 +365,27 @@ fn project_listing_directory_failures_return_empty() {
     let missing = Path::new(scratch.text()).join("missing");
     let file = Path::new(scratch.text()).join("plain");
     std::fs::write(&file, "x").unwrap();
-    let unreadable = Path::new(scratch.text()).join("locked");
-    std::fs::create_dir(&unreadable).unwrap();
-    std::fs::set_permissions(
-        &unreadable,
-        std::os::unix::fs::PermissionsExt::from_mode(0o000),
-    )
-    .unwrap();
     let empty = Scratch::new();
-    let mut calls = 0;
-    for dir in [
+    let mut dirs = vec![
         missing.to_str().unwrap(),
         file.to_str().unwrap(),
-        unreadable.to_str().unwrap(),
         "",
         empty.text(),
-    ] {
+    ];
+    #[cfg(unix)]
+    let unreadable = Path::new(scratch.text()).join("locked");
+    #[cfg(unix)]
+    {
+        std::fs::create_dir(&unreadable).unwrap();
+        std::fs::set_permissions(
+            &unreadable,
+            std::os::unix::fs::PermissionsExt::from_mode(0o000),
+        )
+        .unwrap();
+        dirs.push(unreadable.to_str().unwrap());
+    }
+    let mut calls = 0;
+    for dir in dirs {
         let mut count = |_, _| {
             calls += 1;
             Ok(())
@@ -391,6 +401,7 @@ fn project_listing_directory_failures_return_empty() {
         assert!(listed.is_empty());
     }
     assert_eq!(calls, 0);
+    #[cfg(unix)]
     std::fs::set_permissions(
         &unreadable,
         std::os::unix::fs::PermissionsExt::from_mode(0o700),
@@ -427,6 +438,7 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
     .unwrap();
     let outside = Scratch::new();
     projects(&outside, &[("c", "linked", 8000)]);
+    #[cfg(unix)]
     std::os::unix::fs::symlink(
         Path::new(outside.text()).join("sessions/c"),
         sessions.join("link"),
@@ -459,6 +471,7 @@ fn all_projects_counts_candidates_before_reading() {
     assert_eq!(listed.len(), 2);
 }
 
+#[cfg(unix)]
 #[test]
 fn all_projects_skips_unreadable_children() {
     let scratch = Scratch::new();
@@ -499,6 +512,7 @@ fn all_projects_top_level_failure_returns_empty() {
     assert_eq!(calls, 0);
 }
 
+#[cfg(unix)]
 /// A named pipe candidate: its reader blocks until a producer opens the write end.
 fn fifo(dir: &Path, name: &str) -> std::path::PathBuf {
     let path = dir.join(name);
@@ -512,11 +526,13 @@ fn fifo(dir: &Path, name: &str) -> std::path::PathBuf {
     path
 }
 
+#[cfg(unix)]
 /// Write a pipe on another thread; the returned handle joins that write.
 fn produce(path: std::path::PathBuf, text: String) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || std::fs::write(path, text).unwrap())
 }
 
+#[cfg(unix)]
 /// Create a blocking pipe and a ready session in `dir` so native enumeration lists the pipe first.
 fn pipe_enumerated_first(dir: &Path) -> std::path::PathBuf {
     for (pipe_name, ready_name) in [("pipe", "ready"), ("ready", "pipe")] {
@@ -543,6 +559,7 @@ fn pipe_enumerated_first(dir: &Path) -> std::path::PathBuf {
     panic!("no creation order lists the pipe first");
 }
 
+#[cfg(unix)]
 #[test]
 fn progress_observes_completion_order_before_stable_results() {
     for all_projects in [false, true] {
@@ -611,6 +628,7 @@ fn invalid_candidates_still_advance_progress() {
     assert_eq!(listed.len(), 1);
 }
 
+#[cfg(unix)]
 #[test]
 fn progress_error_returns_empty_without_draining_reads() {
     for all_projects in [false, true] {
@@ -650,12 +668,23 @@ fn progress_error_returns_empty_without_draining_reads() {
 }
 
 #[test]
-fn discovery_reads_lossy_utf8_and_skips_failed_metadata() {
+fn discovery_reads_lossy_utf8() {
     let scratch = Scratch::new();
     let dir = Path::new(scratch.text());
     let mut bytes = session_text("lossy", &[("user", "before", 2000)]).into_bytes();
     bytes.extend_from_slice(b"\n{\"type\":\"message\",\"message\":{\"role\":\"user\",\"content\":\"bad \xff byte\",\"timestamp\":1}}\n");
     std::fs::write(dir.join("lossy.jsonl"), bytes).unwrap();
+    let listed = list(&scratch);
+    assert_eq!(ids(&listed), ["lossy"]);
+    assert_eq!(listed[0].all_messages_text, "before bad \u{fffd} byte");
+}
+
+#[cfg(unix)]
+#[test]
+fn discovery_skips_candidates_whose_metadata_read_fails() {
+    let scratch = Scratch::new();
+    let dir = Path::new(scratch.text());
+    write_session(&scratch, "lossy.jsonl", "lossy", &[]);
     let pipe = fifo(dir, "vanishing.jsonl");
     let (opened, wait) = mpsc::channel();
     let producer = {
@@ -671,7 +700,6 @@ fn discovery_reads_lossy_utf8_and_skips_failed_metadata() {
     wait.recv().unwrap();
     producer.join().unwrap();
     assert_eq!(ids(&listed), ["lossy"]);
-    assert_eq!(listed[0].all_messages_text, "before bad \u{fffd} byte");
 }
 
 /// JSONL blocks of the session-format guide, where each fenced block starts a fresh parse.

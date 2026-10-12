@@ -761,6 +761,7 @@ fn jsonl_uses_compact_finite_number_spelling() {
     }
 }
 
+#[cfg(unix)]
 /// Run one named test in a disposable removed working directory child.
 fn removed_cwd_child(name: &str) -> bool {
     if std::env::var_os("MAESTRO_REMOVED_CWD_CHILD").is_some() {
@@ -781,6 +782,8 @@ fn removed_cwd_child(name: &str) -> bool {
     );
     false
 }
+
+#[cfg(unix)]
 /// Enter then unlink a working directory without altering the parent test process.
 fn remove_cwd() -> Directory {
     let directory = Directory::new();
