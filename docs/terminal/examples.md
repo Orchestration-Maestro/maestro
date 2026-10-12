@@ -17,8 +17,8 @@ Their styles read the embedded [brand pack](../identity.md#pack-shape-and-swappi
 ## Chat
 
 The focused [Editor](editor.md) offers `/delete` and `/clear` commands and native
-file completion. Nonempty messages become [Markdown](markdown.md); a Thinking
-indicator precedes a simulated reply after one second. Delete removes the last
+file completion. Accepted ordinary messages become [Markdown](markdown.md);
+a Thinking indicator precedes a simulated reply after one second. Delete removes the last
 message; clear removes the message region, retaining the welcome and editor.
 Ctrl+C exits, stopping the indicator and cancelling a pending reply.
 
@@ -36,7 +36,7 @@ Capabilities and dimensions use Rust's Debug representation.
 The key example displays lowercase UTF-8 hex, Unicode scalar numbers and escaped
 ESC, CR, LF, TAB and DEL characters. It retains the last 20 input events in
 arrival order, clipping only rendered rows. Resize narrower and wider to inspect
-stored input. Ctrl+C or SIGINT exits with an `Exiting...` line.
+stored input. Ctrl+C or SIGINT prints `Exiting...` after successful shutdown.
 [Key decoding](keys.md) owns enhanced-key recognition.
 
 ## Viewport

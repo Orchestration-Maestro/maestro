@@ -36,7 +36,7 @@ pub(super) fn color(role: &str) -> io::Result<Color> {
     );
     Ok(Rc::new(move |text| decorate(text, &prefix, "\x1b[39m")))
 }
-/// Wraps existing text, reopening a decoration after nested resets.
+/// Wraps existing text, reopening a decoration after matching closing sequences.
 pub(super) fn decorate(text: &str, open: &str, close: &str) -> String {
     format!("{open}{}{close}", text.replace(close, open))
 }

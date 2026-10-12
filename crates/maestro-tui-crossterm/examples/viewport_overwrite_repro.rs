@@ -90,7 +90,7 @@ mod unix {
         })
     }
 
-    /// Reports a stream failure after the original terminal is cleaned up.
+    /// Reports a stream failure after attempting cleanup of the original terminal.
     pub(super) fn main() -> io::Result<ExitCode> {
         use std::io::Write;
         match run() {
