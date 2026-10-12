@@ -2,6 +2,7 @@
 
 pub(crate) mod assistant_output;
 pub mod chat;
+pub mod cloud;
 pub mod content;
 pub mod faux;
 pub mod http;

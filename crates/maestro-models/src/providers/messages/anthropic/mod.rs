@@ -9,7 +9,7 @@ mod wire;
 
 use std::sync::{Arc, PoisonError, RwLock};
 
-use crate::providers::assistant_output::{fail, initial_message};
+use crate::providers::assistant_output::{callback_failure, fail, initial_message};
 use crate::providers::http::{
     HttpResponse, RequestFailure, envelope_failure, send_with_status_error, spawn_detached,
 };
@@ -267,11 +267,6 @@ async fn run(
             failure,
         );
     }
-}
-
-/// The failure a callback reports, with its message as it is.
-fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
-    RequestFailure::new(error.message)
 }
 
 /// Send the request and reduce the response into the shared message; a normal end concludes

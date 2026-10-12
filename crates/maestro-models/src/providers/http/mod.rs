@@ -18,6 +18,8 @@ use indexmap::IndexMap;
 
 use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use client::{ProxySelector, Route, configured_fetch};
 pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,

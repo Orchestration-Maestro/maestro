@@ -1,3 +1,4 @@
+use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::providers::response_sessions::openai_codex_responses::{
     Nullable, OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
     close_openai_codex_web_socket_sessions, get_openai_codex_web_socket_debug_stats,
@@ -36,6 +37,7 @@ fn local_client() -> (
 
 fn main() {
     response_session_surface();
+    std::hint::black_box((stream_bedrock, BedrockOptions::default()));
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
         model,

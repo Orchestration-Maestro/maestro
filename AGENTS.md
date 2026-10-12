@@ -189,6 +189,11 @@ Ask before adding any unapproved crate; never add one silently.
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
 The models crate reads server-sent events with its own reader, so no event-stream
 library is a dependency.
+Native targets of `maestro-models` also use `aws-sdk-bedrockruntime =1.148.0` and
+`aws-config =1.12.0` for Bedrock credentials, signing, retries and event framing, with
+`aws-smithy-runtime-api =1.19.0` and `aws-smithy-types =1.8.1` for the transport bridge
+(see [provider qualification libraries](docs/libraries/provider-qualification.md)); the browser
+build contains no AWS crate.
 
 Keep one current format for everything. No compatibility code.
 

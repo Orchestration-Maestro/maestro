@@ -1,4 +1,5 @@
-//! The assistant message a streamed invocation fills in and the update that ends it in failure.
+//! The assistant message a streamed invocation fills in, the update that ends it in failure and the
+//! failure a callback reports.
 
 use std::sync::{Arc, PoisonError};
 
@@ -6,7 +7,7 @@ use crate::providers::http::RequestFailure;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation,
-    ErrorReason, Model, SharedAssistantMessage, StopReason, Usage, UsageCost,
+    DiagnosticErrorInfo, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage, UsageCost,
 };
 
 /// The assistant message an invocation fills in, before any response arrives.
@@ -37,6 +38,11 @@ pub(crate) fn initial_message(model: &Model) -> AssistantMessage {
         error_message: None,
         timestamp: timestamp_now(),
     }
+}
+
+/// The failure a callback reports, with its message as it is.
+pub(crate) fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
+    RequestFailure::new(error.message)
 }
 
 /// End the stream with an error or abort update that keeps the partial message.
