@@ -1,6 +1,11 @@
 //! Display strings shared by tool renderers.
 
 use crate::utils::shell::sanitize_binary_output;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{
+    output::render_parts::{paint, themed},
+    utils::diagnostics::diagnostic,
+};
 use maestro_agent::AgentToolResult;
 use maestro_models::{DiagnosticErrorInfo, DiagnosticInput, UserBlock, extract_diagnostic_error};
 use maestro_theme::{Theme, ThemeColor, ThemeError};
@@ -18,6 +23,50 @@ const ANSI_PATTERN: &str = r"(?:\x{001B}\][\s\S]*?(?:\x{0007}|\x{001B}\\|\x{009C
 
 /// The compiled escape expression, built once.
 static ANSI: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(ANSI_PATTERN));
+
+/// Rows of a compact preview.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) const PREVIEW_LINES: usize = 10;
+
+/// The path argument: `file_path` unless it is absent or null, then `path`.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn selected_path(args: &Value) -> Option<&Value> {
+    args.get("file_path")
+        .filter(|value| !value.is_null())
+        .or_else(|| args.get("path"))
+}
+
+/// `lines` without the empty rows at the end; rows holding only whitespace stay.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn without_trailing_empty<T: AsRef<str>>(lines: &[T]) -> &[T] {
+    let kept = lines
+        .iter()
+        .rposition(|line| !line.as_ref().is_empty())
+        .map_or(0, |last| last + 1);
+    &lines[..kept]
+}
+
+/// The path in a call title: accent for a path, `...` for an empty, absent or null one,
+/// `[invalid arg]` for any other value that is not a string.
+///
+/// # Errors
+/// Returns a home lookup or theme failure.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn path_display(
+    path: Option<&Value>,
+    theme: &Theme,
+) -> Result<String, DiagnosticErrorInfo> {
+    let path = str(path)
+        .map(|raw| shorten_path(Some(raw)))
+        .transpose()
+        .map_err(|error| diagnostic(&error))?;
+    let invalid = themed(invalid_arg_text(theme))?;
+    match path.as_deref() {
+        None => Ok(invalid),
+        Some("") => paint(theme, &ThemeColor::ToolOutput, "..."),
+        Some(path) => paint(theme, &ThemeColor::Accent, path),
+    }
+}
 
 /// The string at `value`, `Some("")` when it is absent or null, `None` for any other type.
 #[must_use]

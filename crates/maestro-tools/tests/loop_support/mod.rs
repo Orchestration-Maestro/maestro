@@ -1,0 +1,171 @@
+//! A deterministic agent loop that runs tools for the wrapped-tool tests.
+#![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
+#![allow(dead_code)] // each test binary uses a different part of these helpers
+
+use crate::read_support::model;
+use maestro_agent::{
+    AgentContext, AgentEvent, AgentLoopConfig, AgentLoopOptions, AgentMessage, AgentTool,
+    run_agent_loop,
+};
+use maestro_models::{
+    AssistantContent, AssistantMessage, AssistantMessageEventStream, Context, JsonObject, Message,
+    ProviderObjects, SharedAssistantMessage, SimpleStreamOptions, StopReason, TextContent,
+    ToolCall, UserContent, UserMessage,
+};
+use serde_json::{Value, json};
+use std::{
+    collections::VecDeque,
+    sync::{
+        Arc, Mutex, RwLock,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
+
+/// A shared user entry.
+pub fn user(text: &str) -> AgentMessage {
+    AgentMessage::User(Arc::new(RwLock::new(UserMessage {
+        content: UserContent::Text(text.into()),
+        timestamp: 1.0,
+    })))
+}
+
+/// A completed assistant response, optionally requesting `calls` as `(id, tool, arguments)`.
+pub fn assistant(text: &str, calls: &[(&str, &str, Value)]) -> SharedAssistantMessage {
+    let mut content = vec![AssistantContent::Text(TextContent {
+        text: text.into(),
+        text_signature: None,
+    })];
+    content.extend(calls.iter().map(|(id, name, arguments)| {
+        AssistantContent::ToolCall(ToolCall {
+            id: (*id).into(),
+            name: (*name).into(),
+            arguments: arguments
+                .as_object()
+                .cloned()
+                .unwrap_or_else(JsonObject::new),
+            thought_signature: None,
+        })
+    }));
+    Arc::new(RwLock::new(AssistantMessage {
+        content,
+        api: "fixture".into(),
+        provider: "fixture".into(),
+        model: "fixture".into(),
+        response_model: None,
+        response_id: None,
+        diagnostics: None,
+        usage: serde_json::from_value(json!({"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}})).unwrap(),
+        stop_reason: StopReason::Stop,
+        error_message: None,
+        timestamp: 2.0,
+    }))
+}
+
+/// A loop configuration that converts history without a provider.
+pub fn config() -> AgentLoopConfig {
+    AgentLoopConfig {
+        thinking_budgets: None,
+        model: Arc::new(RwLock::new(model(vec![]).as_ref().clone())),
+        options: SimpleStreamOptions::default(),
+        extra: JsonObject::new(),
+        objects: ProviderObjects::default(),
+        convert_to_llm: Arc::new(|history| {
+            let messages = history
+                .read()
+                .unwrap()
+                .iter()
+                .map(|message| match message {
+                    AgentMessage::User(value) => Message::User(value.read().unwrap().clone()),
+                    AgentMessage::Assistant(value) => {
+                        Message::Assistant(value.read().unwrap().clone())
+                    }
+                    AgentMessage::ToolResult(value) => {
+                        Message::ToolResult(value.read().unwrap().clone())
+                    }
+                    AgentMessage::Custom(_) => unreachable!(),
+                })
+                .collect();
+            Box::pin(async { Ok(messages) })
+        }),
+        transform_context: None,
+        get_api_key: None,
+        before_tool_call: None,
+        after_tool_call: None,
+        should_stop_after_turn: None,
+        get_steering_messages: None,
+        get_follow_up_messages: None,
+        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
+    }
+}
+
+/// A controlled model that answers each turn with the next prepared response.
+pub fn responses(messages: Vec<SharedAssistantMessage>) -> AgentLoopOptions {
+    let messages = Arc::new(Mutex::new(VecDeque::from(messages)));
+    AgentLoopOptions {
+        signal: None,
+        stream_fn: Some(Arc::new(move |_, _: Context, _, _| {
+            let message = messages
+                .lock()
+                .unwrap()
+                .pop_front()
+                .expect("unexpected turn");
+            Box::pin(async {
+                let stream = AssistantMessageEventStream::new();
+                stream.end(Some(message));
+                Ok(stream)
+            })
+        })),
+    }
+}
+
+/// The tool-result messages one turn produced, as the model receives them, and its progress events.
+pub struct Turn {
+    /// Tool-result messages in call order.
+    pub results: Vec<Value>,
+    /// Progress events emitted by tools.
+    pub updates: usize,
+}
+
+/// Run one turn of tool calls, given as `(id, tool, arguments)`, through the raw loop.
+pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
+    let context = AgentContext {
+        system_prompt: "instructions".into(),
+        messages: Arc::new(RwLock::new(Vec::new())),
+        tools: Some(Arc::new(RwLock::new(
+            tools
+                .into_iter()
+                .map(|tool| Arc::new(RwLock::new(tool)))
+                .collect(),
+        ))),
+    };
+    let updates = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&updates);
+    let emit = Arc::new(move |event: AgentEvent| -> maestro_models::BoxFuture<_> {
+        if matches!(event, AgentEvent::ToolExecutionUpdate { .. }) {
+            counter.fetch_add(1, Ordering::SeqCst);
+        }
+        Box::pin(std::future::ready(Ok(())))
+    });
+    let returned = crate::read_support::run(run_agent_loop(
+        vec![user("go")],
+        context,
+        &config(),
+        emit,
+        responses(vec![assistant("call", calls), assistant("done", &[])]),
+    ))
+    .unwrap();
+    let results = returned
+        .iter()
+        .filter_map(|message| match message {
+            AgentMessage::ToolResult(message) => {
+                Some(serde_json::to_value(&*message.read().unwrap()).unwrap())
+            }
+            _ => None,
+        })
+        .collect();
+    Turn {
+        results,
+        updates: updates.load(Ordering::SeqCst),
+    }
+}

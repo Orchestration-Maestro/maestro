@@ -5,57 +5,20 @@
 mod display_support;
 
 use display_support::{
-    Env, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context, padded,
+    Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context, padded,
     theme_keys,
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, TextContent, UserBlock};
-use maestro_theme::{SyntaxHighlighter, SyntaxSpan, ThemeColor};
+use maestro_theme::SyntaxHighlighter;
 use maestro_tools::{
     ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions,
     create_read_tool_definition, output::render_utils::strip_ansi, wrap_tool_definition,
 };
 use maestro_tui::{Component, Text, tui::ComponentHandle};
 use serde_json::{Value, json};
-use std::{cell::RefCell, error::Error, rc::Rc, sync::Arc};
-
-/// Records every highlight request and classifies the whole text as a keyword.
-struct Probe {
-    /// Requests as (code, language).
-    calls: RefCell<Vec<(String, String)>>,
-    /// Whether the engine claims every language.
-    supported: bool,
-}
-
-impl Probe {
-    fn new(supported: bool) -> Rc<Self> {
-        Rc::new(Self {
-            calls: RefCell::default(),
-            supported,
-        })
-    }
-}
-
-impl SyntaxHighlighter for Probe {
-    fn supports_language(&self, _: &str) -> bool {
-        self.supported
-    }
-
-    fn highlight(
-        &self,
-        code: &str,
-        language: &str,
-    ) -> Result<Vec<SyntaxSpan>, Box<dyn Error + Send + Sync>> {
-        self.calls
-            .borrow_mut()
-            .push((code.to_owned(), language.to_owned()));
-        Ok(vec![SyntaxSpan {
-            range: 0..code.len(),
-            color: Some(ThemeColor::SyntaxKeyword),
-        }])
-    }
-}
+use std::{rc::Rc, sync::Arc};
 
 /// The palette color of a theme key, before any shift.
 fn color(key: &str) -> usize {
@@ -375,13 +338,7 @@ fn read_renderers_reuse_the_supplied_text_slot() {
 
 #[test]
 fn read_renderer_errors_leave_previous_text_unchanged() {
-    let env = Env::with(
-        Rc::new(bare_theme()),
-        Rc::new(Probe {
-            calls: RefCell::default(),
-            supported: true,
-        }),
-    );
+    let env = Env::with(Rc::new(bare_theme()), Probe::new(true));
     for case in cases("read_renderer_errors_leave_previous_text_unchanged") {
         let prior = Rc::new(Text::new("before".into(), 0, 0, None));
         let args = json!({"path": "after.txt"});

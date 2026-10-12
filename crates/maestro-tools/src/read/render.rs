@@ -4,8 +4,11 @@ use super::ReadToolDetails;
 use crate::{
     keybinding_hints::{EXPAND, key_text},
     output::{
-        render_parts::{expand_hint, float, into_text, num, paint, themed},
-        render_utils::{get_text_output, invalid_arg_text, replace_tabs, shorten_path, str},
+        render_parts::{expand_hint, float, into_text, num, paint},
+        render_utils::{
+            PREVIEW_LINES, get_text_output, path_display, replace_tabs, selected_path, str,
+            without_trailing_empty,
+        },
         truncate::{TruncationBy, format_size},
     },
     path_utils::resolve_read_path,
@@ -22,8 +25,6 @@ use serde_json::Value;
 /// Result of a render step.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
 
-/// Rows of a compact result.
-const PREVIEW_LINES: usize = 10;
 /// Names that mark a resource file.
 const RESOURCE_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
 
@@ -43,13 +44,6 @@ struct Classification {
     kind: Kind,
     /// Name shown for it.
     label: String,
-}
-
-/// The path argument: `file_path` unless it is absent or null, then `path`.
-fn selected_path(args: &Value) -> Option<&Value> {
-    args.get("file_path")
-        .filter(|value| !value.is_null())
-        .or_else(|| args.get("path"))
 }
 
 /// `:start-end` for the offset and limit arguments, empty when neither is present; a
@@ -73,16 +67,7 @@ fn line_range(args: &Value, theme: &Theme) -> Rendered<String> {
 
 /// The call line of an unclassified read.
 fn format_read_call(args: &Value, theme: &Theme) -> Rendered<String> {
-    let path = str(selected_path(args))
-        .map(|raw| shorten_path(Some(raw)))
-        .transpose()
-        .map_err(|error| diagnostic(&error))?;
-    let invalid = themed(invalid_arg_text(theme))?;
-    let display = match path.as_deref() {
-        None => invalid,
-        Some("") => paint(theme, &ThemeColor::ToolOutput, "...")?,
-        Some(path) => paint(theme, &ThemeColor::Accent, path)?,
-    };
+    let display = path_display(selected_path(args), theme)?;
     let title = paint(theme, &ThemeColor::ToolTitle, &Theme::bold("read", true))?;
     Ok(format!("{title} {display}{}", line_range(args, theme)?))
 }
@@ -246,7 +231,7 @@ fn format_read_result(
     let language = str(selected_path(context.args))
         .filter(|raw| !raw.is_empty())
         .and_then(get_language_from_path);
-    let mut lines = match language {
+    let lines = match language {
         Some(language) => highlight_code(
             &context.live_theme,
             &*context.highlighter,
@@ -255,11 +240,7 @@ fn format_read_result(
         ),
         None => output.split('\n').map(str::to_owned).collect(),
     };
-    let kept = lines
-        .iter()
-        .rposition(|line| !line.is_empty())
-        .map_or(0, |last| last + 1);
-    lines.truncate(kept);
+    let lines = without_trailing_empty(&lines);
     let shown = if options.expanded {
         lines.len()
     } else {
@@ -274,7 +255,8 @@ fn format_read_result(
         .collect::<Rendered<Vec<_>>>()?;
     let mut text = ["\n", &rows.join("\n")].concat();
     if lines.len() > shown {
-        text += &expand_hint(lines.len() - shown, theme, &context.live_theme)?;
+        let counts = format!("{} more lines", lines.len() - shown);
+        text += &expand_hint(&counts, theme, &context.live_theme)?;
     }
     Ok(text + &truncation_notice(result.details.as_ref(), theme)?)
 }

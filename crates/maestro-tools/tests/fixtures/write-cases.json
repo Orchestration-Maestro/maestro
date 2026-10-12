@@ -1,0 +1,1782 @@
+{
+  "theme_keys": [
+    "toolTitle",
+    "accent",
+    "toolOutput",
+    "warning",
+    "dim",
+    "muted",
+    "error",
+    "mdCodeBlock",
+    "syntaxKeyword",
+    "syntaxType",
+    "syntaxNumber",
+    "syntaxString",
+    "syntaxComment",
+    "syntaxFunction",
+    "syntaxVariable",
+    "syntaxOperator",
+    "syntaxPunctuation"
+  ],
+  "tests": {
+    "write_titles_preserve_display_alias_precedence": [
+      {
+        "input": {
+          "args": null
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {}
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": null
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": ""
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": 42
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;7m[invalid arg]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": {}
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;7m[invalid arg]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": []
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;7m[invalid arg]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "ignored.rs",
+            "file_path": "shown.txt"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mshown.txt\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "fallback.txt",
+            "file_path": null
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mfallback.txt\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "ignored.txt",
+            "file_path": ""
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "ignored.txt",
+            "file_path": 42
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;7m[invalid arg]\u001b[39m"
+      }
+    ],
+    "write_content_preview_preserves_display_whitespace": [
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": null
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": 3
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;7m[invalid content arg - expected string]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": {}
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;7m[invalid content arg - expected string]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": []
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;7m[invalid content arg - expected string]\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": ""
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "\n\n"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "one\ntwo\n\n"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mone\u001b[39m\n\u001b[38;5;3mtwo\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "one\n\ntwo\n"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mone\u001b[39m\n\u001b[38;5;3m\u001b[39m\n\u001b[38;5;3mtwo\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "one\n \n"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mone\u001b[39m\n\u001b[38;5;3m \u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "a\tb\n\t\n"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3ma   b\u001b[39m\n\u001b[38;5;3m   \u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "one\r\ntwo\rtail"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mone\u001b[39m\n\u001b[38;5;3mtwotail\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "\u20ac\ud83d\ude00\ufeff\u0085"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3m\u20ac\ud83d\ude00\ufeff\u0085\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "a\u001b[31mb\u001b[0m"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3ma\u001b[31mb\u001b[0m\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "\r"
+          }
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n"
+      }
+    ],
+    "write_preview_limits_count_before_terminal_wrapping": [
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1"
+          },
+          "expanded": false
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1"
+          },
+          "expanded": true
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9"
+          },
+          "expanded": false
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9"
+          },
+          "expanded": true
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10"
+          },
+          "expanded": false
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10"
+          },
+          "expanded": true
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+          },
+          "expanded": false
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+          },
+          "expanded": true
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\n\u001b[38;5;3mline 11\u001b[39m"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+          },
+          "expanded": false
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m\n... (2 more lines, 12 total,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+          },
+          "expanded": true
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mline 1\u001b[39m\n\u001b[38;5;3mline 2\u001b[39m\n\u001b[38;5;3mline 3\u001b[39m\n\u001b[38;5;3mline 4\u001b[39m\n\u001b[38;5;3mline 5\u001b[39m\n\u001b[38;5;3mline 6\u001b[39m\n\u001b[38;5;3mline 7\u001b[39m\n\u001b[38;5;3mline 8\u001b[39m\n\u001b[38;5;3mline 9\u001b[39m\n\u001b[38;5;3mline 10\u001b[39m\n\u001b[38;5;3mline 11\u001b[39m\n\u001b[38;5;3mline 12\u001b[39m"
+      }
+    ],
+    "write_preview_uses_live_expand_keybindings": [
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10"
+          },
+          "binding": []
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5m\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "notes.txt",
+            "content": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10"
+          },
+          "binding": [
+            "alt+x",
+            "ctrl+o",
+            "alt+x"
+          ]
+        },
+        "expected": "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\n\n\u001b[38;5;3mrow 0\u001b[39m\n\u001b[38;5;3mrow 1\u001b[39m\n\u001b[38;5;3mrow 2\u001b[39m\n\u001b[38;5;3mrow 3\u001b[39m\n\u001b[38;5;3mrow 4\u001b[39m\n\u001b[38;5;3mrow 5\u001b[39m\n\u001b[38;5;3mrow 6\u001b[39m\n\u001b[38;5;3mrow 7\u001b[39m\n\u001b[38;5;3mrow 8\u001b[39m\n\u001b[38;5;3mrow 9\u001b[39m\u001b[38;5;6m\n... (1 more lines, 11 total,\u001b[39m \u001b[38;5;5malt+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      }
+    ],
+    "write_highlighting_follows_explicit_selected_path": [
+      {
+        "input": {
+          "args": {
+            "path": "x.rs",
+            "content": "fn main() {\n\tlet x = 7;\n}\n"
+          },
+          "expanded": true
+        },
+        "expected": "write x.rs\n\nfn main() {\n   let x = 7;\n}"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x.RS",
+            "content": "fn main() {\n\tlet x = 7;\n}\n"
+          },
+          "expanded": true
+        },
+        "expected": "write x.RS\n\nfn main() {\n   let x = 7;\n}"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x.unknown",
+            "content": "fn main() {\n\tlet x = 7;\n}\n"
+          },
+          "expanded": true
+        },
+        "expected": "write x.unknown\n\nfn main() {\n   let x = 7;\n}"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "LICENSE",
+            "content": "fn main() {\n\tlet x = 7;\n}\n"
+          },
+          "expanded": true
+        },
+        "expected": "write LICENSE\n\nfn main() {\n   let x = 7;\n}"
+      },
+      {
+        "input": {
+          "args": {
+            "path": "other.txt",
+            "file_path": "shown.rs",
+            "content": "fn main() {\n\tlet x = 7;\n}\n"
+          },
+          "expanded": true
+        },
+        "expected": "write shown.rs\n\nfn main() {\n   let x = 7;\n}"
+      }
+    ],
+    "write_results_render_only_nonempty_errors": [
+      {
+        "input": {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "ignore"
+              }
+            ]
+          }
+        },
+        "expected": null
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": []
+          }
+        },
+        "expected": null
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": [
+              {
+                "type": "image",
+                "data": "abc",
+                "mimeType": "image/png"
+              }
+            ]
+          }
+        },
+        "expected": null
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": [
+              {
+                "type": "text",
+                "text": "problem"
+              }
+            ]
+          }
+        },
+        "expected": "\n\u001b[38;5;7mproblem\u001b[39m"
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": [
+              {
+                "type": "text",
+                "text": "z"
+              },
+              {
+                "type": "image",
+                "data": "abc"
+              },
+              {
+                "type": "text",
+                "text": "a"
+              },
+              {
+                "type": "text",
+                "text": "z"
+              }
+            ]
+          }
+        },
+        "expected": "\n\u001b[38;5;7mz\na\nz\u001b[39m"
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ]
+          }
+        },
+        "expected": null
+      },
+      {
+        "input": {
+          "result": {
+            "isError": true,
+            "content": [
+              {
+                "type": "text",
+                "text": "a\r\nb"
+              }
+            ]
+          }
+        },
+        "expected": "\n\u001b[38;5;7ma\r\nb\u001b[39m"
+      }
+    ],
+    "write_definition_keeps_schema_and_prompt_metadata": [
+      {
+        "input": {},
+        "expected": {
+          "name": "write",
+          "label": "write",
+          "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+          "promptSnippet": "Create or overwrite files",
+          "promptGuidelines": [
+            "Use write only for new files or complete rewrites."
+          ],
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path",
+              "content"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to write (relative or absolute)"
+              },
+              "content": {
+                "type": "string",
+                "description": "Content to write to the file"
+              }
+            }
+          },
+          "hasPrepare": false,
+          "hasMode": false,
+          "hasShell": false,
+          "hasCall": true,
+          "hasResult": true
+        }
+      }
+    ],
+    "write_input_fields_follow_shared_preflight_validation": [
+      {
+        "input": {
+          "args": {
+            "path": "x",
+            "content": "y"
+          }
+        },
+        "expected": {
+          "ok": true,
+          "args": {
+            "path": "x",
+            "content": "y"
+          }
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x",
+            "content": "y",
+            "other": {
+              "nested": "kept"
+            }
+          }
+        },
+        "expected": {
+          "ok": true,
+          "args": {
+            "path": "x",
+            "content": "y",
+            "other": {
+              "nested": "kept"
+            }
+          }
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": "",
+            "content": ""
+          }
+        },
+        "expected": {
+          "ok": true,
+          "args": {
+            "path": "",
+            "content": ""
+          }
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "content": "y"
+          }
+        },
+        "expected": {
+          "ok": false,
+          "error": "Validation failed for tool \"write\":\n  - path: must have required properties path\n\nReceived arguments:\n{\n  \"content\": \"y\"\n}"
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x"
+          }
+        },
+        "expected": {
+          "ok": false,
+          "error": "Validation failed for tool \"write\":\n  - content: must have required properties content\n\nReceived arguments:\n{\n  \"path\": \"x\"\n}"
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": 42,
+            "content": "y"
+          }
+        },
+        "expected": {
+          "ok": true,
+          "args": {
+            "path": "42",
+            "content": "y"
+          }
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x",
+            "content": false
+          }
+        },
+        "expected": {
+          "ok": true,
+          "args": {
+            "path": "x",
+            "content": "false"
+          }
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": {},
+            "content": "y"
+          }
+        },
+        "expected": {
+          "ok": false,
+          "error": "Validation failed for tool \"write\":\n  - path: must be string\n\nReceived arguments:\n{\n  \"path\": {},\n  \"content\": \"y\"\n}"
+        }
+      },
+      {
+        "input": {
+          "args": {
+            "path": "x",
+            "content": []
+          }
+        },
+        "expected": {
+          "ok": false,
+          "error": "Validation failed for tool \"write\":\n  - content: must be string\n\nReceived arguments:\n{\n  \"path\": \"x\",\n  \"content\": []\n}"
+        }
+      }
+    ],
+    "write_streaming_cache_rebuilds_or_appends_at_owned_boundaries": [
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "fn main() {",
+              false
+            ],
+            [
+              "x.rs",
+              "fn main() {\n\tlet x=1;",
+              false
+            ],
+            [
+              "x.rs",
+              "fn main() {\n\tlet x=1;\n}",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "fn main() {",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "fn main() {"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "fn main() {",
+                "lang": "rust"
+              },
+              {
+                "code": "   let x=1;",
+                "lang": "rust"
+              },
+              {
+                "code": "fn main() {\n   let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "fn main() {",
+              "   let x=1;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "   let x=1;",
+                "lang": "rust"
+              },
+              {
+                "code": "}",
+                "lang": "rust"
+              },
+              {
+                "code": "fn main() {\n   let x=1;\n}",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "fn main() {",
+              "   let x=1;",
+              "}"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "let x=1;",
+              false
+            ],
+            [
+              "x.rs",
+              "let x=1;",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "let x=1;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [],
+            "lines": [
+              "write x.rs",
+              "",
+              "let x=1;"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "a.rs",
+              "let x=1;",
+              false
+            ],
+            [
+              "b.rs",
+              "let x=1;",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write a.rs",
+              "",
+              "let x=1;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write b.rs",
+              "",
+              "let x=1;"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "a.rs",
+              "let x=1;",
+              false
+            ],
+            [
+              "a.py",
+              "let x=1;",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write a.rs",
+              "",
+              "let x=1;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "python"
+              }
+            ],
+            "lines": [
+              "write a.py",
+              "",
+              "let x=1;"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "before",
+              false
+            ],
+            [
+              "x.rs",
+              "after",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "before",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "before"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "after",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "after"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "before",
+              false
+            ],
+            [
+              "x.nope",
+              "after",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "before",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "before"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [],
+            "lines": [
+              "write x.nope",
+              "",
+              "after"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "/* a",
+              false
+            ],
+            [
+              "x.rs",
+              "/* a\nb */",
+              true
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "/* a",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "/* a"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "/* a\nb */",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "/* a",
+              "b */"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "let x=1;",
+              false
+            ],
+            [
+              "x.rs",
+              42,
+              false
+            ],
+            [
+              "x.rs",
+              "let y=2;",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "let x=1;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "let x=1;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [],
+            "lines": [
+              "write x.rs",
+              "",
+              "[invalid content arg - expected string]"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "let y=2;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "let y=2;"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "let x0 = 0;\nlet x1 = 1;\nlet x2 = 2;\nlet x3 = 3;\nlet x4 = 4;\nlet x5 = 5;\nlet x6 = 6;\nlet x7 = 7;\nlet x8 = 8;\nlet x9 = 9;\nlet x10 = 10;\nlet x11 = 11;\nlet x12 = 12;\nlet x13 = 13;\nlet x14 = 14;\nlet x15 = 15;\nlet x16 = 16;\nlet x17 = 17;\nlet x18 = 18;\nlet x19 = 19;\nlet x20 = 20;\nlet x21 = 21;\nlet x22 = 22;\nlet x23 = 23;\nlet x24 = 24;\nlet x25 = 25;\nlet x26 = 26;\nlet x27 = 27;\nlet x28 = 28;\nlet x29 = 29;\nlet x30 = 30;\nlet x31 = 31;\nlet x32 = 32;\nlet x33 = 33;\nlet x34 = 34;\nlet x35 = 35;\nlet x36 = 36;\nlet x37 = 37;\nlet x38 = 38;\nlet x39 = 39;\nlet x40 = 40;\nlet x41 = 41;\nlet x42 = 42;\nlet x43 = 43;\nlet x44 = 44;\nlet x45 = 45;\nlet x46 = 46;\nlet x47 = 47;\nlet x48 = 48;\nlet x49 = 49;\nlet x50 = 50;\nlet x51 = 51;",
+              false
+            ],
+            [
+              "x.rs",
+              "let x0 = 0;\nlet x1 = 1;\nlet x2 = 2;\nlet x3 = 3;\nlet x4 = 4;\nlet x5 = 5;\nlet x6 = 6;\nlet x7 = 7;\nlet x8 = 8;\nlet x9 = 9;\nlet x10 = 10;\nlet x11 = 11;\nlet x12 = 12;\nlet x13 = 13;\nlet x14 = 14;\nlet x15 = 15;\nlet x16 = 16;\nlet x17 = 17;\nlet x18 = 18;\nlet x19 = 19;\nlet x20 = 20;\nlet x21 = 21;\nlet x22 = 22;\nlet x23 = 23;\nlet x24 = 24;\nlet x25 = 25;\nlet x26 = 26;\nlet x27 = 27;\nlet x28 = 28;\nlet x29 = 29;\nlet x30 = 30;\nlet x31 = 31;\nlet x32 = 32;\nlet x33 = 33;\nlet x34 = 34;\nlet x35 = 35;\nlet x36 = 36;\nlet x37 = 37;\nlet x38 = 38;\nlet x39 = 39;\nlet x40 = 40;\nlet x41 = 41;\nlet x42 = 42;\nlet x43 = 43;\nlet x44 = 44;\nlet x45 = 45;\nlet x46 = 46;\nlet x47 = 47;\nlet x48 = 48;\nlet x49 = 49;\nlet x50 = 50;\nlet x51 = 51;\nlet tail=53;",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "let x0 = 0;\nlet x1 = 1;\nlet x2 = 2;\nlet x3 = 3;\nlet x4 = 4;\nlet x5 = 5;\nlet x6 = 6;\nlet x7 = 7;\nlet x8 = 8;\nlet x9 = 9;\nlet x10 = 10;\nlet x11 = 11;\nlet x12 = 12;\nlet x13 = 13;\nlet x14 = 14;\nlet x15 = 15;\nlet x16 = 16;\nlet x17 = 17;\nlet x18 = 18;\nlet x19 = 19;\nlet x20 = 20;\nlet x21 = 21;\nlet x22 = 22;\nlet x23 = 23;\nlet x24 = 24;\nlet x25 = 25;\nlet x26 = 26;\nlet x27 = 27;\nlet x28 = 28;\nlet x29 = 29;\nlet x30 = 30;\nlet x31 = 31;\nlet x32 = 32;\nlet x33 = 33;\nlet x34 = 34;\nlet x35 = 35;\nlet x36 = 36;\nlet x37 = 37;\nlet x38 = 38;\nlet x39 = 39;\nlet x40 = 40;\nlet x41 = 41;\nlet x42 = 42;\nlet x43 = 43;\nlet x44 = 44;\nlet x45 = 45;\nlet x46 = 46;\nlet x47 = 47;\nlet x48 = 48;\nlet x49 = 49;\nlet x50 = 50;\nlet x51 = 51;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "let x0 = 0;",
+              "let x1 = 1;",
+              "let x2 = 2;",
+              "let x3 = 3;",
+              "let x4 = 4;",
+              "let x5 = 5;",
+              "let x6 = 6;",
+              "let x7 = 7;",
+              "let x8 = 8;",
+              "let x9 = 9;",
+              "let x10 = 10;",
+              "let x11 = 11;",
+              "let x12 = 12;",
+              "let x13 = 13;",
+              "let x14 = 14;",
+              "let x15 = 15;",
+              "let x16 = 16;",
+              "let x17 = 17;",
+              "let x18 = 18;",
+              "let x19 = 19;",
+              "let x20 = 20;",
+              "let x21 = 21;",
+              "let x22 = 22;",
+              "let x23 = 23;",
+              "let x24 = 24;",
+              "let x25 = 25;",
+              "let x26 = 26;",
+              "let x27 = 27;",
+              "let x28 = 28;",
+              "let x29 = 29;",
+              "let x30 = 30;",
+              "let x31 = 31;",
+              "let x32 = 32;",
+              "let x33 = 33;",
+              "let x34 = 34;",
+              "let x35 = 35;",
+              "let x36 = 36;",
+              "let x37 = 37;",
+              "let x38 = 38;",
+              "let x39 = 39;",
+              "let x40 = 40;",
+              "let x41 = 41;",
+              "let x42 = 42;",
+              "let x43 = 43;",
+              "let x44 = 44;",
+              "let x45 = 45;",
+              "let x46 = 46;",
+              "let x47 = 47;",
+              "let x48 = 48;",
+              "let x49 = 49;",
+              "let x50 = 50;",
+              "let x51 = 51;"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "let x51 = 51;",
+                "lang": "rust"
+              },
+              {
+                "code": "let tail=53;",
+                "lang": "rust"
+              },
+              {
+                "code": "let x0 = 0;\nlet x1 = 1;\nlet x2 = 2;\nlet x3 = 3;\nlet x4 = 4;\nlet x5 = 5;\nlet x6 = 6;\nlet x7 = 7;\nlet x8 = 8;\nlet x9 = 9;\nlet x10 = 10;\nlet x11 = 11;\nlet x12 = 12;\nlet x13 = 13;\nlet x14 = 14;\nlet x15 = 15;\nlet x16 = 16;\nlet x17 = 17;\nlet x18 = 18;\nlet x19 = 19;\nlet x20 = 20;\nlet x21 = 21;\nlet x22 = 22;\nlet x23 = 23;\nlet x24 = 24;\nlet x25 = 25;\nlet x26 = 26;\nlet x27 = 27;\nlet x28 = 28;\nlet x29 = 29;\nlet x30 = 30;\nlet x31 = 31;\nlet x32 = 32;\nlet x33 = 33;\nlet x34 = 34;\nlet x35 = 35;\nlet x36 = 36;\nlet x37 = 37;\nlet x38 = 38;\nlet x39 = 39;\nlet x40 = 40;\nlet x41 = 41;\nlet x42 = 42;\nlet x43 = 43;\nlet x44 = 44;\nlet x45 = 45;\nlet x46 = 46;\nlet x47 = 47;\nlet x48 = 48;\nlet x49 = 49;",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "let x0 = 0;",
+              "let x1 = 1;",
+              "let x2 = 2;",
+              "let x3 = 3;",
+              "let x4 = 4;",
+              "let x5 = 5;",
+              "let x6 = 6;",
+              "let x7 = 7;",
+              "let x8 = 8;",
+              "let x9 = 9;",
+              "let x10 = 10;",
+              "let x11 = 11;",
+              "let x12 = 12;",
+              "let x13 = 13;",
+              "let x14 = 14;",
+              "let x15 = 15;",
+              "let x16 = 16;",
+              "let x17 = 17;",
+              "let x18 = 18;",
+              "let x19 = 19;",
+              "let x20 = 20;",
+              "let x21 = 21;",
+              "let x22 = 22;",
+              "let x23 = 23;",
+              "let x24 = 24;",
+              "let x25 = 25;",
+              "let x26 = 26;",
+              "let x27 = 27;",
+              "let x28 = 28;",
+              "let x29 = 29;",
+              "let x30 = 30;",
+              "let x31 = 31;",
+              "let x32 = 32;",
+              "let x33 = 33;",
+              "let x34 = 34;",
+              "let x35 = 35;",
+              "let x36 = 36;",
+              "let x37 = 37;",
+              "let x38 = 38;",
+              "let x39 = 39;",
+              "let x40 = 40;",
+              "let x41 = 41;",
+              "let x42 = 42;",
+              "let x43 = 43;",
+              "let x44 = 44;",
+              "let x45 = 45;",
+              "let x46 = 46;",
+              "let x47 = 47;",
+              "let x48 = 48;",
+              "let x49 = 49;",
+              "let x50 = 50;",
+              "let x51 = 51;",
+              "let tail=53;"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "a\r",
+              false
+            ],
+            [
+              "x.rs",
+              "a\r\nb\t",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "a",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "a"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "a",
+                "lang": "rust"
+              },
+              {
+                "code": "b   ",
+                "lang": "rust"
+              },
+              {
+                "code": "a\nb   ",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "a",
+              "b"
+            ]
+          }
+        ]
+      },
+      {
+        "input": {
+          "steps": [
+            [
+              "x.rs",
+              "",
+              false
+            ],
+            [
+              "x.rs",
+              "x",
+              false
+            ]
+          ]
+        },
+        "expected": [
+          {
+            "same": false,
+            "highlightInputs": [
+              {
+                "code": "",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs"
+            ]
+          },
+          {
+            "same": true,
+            "highlightInputs": [
+              {
+                "code": "x",
+                "lang": "rust"
+              },
+              {
+                "code": "x",
+                "lang": "rust"
+              }
+            ],
+            "lines": [
+              "write x.rs",
+              "",
+              "x"
+            ]
+          }
+        ]
+      }
+    ],
+    "write_renderers_reuse_call_and_result_components": [
+      {
+        "input": {},
+        "expected": {
+          "sameCall": true,
+          "call": [
+            "\u001b[38;5;1m\u001b[1mwrite\u001b[22m\u001b[39m \u001b[38;5;2mx.txt\u001b[39m",
+            "",
+            "\u001b[38;5;3mafter\u001b[39m"
+          ],
+          "sameEmpty": true,
+          "empty": [],
+          "sameError": true,
+          "error": [
+            "",
+            "\u001b[38;5;7mnew error\u001b[39m"
+          ]
+        }
+      }
+    ],
+    "write_reports_written_utf8_bytes": [
+      {
+        "input": {
+          "content": "ASCII",
+          "path": "nested/result.txt"
+        },
+        "expected": {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 5 bytes to nested/result.txt"
+              }
+            ]
+          },
+          "bytes": "4153434949"
+        }
+      },
+      {
+        "input": {
+          "content": "\u20ac",
+          "path": "nested/result.txt"
+        },
+        "expected": {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 3 bytes to nested/result.txt"
+              }
+            ]
+          },
+          "bytes": "e282ac"
+        }
+      },
+      {
+        "input": {
+          "content": "\ud83d\ude00",
+          "path": "nested/result.txt"
+        },
+        "expected": {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 4 bytes to nested/result.txt"
+              }
+            ]
+          },
+          "bytes": "f09f9880"
+        }
+      },
+      {
+        "input": {
+          "content": "",
+          "path": "nested/result.txt"
+        },
+        "expected": {
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 0 bytes to nested/result.txt"
+              }
+            ]
+          },
+          "bytes": ""
+        }
+      }
+    ],
+    "write_resolves_paths_before_filesystem_work": [
+      {
+        "input": {
+          "path": "out.txt",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/work"
+            ],
+            [
+              "write",
+              "/work/out.txt",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to out.txt"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "input": {
+          "path": "a/../out.txt",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/work"
+            ],
+            [
+              "write",
+              "/work/out.txt",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to a/../out.txt"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "input": {
+          "path": "@nested/out.txt",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/work/nested"
+            ],
+            [
+              "write",
+              "/work/nested/out.txt",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to @nested/out.txt"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "input": {
+          "path": "space\u00a0name.txt",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/work"
+            ],
+            [
+              "write",
+              "/work/space name.txt",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to space\u00a0name.txt"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "input": {
+          "path": "/absolute/a/../out.txt",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/absolute/a/.."
+            ],
+            [
+              "write",
+              "/absolute/a/../out.txt",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to /absolute/a/../out.txt"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "input": {
+          "path": "",
+          "cwd": "/work"
+        },
+        "expected": {
+          "calls": [
+            [
+              "mkdir",
+              "/"
+            ],
+            [
+              "write",
+              "/work",
+              "x"
+            ]
+          ],
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote 1 bytes to "
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "mutation_queue_raw_names_preserve_literal_path_identity": [
+      {
+        "input": {
+          "pair": [
+            "target.txt",
+            "alias.txt"
+          ]
+        },
+        "expected": true
+      },
+      {
+        "input": {
+          "pair": [
+            "target.txt",
+            "hard.txt"
+          ]
+        },
+        "expected": false
+      },
+      {
+        "input": {
+          "pair": [
+            "raw",
+            "@raw"
+          ]
+        },
+        "expected": false
+      },
+      {
+        "input": {
+          "pair": [
+            "space name",
+            "space\u00a0name"
+          ]
+        },
+        "expected": false
+      },
+      {
+        "input": {
+          "pair": [
+            "~literal",
+            "literal"
+          ]
+        },
+        "expected": false
+      },
+      {
+        "input": {
+          "pair": [
+            "missing",
+            "child/../missing"
+          ]
+        },
+        "expected": true
+      }
+    ],
+    "mutation_queue_serializes_existing_symlink_aliases": [
+      {
+        "input": {},
+        "expected": [
+          "a:start",
+          "a:end",
+          "b:start",
+          "b:end"
+        ]
+      }
+    ],
+    "mutation_queue_keeps_invocation_order_before_waiting": [
+      {
+        "input": {},
+        "expected": [
+          "a:start",
+          "a:end",
+          "b:start",
+          "b:end"
+        ]
+      }
+    ],
+    "mutation_queue_different_paths_can_finish_out_of_order": [
+      {
+        "input": {},
+        "expected": [
+          "a:start",
+          "b:start",
+          "b:end",
+          "a:end"
+        ]
+      }
+    ],
+    "mutation_queue_failure_does_not_poison_following_work": [
+      {
+        "input": {},
+        "expected": [
+          "first failure",
+          "second success"
+        ]
+      }
+    ],
+    "write_abort_releases_queue_and_drops_pending_operation": [
+      {
+        "input": {},
+        "expected": [
+          "mkdir",
+          "write:start",
+          "Operation aborted",
+          "next"
+        ]
+      }
+    ],
+    "write_propagates_adapter_failures_without_progress": [
+      {
+        "input": {
+          "stage": "mkdir"
+        },
+        "expected": {
+          "calls": [
+            "mkdir"
+          ],
+          "error": "mkdir failed"
+        }
+      },
+      {
+        "input": {
+          "stage": "write"
+        },
+        "expected": {
+          "calls": [
+            "mkdir",
+            "write"
+          ],
+          "error": "write failed"
+        }
+      }
+    ],
+    "write_preaborted_call_starts_no_operations": [
+      {
+        "input": {},
+        "expected": {
+          "calls": [],
+          "error": "Operation aborted"
+        }
+      }
+    ],
+    "write_abort_during_mkdir_skips_write_after_queue_release": [
+      {
+        "input": {},
+        "expected": [
+          "mkdir:start",
+          "Operation aborted",
+          "next"
+        ]
+      }
+    ]
+  }
+}

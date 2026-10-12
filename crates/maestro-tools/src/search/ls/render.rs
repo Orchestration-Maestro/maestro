@@ -111,7 +111,8 @@ fn format_ls_result(
             .collect::<Rendered<Vec<_>>>()?;
         text = ["\n", &rows.join("\n")].concat();
         if lines.len() > shown {
-            text += &expand_hint(lines.len() - shown, theme, &context.live_theme)?;
+            let counts = format!("{} more lines", lines.len() - shown);
+            text += &expand_hint(&counts, theme, &context.live_theme)?;
         }
     }
     Ok(text + &limit_warning(result.details.as_ref(), theme)?)

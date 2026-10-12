@@ -66,6 +66,15 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
     if is_absolute(&expanded) {
         return Ok(expanded);
     }
+    resolve_path(&[cwd, &expanded])
+}
+
+/// Resolve `parts` lexically right to left, reading the process working directory only
+/// when the host-independent operands cannot anchor the result.
+///
+/// # Errors
+/// Returns an error when a needed host directory is unavailable or not UTF-8.
+pub(crate) fn resolve_path(parts: &[&str]) -> io::Result<String> {
     let directories = cfg!(windows)
         .then(|| env_drive_directories(|name| std::env::var_os(name)))
         .unwrap_or_default();
@@ -73,7 +82,7 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
         .iter()
         .map(|(letter, path)| (*letter, path.as_str()))
         .collect();
-    if let Ok(resolved) = try_resolve(&[cwd, &expanded], &drives) {
+    if let Ok(resolved) = try_resolve(parts, &drives) {
         return Ok(resolved);
     }
     let process_cwd = utf8(std::env::current_dir()?, "working directory")?;
@@ -81,7 +90,7 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
         current: &process_cwd,
         drive_directories: &drives,
     };
-    Ok(resolve(&[cwd, &expanded], &anchor))
+    Ok(resolve(parts, &anchor))
 }
 
 /// Insert the narrow no-break space before a case-insensitive ` AM.` or ` PM.`.

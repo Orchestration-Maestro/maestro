@@ -26,9 +26,12 @@ internal `maestro-agent`, `maestro-models`, `maestro-theme` and `maestro-tui`
 crates, workspace `serde_json` (now also a normal dependency) and workspace
 `futures-util =0.3.34` (`std`, `sink`). The read family is native-only:
 `icu_normalizer =2.3.0` with `compiled_data` supplies NFD, `tokio =1.53.2` with
-`rt` and `fs` supplies file reads and blocking probes, and on Unix `rustix =1.1.5`
-with `std` and `fs` checks readability without opening the file. Other targets
-open the file. No package or version beyond the existing lockfile is added.
+`rt`, `fs` and `sync` supplies file reads, file writes, blocking probes and the
+one-shot wake-ups of the [file mutation queue](../tools-edit.md#file-mutation-queue)
+(`sync` adds no package and was already enabled in the workspace), and on Unix
+`rustix =1.1.5` with `std` and `fs` checks readability without opening the file.
+Other targets open the file. The write family is native-only as well. No package
+or version beyond the existing lockfile is added.
 Read selection spells floating-point line numbers with `ryu-js`.
 
 On Unix a present `HOME` is used verbatim, including an empty value, and

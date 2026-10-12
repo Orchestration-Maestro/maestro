@@ -118,6 +118,7 @@ are later scope, not active foundation concepts.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
 - **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, local future execution, environment queries and log files.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit, the text leaf and, optionally, the foundation utility; it requires only the toolkit until `maestro-text` exists.
+- **File mutation queue:** The native per-file ordering in `maestro-tools` that runs file-changing tool operations on one file one at a time, in call order, while different files proceed independently; files are identified by canonical path, or by lexical absolute path when canonicalization fails.
 - **OutputAccumulator:** A native tool-output stream that owns decoded snapshot accounting and an optional raw overflow artifact.
 - **Grapheme:** A user-perceived character cluster, indivisible when terminal text is wrapped, truncated or sliced; escapes inside it never split it. Tool-output line clipping instead counts Unicode scalars.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.

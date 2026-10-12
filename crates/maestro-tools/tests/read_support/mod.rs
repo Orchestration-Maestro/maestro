@@ -350,7 +350,7 @@ pub fn only_text(result: &AgentToolResult<ReadToolDetails>) -> String {
 }
 
 /// A result's content as the JSON the model receives.
-pub fn content_json(result: &AgentToolResult<ReadToolDetails>) -> Value {
+pub fn content_json<D>(result: &AgentToolResult<D>) -> Value {
     serde_json::to_value(&result.content).unwrap()
 }
 
