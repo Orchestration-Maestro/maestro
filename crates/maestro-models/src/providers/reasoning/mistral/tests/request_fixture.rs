@@ -23,7 +23,7 @@ pub(super) fn expand(value: &mut Value) {
         Value::Object(members) if members.contains_key("generated_text") => {
             assert_eq!(members.len(), 1);
             let text: RepeatedText =
-                serde_json::from_value(members.remove("generated_text").unwrap()).unwrap();
+                serde_json::from_value(members.shift_remove("generated_text").unwrap()).unwrap();
             *value = Value::String(format!(
                 "{}{}{}",
                 text.prefix,

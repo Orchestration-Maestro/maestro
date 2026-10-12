@@ -96,7 +96,7 @@ fn assert_command(lines: &[String], group: &str, expected: &Value) {
         .unwrap_or_else(|| json!({"present":false}));
     let callback = expected_value(&data).is_some_and(|v| v.get("withSession").is_some());
     if let Some(object) = data.get_mut("value").and_then(Value::as_object_mut) {
-        object.remove("withSession");
+        object.shift_remove("withSession");
     }
     if group == "switchSession" {
         data = json!({"present":false});

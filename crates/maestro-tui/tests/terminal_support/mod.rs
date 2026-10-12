@@ -60,7 +60,7 @@ pub fn render_expected(mut value: Value) -> Value {
     if value["imageId"].is_object()
         && let Some(object) = value.as_object_mut()
     {
-        object.remove("imageId");
+        object.shift_remove("imageId");
     }
     value
 }

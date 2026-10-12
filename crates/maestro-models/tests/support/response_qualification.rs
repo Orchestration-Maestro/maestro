@@ -461,7 +461,7 @@ fn without_clocks(mut context: Value) -> Value {
     if let Some(messages) = context["messages"].as_array_mut() {
         for message in messages {
             if let Some(object) = message.as_object_mut() {
-                object.remove("timestamp");
+                object.shift_remove("timestamp");
             }
         }
     }

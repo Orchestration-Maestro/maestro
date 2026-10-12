@@ -49,7 +49,7 @@ fn changed(pointer: &str, value: Option<Value>) -> Value {
         let object = pack.pointer_mut(parent).unwrap().as_object_mut().unwrap();
         match value {
             Some(value) => object.insert(key, value),
-            None => object.remove(&key),
+            None => object.shift_remove(&key),
         };
     })
 }
@@ -614,7 +614,7 @@ fn brand_pack_fields_reject_missing_null_and_wrong_shapes() {
                 "" => missing.as_object_mut(),
                 parent => missing.pointer_mut(parent).unwrap().as_object_mut(),
             };
-            assert!(object.unwrap().remove(key).is_some(), "{pointer}");
+            assert!(object.unwrap().shift_remove(key).is_some(), "{pointer}");
             attempts.push(missing);
         }
         for attempt in attempts {
@@ -731,7 +731,7 @@ fn brand_pack_invalid_color_and_font_references_fail_explicitly() {
         );
     }
     let no_light = load_value(&edited(|p| {
-        p["modes"].as_object_mut().unwrap().remove("light");
+        p["modes"].as_object_mut().unwrap().shift_remove("light");
     }))
     .unwrap();
     assert!(no_light.presentation(BrandMode::Dark).is_ok());

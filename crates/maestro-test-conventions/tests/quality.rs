@@ -678,3 +678,35 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     write("tests/helper.rs", FORBID);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+/// Whether `entries` hold the `serde_json` map `remove` disallow entry, among any others.
+fn disallows_json_map_remove(entries: &[toml::Value]) -> bool {
+    entries.iter().any(|entry| {
+        entry.get("path").and_then(toml::Value::as_str) == Some("serde_json::map::Map::remove")
+            && entry
+                .get("reason")
+                .and_then(toml::Value::as_str)
+                .is_some_and(|reason| {
+                    reason.contains("shift_remove") && reason.contains("swap_remove")
+                })
+    })
+}
+
+#[test]
+fn ordered_json_map_removal_stays_disallowed() {
+    let config: toml::Table = include_str!("../../../clippy.toml").parse().unwrap();
+    let entries = config["disallowed-methods"].as_array().unwrap();
+    assert!(disallows_json_map_remove(entries));
+    let unrelated = toml::Value::String("std::string::String::leak".into());
+    let required = entries
+        .iter()
+        .find(|entry| entry.is_table())
+        .unwrap()
+        .clone();
+    assert!(disallows_json_map_remove(&[
+        unrelated.clone(),
+        required.clone()
+    ]));
+    assert!(disallows_json_map_remove(&[required, unrelated.clone()]));
+    assert!(!disallows_json_map_remove(&[unrelated]));
+}

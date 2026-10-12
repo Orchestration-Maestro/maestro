@@ -427,7 +427,7 @@ async fn run_case(case: &Case, mode: ToolExecutionMode) {
     );
     let mut message = serde_json::to_value(&returned[0]).unwrap();
     assert!(message["timestamp"].as_f64().is_some_and(f64::is_finite));
-    message.as_object_mut().unwrap().remove("timestamp");
+    message.as_object_mut().unwrap().shift_remove("timestamp");
     assert_eq!(message, case.expected);
     let seen = seen.lock().unwrap();
     assert_eq!(seen.ends[0].1, case.expected.get("details").cloned());

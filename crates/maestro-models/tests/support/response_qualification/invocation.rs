@@ -347,7 +347,7 @@ fn compare_stream(
     message
         .as_object_mut()
         .ok_or("message object")?
-        .remove("timestamp");
+        .shift_remove("timestamp");
     assert!(
         Some(canonical(message)) == row.expected.result.clone().map(canonical),
         "{} terminal result: {diagnostic}",
@@ -471,7 +471,10 @@ fn request_record(request: &maestro_models::HttpRequest, wire: &Wire) -> TestRes
 fn event_record(event: &AssistantMessageEvent) -> TestResult<Value> {
     let mut record = serde_json::to_value(event)?;
     for field in ["partial", "message", "error"] {
-        record.as_object_mut().ok_or("event object")?.remove(field);
+        record
+            .as_object_mut()
+            .ok_or("event object")?
+            .shift_remove(field);
     }
     Ok(record)
 }

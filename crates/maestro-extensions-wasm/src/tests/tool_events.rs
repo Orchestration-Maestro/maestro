@@ -68,7 +68,7 @@ fn assert_call_alias(event: &Value) {
             let value: $alias = serde_json::from_value(event.clone()).unwrap();
             assert_eq!(serde_json::to_value(value).unwrap(), {
                 let mut plain = event.clone();
-                plain.as_object_mut().unwrap().remove("type");
+                plain.as_object_mut().unwrap().shift_remove("type");
                 plain
             });
         }};
@@ -91,7 +91,7 @@ fn assert_result_alias(event: &Value) {
         ($alias:ty) => {{
             let value: $alias = serde_json::from_value(event.clone()).unwrap();
             let mut plain = event.clone();
-            plain.as_object_mut().unwrap().remove("type");
+            plain.as_object_mut().unwrap().shift_remove("type");
             assert_eq!(serde_json::to_value(value).unwrap(), plain);
         }};
     }

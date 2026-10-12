@@ -267,7 +267,7 @@ fn maestro_response_sessions_preserve_transport_diagnostics() {
             super::super::stream::transport_diagnostic(&options, &body, row.input.started, &error)
                 .unwrap();
         let mut actual = serde_json::to_value(actual).unwrap();
-        actual.as_object_mut().unwrap().remove("timestamp");
+        actual.as_object_mut().unwrap().shift_remove("timestamp");
         assert_eq!(actual.as_object().unwrap().len(), 3);
         assert_eq!(row.expected.diagnostic.as_object().unwrap().len(), 3);
         for field in ["type", "error", "details"] {

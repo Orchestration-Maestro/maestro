@@ -366,7 +366,7 @@ fn theme_export_optional_fields_omit_empty_and_missing_values() {
     let json = with_export(&json!({}));
     assert_eq!(exported(&json), ThemeExportColors::default());
     let mut absent = custom_json("e", "#010203");
-    absent.as_object_mut().unwrap().remove("export");
+    absent.as_object_mut().unwrap().shift_remove("export");
     assert_eq!(exported(&absent), ThemeExportColors::default());
     let mixed = with_export(&json!({ "cardBg": "#010203", "infoBg": "" }));
     let colors = exported(&mixed);

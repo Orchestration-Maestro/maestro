@@ -463,7 +463,7 @@ fn maestro_response_sessions_preserve_open_socket_payloads() {
         assert_eq!(second["previous_response_id"], "r1");
 
         let (first, second) = two_requests("open-missing-input", |payload| {
-            drop(payload.as_object_mut().unwrap().remove("input"));
+            drop(payload.as_object_mut().unwrap().shift_remove("input"));
         })
         .await;
         assert!(first.get("input").is_none() && second.get("input").is_none());

@@ -472,7 +472,7 @@ async fn invoke(wire: &Wire, id: &str) -> TestResult<Value> {
     message
         .as_object_mut()
         .ok_or("message object")?
-        .remove("timestamp");
+        .shift_remove("timestamp");
     let requests = bundled::recorded(&requests)
         .iter()
         .map(request_record)
@@ -508,7 +508,7 @@ fn event_record(event: &AssistantMessageEvent) -> TestResult<Value> {
     let mut record = serde_json::to_value(event)?;
     let object = record.as_object_mut().ok_or("event object")?;
     for field in ["partial", "message", "error"] {
-        object.remove(field);
+        object.shift_remove(field);
     }
     Ok(record)
 }

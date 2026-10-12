@@ -16,7 +16,7 @@ pub async fn collect(stream: &AssistantMessageEventStream) -> TestResult<(Vec<Va
         }
         let mut value = serde_json::to_value(&event)?;
         for key in ["partial", "message", "error"] {
-            value.as_object_mut().ok_or("event")?.remove(key);
+            value.as_object_mut().ok_or("event")?.shift_remove(key);
         }
         events.push(value);
     }
@@ -24,6 +24,9 @@ pub async fn collect(stream: &AssistantMessageEventStream) -> TestResult<(Vec<Va
     assert!(aliases.iter().all(|alias| Arc::ptr_eq(alias, &result)));
     let snapshot = result.read().map_err(|e| e.to_string())?.clone();
     let mut result = serde_json::to_value(&snapshot)?;
-    result.as_object_mut().ok_or("result")?.remove("timestamp");
+    result
+        .as_object_mut()
+        .ok_or("result")?
+        .shift_remove("timestamp");
     Ok((events, result))
 }

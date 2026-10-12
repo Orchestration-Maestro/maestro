@@ -188,9 +188,12 @@ mod tests {
         assert_literals::<MaxTokensField>(&["max_completion_tokens", "max_tokens"]);
         assert_literals::<TextPhase>(&["commentary", "final_answer"]);
         let mut absent = model_fixture("custom", &json!({}));
-        absent.as_object_mut().unwrap().remove("compat");
-        absent.as_object_mut().unwrap().remove("thinkingLevelMap");
-        absent.as_object_mut().unwrap().remove("headers");
+        absent.as_object_mut().unwrap().shift_remove("compat");
+        absent
+            .as_object_mut()
+            .unwrap()
+            .shift_remove("thinkingLevelMap");
+        absent.as_object_mut().unwrap().shift_remove("headers");
         let model: Model = serde_json::from_value(absent.clone()).unwrap();
         assert_eq!(model.compat, None);
         assert_eq!(serde_json::to_value(model).unwrap(), absent);

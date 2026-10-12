@@ -41,7 +41,7 @@ impl Fields {
 
     /// Read a member, removing it from the unread ones.
     pub fn take(&mut self, key: &str) -> Option<Value> {
-        self.members.remove(key)
+        self.members.shift_remove(key)
     }
 
     /// Read a member the row must have.
@@ -92,7 +92,7 @@ pub fn assert_unique_queries(fixture: &str) -> TestResult {
         let id = row["id"].to_string();
         if let Some(members) = row.as_object_mut() {
             for key in ["test", "id", "expected"] {
-                members.remove(key);
+                members.shift_remove(key);
             }
         }
         for event in row
@@ -218,7 +218,7 @@ pub fn check_conversion(
             assert_eq!(failure.name, None, "{id}: a native cause carries no name");
             assert_eq!(
                 Some(Value::String(failure.message)),
-                error.remove("error"),
+                error.shift_remove("error"),
                 "{id}"
             );
         }
@@ -319,7 +319,7 @@ async fn published(stream: &AssistantMessageEventStream) -> TestResult<Vec<Value
         let mut value = serde_json::to_value(&event)?;
         if let Some(members) = value.as_object_mut() {
             for handle in ["partial", "message", "error"] {
-                members.remove(handle);
+                members.shift_remove(handle);
             }
         }
         events.push(value);
@@ -453,7 +453,7 @@ pub fn check_reduction(run: &Reduction, initial: &Value, mut expected: Fields) -
     let wanted = expected_message(run, initial, result)?;
     let mut actual = serde_json::to_value(&run.message)?;
     if let Some(members) = actual.as_object_mut() {
-        members.remove("timestamp");
+        members.shift_remove("timestamp");
     }
     assert_eq!(canonical(actual), canonical(wanted), "{id}: message");
     assert_eq!(
