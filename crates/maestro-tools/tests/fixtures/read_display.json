@@ -480,6 +480,28 @@
       ]
     },
     {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "decimal_sum",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 0.1,
+          "limit": 1.1
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:0.1-0.20000000000000018\u001b[39m"
+      ]
+    },
+    {
       "test": "read_classification_obeys_skill_docs_resource_priority",
       "id": "skill",
       "op": "call",

@@ -6,10 +6,10 @@ mod read_support;
 mod write_support;
 
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
-use maestro_tools::with_file_mutation_queue;
+use maestro_tools::with_file_mutation_queue as queue;
 use read_support::TempDir;
 use serde_json::json;
-use std::{future::Future, task::Poll};
+use std::task::Poll;
 use tokio::sync::oneshot;
 use write_support::{Gate, Journal, poll_once, ready, rows, single_expected};
 
@@ -30,14 +30,6 @@ fn tracked(
             Ok(())
         })
     }
-}
-
-/// Queue `operation` behind `path`.
-fn queue<T: Send + 'static, F: Future<Output = Result<T, DiagnosticErrorInfo>> + Send + 'static>(
-    path: &str,
-    operation: impl FnOnce() -> F + Send + 'static,
-) -> BoxFuture<Result<T, DiagnosticErrorInfo>> {
-    with_file_mutation_queue(path, operation)
 }
 
 /// The expected journal of a single-row group.

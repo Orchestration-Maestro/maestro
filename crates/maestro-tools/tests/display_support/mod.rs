@@ -30,6 +30,19 @@ use std::{
     sync::{Mutex, MutexGuard, PoisonError},
 };
 
+/// A highlighter that supports no language.
+pub struct NoLanguages;
+
+impl SyntaxHighlighter for NoLanguages {
+    fn supports_language(&self, _: &str) -> bool {
+        false
+    }
+
+    fn highlight(&self, _: &str, _: &str) -> Result<Vec<SyntaxSpan>, Box<dyn Error + Send + Sync>> {
+        Ok(Vec::new())
+    }
+}
+
 /// Viewport width every recorded row was laid out for.
 pub const WIDTH: usize = 1000;
 

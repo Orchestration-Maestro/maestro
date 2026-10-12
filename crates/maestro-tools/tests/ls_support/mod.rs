@@ -3,12 +3,11 @@
 #![cfg(not(target_arch = "wasm32"))]
 #![allow(dead_code)] // each test binary uses a different part of these helpers
 
-use crate::display_support::{Env, Setup, bind, context, padded_to, palette_of};
+use crate::display_support::{Env, NoLanguages, Setup, bind, context, padded_to, palette_of};
 use crate::read_support::run;
-use futures_util::future::join;
+use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo, UserBlock};
-use maestro_theme::{SyntaxHighlighter, SyntaxSpan};
 use maestro_tools::{
     LsOperations, LsToolDetails, LsToolInput, LsToolOptions, ToolRenderPhase,
     ToolRenderResultOptions, create_ls_tool, create_ls_tool_definition,
@@ -22,7 +21,6 @@ use serde::Deserialize;
 use serde_json::{Map, Number, Value, json};
 use std::{
     collections::HashSet,
-    error::Error,
     rc::Rc,
     sync::{
         Arc, Mutex,
@@ -258,6 +256,11 @@ pub struct ExecuteInput {
 }
 
 impl ExecuteInput {
+    /// Whether one operation never completes on its own.
+    pub fn is_pending(&self) -> bool {
+        self.pending.is_some()
+    }
+
     /// The process locale this case sorts under.
     pub fn locale(&self) -> String {
         self.locale
@@ -437,6 +440,24 @@ pub struct Outcome {
     pub updates: usize,
 }
 
+/// Poll `execution` to its pending operation, abort `signal` there, and require that the same
+/// future then settles on its next poll.
+fn observe_pending<T>(
+    execution: impl std::future::Future<Output = T>,
+    operations: &Scripted,
+    signal: &Cancellation,
+) -> T {
+    let mut execution = std::pin::pin!(execution);
+    assert!(execution.as_mut().now_or_never().is_none());
+    assert!(operations.started.is_aborted());
+    assert!(!signal.is_aborted());
+    signal.abort();
+    execution
+        .as_mut()
+        .now_or_never()
+        .expect("aborting the signal settles a pending operation")
+}
+
 /// Call the tool built over `cwd` and `operations` with `params`, observing progress updates.
 pub fn call_tool(
     input: &ExecuteInput,
@@ -484,13 +505,11 @@ pub fn call_tool(
             })
         }
     };
-    let aborter = async {
-        if input.pending.is_some() {
-            operations.started.cancelled().await;
-            signal.abort();
-        }
+    let result = if input.is_pending() {
+        run(async { observe_pending(execution, operations, signal) })
+    } else {
+        run(execution)
     };
-    let (result, ()) = run(join(execution, aborter));
     (result, updates.load(Ordering::SeqCst))
 }
 
@@ -556,19 +575,6 @@ pub fn assert_outcome(case: &Case, outcome: &Outcome) {
 /// Run `case` and assert the recorded outcome.
 pub fn check_execute(case: &Case) {
     assert_outcome(case, &execute(case));
-}
-
-/// A highlighter that claims no language.
-struct NoHighlighter;
-
-impl SyntaxHighlighter for NoHighlighter {
-    fn supports_language(&self, _: &str) -> bool {
-        false
-    }
-
-    fn highlight(&self, _: &str, _: &str) -> Result<Vec<SyntaxSpan>, Box<dyn Error + Send + Sync>> {
-        Ok(Vec::new())
-    }
 }
 
 /// A recorded render context.
@@ -709,7 +715,7 @@ struct OptionsInput {
 fn environment(context: &ContextInput) -> Env {
     Env::with(
         Rc::new(palette_of(&theme_keys(), context.theme_shift)),
-        Rc::new(NoHighlighter),
+        Rc::new(NoLanguages),
     )
 }
 
@@ -807,10 +813,7 @@ fn render_slot(
 /// Run a recorded reuse case: the replacement is the same component and shows the new text.
 pub fn check_reuse(case: &Case) {
     let input: SlotInput = serde_json::from_value(case.input.clone()).unwrap();
-    let env = Env::with(
-        Rc::new(palette_of(&theme_keys(), 0)),
-        Rc::new(NoHighlighter),
-    );
+    let env = Env::with(Rc::new(palette_of(&theme_keys(), 0)), Rc::new(NoLanguages));
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
     let row = render_slot(&input.slot, &env.theme, &env, &previous).unwrap();
     assert!(Rc::ptr_eq(&row, &previous), "case {}", case.id);
@@ -838,7 +841,7 @@ pub fn check_theme_error(case: &Case) {
         .into_iter()
         .filter(|key| key != missing)
         .collect();
-    let env = Env::with(Rc::new(palette_of(&keys, 0)), Rc::new(NoHighlighter));
+    let env = Env::with(Rc::new(palette_of(&keys, 0)), Rc::new(NoLanguages));
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
     let Err(error) = render_slot(&input.slot, &env.theme, &env, &previous) else {
         panic!("case {} must fail", case.id);
