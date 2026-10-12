@@ -7,13 +7,13 @@ filesystem access.
 
 `maestro_pattern::minimatch_with_nocase(path, pattern, nocase)` is the same
 operation with an explicit case mode; `minimatch` is `nocase = false`. With
-`nocase = true`, literal and magic components compare case-insensitively through
-the predicates described under filesystem preparation below, while pattern syntax
-(escapes, named class names, brackets) is never rewritten. Under Windows framing a
-nonmagic UNC server/share or drive prefix keeps its authored case.
+`nocase = true`, literal and magic components compare case-insensitively, while
+pattern syntax (escapes, named class names, brackets) is never rewritten. Under
+Windows framing a nonmagic UNC server/share prefix keeps its authored case;
+drive letters compare without case in both modes.
 Filesystem preparation does not use this mode: its literal components stay exact.
 
-Matching is case-sensitive outside native Windows drive identity. `*` matches
+With `nocase = false`, matching is case-sensitive outside native Windows drive identity. `*` matches
 zero or more scalars within a nonempty component; `?` matches one Unicode scalar.
 Basic wildcard components exclude leading dots unless the pattern explicitly
 starts with a dot, and never match `.` or `..`. Literal `.` and `..` remain matchable.
@@ -31,7 +31,8 @@ Repeated separators collapse except for the extra leading empty component in Win
 UNC roots; eligible pattern `component/..` pairs reduce,
 without normalizing the input path. Windows input backslashes are separators;
 pattern backslashes remain escapes. Windows drive letters compare without case,
-including extended drive prefixes; other components remain case-sensitive.
+including extended drive prefixes; with `nocase = false` other components remain
+case-sensitive.
 
 Patterns longer than 65,536 Unicode scalars return `PatternError::TooLong`, whose
 message is `pattern is too long`.

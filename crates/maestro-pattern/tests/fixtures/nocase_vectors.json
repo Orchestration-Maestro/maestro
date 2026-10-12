@@ -9761,6 +9761,398 @@
       "pattern": "//Server/Share[/A",
       "input": "//server/share/a",
       "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]/A",
+      "input": "//?/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/[C]:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/[C]:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/c:/a",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/c:/a",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C\\:/A",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C\\:/A",
+      "input": "//?/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/c[:]/a",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/c[:]/a",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/c[:]/a",
+      "input": "//x/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/c[:]/a",
+      "input": "//x/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/c[:]/a",
+      "input": "//?/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/c[:]/a",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/c[:]/a",
+      "input": "//?/C:/A",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/c[:]/a",
+      "input": "//?/C:/A",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]",
+      "input": "//x/C:",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]",
+      "input": "//x/C:",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]",
+      "input": "//x/C:",
+      "expected": false
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]",
+      "input": "//x/C:",
+      "expected": true
+    },
+    {
+      "platform": "linux",
+      "nocase": false,
+      "pattern": "//?/C[:]",
+      "input": "//?/c:",
+      "expected": false
+    },
+    {
+      "platform": "linux",
+      "nocase": true,
+      "pattern": "//?/C[:]",
+      "input": "//?/c:",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": false,
+      "pattern": "//?/C[:]",
+      "input": "//?/c:",
+      "expected": true
+    },
+    {
+      "platform": "win32",
+      "nocase": true,
+      "pattern": "//?/C[:]",
+      "input": "//?/c:",
+      "expected": true
     }
   ]
 }

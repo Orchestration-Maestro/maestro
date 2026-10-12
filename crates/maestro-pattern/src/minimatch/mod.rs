@@ -16,7 +16,8 @@ pub use assert_valid_pattern::PatternError;
 /// See the [file-pattern guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/package-patterns.md)
 /// for group cardinality, exclusion context and named-class definitions.
 ///
-/// Matching is case-sensitive; [`minimatch_with_nocase`] selects the other mode.
+/// Matching is case-sensitive, except that native Windows framing compares drive
+/// letters without case; [`minimatch_with_nocase`] selects the other mode.
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
@@ -26,10 +27,10 @@ pub fn minimatch(path: &str, pattern: &str) -> Result<bool, PatternError> {
 
 /// Matches like [`minimatch`], comparing case-insensitively when `nocase` is true.
 ///
-/// Case-insensitivity applies to literal and magic components alike through the same
-/// scalar and class predicates; pattern syntax, including named class names, is never
-/// rewritten. Under Windows framing a nonmagic UNC server/share or drive prefix keeps
-/// its authored case.
+/// Case-insensitivity applies to literal and magic components alike; pattern syntax,
+/// including named class names, is never rewritten. Under Windows framing a nonmagic
+/// UNC server/share prefix keeps its authored case, while drive letters compare
+/// without case as in [`minimatch`].
 ///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.

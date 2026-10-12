@@ -120,7 +120,7 @@ impl Ast {
     /// Compiles case predicates once without changing authored syntax.
     pub(super) fn fold_case(&mut self) {
         if let Self::Literal(text) = self
-            && text.to_uppercase() != text.to_lowercase()
+            && text.chars().any(|c| !c.to_uppercase().eq(c.to_lowercase()))
         {
             *self = Self::Pattern(text.chars().map(Token::Literal).collect());
         }
