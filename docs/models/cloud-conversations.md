@@ -34,14 +34,38 @@ after the payload hook ran.
 
 ## Authentication
 
-The SDK's credential chain signs the request unless a bearer token is selected. When a profile
-is selected the chain skips the standalone environment-keys step and resolves that profile
-through the native profile provider, then web identity, container and instance credentials; a
-profile may still name the environment as its credential source. The reference order and which
-profile failures continue the chain are tracked in issue #721. Without a nonempty explicit
-`profile` option, an empty `AWS_PROFILE` selects
-nothing, so the environment's keys come first and the `default` profile is the fallback. The token is the
-nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
+The SDK's credential chain signs the request unless a bearer token is selected. Without a nonempty
+explicit `profile` option, an empty `AWS_PROFILE` selects nothing, so the environment's keys come
+first and the `default` profile is the fallback.
+
+When a profile is selected the standalone environment-keys step is skipped (a profile may still
+name the environment as the credential source of a role) and these sources run in order, the next
+one only after a source that did not apply:
+
+1. The selected profile. A profile that assumes a role is resolved from its `source_profile` or
+   named `credential_source` (`Environment`, `EcsContainer` or `Ec2InstanceMetadata`) and each role
+   is assumed from the source toward the selected profile; a source profile with complete static
+   keys ends that walk. A profile that assumes no role uses, in this order, complete static keys,
+   web identity (`web_identity_token_file` with `role_arn`), `credential_process`, then SSO. A
+   chained role therefore wins over the static keys of the profile that names it.
+2. The selected profile's own `credential_process`, once more.
+3. Web identity from `AWS_WEB_IDENTITY_TOKEN_FILE` and `AWS_ROLE_ARN`.
+4. Container credentials when `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` or
+   `AWS_CONTAINER_CREDENTIALS_FULL_URI` is nonempty, which excludes instance metadata even when
+   the container lookup fails; otherwise instance metadata, unless `AWS_EC2_METADATA_DISABLED`
+   is nonempty and not `false`.
+
+A missing profile, incomplete static keys, absent environment keys for a role source, a missing
+or unsupported source profile or credential source, a source cycle, and a credential process that
+fails, prints unusable output or returns expired credentials all let the chain go on. A web
+identity, role-assumption or SSO source that was selected and fails ends it, as does a role that
+needs a multi-factor code (`Profile <name> requires multi-factor authentication, but no MFA code
+callback was provided.`), an SSO profile with a missing field (`Missing required SSO field:
+<field>.`) or session (`Missing SSO session: <session>.`), and a container or instance source
+whose own error is not a missing-credentials one. Login-session profiles are not supported yet (issue #728).
+Retries, token caches and role-session names belong to the SDK.
+
+The bearer token is the nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs
 with placeholder credentials and ignores both bearer sources, which is for proxies that do not
 authenticate; any other value of that variable has no effect. No `api_key` is read.

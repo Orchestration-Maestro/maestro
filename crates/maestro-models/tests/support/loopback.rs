@@ -1,5 +1,6 @@
 //! A one-connection HTTP server on the loopback interface.
 
+use std::fmt::Write as _;
 use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::{Receiver, channel};
@@ -170,6 +171,93 @@ pub fn serve(response_head: &str, steps: Vec<Step>) -> TestResult<Loopback> {
     Ok(Loopback {
         url,
         received,
+        worker,
+    })
+}
+
+/// What a routed server answers to one request.
+pub struct Reply {
+    /// Status code.
+    pub status: u16,
+    /// Content type.
+    pub content_type: &'static str,
+    /// Extra response headers.
+    pub headers: &'static [(&'static str, &'static str)],
+    /// Response body.
+    pub body: Vec<u8>,
+}
+
+/// A loopback server that answers every request through one handler until it is finished.
+pub struct Routed {
+    /// Base URL of the server.
+    pub url: String,
+    address: std::net::SocketAddr,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    worker: JoinHandle<std::io::Result<()>>,
+}
+
+impl Routed {
+    /// Stop accepting connections and wait until every admitted request was answered.
+    pub fn finish(self) -> TestResult {
+        self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+        TcpStream::connect(self.address)?;
+        self.worker.join().map_err(|_| "server thread panicked")??;
+        Ok(())
+    }
+}
+
+/// Read one request from `connection`, answer it with `handler` and close.
+fn answer_connection(
+    mut connection: TcpStream,
+    handler: &dyn Fn(&Received) -> Reply,
+) -> std::io::Result<()> {
+    let Some(request) = read_request(&mut connection)? else {
+        return Ok(());
+    };
+    let reply = handler(&request);
+    let mut head = format!(
+        "HTTP/1.1 {} Controlled\r\ncontent-type: {}\r\ncontent-length: {}\r\nconnection: close\r\n",
+        reply.status,
+        reply.content_type,
+        reply.body.len()
+    );
+    for (name, value) in reply.headers {
+        let _ = write!(head, "{name}: {value}\r\n");
+    }
+    head.push_str("\r\n");
+    connection.write_all(head.as_bytes())?;
+    connection.write_all(&reply.body)?;
+    connection.flush()
+}
+
+/// Answer each request on its own connection with `handler`, and close the connection after it.
+pub fn serve_routed(
+    handler: impl Fn(&Received) -> Reply + Send + Sync + 'static,
+) -> TestResult<Routed> {
+    let handler = std::sync::Arc::new(handler);
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let address = listener.local_addr()?;
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let stopped = std::sync::Arc::clone(&stop);
+    let worker = std::thread::spawn(move || {
+        let mut connections = Vec::new();
+        while !stopped.load(std::sync::atomic::Ordering::SeqCst) {
+            let (connection, _) = listener.accept()?;
+            let handler = std::sync::Arc::clone(&handler);
+            connections.push(std::thread::spawn(move || {
+                answer_connection(connection, &*handler)
+            }));
+        }
+        connections.into_iter().try_for_each(|connection| {
+            connection
+                .join()
+                .unwrap_or_else(|_| Err(std::io::Error::other("connection thread panicked")))
+        })
+    });
+    Ok(Routed {
+        url: format!("http://{address}"),
+        address,
+        stop,
         worker,
     })
 }

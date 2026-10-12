@@ -2233,6 +2233,7 @@ name = "maestro-models"
 version = "0.1.0"
 dependencies = [
  "aws-config",
+ "aws-credential-types",
  "aws-sdk-bedrockruntime",
  "aws-smithy-runtime-api",
  "aws-smithy-types",

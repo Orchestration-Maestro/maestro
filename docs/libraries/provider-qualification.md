@@ -21,8 +21,11 @@ Native Amazon Bedrock conversations in `maestro-models` use `aws-sdk-bedrockrunt
 (features `behavior-version-latest`, `default-https-client`, `rt-tokio`, `credentials-process` and
 `sso`) for credential lookup, signing, retries and event decoding, plus `aws-smithy-runtime-api
 =1.19.0` (`client`, `http-1x`) and `aws-smithy-types =1.8.1` (`http-body-1-x`) for the transport
-bridge that sends through the shared HTTP seam. All four are Apache-2.0 and are declared only for
-non-browser targets; the browser dependency set gains nothing.
+bridge that sends through the shared HTTP seam, and `aws-credential-types =1.3.0` (default
+features off) for the typed credential errors and futures that compose the selected-profile
+sources. All five are Apache-2.0 and are declared only for non-browser targets; the browser
+dependency set gains nothing. `aws-credential-types` was already resolved for `aws-config`, so it
+adds no package to the lockfile.
 
 The resolved lockfile gains 42 packages: 22 under Apache-2.0, 19 under MIT or Apache-2.0
 expressions (or MIT alone) and `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under

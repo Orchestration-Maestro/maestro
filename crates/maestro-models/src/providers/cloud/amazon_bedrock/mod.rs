@@ -3,6 +3,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod client;
 #[cfg(not(target_arch = "wasm32"))]
+mod credentials;
+#[cfg(not(target_arch = "wasm32"))]
 mod events;
 #[cfg(not(target_arch = "wasm32"))]
 mod messages;

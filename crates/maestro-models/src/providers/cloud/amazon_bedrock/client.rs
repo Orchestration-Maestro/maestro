@@ -7,12 +7,6 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::task::{Context, Poll};
 
 use aws_config::BehaviorVersion;
-use aws_config::ecs::EcsCredentialsProvider;
-use aws_config::imds::credentials::ImdsCredentialsProvider;
-use aws_config::meta::credentials::CredentialsProviderChain;
-use aws_config::profile::ProfileFileCredentialsProvider;
-use aws_config::provider_config::ProviderConfig;
-use aws_config::web_identity_token::WebIdentityTokenCredentialsProvider;
 use aws_sdk_bedrockruntime::config::{Credentials, Region, StalledStreamProtectionConfig, Token};
 use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamOutput;
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
@@ -31,6 +25,7 @@ use hyper::body::{Body, Bytes, Frame};
 use url::Url;
 
 use super::BedrockOptions;
+use super::credentials::selected_profile;
 use super::proxy::Environment;
 use super::request::Prepared;
 use crate::providers::http::{
@@ -255,36 +250,6 @@ fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) ->
     })
 }
 
-/// The credential sources tried when a profile is selected: that profile through the native
-/// profile provider, then web identity, container and instance metadata credentials. The
-/// standalone environment-keys step is skipped; the profile itself may still name the
-/// environment as its credential source. Failure handling belongs to [`CredentialsProviderChain`]
-/// and [`ProfileFileCredentialsProvider`].
-fn profile_chain(profile: &str, region: Option<&Region>) -> CredentialsProviderChain {
-    let conf = ProviderConfig::default().with_region(region.cloned());
-    CredentialsProviderChain::first_try(
-        "Profile",
-        ProfileFileCredentialsProvider::builder()
-            .configure(&conf)
-            .profile_name(profile)
-            .build(),
-    )
-    .or_else(
-        "WebIdentityToken",
-        WebIdentityTokenCredentialsProvider::builder()
-            .configure(&conf)
-            .build(),
-    )
-    .or_else(
-        "EcsContainer",
-        EcsCredentialsProvider::builder().configure(&conf).build(),
-    )
-    .or_else(
-        "Ec2InstanceMetadata",
-        ImdsCredentialsProvider::builder().configure(&conf).build(),
-    )
-}
-
 /// Build the SDK client from the settings. The region is looked up while the shared
 /// configuration loads; credentials are looked up by the SDK on the first send.
 pub(super) async fn connect(
@@ -322,7 +287,7 @@ pub(super) async fn connect(
     }
     config = match &settings.auth {
         Auth::Chain => match &settings.profile {
-            Some(profile) => config.credentials_provider(profile_chain(profile, shared.region())),
+            Some(profile) => config.credentials_provider(selected_profile(profile, &shared)),
             None => config,
         },
         Auth::Bearer(token) => config
