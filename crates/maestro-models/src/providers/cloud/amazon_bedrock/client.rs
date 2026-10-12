@@ -13,10 +13,7 @@ use aws_config::meta::credentials::CredentialsProviderChain;
 use aws_config::profile::ProfileFileCredentialsProvider;
 use aws_config::provider_config::ProviderConfig;
 use aws_config::web_identity_token::WebIdentityTokenCredentialsProvider;
-use aws_credential_types::provider::{error::CredentialsError, future};
-use aws_sdk_bedrockruntime::config::{
-    Credentials, ProvideCredentials, Region, StalledStreamProtectionConfig, Token,
-};
+use aws_sdk_bedrockruntime::config::{Credentials, Region, StalledStreamProtectionConfig, Token};
 use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamOutput;
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
 use aws_smithy_runtime_api::client::auth::AuthSchemeId;
@@ -258,45 +255,19 @@ fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) ->
     })
 }
 
-/// The selected profile, whose failing credential process lets the chain go on to the next source
-/// as the reference does; every other profile failure, such as a rejected role or sign-in, stays final.
-#[derive(Debug)]
-struct SelectedProfile(ProfileFileCredentialsProvider);
-
-impl ProvideCredentials for SelectedProfile {
-    fn provide_credentials<'a>(&'a self) -> future::ProvideCredentials<'a>
-    where
-        Self: 'a,
-    {
-        future::ProvideCredentials::new(async {
-            match self.0.provide_credentials().await {
-                Err(error @ CredentialsError::ProviderError(_))
-                    if DisplayErrorContext(&error)
-                        .to_string()
-                        .contains("external process") =>
-                {
-                    Err(CredentialsError::not_loaded(error))
-                }
-                other => other,
-            }
-        })
-    }
-}
-
-/// The credential sources tried when a profile is selected: that profile, web identity, then
-/// the container and instance metadata services. The standalone environment-keys step is skipped;
-/// the profile itself may still name the environment as its credential source, which the SDK's
-/// profile resolution decides.
+/// The credential sources tried when a profile is selected: that profile through the native
+/// profile provider, then web identity, container and instance metadata credentials. The
+/// standalone environment-keys step is skipped; the profile itself may still name the
+/// environment as its credential source. This function does not decide which profile failures end
+/// the chain; the profile provider's own errors surface as it returns them.
 fn profile_chain(profile: &str, region: Option<&Region>) -> CredentialsProviderChain {
     let conf = ProviderConfig::default().with_region(region.cloned());
     CredentialsProviderChain::first_try(
         "Profile",
-        SelectedProfile(
-            ProfileFileCredentialsProvider::builder()
-                .configure(&conf)
-                .profile_name(profile)
-                .build(),
-        ),
+        ProfileFileCredentialsProvider::builder()
+            .configure(&conf)
+            .profile_name(profile)
+            .build(),
     )
     .or_else(
         "WebIdentityToken",

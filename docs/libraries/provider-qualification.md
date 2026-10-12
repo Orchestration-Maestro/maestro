@@ -19,10 +19,9 @@ for the exercised inputs and service-qualification limits.
 Native Amazon Bedrock conversations in `maestro-models` use `aws-sdk-bedrockruntime =1.148.0`
 (features `default-https-client` and `rt-tokio`, no legacy `rustls` stack) and `aws-config =1.12.0`
 (features `behavior-version-latest`, `default-https-client`, `rt-tokio`, `credentials-process` and
-`sso`) for credential lookup, signing, retries and event decoding, plus `aws-credential-types =1.3.0` (the credential error and future types the selected-profile
-wrapper returns), `aws-smithy-runtime-api
+`sso`) for credential lookup, signing, retries and event decoding, plus `aws-smithy-runtime-api
 =1.19.0` (`client`, `http-1x`) and `aws-smithy-types =1.8.1` (`http-body-1-x`) for the transport
-bridge that sends through the shared HTTP seam. All five are Apache-2.0 and are declared only for
+bridge that sends through the shared HTTP seam. All four are Apache-2.0 and are declared only for
 non-browser targets; the browser dependency set gains nothing.
 
 The resolved lockfile gains 42 packages: 22 under Apache-2.0, 19 under MIT or Apache-2.0

@@ -191,7 +191,7 @@ The models crate reads server-sent events with its own reader, so no event-strea
 library is a dependency.
 Native targets of `maestro-models` also use `aws-sdk-bedrockruntime =1.148.0` and
 `aws-config =1.12.0` for Bedrock credentials, signing, retries and event framing, with
-`aws-credential-types =1.3.0`, `aws-smithy-runtime-api =1.19.0` and `aws-smithy-types =1.8.1` for the transport bridge
+`aws-smithy-runtime-api =1.19.0` and `aws-smithy-types =1.8.1` for the transport bridge
 (see [provider qualification libraries](docs/libraries/provider-qualification.md)); the browser
 build contains no AWS crate.
 

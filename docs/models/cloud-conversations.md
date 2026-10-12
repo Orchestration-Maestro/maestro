@@ -35,11 +35,11 @@ after the payload hook ran.
 ## Authentication
 
 The SDK's credential chain signs the request unless a bearer token is selected. When a profile
-is selected the chain skips the standalone environment-keys step and tries that profile, then
-web identity, then the container and instance metadata services; a profile may still name the
-environment as its credential source, which the SDK's profile resolution decides. A profile
-whose credential process fails lets the chain go on to the next source; any other profile
-failure ends it. Without a nonempty explicit `profile` option, an empty `AWS_PROFILE` selects
+is selected the chain skips the standalone environment-keys step and resolves that profile
+through the native profile provider, then web identity, container and instance credentials; a
+profile may still name the environment as its credential source. The reference order and which
+profile failures continue the chain are tracked in issue #721. Without a nonempty explicit
+`profile` option, an empty `AWS_PROFILE` selects
 nothing, so the environment's keys come first and the `default` profile is the fallback. The token is the
 nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs

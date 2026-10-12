@@ -420,51 +420,6 @@ fn selected_profile_skips_environment_credentials() -> TestResult {
 }
 
 #[test]
-fn failed_profile_process_falls_back_to_container_credentials() -> TestResult {
-    const TEST: &str = "failed_profile_process_falls_back_to_container_credentials";
-    const URI: &str = "AWS_CONTAINER_CREDENTIALS_FULL_URI";
-    let server = if child_process::child_case().is_some() {
-        None
-    } else {
-        let body = r#"{"AccessKeyId":"container-key","SecretAccessKey":"container-secret","Token":"container-token","Expiration":"2999-01-01T00:00:00Z"}"#;
-        let head = format!(
-            "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
-            body.len()
-        );
-        Some(loopback::serve(
-            &head,
-            loopback::Step::writes(vec![body.as_bytes().to_vec()]),
-        )?)
-    };
-    let uri = match &server {
-        Some(server) => format!("{}/credentials", server.url),
-        None => std::env::var(URI)?,
-    };
-    let env: &'static [(&'static str, &'static str)] = Box::leak(Box::new([
-        ("AWS_ACCESS_KEY_ID", "environment-key"),
-        ("AWS_SECRET_ACCESS_KEY", "environment-secret"),
-        (URI, Box::leak(uri.into_boxed_str())),
-    ]));
-    run_cases(
-        TEST,
-        &[Case {
-            profile: Some("broken"),
-            env,
-            paused: false,
-            ..Case::new(
-                "failing credential process continues to container credentials",
-                EU,
-                Expect::standard("us-west-2", "container-key"),
-            )
-        }],
-    )?;
-    if let Some(server) = server {
-        server.finish()?;
-    }
-    Ok(())
-}
-
-#[test]
 fn catalog_regions_use_standard_hosts() -> TestResult {
     let named = maestro_models::get_model(
         "amazon-bedrock",
