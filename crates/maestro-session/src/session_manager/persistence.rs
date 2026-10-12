@@ -1,7 +1,9 @@
 //! Native history selection and compact publication.
-use super::{FileEntry, NewSessionOptions, SessionManager, conversions::invalid, files};
+use super::{
+    FileEntry, NewSessionOptions, SessionManager, conversions::invalid, files, tree::apply_label,
+};
 use serde::Serialize;
-use serde_json::{Value, ser::Formatter};
+use serde_json::{Map, Value, ser::Formatter};
 use std::{
     fs,
     io::{self, Write},
@@ -106,10 +108,16 @@ impl SessionManager {
             by_id.insert(id.to_owned(), position);
             leaf_id = Some(id.to_owned());
         }
+        let (mut labels, mut label_timestamps) = (Map::new(), Map::new());
+        for entry in entries.iter().filter(|entry| entry["type"] == "label") {
+            apply_label(&mut labels, &mut label_timestamps, entry);
+        }
         let id = entries[0]["id"].as_str().unwrap_or_default().to_owned();
         self.file_entries = entries;
         self.by_id = by_id;
         self.leaf_id = leaf_id;
+        self.labels = labels;
+        self.label_timestamps = label_timestamps;
         self.session_id = id;
         self.session_file = Some(path);
         self.flushed = exists;

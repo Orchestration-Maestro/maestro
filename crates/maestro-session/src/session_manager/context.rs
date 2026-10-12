@@ -208,7 +208,7 @@ fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
 }
 
 /// Decide whether a raw branch summary contributes a message.
-fn truthy(value: &Value) -> bool {
+pub(super) fn truthy(value: &Value) -> bool {
     match value {
         Value::Null => false,
         Value::Bool(value) => *value,
@@ -232,7 +232,7 @@ pub fn parse_session_entries(content: &str) -> Vec<super::types::FileEntry> {
         .collect()
 }
 /// Whitespace accepted by the outer text framing.
-fn ecma_whitespace(character: char) -> bool {
+pub(super) fn ecma_whitespace(character: char) -> bool {
     matches!(character, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
 }
 
