@@ -193,3 +193,55 @@ std::fs::remove_dir_all(directory)?;
 # }
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
+
+## Branch extraction and forking
+
+`create_branched_session(leaf_id)` replaces the history with the ancestry of
+`leaf_id` under a fresh `UUIDv7` header that keeps the owner's cwd. Unknown and
+empty identities fail with `Entry {id} not found` before anything changes. Label
+records on the ancestry are dropped; a retained record that pointed at one is
+reconnected to that label's parent, and other records are copied unchanged.
+The resolved labels whose targets are retained are recreated after the retained
+tail, in resolved order, with their stored timestamps and fresh entry identities.
+
+Memory history returns `None` and keeps any selected filename. Native history
+returns the new lexical filename, records the previous file as `parentSession`
+and writes the file at once only when a retained message is from the assistant;
+otherwise it waits for [first publication](#native-history). A publication error
+leaves the new history installed and the previous publication state.
+
+`SessionManager::fork_from(source, target_cwd, session_dir, agent_dir)` copies
+the nonheader records of a source file into a new published native history. The
+source is read as for `open`, brought to the current version by the historical
+conversions and never rewritten. The new header holds `target_cwd` and the
+source path exactly as supplied. An omitted directory is the default for
+`target_cwd` beneath `agent_dir`. A source that is empty or has no valid header
+fails with `Cannot fork: source session file is empty or invalid: {source}`
+before anything is created; later write errors leave the records already written.
+
+```rust
+# #[cfg(not(target_arch = "wasm32"))] {
+use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::SessionManager;
+use serde_json::json;
+
+let mut memory = SessionManager::in_memory(Some("work"))?;
+let root = memory.append_message(json!({"role":"user", "content":"a", "timestamp":1}))?;
+memory.append_message(json!({"role":"user", "content":"abandoned", "timestamp":2}))?;
+memory.branch(&root)?;
+let leaf = memory.append_message(json!({"role":"user", "content":"b", "timestamp":3}))?;
+assert_eq!(memory.create_branched_session(&leaf)?, None);
+assert_eq!(memory.get_entries().len(), 2);
+
+let directory = std::env::temp_dir().join(format!("maestro-example-{}", uuid::Uuid::new_v4()));
+let directory_text = directory.to_string_lossy();
+let mut history = SessionManager::create("work", Some(&directory_text), "unused")?;
+history.append_message(json!({"role":"assistant", "content":"reply"}))?;
+let source = history.get_session_file().unwrap().to_owned();
+let fork = SessionManager::fork_from(&source, "other", Some(&directory_text), "unused")?;
+assert_eq!(fork.get_cwd(), "other");
+assert_eq!(fork.get_header().unwrap()["parentSession"], source);
+std::fs::remove_dir_all(directory)?;
+# }
+# Ok::<(), Box<dyn std::error::Error>>(())
+```

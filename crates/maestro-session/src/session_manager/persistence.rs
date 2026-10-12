@@ -1,7 +1,9 @@
 //! Native history selection and compact publication.
 use super::{
-    FileEntry, NewSessionOptions, SessionManager, conversions::invalid, files, tree::apply_label,
+    FileEntry, NewSessionOptions, SessionManager, build_index, conversions::invalid, files,
+    session_header,
 };
+use maestro_request::presence::Presence;
 use serde::Serialize;
 use serde_json::{Map, Value, ser::Formatter};
 use std::{
@@ -18,6 +20,58 @@ impl SessionManager {
         let mut manager = Self::native(cwd, session_dir, agent_dir)?;
         manager.new_session(NewSessionOptions::default());
         Ok(manager)
+    }
+
+    /// Copy a source file's nonheader records into a new published native history.
+    ///
+    /// The source is read with [`files::load_entries_from_file`] and converted by the
+    /// historical conversions before the current header is stamped; its file is never
+    /// rewritten. The new header keeps `source_path` exactly as authored as parent metadata.
+    ///
+    /// # Errors
+    /// Fails with `Cannot fork: source session file is empty or invalid: {source_path}`
+    /// before creating anything; later directory, write and reopen errors are propagated
+    /// and leave records already written in place.
+    pub fn fork_from(
+        source_path: &str,
+        target_cwd: &str,
+        session_dir: Option<&str>,
+        agent_dir: &str,
+    ) -> io::Result<Self> {
+        Self::fork_with(source_path, target_cwd, session_dir, agent_dir, append)
+    }
+
+    /// Fork with a replaceable append effect, applied to the header and every record.
+    pub(super) fn fork_with(
+        source_path: &str,
+        target_cwd: &str,
+        session_dir: Option<&str>,
+        agent_dir: &str,
+        mut write: impl FnMut(&str, &[u8]) -> io::Result<()>,
+    ) -> io::Result<Self> {
+        let mut entries = files::load_entries_from_file(source_path)?;
+        if entries.is_empty() {
+            return Err(invalid(&format!(
+                "Cannot fork: source session file is empty or invalid: {source_path}"
+            )));
+        }
+        super::conversions::migrate(&mut entries, uuid::Uuid::new_v4)?;
+        let dir = match session_dir {
+            Some(dir) => dir.to_owned(),
+            None => files::get_default_session_dir(target_cwd, agent_dir)?,
+        };
+        if !std::path::Path::new(&dir).exists() {
+            fs::create_dir_all(&dir)?;
+        }
+        let id = uuid::Uuid::now_v7().to_string();
+        let (header, file) =
+            session_header(&id, target_cwd, Presence::Present(source_path.to_owned()));
+        let path = maestro_path::join(&[&dir, &file]);
+        let records = entries.iter().filter(|entry| entry["type"] != "session");
+        for entry in std::iter::once(&header).chain(records) {
+            write(&path, &encode(entry)?)?;
+        }
+        Self::open(&path, Some(&dir), Some(target_cwd))
     }
 
     /// Resolve the selected directory without allocating a discarded header.
@@ -98,20 +152,14 @@ impl SessionManager {
         } else if super::conversions::migrate(&mut entries, uuid::Uuid::new_v4)? && self.persist {
             rewrite(&path, &entries)?;
         }
-        for (position, entry) in entries.iter().enumerate() {
-            if entry["type"] == "session" {
-                continue;
-            }
-            let id = entry["id"]
-                .as_str()
-                .ok_or_else(|| invalid("nonstring entry id"))?;
-            by_id.insert(id.to_owned(), position);
-            leaf_id = Some(id.to_owned());
-        }
         let (mut labels, mut label_timestamps) = (Map::new(), Map::new());
-        for entry in entries.iter().filter(|entry| entry["type"] == "label") {
-            apply_label(&mut labels, &mut label_timestamps, entry);
-        }
+        build_index(
+            &entries,
+            &mut by_id,
+            &mut leaf_id,
+            &mut labels,
+            &mut label_timestamps,
+        )?;
         let id = entries[0]["id"].as_str().unwrap_or_default().to_owned();
         self.file_entries = entries;
         self.by_id = by_id;
@@ -124,15 +172,27 @@ impl SessionManager {
         Ok(())
     }
 
+    /// Write the extracted history now only when it holds an assistant message.
+    ///
+    /// The publication state changes only after the scan and write both succeed.
+    pub(super) fn publish_branched(
+        &mut self,
+        write: impl FnOnce(&str, &[FileEntry]) -> io::Result<()>,
+    ) -> io::Result<()> {
+        let Some(path) = self.session_file.as_deref().filter(|_| self.persist) else {
+            return Ok(());
+        };
+        let assistant = has_assistant(&self.file_entries)?;
+        if assistant {
+            write(path, &self.file_entries)?;
+        }
+        self.flushed = assistant;
+        Ok(())
+    }
+
     /// Publish accepted records with the native append effect.
     pub(super) fn persist_entry(&mut self) -> io::Result<()> {
-        self.publish(|path, bytes| {
-            fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(path)?
-                .write_all(bytes)
-        })
+        self.publish(append)
     }
 
     /// Keep memory acceptance before a private, unstored append effect.
@@ -156,6 +216,15 @@ impl SessionManager {
         }
         Ok(())
     }
+}
+
+/// Append bytes to a native file, creating it when absent.
+pub(super) fn append(path: &str, bytes: &[u8]) -> io::Result<()> {
+    fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)?
+        .write_all(bytes)
 }
 
 /// Read message roles only until the first assistant is encountered.
@@ -200,7 +269,7 @@ fn absolute(path: &str) -> io::Result<String> {
 }
 
 /// Rewrite retained records in order, leaving native partial writes in place.
-fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
+pub(super) fn rewrite(path: &str, entries: &[FileEntry]) -> io::Result<()> {
     let mut bytes = Vec::new();
     for entry in entries {
         bytes.extend(encode(entry)?);

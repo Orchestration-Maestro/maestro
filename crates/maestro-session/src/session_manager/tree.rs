@@ -60,6 +60,7 @@ impl ReadonlySessionManager for SessionManager {
     fn get_branch(&self, from_id: Option<&str>) -> Result<Vec<&SessionEntry>, serde_json::Error> {
         match from_id
             .or(self.get_leaf_id())
+            .filter(|id| !id.is_empty())
             .and_then(|id| self.get_entry(id))
         {
             Some(leaf) => context::ancestor_path(leaf, |id| self.get_entry(id)),

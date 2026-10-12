@@ -198,4 +198,5 @@ separate from per-operation payload decoding.
 metadata; it is a construction option, not a wire decoder.
 Remaining appends, names, labels and tree reads follow the same raw-record rule:
 see [appends](sessions/session_manager.md#appends-names-and-branch-summaries) and
-the [tree guide](tree.md).
+the [tree guide](tree.md). Branch extraction and forking are described in
+[the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
