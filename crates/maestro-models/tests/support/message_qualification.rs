@@ -1,6 +1,10 @@
 //! Recorded message requests observed through public dispatch.
 
-use crate::{bundled, chat, child_process, json::canonical, messages, probes};
+use crate::{
+    bundled, chat, child_process,
+    json::{canonical, event_record},
+    messages, probes,
+};
 use chat::TestResult;
 use maestro_models::{
     CacheRetention, Context, Model, ProviderStreamOptions, SimpleStreamOptions, StreamOptions,
@@ -473,16 +477,6 @@ fn assert_tool_handles(
 /// The assertion's whitespace excludes NEL and includes the byte-order mark.
 fn source_whitespace(character: char) -> bool {
     character == '\u{feff}' || (character.is_whitespace() && character != '\u{85}')
-}
-
-/// Retain ordered event fields after removing serialized live message fields.
-fn event_record(event: &maestro_models::AssistantMessageEvent) -> TestResult<Value> {
-    let mut record = serde_json::to_value(event)?;
-    let object = record.as_object_mut().ok_or("event object")?;
-    for field in ["partial", "message", "error"] {
-        object.shift_remove(field);
-    }
-    Ok(record)
 }
 
 /// Compare the native adapter's complete retained request fields.

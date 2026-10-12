@@ -2,7 +2,8 @@
 
 `maestro_models::providers::content::google_shared` converts a conversation, its tools
 and finish reasons into the serializable content turns of the Gemini-style protocols.
-It sends nothing; requests and streams are built on top of it. `GoogleThinkingLevel`
+It sends nothing; requests and streams are built on top of it, and
+`process_google_stream` reduces the responses they receive. `GoogleThinkingLevel`
 is also exported at the crate root.
 
 `convert_messages(model, context)` first runs the [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
@@ -97,3 +98,42 @@ assert_eq!(
     }]}]),
 );
 ```
+
+## Response reduction
+
+`process_google_stream(chunks, output, events, model, counter)` reads framed response
+items, one JSON text each, into the shared assistant message `output` and publishes
+text, thinking and tool-call events on `events`. It publishes no start, done or error
+event and does not end the stream: the caller owns the initial message, those lifecycle
+events, cancellation and the stream's end. It adds no HTTP, framing, retry or timeout.
+
+Only the first candidate of an item contributes. The first nonempty response identifier
+stays; an empty or absent one is replaced by a later item's. A part whose `thought` flag is
+`true` is thinking and every other part with text is text; a signature never decides.
+Consecutive parts of one kind extend the open block, a part of the other kind or a function
+call closes it first, and a part with both text and a function call applies the text first.
+A nonempty signature replaces the block's held one. Image, code and signature-only parts
+change nothing.
+
+A function call becomes one complete tool call: a start, one delta holding its arguments as
+[compact JSON](arguments.md#streamed-arguments), and an end. Missing or null arguments are
+an empty object. The service's identifier is kept when it is nonempty and no call in the
+message has it; otherwise the call gets `<name>_<epoch milliseconds>_<n>`, where `<n>`
+is the next value of the caller's `counter` (a missing name reads `undefined`). A call
+signature is kept when nonempty.
+
+A nonempty finish reason is mapped with `map_stop_reason`, and any call in the message
+then makes the outcome `toolUse`; a reason that maps to `error` is recorded, not returned.
+A usage report replaces the previous one: input is the prompt count minus the cached count
+(without clamping), output is the candidate plus thought counts, cache read is the cached
+count, cache write is zero, and the total is the reported total, never a sum. Cost is
+recalculated from the model's rates. Absent and null counts are zero, and an absent or null
+report keeps the previous one.
+
+A clean end of `chunks` closes the open text or thinking block. A failure from the
+source (returned unchanged and never polled past), malformed JSON, a failed typed read of
+a selected member, call arguments beyond the JSON conversion's nesting bound, or an
+undeclared finish reason returns without closing it, leaving earlier updates in `output`.
+A call closes the open block and takes its identifier before its arguments are converted,
+so an argument failure keeps those earlier effects. A part's text, thought flag and
+signature are read together; unknown members and later candidates are never decoded.

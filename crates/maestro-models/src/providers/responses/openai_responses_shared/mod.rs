@@ -6,6 +6,7 @@ mod wire;
 
 use futures_util::StreamExt;
 
+use crate::providers::selected_fields::native;
 use crate::{
     AssistantMessageEventStream, DiagnosticErrorInfo, Model, SharedAssistantMessage, Usage,
 };
@@ -75,16 +76,6 @@ fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
     DiagnosticErrorInfo {
         name: Some("Error".to_owned()),
         message: message.into(),
-        stack: None,
-        code: None,
-    }
-}
-
-/// A failure that keeps the message of the JSON reader that raised it.
-fn native(error: &serde_json::Error) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: error.to_string(),
         stack: None,
         code: None,
     }

@@ -1,43 +1,10 @@
 //! Selected raw members and diagnostic rendering.
 
-use serde::de::{DeserializeOwned, Error};
 use serde_json::value::RawValue;
 
-use super::native;
 use crate::DiagnosticErrorInfo;
-use crate::providers::json_text::{compact_raw, is_truthy, member, or_zero, raw_json, raw_number};
-
-/// Read a numeric usage member, defaulting only absent, null and zero values to zero.
-pub(super) fn count(raw: &RawValue, name: &str) -> Result<f64, DiagnosticErrorInfo> {
-    let Some(value) = member(raw, name).filter(|value| value.get() != "null") else {
-        return Ok(0.0);
-    };
-    raw_number(value)
-        .map(|number| or_zero(Some(number)))
-        .ok_or_else(|| native(&serde_json::Error::custom("expected a numeric usage count")))
-}
-
-/// Decode a selected typed member; missing members are absent and invalid types fail.
-pub(super) fn field<T: DeserializeOwned>(
-    raw: &RawValue,
-    name: &str,
-) -> Result<Option<T>, DiagnosticErrorInfo> {
-    let Some(value) = member(raw, name) else {
-        return Ok(None);
-    };
-    serde_json::from_str(value.get())
-        .map(Some)
-        .map_err(|error| native(&error))
-}
-
-/// Require a value before a branch dereferences its properties.
-pub(super) fn required(raw: Option<&RawValue>) -> Result<&RawValue, DiagnosticErrorInfo> {
-    raw.filter(|raw| raw.get() != "null").ok_or_else(|| {
-        native(&serde_json::Error::custom(
-            "missing or null required container",
-        ))
-    })
-}
+use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
+use crate::providers::selected_fields::{native, required, string};
 
 /// Recognize string discriminators without coercing other values into a kind.
 pub(super) fn kind(raw: &RawValue, name: &str) -> Result<String, DiagnosticErrorInfo> {
@@ -45,11 +12,6 @@ pub(super) fn kind(raw: &RawValue, name: &str) -> Result<String, DiagnosticError
         Some(value) => string(Some(value)),
         None => Ok(String::new()),
     }
-}
-
-/// Decode a required string at its selected read site.
-pub(super) fn string(raw: Option<&RawValue>) -> Result<String, DiagnosticErrorInfo> {
-    serde_json::from_str(raw.map_or("null", RawValue::get)).map_err(|error| native(&error))
 }
 
 /// Select truthy argument text, applying the empty default before typed decoding.

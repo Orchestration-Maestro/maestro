@@ -5,11 +5,10 @@ use std::sync::{Arc, PoisonError};
 
 use serde_json::value::RawValue;
 
-use super::wire::{
-    appended, arguments, count, field, joined, kind, last, required, signature, string,
-};
-use super::{OpenAIResponsesStreamOptions, failure, native};
+use super::wire::{appended, arguments, joined, kind, last, signature};
+use super::{OpenAIResponsesStreamOptions, failure};
 use crate::providers::json_text::{compact_raw, is_truthy, member, parsed_arguments, raw_json};
+use crate::providers::selected_fields::{count, field, native, required, string};
 use crate::{
     AssistantContent as Block, AssistantMessage, AssistantMessageEvent as Update,
     AssistantMessageEventStream, DiagnosticErrorInfo, JsonObject, Model, SharedAssistantMessage,
