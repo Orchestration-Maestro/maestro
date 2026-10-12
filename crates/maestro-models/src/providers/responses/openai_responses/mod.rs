@@ -8,6 +8,7 @@ use super::openai_responses_shared::{
     messages::{convert_responses_messages, convert_responses_tools},
     process_responses_stream,
 };
+use crate::options::resolve_api_key;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
@@ -126,13 +127,14 @@ pub fn stream_simple_openai_responses(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let key = options
-        .as_ref()
-        .and_then(|o| o.common.api_key.as_deref())
-        .filter(|k| !k.is_empty())
-        .map(Cow::Borrowed)
-        .or_else(|| get_env_api_key(&model.provider).map(Cow::Owned))
-        .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
+    let key = resolve_api_key(
+        &model.provider,
+        options
+            .as_ref()
+            .and_then(|o| o.common.api_key.as_deref())
+            .map(Cow::Borrowed),
+    )
+    .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
     let common = build_base_options(&model, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()

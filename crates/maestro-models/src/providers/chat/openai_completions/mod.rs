@@ -14,6 +14,7 @@ use std::sync::{Arc, PoisonError, RwLock};
 
 pub use compat::ResolvedOpenAICompletionsCompat;
 
+use crate::options::resolve_api_key;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::http::{
     HttpRequest, HttpResponse, RequestFailure, endpoint_url, send, spawn_detached,
@@ -23,7 +24,7 @@ use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
     DoneReason, Model, ModelThinkingLevel, ProviderResponse, SharedAssistantMessage,
     SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice, build_base_options,
-    clamp_thinking_level, get_env_api_key,
+    clamp_thinking_level,
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
@@ -87,18 +88,19 @@ pub fn stream_simple_openai_completions(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let api_key = options
-        .as_ref()
-        .and_then(|options| options.common.api_key.as_deref())
-        .filter(|key| !key.is_empty())
-        .map(Cow::Borrowed)
-        .or_else(|| get_env_api_key(&model.provider).map(Cow::Owned))
-        .ok_or_else(|| DiagnosticErrorInfo {
-            name: Some("Error".to_owned()),
-            message: format!("No API key for provider: {}", model.provider),
-            stack: None,
-            code: None,
-        })?;
+    let api_key = resolve_api_key(
+        &model.provider,
+        options
+            .as_ref()
+            .and_then(|options| options.common.api_key.as_deref())
+            .map(Cow::Borrowed),
+    )
+    .ok_or_else(|| DiagnosticErrorInfo {
+        name: Some("Error".to_owned()),
+        message: format!("No API key for provider: {}", model.provider),
+        stack: None,
+        code: None,
+    })?;
     let common = build_base_options(&model, options.as_ref(), Some(&api_key));
     let reasoning_effort = options
         .as_ref()

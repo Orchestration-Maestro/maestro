@@ -10,6 +10,8 @@ mod bundled;
 mod chat;
 #[path = "support/child_process.rs"]
 mod child_process;
+#[path = "support/key_selection.rs"]
+mod key_selection;
 
 use bundled::{PROTOCOLS, Protocol};
 use chat::{TestResult, block_on};
@@ -1358,4 +1360,46 @@ async fn assert_raw_key_error(key: Option<String>, aborted: bool, route: Route) 
     assert!(bundled::recorded(&requests).is_empty());
     assert!(hooks.lock().map_err(|_| "poisoned")?.is_empty());
     Ok(())
+}
+
+/// A dedicated simple entry fails synchronously with the caller's own diagnostic fields.
+fn assert_missing_key(row: &key_selection::Row) -> TestResult {
+    let protocol = PROTOCOLS
+        .iter()
+        .find(|protocol| protocol.api == row.input.api)
+        .ok_or("protocol")?;
+    let (fetch, requests) = bundled::fetch(bundled::text_body(protocol.api, "ok"));
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let hook_calls = Arc::clone(&calls);
+    let on_payload: OnPayload = Arc::new(move |payload, _| {
+        hook_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(payload)))
+    });
+    let mut options = signalled(None, row.input.options.api_key.clone());
+    options.common.fetch = Some(fetch);
+    options.common.on_payload = Some(on_payload);
+    let Err(error) = dedicated_simple(protocol, Some(options))? else {
+        return Err("a keyless setup produced a stream".into());
+    };
+    assert_eq!(Some(&error.message), row.expected.error.as_ref());
+    let name = (protocol.api != "mistral-conversations").then_some("Error");
+    assert_eq!(error.name.as_deref(), name, "{}", protocol.api);
+    assert!(error.code.is_none() && error.stack.is_none());
+    assert!(bundled::recorded(&requests).is_empty());
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    Ok(())
+}
+
+#[test]
+fn simple_missing_key_keeps_each_callers_diagnostic() -> TestResult {
+    let _registry = bundled::registry();
+    reset_api_providers();
+    key_selection::assert_rows(
+        &[
+            "simple_key_selection_stays_shared_across_existing_providers",
+            "simple_missing_key_keeps_each_callers_diagnostic",
+        ],
+        "simple_missing_key_keeps_each_callers_diagnostic",
+        assert_missing_key,
+    )
 }

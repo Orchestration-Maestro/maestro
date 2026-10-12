@@ -8,6 +8,10 @@
 mod bundled;
 #[path = "support/chat.rs"]
 mod chat;
+#[path = "support/child_process.rs"]
+mod child_process;
+#[path = "support/key_selection.rs"]
+mod key_selection;
 
 use bundled::{PROTOCOLS, Protocol, Seen};
 use chat::{TestResult, block_on};
@@ -414,4 +418,58 @@ fn assert_session_simple_variants(overrides: &Value) -> TestResult {
         "xhigh"
     );
     Ok(())
+}
+
+/// Header that carries the key of `api`'s requests, with the text before the key.
+fn authentication(api: &str) -> (&'static str, &'static str) {
+    match api {
+        "anthropic-messages" => ("x-api-key", ""),
+        "azure-openai-responses" => ("api-key", ""),
+        _ => ("authorization", "Bearer "),
+    }
+}
+
+/// Send the row's options through its protocol's simple entry and read the final authentication.
+fn assert_selected_key(row: &key_selection::Row) -> TestResult {
+    let api = row.input.api.as_str();
+    let model = description(api, &json!({"provider": row.input.provider}))?;
+    let (mut options, requests) = simple_settings(api, None);
+    options
+        .common
+        .api_key
+        .clone_from(&row.input.options.api_key);
+    block_on(false, async {
+        root_simple(api, model, options)?.result().await;
+        Ok(())
+    })?;
+    let [request] = bundled::recorded(&requests)
+        .try_into()
+        .map_err(|_| "one request")?;
+    let (name, prefix) = authentication(api);
+    let expected = row.expected.key.as_deref().ok_or("expected key")?;
+    let sent = request
+        .headers
+        .iter()
+        .find(|(key, _)| key == name)
+        .map(|(_, value)| value);
+    assert_eq!(
+        sent.map(String::as_str),
+        Some(format!("{prefix}{expected}").as_str()),
+        "{api}"
+    );
+    Ok(())
+}
+
+#[test]
+fn simple_key_selection_stays_shared_across_existing_providers() -> TestResult {
+    let _registry = bundled::registry();
+    reset_api_providers();
+    key_selection::assert_rows(
+        &[
+            "simple_key_selection_stays_shared_across_existing_providers",
+            "simple_missing_key_keeps_each_callers_diagnostic",
+        ],
+        "simple_key_selection_stays_shared_across_existing_providers",
+        assert_selected_key,
+    )
 }

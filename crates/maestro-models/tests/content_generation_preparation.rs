@@ -1,0 +1,319 @@
+//! Request preparation of the content-generation provider through its public operations.
+#![allow(
+    dead_code,
+    reason = "each test binary uses a subset of the shared support"
+)]
+
+#[path = "support/chat.rs"]
+mod chat;
+#[path = "support/child_process.rs"]
+mod child_process;
+#[path = "support/content_preparation.rs"]
+mod content_preparation;
+
+use chat::TestResult;
+use content_preparation::assert_rows;
+use indexmap::IndexMap;
+use maestro_models::providers::content::google::{
+    GoogleOptions, GoogleThinking, build_params, build_simple_options,
+};
+use maestro_models::{
+    CacheRetention, Cancellation, Context, Fetch, OnPayload, OnResponse, SimpleStreamOptions,
+    StreamOptions, ThinkingLevel, Transport,
+};
+use serde_json::json;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// A one-message context with a system prompt and one tool.
+fn context() -> TestResult<Context> {
+    Ok(serde_json::from_value(json!({
+        "systemPrompt": "system",
+        "messages": [{"role": "user", "content": "hello", "timestamp": 1}],
+        "tools": [{"name": "inspect", "description": "d", "parameters": {"type": "object"}}]
+    }))?)
+}
+
+#[test]
+fn raw_parameters_keep_empty_config_and_model_identity() -> TestResult {
+    assert_rows("raw_parameters_keep_empty_config_and_model_identity")
+}
+
+#[test]
+fn generation_fields_preserve_supplied_numbers() -> TestResult {
+    assert_rows("generation_fields_preserve_supplied_numbers")
+}
+
+#[test]
+fn system_instruction_omits_only_empty_text() -> TestResult {
+    assert_rows("system_instruction_omits_only_empty_text")
+}
+
+#[test]
+fn tool_choice_requires_nonempty_declarations() -> TestResult {
+    assert_rows("tool_choice_requires_nonempty_declarations")
+}
+
+#[test]
+fn tool_schemas_keep_the_full_schema_field() -> TestResult {
+    assert_rows("tool_schemas_keep_the_full_schema_field")
+}
+
+#[test]
+fn thinking_requires_an_explicit_request_and_reasoning_support() -> TestResult {
+    assert_rows("thinking_requires_an_explicit_request_and_reasoning_support")
+}
+
+#[test]
+fn explicit_thinking_levels_override_budget_values() -> TestResult {
+    assert_rows("explicit_thinking_levels_override_budget_values")
+}
+
+#[test]
+fn explicit_thinking_budgets_are_not_clamped() -> TestResult {
+    assert_rows("explicit_thinking_budgets_are_not_clamped")
+}
+
+#[test]
+fn disabled_thinking_uses_the_lowest_family_setting() -> TestResult {
+    assert_rows("disabled_thinking_uses_the_lowest_family_setting")
+}
+
+#[test]
+fn model_family_recognition_uses_unanchored_ascii_patterns() -> TestResult {
+    assert_rows("model_family_recognition_uses_unanchored_ascii_patterns")
+}
+
+#[test]
+fn simple_efforts_select_each_family_level() -> TestResult {
+    assert_rows("simple_efforts_select_each_family_level")
+}
+
+#[test]
+fn simple_efforts_select_each_family_budget() -> TestResult {
+    assert_rows("simple_efforts_select_each_family_budget")
+}
+
+#[test]
+fn custom_budgets_override_only_the_selected_slot() -> TestResult {
+    assert_rows("custom_budgets_override_only_the_selected_slot")
+}
+
+#[test]
+fn level_families_ignore_custom_budgets() -> TestResult {
+    assert_rows("level_families_ignore_custom_budgets")
+}
+
+#[test]
+fn simple_absent_reasoning_disables_family_thinking() -> TestResult {
+    assert_rows("simple_absent_reasoning_disables_family_thinking")
+}
+
+#[test]
+fn simple_token_limits_use_the_base_option_owner() -> TestResult {
+    assert_rows("simple_token_limits_use_the_base_option_owner")
+}
+
+#[test]
+fn supported_effort_clamping_precedes_family_mapping() -> TestResult {
+    assert_rows("supported_effort_clamping_precedes_family_mapping")
+}
+
+#[test]
+fn supported_extra_high_uses_the_high_policy() -> TestResult {
+    assert_rows("supported_extra_high_uses_the_high_policy")
+}
+
+#[test]
+fn nonreasoning_models_never_gain_thinking_config() -> TestResult {
+    assert_rows("nonreasoning_models_never_gain_thinking_config")
+}
+
+#[test]
+fn simple_key_resolution_preserves_nonempty_values() -> TestResult {
+    assert_rows("simple_key_resolution_preserves_nonempty_values")
+}
+
+#[test]
+fn simple_missing_key_fails_before_parameter_preparation() -> TestResult {
+    assert_rows("simple_missing_key_fails_before_parameter_preparation")
+}
+
+#[test]
+fn raw_signal_checks_happen_at_preparation() -> TestResult {
+    assert_rows("raw_signal_checks_happen_at_preparation")
+}
+
+#[test]
+fn simple_signal_checks_wait_until_parameter_building() -> TestResult {
+    assert_rows("simple_signal_checks_wait_until_parameter_building")
+}
+
+#[test]
+fn simple_tool_selection_does_not_leak_into_raw_options() -> TestResult {
+    assert_rows("simple_tool_selection_does_not_leak_into_raw_options")
+}
+
+#[test]
+fn numeric_payloads_use_the_existing_json_number_semantics() -> TestResult {
+    assert_rows("numeric_payloads_use_the_existing_json_number_semantics")
+}
+
+#[test]
+fn prepared_signals_share_the_callers_cancellation() -> TestResult {
+    let model = chat::model(&json!({"api": "google-generative-ai", "provider": "google"}))?;
+    let context = context()?;
+
+    let raw_signal = Cancellation::new();
+    let raw = GoogleOptions {
+        common: StreamOptions {
+            signal: Some(raw_signal.clone()),
+            ..StreamOptions::default()
+        },
+        ..GoogleOptions::default()
+    };
+    let params = build_params(&model, &context, Some(&raw))?;
+    let retained = params.config.abort_signal.ok_or("raw signal retained")?;
+    assert!(!retained.is_aborted());
+    raw_signal.abort();
+    assert!(retained.is_aborted());
+
+    let simple_signal = Cancellation::new();
+    let simple = SimpleStreamOptions {
+        common: StreamOptions {
+            api_key: Some("key".into()),
+            signal: Some(simple_signal.clone()),
+            ..StreamOptions::default()
+        },
+        ..SimpleStreamOptions::default()
+    };
+    let selected = build_simple_options(&model, Some(&simple))?;
+    let params = build_params(&model, &context, Some(&selected))?;
+    let composed = params
+        .config
+        .abort_signal
+        .ok_or("composed signal retained")?;
+    let kept = selected.common.signal.ok_or("simple signal retained")?;
+    assert!(!composed.is_aborted() && !kept.is_aborted());
+    simple_signal.abort();
+    assert!(composed.is_aborted() && kept.is_aborted());
+    Ok(())
+}
+
+/// Hook and transport handles that count their invocations in `calls`.
+fn counting_handles(calls: &Arc<AtomicUsize>) -> (OnPayload, OnResponse, Fetch) {
+    let payload_calls = Arc::clone(calls);
+    let on_payload: OnPayload = Arc::new(move |payload, _| {
+        payload_calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(payload)))
+    });
+    let response_calls = Arc::clone(calls);
+    let on_response: OnResponse = Arc::new(move |_, _| {
+        response_calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(std::future::ready(Ok(())))
+    });
+    let fetch_calls = Arc::clone(calls);
+    let fetch: Fetch = Arc::new(move |_| {
+        fetch_calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(std::future::ready(Err(maestro_models::FetchError::Aborted)))
+    });
+    (on_payload, on_response, fetch)
+}
+
+/// Whether two shared handles are the same allocation.
+fn same_handle<T: ?Sized>(first: &Arc<T>, second: &Arc<T>) -> bool {
+    std::ptr::addr_eq(Arc::as_ptr(first), Arc::as_ptr(second))
+}
+
+/// Check the plain-data common settings the simple operation must keep.
+fn assert_scalar_settings(common: &StreamOptions, metadata: Option<&maestro_models::JsonObject>) {
+    assert_eq!(common.temperature, Some(0.25));
+    assert_eq!(common.max_tokens, Some(77.0));
+    assert_eq!(common.api_key.as_deref(), Some("key"));
+    assert_eq!(common.transport, Some(Transport::Sse));
+    assert_eq!(common.cache_retention, Some(CacheRetention::Long));
+    assert_eq!(common.session_id.as_deref(), Some("session"));
+    let names: Vec<&str> = common
+        .headers
+        .iter()
+        .flatten()
+        .map(|(k, _)| k.as_str())
+        .collect();
+    assert_eq!(names, ["x-b", "x-a"]);
+    assert_eq!(
+        (
+            common.timeout_ms,
+            common.max_retries,
+            common.max_retry_delay_ms
+        ),
+        (Some(11.0), Some(3.0), Some(13.0))
+    );
+    assert_eq!(common.metadata.as_ref(), metadata);
+}
+
+#[test]
+fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> TestResult {
+    let model = chat::model(&json!({"api": "google-generative-ai", "provider": "google"}))?;
+    let calls = Arc::new(AtomicUsize::new(0));
+    let (on_payload, on_response, fetch) = counting_handles(&calls);
+    let mut headers = IndexMap::new();
+    headers.insert("x-b".to_owned(), "2".to_owned());
+    headers.insert("x-a".to_owned(), "1".to_owned());
+    let metadata = json!({"user": "u"}).as_object().cloned();
+    let simple = SimpleStreamOptions {
+        common: StreamOptions {
+            temperature: Some(0.25),
+            max_tokens: Some(77.0),
+            signal: Some(Cancellation::new()),
+            api_key: Some("key".into()),
+            transport: Some(Transport::Sse),
+            cache_retention: Some(CacheRetention::Long),
+            session_id: Some("session".into()),
+            on_payload: Some(on_payload.clone()),
+            on_response: Some(on_response.clone()),
+            headers: Some(headers),
+            timeout_ms: Some(11.0),
+            max_retries: Some(3.0),
+            max_retry_delay_ms: Some(13.0),
+            metadata: metadata.clone(),
+            fetch: Some(fetch.clone()),
+        },
+        reasoning: Some(ThinkingLevel::Low),
+        ..SimpleStreamOptions::default()
+    };
+    let common = build_simple_options(&model, Some(&simple))?.common;
+    assert_scalar_settings(&common, metadata.as_ref());
+    assert!(common.signal.is_some());
+    assert!(same_handle(
+        &common.on_payload.ok_or("payload hook")?,
+        &on_payload
+    ));
+    assert!(same_handle(
+        &common.on_response.ok_or("response hook")?,
+        &on_response
+    ));
+    assert!(same_handle(&common.fetch.ok_or("transport")?, &fetch));
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    Ok(())
+}
+
+#[test]
+fn prepared_values_do_not_mutate_the_supplied_context() -> TestResult {
+    let model = chat::model(&json!({"api": "google-generative-ai", "provider": "google"}))?;
+    let context = context()?;
+    let before = serde_json::to_value(&context)?;
+    let options = GoogleOptions {
+        thinking: Some(GoogleThinking::default()),
+        ..GoogleOptions::default()
+    };
+    let mut params = build_params(&model, &context, Some(&options))?;
+    params.contents.clear();
+    params.config.system_instruction = Some("changed".into());
+    params.config.tools = None;
+    assert_eq!(serde_json::to_value(&context)?, before);
+    let again = build_params(&model, &context, Some(&options))?;
+    assert_eq!(again.contents.len(), 1);
+    assert_eq!(again.config.system_instruction.as_deref(), Some("system"));
+    assert!(again.config.tools.is_some());
+    Ok(())
+}

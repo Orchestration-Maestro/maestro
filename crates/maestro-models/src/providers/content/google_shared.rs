@@ -13,9 +13,17 @@ use crate::{
     transform_messages,
 };
 
+mod request;
 mod stream;
 mod wire;
 
+pub use request::{
+    FunctionCallingConfig, GenerateContentConfig, GenerateContentParameters, ThinkingConfig,
+    ToolConfig,
+};
+pub(crate) use request::{
+    build_parameters, enabled_thinking, failure, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
+};
 pub use stream::process_google_stream;
 
 /// Placeholder response text for a tool result that holds only images.

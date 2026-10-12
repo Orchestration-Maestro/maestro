@@ -1,0 +1,446 @@
+[
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-completions",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-completions",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-completions",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-completions",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-completions",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "anthropic-messages",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "anthropic-messages",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "anthropic-messages",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "anthropic-messages",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "anthropic-messages",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-responses",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-responses",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-responses",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "azure-openai-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "azure-openai-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "azure-openai-responses",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "azure-openai-responses",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "azure-openai-responses",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-codex-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-codex-responses",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "openai-codex-responses",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-codex-responses",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "openai-codex-responses",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "mistral-conversations",
+      "provider": "google",
+      "options": {
+        "apiKey": "{account-token:b}"
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:b}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "mistral-conversations",
+      "provider": "google",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_key_selection_stays_shared_across_existing_providers",
+    "input": {
+      "api": "mistral-conversations",
+      "provider": "google",
+      "options": {},
+      "env": {
+        "GEMINI_API_KEY": "{account-token:c}"
+      }
+    },
+    "expected": {
+      "key": "{account-token:c}"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "mistral-conversations",
+      "provider": "fixture",
+      "options": {},
+      "env": {}
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  },
+  {
+    "test": "simple_missing_key_keeps_each_callers_diagnostic",
+    "input": {
+      "api": "mistral-conversations",
+      "provider": "fixture",
+      "options": {
+        "apiKey": ""
+      },
+      "env": {
+        "GEMINI_API_KEY": ""
+      }
+    },
+    "expected": {
+      "error": "No API key for provider: fixture"
+    }
+  }
+]
