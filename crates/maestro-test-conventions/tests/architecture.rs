@@ -914,8 +914,13 @@ fn frontends_require_complete_direct_dependencies() {
 #[test]
 fn terminal_adapter_and_harness_require_toolkit() {
     for owner in ["maestro-tui-crossterm", "maestro-test-terminal"] {
+        let text = if owner == "maestro-tui-crossterm" {
+            "maestro-text = { path = \"../maestro-text\" }\n"
+        } else {
+            ""
+        };
         let workspace = Workspace::new();
-        workspace.foundation(&[owner, "maestro-models"]);
+        workspace.foundation(&[owner, "maestro-models", "maestro-text"]);
         assert_eq!(check_workspace(&workspace.root), Ok(()));
         workspace.member(owner, owner, "");
         assert_eq!(
@@ -925,7 +930,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
             ))
         );
         for (kind, extra) in DECLARATIONS {
-            workspace.member(owner, owner, &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\nmodels = {{ package = \"maestro-models\", path = \"../maestro-models\"{extra} }}"));
+            workspace.member(owner, owner, &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\n{text}models = {{ package = \"maestro-models\", path = \"../maestro-models\"{extra} }}"));
             assert_eq!(
                 check_workspace(&workspace.root),
                 Err(format!(
@@ -935,7 +940,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
             workspace.member(
                 owner,
                 owner,
-                &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\"{extra} }}"),
+                &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\"{extra} }}\n{text}"),
             );
             assert_eq!(check_workspace(&workspace.root), Ok(()));
         }
@@ -1479,14 +1484,21 @@ fn compiler_host_failures(workspace: &Workspace, cargo: &std::path::Path) {
 fn terminal_adapter_text_edge_is_scoped() {
     const ADAPTER: &str = "maestro-tui-crossterm";
     let toolkit = "maestro-tui = { path = \"../maestro-tui\" }\n";
-    let toolkit_only = Workspace::new();
-    toolkit_only.member("maestro-tui", "maestro-tui", "");
-    toolkit_only.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
-    toolkit_only.list(&[(ADAPTER, "core"), ("maestro-tui", "core")]);
-    assert_eq!(check_workspace(&toolkit_only.root), Ok(()));
+    let plain_text = "maestro-text = { path = \"../maestro-text\" }\n";
     let workspace = Workspace::new();
     workspace.foundation(&[ADAPTER, "maestro-text", "maestro-path"]);
     workspace.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "{ADAPTER}: missing required direct dependency maestro-text"
+        ))
+    );
+    workspace.member(
+        ADAPTER,
+        ADAPTER,
+        &format!("[dependencies]\n{toolkit}{plain_text}"),
+    );
     assert_eq!(check_workspace(&workspace.root), Ok(()));
     for (kind, extra) in DECLARATIONS {
         workspace.member(
@@ -1522,6 +1534,13 @@ fn terminal_adapter_text_edge_is_scoped() {
             "{only}"
         );
     }
+    adapter_text_may_not_be_dev_only(&workspace, toolkit);
+    harness_may_not_declare_text(toolkit);
+}
+
+/// Reject the text owner as an adapter dev-dependency.
+fn adapter_text_may_not_be_dev_only(workspace: &Workspace, toolkit: &str) {
+    const ADAPTER: &str = "maestro-tui-crossterm";
     workspace.member(
         ADAPTER,
         ADAPTER,
@@ -1533,7 +1552,6 @@ fn terminal_adapter_text_edge_is_scoped() {
             "internal dev dependency requires declared dependency-free test support: {ADAPTER} -> maestro-text"
         ))
     );
-    harness_may_not_declare_text(toolkit);
 }
 
 /// Reject the text owner from the terminal scenario harness.

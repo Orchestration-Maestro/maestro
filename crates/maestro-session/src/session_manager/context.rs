@@ -231,10 +231,7 @@ pub fn parse_session_entries(content: &str) -> Vec<super::types::FileEntry> {
         .filter_map(|line| serde_json::from_str(line).ok())
         .collect()
 }
-/// Whitespace accepted by the outer text framing.
-pub(super) fn ecma_whitespace(character: char) -> bool {
-    matches!(character, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
-}
+pub(super) use maestro_text::is_whitespace_scalar as ecma_whitespace;
 
 /// Borrow the last compaction in supplied order, independently of ancestry.
 ///

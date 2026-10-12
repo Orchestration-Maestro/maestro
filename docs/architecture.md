@@ -37,9 +37,8 @@ of their specification row, except these complete direct sets:
 - CLI and chat: application, toolkit, terminal adapter and theme.
 - RPC and web: application and theme.
 - Terminal adapter and terminal scenario harness: the toolkit. The adapter may also
-  depend on `maestro-text`, but until that crate exists only the toolkit is required;
-  the checker reads the required set from one helper, not from the allowed row, and an
-  absent required toolkit still fails.
+  depend on `maestro-text`; the adapter requires both, and an absent required toolkit or
+  text owner fails. The scenario harness may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do

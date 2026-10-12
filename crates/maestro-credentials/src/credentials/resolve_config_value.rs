@@ -64,10 +64,7 @@ pub fn resolve_config_value_uncached(
             .unwrap_or_else(|| config.to_owned()),
     )
 }
-/// Whitespace admitted at command-output boundaries.
-fn config_whitespace(character: char) -> bool {
-    matches!(character, '\u{9}'..='\u{d}' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
-}
+use maestro_text::is_whitespace_scalar as config_whitespace;
 /// Resolve freshly, reporting the authored command description on failure.
 ///
 /// # Errors

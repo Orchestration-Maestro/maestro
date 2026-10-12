@@ -1,5 +1,5 @@
 //! Native ID comparison using caller-supplied locale operands.
-use icu_collator::{Collator, options::CollatorOptions};
+use maestro_text::collation::Collator;
 use std::{cmp::Ordering, io};
 /// Prepare ID comparison from the first present locale environment operand.
 ///
@@ -11,21 +11,6 @@ use std::{cmp::Ordering, io};
 pub fn model_id_comparator(
     environment: &dyn Fn(&str) -> Option<String>,
 ) -> io::Result<impl Fn(&str, &str) -> Ordering + use<>> {
-    let raw = ["LC_ALL", "LC_MESSAGES", "LANG"]
-        .into_iter()
-        .find_map(environment)
-        .unwrap_or_else(|| "en_US".into());
-    let base = raw.split(['.', '@']).next().unwrap_or_default();
-    let locale = match base {
-        "C" | "POSIX" => "en-US".into(),
-        "" => "und".into(),
-        value => value.replace('_', "-"),
-    };
-    let preferences = locale
-        .parse::<icu_locale_core::Locale>()
-        .map(Into::into)
-        .unwrap_or_default();
-    let collator =
-        Collator::try_new(preferences, CollatorOptions::default()).map_err(io::Error::other)?;
+    let collator = Collator::new(environment)?;
     Ok(move |left: &str, right: &str| collator.compare(left, right))
 }

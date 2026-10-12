@@ -76,10 +76,7 @@ fn assemble(feeds: [Vec<Model>; 3]) -> Catalog {
     }
     catalog
 }
-/// Compare keys in UTF-16 code-unit order.
-fn utf16_order(left: &str, right: &str) -> std::cmp::Ordering {
-    left.encode_utf16().cmp(right.encode_utf16())
-}
+use maestro_text::utf16_order;
 /// Count unique winners with canonical integer providers before encounter-ordered names.
 fn provider_counts(catalog: &Catalog) -> Vec<(String, usize)> {
     let mut providers: Vec<_> = catalog.iter().collect();

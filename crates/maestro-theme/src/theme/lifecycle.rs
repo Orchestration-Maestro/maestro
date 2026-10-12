@@ -162,14 +162,9 @@ impl ThemeState {
     }
 }
 
-/// Whitespace that decimal integer parsing skips.
-fn is_leading_space(c: char) -> bool {
-    (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}'
-}
-
 /// Parse the leading decimal integer of a field; no digits means dark.
 fn background_is_dark(field: &str) -> bool {
-    let field = field.trim_start_matches(is_leading_space);
+    let field = field.trim_start_matches(maestro_text::is_whitespace_scalar);
     let (negative, rest) = match field.strip_prefix('-') {
         Some(rest) => (true, rest),
         None => (false, field.strip_prefix('+').unwrap_or(field)),

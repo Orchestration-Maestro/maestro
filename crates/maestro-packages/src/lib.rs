@@ -10,10 +10,7 @@ fn trim(text: &str) -> &str {
     text.trim_matches(whitespace)
 }
 
-/// Recognizes authored whitespace, including BOM but not the next-line control.
-fn whitespace(c: char) -> bool {
-    c == '\u{feff}' || (c.is_whitespace() && c != '\u{85}')
-}
+use maestro_text::is_whitespace_scalar as whitespace;
 
 mod package_manager;
 #[cfg(not(target_arch = "wasm32"))]

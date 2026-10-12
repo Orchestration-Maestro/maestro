@@ -1,0 +1,702 @@
+[
+  {
+    "pattern": "\t",
+    "path": "\t",
+    "expected": false
+  },
+  {
+    "pattern": "a\t",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\t",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\tb",
+    "path": "a\tb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\tb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\n",
+    "path": "\n",
+    "expected": false
+  },
+  {
+    "pattern": "a\n",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\n",
+    "path": "a ",
+    "expected": false
+  },
+  {
+    "pattern": "a\nb",
+    "path": "a\nb",
+    "expected": false
+  },
+  {
+    "pattern": "a\\\nb",
+    "path": "a b",
+    "expected": false
+  },
+  {
+    "pattern": "\u000b",
+    "path": "\u000b",
+    "expected": false
+  },
+  {
+    "pattern": "a\u000b",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u000b",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u000bb",
+    "path": "a\u000bb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u000bb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\f",
+    "path": "\f",
+    "expected": false
+  },
+  {
+    "pattern": "a\f",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\f",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\fb",
+    "path": "a\fb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\fb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\r",
+    "path": "\r",
+    "expected": false
+  },
+  {
+    "pattern": "a\r",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\r",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\rb",
+    "path": "a\rb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\rb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": " ",
+    "path": " ",
+    "expected": false
+  },
+  {
+    "pattern": "a ",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\ ",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\ b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u00a0",
+    "path": "\u00a0",
+    "expected": false
+  },
+  {
+    "pattern": "a\u00a0",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u00a0",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u00a0b",
+    "path": "a\u00a0b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u00a0b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u1680",
+    "path": "\u1680",
+    "expected": false
+  },
+  {
+    "pattern": "a\u1680",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u1680",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u1680b",
+    "path": "a\u1680b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u1680b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2000",
+    "path": "\u2000",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2000",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2000",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2000b",
+    "path": "a\u2000b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2000b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2001",
+    "path": "\u2001",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2001",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2001",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2001b",
+    "path": "a\u2001b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2001b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2002",
+    "path": "\u2002",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2002",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2002",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2002b",
+    "path": "a\u2002b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2002b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2003",
+    "path": "\u2003",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2003",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2003",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2003b",
+    "path": "a\u2003b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2003b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2004",
+    "path": "\u2004",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2004",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2004",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2004b",
+    "path": "a\u2004b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2004b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2005",
+    "path": "\u2005",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2005",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2005",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2005b",
+    "path": "a\u2005b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2005b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2006",
+    "path": "\u2006",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2006",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2006",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2006b",
+    "path": "a\u2006b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2006b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2007",
+    "path": "\u2007",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2007",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2007",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2007b",
+    "path": "a\u2007b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2007b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2008",
+    "path": "\u2008",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2008",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2008",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2008b",
+    "path": "a\u2008b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2008b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2009",
+    "path": "\u2009",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2009",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2009",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2009b",
+    "path": "a\u2009b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2009b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u200a",
+    "path": "\u200a",
+    "expected": false
+  },
+  {
+    "pattern": "a\u200a",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u200a",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u200ab",
+    "path": "a\u200ab",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u200ab",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2028",
+    "path": "\u2028",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2028",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2028",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2028b",
+    "path": "a\u2028b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2028b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u2029",
+    "path": "\u2029",
+    "expected": false
+  },
+  {
+    "pattern": "a\u2029",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2029",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u2029b",
+    "path": "a\u2029b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u2029b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u202f",
+    "path": "\u202f",
+    "expected": false
+  },
+  {
+    "pattern": "a\u202f",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u202f",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u202fb",
+    "path": "a\u202fb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u202fb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u205f",
+    "path": "\u205f",
+    "expected": false
+  },
+  {
+    "pattern": "a\u205f",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u205f",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u205fb",
+    "path": "a\u205fb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u205fb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u3000",
+    "path": "\u3000",
+    "expected": false
+  },
+  {
+    "pattern": "a\u3000",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u3000",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\u3000b",
+    "path": "a\u3000b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u3000b",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\ufeff",
+    "path": "\ufeff",
+    "expected": false
+  },
+  {
+    "pattern": "a\ufeff",
+    "path": "a",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\ufeff",
+    "path": "a ",
+    "expected": true
+  },
+  {
+    "pattern": "a\ufeffb",
+    "path": "a\ufeffb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\ufeffb",
+    "path": "a b",
+    "expected": true
+  },
+  {
+    "pattern": "\u0085",
+    "path": "\u0085",
+    "expected": true
+  },
+  {
+    "pattern": "a\u0085",
+    "path": "a",
+    "expected": false
+  },
+  {
+    "pattern": "a\\\u0085",
+    "path": "a ",
+    "expected": false
+  },
+  {
+    "pattern": "a\u0085b",
+    "path": "a\u0085b",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u0085b",
+    "path": "a b",
+    "expected": false
+  },
+  {
+    "pattern": "\u180e",
+    "path": "\u180e",
+    "expected": true
+  },
+  {
+    "pattern": "a\u180e",
+    "path": "a",
+    "expected": false
+  },
+  {
+    "pattern": "a\\\u180e",
+    "path": "a ",
+    "expected": false
+  },
+  {
+    "pattern": "a\u180eb",
+    "path": "a\u180eb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u180eb",
+    "path": "a b",
+    "expected": false
+  },
+  {
+    "pattern": "\u200b",
+    "path": "\u200b",
+    "expected": true
+  },
+  {
+    "pattern": "a\u200b",
+    "path": "a",
+    "expected": false
+  },
+  {
+    "pattern": "a\\\u200b",
+    "path": "a ",
+    "expected": false
+  },
+  {
+    "pattern": "a\u200bb",
+    "path": "a\u200bb",
+    "expected": true
+  },
+  {
+    "pattern": "a\\\u200bb",
+    "path": "a b",
+    "expected": false
+  }
+]

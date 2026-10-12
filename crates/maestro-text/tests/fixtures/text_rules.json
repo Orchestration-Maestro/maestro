@@ -1,0 +1,204 @@
+{
+  "accepted": [
+    9,
+    10,
+    11,
+    12,
+    13,
+    32,
+    160,
+    5760,
+    8192,
+    8193,
+    8194,
+    8195,
+    8196,
+    8197,
+    8198,
+    8199,
+    8200,
+    8201,
+    8202,
+    8232,
+    8233,
+    8239,
+    8287,
+    12288,
+    65279
+  ],
+  "classification": [
+    {
+      "input": "",
+      "any": false,
+      "all": true,
+      "trim": "",
+      "start": "",
+      "end": ""
+    },
+    {
+      "input": "\ufeffx\ufeff",
+      "any": true,
+      "all": false,
+      "trim": "x",
+      "start": "x\ufeff",
+      "end": "\ufeffx"
+    },
+    {
+      "input": "\u0085x\u0085",
+      "any": false,
+      "all": false,
+      "trim": "\u0085x\u0085",
+      "start": "\u0085x\u0085",
+      "end": "\u0085x\u0085"
+    },
+    {
+      "input": "x y",
+      "any": true,
+      "all": false,
+      "trim": "x y",
+      "start": "x y",
+      "end": "x y"
+    },
+    {
+      "input": "x\u200by",
+      "any": false,
+      "all": false,
+      "trim": "x\u200by",
+      "start": "x\u200by",
+      "end": "x\u200by"
+    },
+    {
+      "input": "\ufeff\t\n",
+      "any": true,
+      "all": true,
+      "trim": "",
+      "start": "",
+      "end": ""
+    },
+    {
+      "input": "\u0085",
+      "any": false,
+      "all": false,
+      "trim": "\u0085",
+      "start": "\u0085",
+      "end": "\u0085"
+    },
+    {
+      "input": "x\ufeffy",
+      "any": true,
+      "all": false,
+      "trim": "x\ufeffy",
+      "start": "x\ufeffy",
+      "end": "x\ufeffy"
+    }
+  ],
+  "markup": [
+    {
+      "input": "",
+      "xml": "",
+      "html": "",
+      "htmlHex": ""
+    },
+    {
+      "input": "plain \ud83d\ude00\n",
+      "xml": "plain \ud83d\ude00\n",
+      "html": "plain \ud83d\ude00\n",
+      "htmlHex": "plain \ud83d\ude00\n"
+    },
+    {
+      "input": "&<>\"'",
+      "xml": "&amp;&lt;&gt;&quot;&apos;",
+      "html": "&amp;&lt;&gt;&quot;&#39;",
+      "htmlHex": "&amp;&lt;&gt;&quot;&#x27;"
+    },
+    {
+      "input": "&amp; &apos; &#39; &#x27;",
+      "xml": "&amp;amp; &amp;apos; &amp;#39; &amp;#x27;",
+      "html": "&amp;amp; &amp;apos; &amp;#39; &amp;#x27;",
+      "htmlHex": "&amp;amp; &amp;apos; &amp;#39; &amp;#x27;"
+    },
+    {
+      "input": "<<&&''\"\"",
+      "xml": "&lt;&lt;&amp;&amp;&apos;&apos;&quot;&quot;",
+      "html": "&lt;&lt;&amp;&amp;&#39;&#39;&quot;&quot;",
+      "htmlHex": "&lt;&lt;&amp;&amp;&#x27;&#x27;&quot;&quot;"
+    },
+    {
+      "input": "prefix\r\n\t\u03a9<&suffix",
+      "xml": "prefix\r\n\t\u03a9&lt;&amp;suffix",
+      "html": "prefix\r\n\t\u03a9&lt;&amp;suffix",
+      "htmlHex": "prefix\r\n\t\u03a9&lt;&amp;suffix"
+    }
+  ],
+  "lexical": [
+    {
+      "left": "\ue000",
+      "right": "\ud83d\ude00",
+      "ordering": 1
+    },
+    {
+      "left": "\ud83d\ude00",
+      "right": "\ue000",
+      "ordering": -1
+    },
+    {
+      "left": "a",
+      "right": "a",
+      "ordering": 0
+    },
+    {
+      "left": "a",
+      "right": "aa",
+      "ordering": -1
+    },
+    {
+      "left": "aa",
+      "right": "a",
+      "ordering": 1
+    },
+    {
+      "left": "A",
+      "right": "a",
+      "ordering": -1
+    },
+    {
+      "left": "\u00e9",
+      "right": "e\u0301",
+      "ordering": 1
+    },
+    {
+      "left": "x2",
+      "right": "x10",
+      "ordering": 1
+    },
+    {
+      "left": "",
+      "right": "a",
+      "ordering": -1
+    }
+  ],
+  "lexicalSort": {
+    "input": [
+      "\ue000",
+      "\ud83d\ude00",
+      "a2",
+      "a10",
+      "A",
+      "a",
+      "a",
+      "\u00e9",
+      "e\u0301"
+    ],
+    "expected": [
+      "A",
+      "a",
+      "a",
+      "a10",
+      "a2",
+      "e\u0301",
+      "\u00e9",
+      "\ud83d\ude00",
+      "\ue000"
+    ]
+  }
+}

@@ -147,8 +147,8 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 
 The guest authoring crate may depend on the request, entry, tool and JSON
 owners and never imports native session, tool or catalog runtimes. The terminal
-adapter may use text, but requires only the toolkit until `maestro-text` exists;
-the same change then requires both.
+adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
+created, while the other declared leaf owners stay policy rows until their extraction issues.
 
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and

@@ -87,10 +87,7 @@ fn quoted(characters: &mut std::iter::Peekable<std::str::Chars<'_>>, output: &mu
         }
     }
 }
-/// Whitespace recognized by the trailing-comma transform, not by JSON parsing.
-fn comma_whitespace(character: char) -> bool {
-    matches!(character, '\u{0009}'..='\u{000d}' | '\u{0020}' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
-}
+use maestro_text::is_whitespace_scalar as comma_whitespace;
 /// Enforce custom-model prerequisites in source provider and model order.
 fn validate(providers: &[(String, ProviderConfig)]) -> Result<(), String> {
     let builtins: std::collections::HashSet<_> =
@@ -154,3 +151,5 @@ fn envelope(prefix: &str, message: &str, path: &str) -> String {
     };
     format!("{prefix}:{separator}{message}\n\nFile: {path}")
 }
+#[cfg(test)]
+mod tests;

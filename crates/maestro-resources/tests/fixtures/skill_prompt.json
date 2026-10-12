@@ -1,0 +1,8 @@
+{
+  "input": {
+    "name": "<&\"'",
+    "description": "A skill with <special> & \"characters\".",
+    "filePath": "/path/<&\"'/SKILL.md"
+  },
+  "expected": "\n\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>&lt;&amp;&quot;&apos;</name>\n    <description>A skill with &lt;special&gt; &amp; &quot;characters&quot;.</description>\n    <location>/path/&lt;&amp;&quot;&apos;/SKILL.md</location>\n  </skill>\n</available_skills>"
+}

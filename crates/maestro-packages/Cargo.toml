@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-text = { path = "../maestro-text" }
 sha2 = { version = "=0.11.0", default-features = false }
 maestro-pattern = { path = "../maestro-pattern" }
 maestro-settings = { path = "../maestro-settings" }

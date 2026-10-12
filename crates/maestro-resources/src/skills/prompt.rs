@@ -36,16 +36,5 @@ pub fn format_skills_for_prompt(skills: &[Skill]) -> String {
 
 /// Escape each input character once without revisiting generated entities.
 fn escape_xml(value: &str) -> String {
-    let mut output = String::new();
-    for c in value.chars() {
-        match c {
-            '&' => output.push_str("&amp;"),
-            '<' => output.push_str("&lt;"),
-            '>' => output.push_str("&gt;"),
-            '"' => output.push_str("&quot;"),
-            '\'' => output.push_str("&apos;"),
-            _ => output.push(c),
-        }
-    }
-    output
+    maestro_text::markup::escape(value, maestro_text::markup::EscapeMode::Xml)
 }

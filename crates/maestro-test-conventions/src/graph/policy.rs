@@ -245,14 +245,11 @@ pub(crate) fn exact(name: &str) -> bool {
     )
 }
 
-/// List the direct dependencies a crate with an exact boundary must declare today.
-///
-/// The terminal adapter may use the text owner but requires only the toolkit
-/// until that owner exists; every other exact crate requires its whole row.
+/// List the direct dependencies a crate with an exact boundary must declare.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
-    match name {
-        "maestro-tui-crossterm" => &["maestro-tui"],
-        _ if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
-        _ => &[],
+    if exact(name) {
+        rule(name).map_or(&[], |rule| rule.dependencies)
+    } else {
+        &[]
     }
 }

@@ -1,5 +1,5 @@
 //! Classification of provider diagnostics and measured context usage.
-use std::sync::LazyLock;
+use std::{fmt::Write as _, sync::LazyLock};
 
 use regex::RegexSet;
 
@@ -7,31 +7,38 @@ use crate::{AssistantMessage, StopReason};
 
 /// Compiled patterns for provider context-window errors.
 static OVERFLOW_PATTERNS: LazyLock<Result<RegexSet, regex::Error>> = LazyLock::new(|| {
-    RegexSet::new([
-        "prompt is too long",
-        "request_too_large",
-        "input is too long for requested model",
-        "exceeds the context window",
-        r"input token count[^\n\r\x{2028}\x{2029}]*exceeds the maximum",
-        r"maximum prompt length is [0-9]+",
-        "reduce the length of the messages",
-        r"maximum context length is [0-9]+ tokens",
-        r"exceeds the limit of [0-9]+",
-        "exceeds the available context size",
-        "greater than the context length",
-        "context window exceeds limit",
-        "exceeded model token limit",
-        r"too large for model with [0-9]+ maximum context length",
-        "model_context_window_exceeded",
-        r"prompt too long; exceeded (?:max )?context length",
-        r"context[_ ]length[_ ]exceeded",
-        "too many tokens",
-        "token limit exceeded",
-        concat!(
-            r"^4(?:00|13)[\x{0009}-\x{000D}\x{0020}\x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}-\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]*",
-            r"(?:status code)?[\x{0009}-\x{000D}\x{0020}\x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}-\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}]*\(no body\)"
-        ),
-    ])
+    let space = maestro_text::WHITESPACE
+        .chars()
+        .fold(String::new(), |mut class, c| {
+            let _ = write!(class, "\\x{{{:X}}}", u32::from(c));
+            class
+        });
+    let no_body = format!(r"^4(?:00|13)[{space}]*(?:status code)?[{space}]*\(no body\)");
+    RegexSet::new(
+        [
+            "prompt is too long",
+            "request_too_large",
+            "input is too long for requested model",
+            "exceeds the context window",
+            r"input token count[^\n\r\x{2028}\x{2029}]*exceeds the maximum",
+            r"maximum prompt length is [0-9]+",
+            "reduce the length of the messages",
+            r"maximum context length is [0-9]+ tokens",
+            r"exceeds the limit of [0-9]+",
+            "exceeds the available context size",
+            "greater than the context length",
+            "context window exceeds limit",
+            "exceeded model token limit",
+            r"too large for model with [0-9]+ maximum context length",
+            "model_context_window_exceeded",
+            r"prompt too long; exceeded (?:max )?context length",
+            r"context[_ ]length[_ ]exceeded",
+            "too many tokens",
+            "token limit exceeded",
+        ]
+        .into_iter()
+        .chain([no_body.as_str()]),
+    )
 });
 
 /// Compiled exclusions for unrelated provider failures.

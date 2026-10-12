@@ -61,3 +61,33 @@ fn terminal_directory_globstars_select_base_and_readmission() {
     assert_eq!(rules.test("a", true), TestResult::Unmatched);
     assert_eq!(rules.test("a/sub", true), TestResult::Ignored);
 }
+
+/// One recorded single-rule decision over whitespace framing.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Framing {
+    /// The authored rules, one per line.
+    pattern: String,
+    /// The entry path.
+    path: String,
+    /// Whether the entry is excluded.
+    expected: bool,
+}
+
+#[test]
+fn recorded_ignore_rules_keep_whitespace_framing() {
+    let rows: Vec<Framing> =
+        serde_json::from_str(include_str!("../../tests/fixtures/ignore_characters.json")).unwrap();
+    assert_eq!(rows.len(), 140);
+    for (index, row) in rows.iter().enumerate() {
+        let mut rules = Ignore::new();
+        for line in row.pattern.replace("\r\n", "\n").split('\n') {
+            rules.add(line);
+        }
+        assert_eq!(
+            rules.test(&row.path, false) == TestResult::Ignored,
+            row.expected,
+            "case {index}"
+        );
+    }
+}

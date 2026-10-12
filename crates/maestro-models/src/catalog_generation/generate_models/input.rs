@@ -76,10 +76,7 @@ static DECIMAL_PREFIX: std::sync::LazyLock<Result<regex::Regex, regex::Error>> =
     std::sync::LazyLock::new(|| {
         regex::Regex::new(r"^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?")
     });
-/// The feed decimal parser's leading whitespace set.
-fn price_space(character: char) -> bool {
-    matches!(character, '\u{0009}'..='\u{000d}' | ' ' | '\u{00a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
-}
+use maestro_text::is_whitespace_scalar as price_space;
 /// Convert one numeric/string price, replacing nonfinite scaled results with zero.
 /// Falsy fields default to zero; the gateway retains the sign of numeric zero.
 pub(super) fn price(raw: Option<&RawValue>, preserve_numeric_zero: bool) -> Result<f64, Invalid> {

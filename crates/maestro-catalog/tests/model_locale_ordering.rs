@@ -145,3 +145,13 @@ fn native_model_ordering_recovers_from_invalid_locale() {
         &HashMap::from([("LC_ALL".into(), "not a locale!".into())]),
     );
 }
+#[test]
+fn model_comparator_retains_its_captured_locale() {
+    use std::cell::RefCell;
+    let language = RefCell::new("sv_SE".to_owned());
+    let compare =
+        model_id_comparator(&|name| (name == "LANG").then(|| language.borrow().clone())).unwrap();
+    *language.borrow_mut() = "de_DE".to_owned();
+    drop(language);
+    assert_eq!(compare("z", "ä"), std::cmp::Ordering::Less);
+}

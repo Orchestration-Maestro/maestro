@@ -102,7 +102,7 @@ pub struct NativeAutocompleteOperations<E = fn(&str) -> Option<String>> {
     /// Locale environment reader, independent of home lookup.
     environment: E,
     /// Collator selected on the first same-class label comparison.
-    collator: std::cell::OnceCell<icu_collator::CollatorBorrowed<'static>>,
+    collator: std::cell::OnceCell<maestro_text::collation::Collator>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -120,29 +120,6 @@ impl<E: Fn(&str) -> Option<String>> NativeAutocompleteOperations<E> {
             environment,
             collator: std::cell::OnceCell::new(),
         }
-    }
-
-    /// Prepare a locale collator from the first present environment operand.
-    fn make_collator(&self) -> io::Result<icu_collator::CollatorBorrowed<'static>> {
-        let raw = ["LC_ALL", "LC_MESSAGES", "LANG"]
-            .into_iter()
-            .find_map(&self.environment)
-            .unwrap_or_else(|| "en_US".into());
-        let base = raw.split(['.', '@']).next().unwrap_or_default();
-        let locale = match base {
-            "C" | "POSIX" => "en-US".into(),
-            "" => "und".into(),
-            value => value.replace('_', "-"),
-        };
-        let preferences = locale
-            .parse::<icu_locale_core::Locale>()
-            .map(Into::into)
-            .unwrap_or_default();
-        icu_collator::Collator::try_new(
-            preferences,
-            icu_collator::options::CollatorOptions::default(),
-        )
-        .map_err(io::Error::other)
     }
 }
 
@@ -202,7 +179,7 @@ impl<E: Fn(&str) -> Option<String>> AutocompleteOperations for NativeAutocomplet
         if let Some(collator) = self.collator.get() {
             return Ok(collator.compare(left, right));
         }
-        let collator = self.make_collator()?;
+        let collator = maestro_text::collation::Collator::new(&self.environment)?;
         let result = collator.compare(left, right);
         let _ = self.collator.set(collator);
         Ok(result)

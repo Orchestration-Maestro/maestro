@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-text = { path = "../maestro-text" }
 futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }
 serde_json.workspace = true

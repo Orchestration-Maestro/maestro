@@ -1,0 +1,20 @@
+[package]
+name = "maestro-text"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+collation = ["dep:icu_collator", "dep:icu_locale_core"]
+
+[dependencies]
+icu_collator = { version = "=2.3.1", optional = true }
+icu_locale_core = { version = "=2.3.0", default-features = false, features = ["alloc"], optional = true }
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

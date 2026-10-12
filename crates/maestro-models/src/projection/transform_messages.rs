@@ -178,7 +178,7 @@ fn keep_thinking(value: &crate::ThinkingContent, same: bool) -> bool {
     let blank = value
         .thinking
         .chars()
-        .all(|c| (c.is_whitespace() && c != '\u{0085}') || c == '\u{feff}');
+        .all(maestro_text::is_whitespace_scalar);
     (same && signed) || !blank
 }
 

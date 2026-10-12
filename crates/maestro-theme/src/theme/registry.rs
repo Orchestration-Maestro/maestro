@@ -70,7 +70,7 @@ impl ThemeState {
     /// Returns shipped-data or custom-directory failures.
     pub fn get_available_themes(&self) -> Result<Vec<String>, ThemeError> {
         let mut names: Vec<String> = self.owners()?.into_keys().collect();
-        names.sort_by(|a, b| a.encode_utf16().cmp(b.encode_utf16()));
+        names.sort_by(|a, b| maestro_text::utf16_order(a, b));
         Ok(names)
     }
     /// List every name once with its first owner's path, in stable locale order.
