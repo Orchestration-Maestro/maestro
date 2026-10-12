@@ -13,8 +13,9 @@ impl SessionManager {
     /// Replace the history with the ancestry of `leaf_id` and its applicable resolved labels.
     ///
     /// Label records on the ancestry are dropped and each retained record that pointed at one
-    /// is reconnected to that label's own parent. Resolved labels whose target is retained are
-    /// recreated, in resolved order with their stored timestamps, after the retained tail.
+    /// is reconnected to the nearest ancestor that was not a dropped label. Resolved labels
+    /// whose target is retained are recreated, in resolved order with their stored
+    /// timestamps (omitted when none is stored), after the retained tail.
     /// Native mode returns the new session file, writing it at once only when a retained
     /// message is from the assistant; memory mode returns `None`.
     ///
@@ -70,26 +71,26 @@ impl SessionManager {
             .iter()
             .filter_map(|entry| entry["id"].as_str().map(str::to_owned))
             .collect();
-        let mut parent = entries
-            .last()
-            .map_or(Value::Null, |entry| entry["id"].clone());
+        let mut parent = entries.last().map_or(Value::Null, |e| e["id"].clone());
         let targets: Vec<&String> = self
             .labels
             .keys()
             .filter(|target| occupied.contains(*target))
             .collect();
-        let mut recreated = Vec::new();
         for target in targets {
             let id = generate_id(|id| occupied.contains(id), &mut next_uuid);
             occupied.insert(id.clone());
-            recreated.push(json!({
-                "type": "label", "id": id, "parentId": parent,
-                "timestamp": self.label_timestamps[target.as_str()], "targetId": target,
-                "label": self.labels[target.as_str()],
-            }));
+            let stamp = self.label_timestamps.get(target.as_str());
+            let mut record = json!({
+                "type": "label", "id": id, "parentId": parent, "timestamp": stamp,
+                "targetId": target, "label": self.labels[target.as_str()],
+            });
+            if let (None, Some(fields)) = (stamp, record.as_object_mut()) {
+                fields.shift_remove("timestamp");
+            }
+            entries.push(record);
             parent = json!(id);
         }
-        entries.extend(recreated);
     }
 }
 

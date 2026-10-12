@@ -74,10 +74,33 @@ fn assert_v7(id: &str) {
     assert_eq!(uuid::Uuid::parse_str(id).unwrap().get_version_num(), 7);
 }
 
+/// Fresh memory history without a filename keeps none after extracting a middle entry.
+fn extract_middle_of_fresh_memory() {
+    let mut fresh = SessionManager::in_memory(Some("/work")).unwrap();
+    let first = fresh
+        .append_message(json!({"role": "user", "content": "a", "timestamp": 1}))
+        .unwrap();
+    let middle = fresh
+        .append_message(json!({"role": "assistant", "content": "b", "timestamp": 2}))
+        .unwrap();
+    let last = fresh
+        .append_message(json!({"role": "user", "content": "c", "timestamp": 3}))
+        .unwrap();
+    assert_eq!(fresh.get_session_file(), None);
+    assert_eq!(fresh.create_branched_session(&middle).unwrap(), None);
+    assert_eq!(ids(&fresh), [first, middle.clone()]);
+    assert_eq!(fresh.get_entry(&last), None);
+    assert_eq!(fresh.get_leaf_id(), Some(middle.as_str()));
+    assert_eq!(fresh.get_session_file(), None);
+}
+
 #[test]
 fn extraction_selects_only_the_requested_ancestry() {
+    let scratch = Scratch::new();
     let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
-    manager.set_session_file("memory-selection.jsonl").unwrap();
+    manager
+        .set_session_file(&format!("{}/absent.jsonl", scratch.text()))
+        .unwrap();
     let a = manager
         .append_message(json!({"role": "user", "content": "a", "timestamp": 1}))
         .unwrap();
@@ -107,6 +130,7 @@ fn extraction_selects_only_the_requested_ancestry() {
     assert!(header.get("parentSession").is_none());
     manager.branch(&b).unwrap();
     assert_eq!(manager.get_branch(None).unwrap().len(), 2);
+    extract_middle_of_fresh_memory();
 }
 
 #[test]
@@ -148,9 +172,17 @@ fn extraction_keeps_unknown_records_and_unreached_fields() {
         json!({"type": "thinking_level_change", "id": "t", "parentId": "c", "timestamp": "t",
             "thinkingLevel": "high"}),
         json!({"type": "session_info", "id": "s", "parentId": "t", "timestamp": "t", "name": "n"}),
+        json!({"type": "model_change", "id": "mc", "parentId": "s", "timestamp": "t",
+            "provider": "p", "modelId": "m", "extra": null}),
+        json!({"type": "compaction", "id": "cp", "parentId": "mc", "timestamp": "t",
+            "summary": "s", "firstKeptEntryId": "m", "tokensBefore": 1, "details": {"k": [1, 1]}}),
+        json!({"type": "branch_summary", "id": "bs", "parentId": "cp", "timestamp": "t",
+            "fromId": "m", "summary": "s", "extra": [null]}),
+        json!({"type": "custom_message", "id": "cm", "parentId": "bs", "timestamp": "t",
+            "customType": "k", "content": "c", "display": true, "details": null}),
     ];
     let mut manager = open(&scratch, "raw.jsonl", &records);
-    manager.create_branched_session("s").unwrap();
+    manager.create_branched_session("cm").unwrap();
     let kept: Vec<Value> = manager.get_entries().into_iter().cloned().collect();
     assert_eq!(kept, records);
     let order: Vec<&str> = kept[0]
@@ -165,25 +197,41 @@ fn extraction_keeps_unknown_records_and_unreached_fields() {
 #[test]
 fn extracted_context_reuses_local_timestamp_conversion() {
     let name = "extracted_context_reuses_local_timestamp_conversion";
-    if std::env::var("MAESTRO_EXTRACTION_CHILD").as_deref() != Ok(name) {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture"])
-            .env("TZ", "America/New_York")
-            .env("MAESTRO_EXTRACTION_CHILD", name)
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}\n{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
+    let zone = std::env::var("MAESTRO_EXTRACTION_CHILD")
+        .ok()
+        .and_then(|child| {
+            child
+                .strip_prefix(name)?
+                .strip_prefix(':')
+                .map(str::to_owned)
+        });
+    let Some(zone) = zone else {
+        for zone in ["America/New_York", "UTC"] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", name, "--nocapture"])
+                .env("TZ", zone)
+                .env("MAESTRO_EXTRACTION_CHILD", format!("{name}:{zone}"))
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{zone}\n{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
         return;
-    }
-    assert_ne!(chrono::Local::now().offset().local_minus_utc(), 0);
+    };
+    let utc = zone == "UTC";
+    assert_eq!(chrono::Local::now().offset().local_minus_utc() == 0, utc);
+    let local_millis = if utc {
+        1_735_693_200_000_f64
+    } else {
+        1_735_711_200_000_f64
+    };
     let scratch = Scratch::new();
     for (time, millis) in [
-        ("2025-01-01T01:00:00", 1_735_711_200_000_f64),
+        ("2025-01-01T01:00:00", local_millis),
         ("2025-01-01T01:00:00+02:00", 1_735_686_000_000.0),
         ("2025-01-01", 1_735_689_600_000.0),
     ] {
@@ -229,6 +277,7 @@ fn extraction_retains_only_resolved_path_labels() {
     assert_eq!(manager.get_label(&a), Some(&json!("A")));
     assert_eq!(manager.get_label(&b), None);
     assert_eq!(manager.get_tree()[0].label_timestamp.cloned(), stamp);
+    assert_eq!(manager.get_tree()[0].label, Some(&json!("A")));
     assert_eq!(manager.get_entries().len(), 3);
 }
 
@@ -302,6 +351,30 @@ fn extraction_omits_cleared_labels() {
         manager.create_branched_session("l2").unwrap();
         assert_eq!(ids(&manager), ["a"], "{clear}");
         assert_eq!(manager.get_label("a"), None);
+    }
+}
+
+#[test]
+fn extraction_omits_a_missing_label_timestamp_but_keeps_null() {
+    let scratch = Scratch::new();
+    let base = [message("a", None, "user")];
+    let first = label("l1", Some("a"), "a", json!("A1"), "t1");
+    let missing = json!({"type": "label", "id": "l2", "parentId": "l1", "targetId": "a",
+        "label": "A2"});
+    let mut null_stamp = label("l2", Some("l1"), "a", json!("A2"), "t2");
+    null_stamp["timestamp"] = Value::Null;
+    for (name, last, expected) in [
+        ("missing", missing, None),
+        ("null", null_stamp, Some(Value::Null)),
+    ] {
+        let mut records = base.to_vec();
+        records.extend([first.clone(), last]);
+        let mut manager = open(&scratch, name, &records);
+        manager.create_branched_session("l2").unwrap();
+        let kept = manager.get_entries();
+        let recreated = kept.last().unwrap();
+        assert_eq!(recreated["label"], "A2", "{name}");
+        assert_eq!(recreated.get("timestamp"), expected.as_ref(), "{name}");
     }
 }
 
@@ -441,6 +514,11 @@ fn assistant_extraction_publishes_before_returning() {
     assert_eq!(written[0]["cwd"], "/work");
     assert_eq!(written[0]["id"], manager.get_session_id());
     assert_v7(manager.get_session_id());
+    let contents: Vec<&Value> = written[1..]
+        .iter()
+        .map(|r| &r["message"]["content"])
+        .collect();
+    assert_eq!(contents, [&json!("u"), &json!("a")]);
     manager
         .append_message(json!({"role": "user", "content": "v", "timestamp": 3}))
         .unwrap();

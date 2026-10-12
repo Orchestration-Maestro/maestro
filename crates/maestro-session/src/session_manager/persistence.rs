@@ -30,8 +30,8 @@ impl SessionManager {
     ///
     /// # Errors
     /// Fails with `Cannot fork: source session file is empty or invalid: {source_path}`
-    /// before creating anything; later directory, write and reopen errors are propagated
-    /// and leave records already written in place.
+    /// before creating anything; a null source record, later directory, write and reopen
+    /// errors are propagated and leave records already written in place.
     pub fn fork_from(
         source_path: &str,
         target_cwd: &str,
@@ -67,8 +67,13 @@ impl SessionManager {
         let (header, file) =
             session_header(&id, target_cwd, Presence::Present(source_path.to_owned()));
         let path = maestro_path::join(&[&dir, &file]);
-        let records = entries.iter().filter(|entry| entry["type"] != "session");
+        let records = entries
+            .iter()
+            .filter(|entry| entry.is_null() || entry["type"] != "session");
         for entry in std::iter::once(&header).chain(records) {
+            if entry.is_null() {
+                return Err(invalid("source session record is null"));
+            }
             write(&path, &encode(entry)?)?;
         }
         Self::open(&path, Some(&dir), Some(target_cwd))
@@ -174,7 +179,8 @@ impl SessionManager {
 
     /// Write the extracted history now only when it holds an assistant message.
     ///
-    /// The publication state changes only after the scan and write both succeed.
+    /// The publication state changes only after the scan, and the write when an
+    /// assistant is found, succeed.
     pub(super) fn publish_branched(
         &mut self,
         write: impl FnOnce(&str, &[FileEntry]) -> io::Result<()>,

@@ -434,6 +434,26 @@ fn fork_preserves_write_and_returned_owner_failure_order() {
     std::fs::remove_dir_all(&rig.root).unwrap();
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn fork_stops_at_a_null_record_before_writing_it_or_later_records() {
+    let rig = ForkRig::new();
+    let text = format!(
+        "{}\n{}\nnull\n{}\n",
+        ForkRig::HEADER,
+        rig.records[0],
+        rig.records[1]
+    );
+    std::fs::write(&rig.source, text).unwrap();
+    let dir = rig.path("null-target");
+    let error = rig.fork(&dir, super::persistence::append).err().unwrap();
+    assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+    let written = ForkRig::only_file(&dir);
+    assert_eq!(written.lines().count(), 2);
+    assert!(written.ends_with(&format!("{}\n", rig.records[0])));
+    std::fs::remove_dir_all(&rig.root).unwrap();
+}
+
 /// A later numeric identity fails the returned owner's index after every write.
 #[cfg(not(target_arch = "wasm32"))]
 fn invalid_later_id_fails_after_all_writes(rig: &ForkRig) {
