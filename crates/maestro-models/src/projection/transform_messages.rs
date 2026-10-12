@@ -6,6 +6,22 @@ use crate::{
     ToolResultMessage, UserBlock, UserContent,
 };
 
+/// Longest tool-call identifier a destination protocol accepts, in characters.
+const ID_LIMIT: usize = 64;
+
+/// Every character outside `[A-Za-z0-9_-]` becomes one `_` per UTF-16 unit, and the result is
+/// limited to 64 characters.
+pub(crate) fn normalize_tool_call_id(id: &str) -> String {
+    id.chars()
+        .flat_map(|character| {
+            let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
+            let units = if kept { 1 } else { character.len_utf16() };
+            std::iter::repeat_n(if kept { character } else { '_' }, units)
+        })
+        .take(ID_LIMIT)
+        .collect()
+}
+
 /// Optional caller normalization of tool-call identifiers across models.
 type Normalizer<'a> = Option<&'a dyn Fn(&str, &Model, &AssistantMessage) -> String>;
 

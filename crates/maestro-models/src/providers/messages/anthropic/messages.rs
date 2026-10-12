@@ -8,6 +8,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::arguments::json_parse::whitespace;
+use crate::projection::normalize_tool_call_id;
 use crate::{
     AssistantContent, AssistantMessage, Context, JsonObject, Message, Model, Tool,
     ToolResultMessage, UserBlock, UserContent, transform_messages,
@@ -15,8 +16,6 @@ use crate::{
 
 /// Placeholder for a tool result that holds only images.
 const IMAGE_PLACEHOLDER: &str = "(see attached image)";
-/// Longest tool-call identifier the protocol accepts, in characters.
-const ID_LIMIT: usize = 64;
 
 /// Marker that asks the service to cache everything up to the marked block.
 #[derive(Clone, Copy, Serialize)]
@@ -207,19 +206,6 @@ fn result_content(blocks: &[UserBlock]) -> ResultContent {
 /// Report whether trimming leaves any text.
 fn has_text(text: &str) -> bool {
     !text.trim_matches(whitespace).is_empty()
-}
-
-/// Every character outside `[A-Za-z0-9_-]` becomes one `_` per UTF-16 unit, and the result is
-/// limited to 64 characters.
-fn normalize_tool_call_id(id: &str) -> String {
-    id.chars()
-        .flat_map(|character| {
-            let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
-            let units = if kept { 1 } else { character.len_utf16() };
-            std::iter::repeat_n(if kept { character } else { '_' }, units)
-        })
-        .take(ID_LIMIT)
-        .collect()
 }
 
 /// Project the history for the model, convert it into wire messages and place `cache` on the

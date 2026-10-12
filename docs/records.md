@@ -53,6 +53,9 @@ The [message-protocol guide](https://github.com/Orchestration-Maestro/maestro/bl
 covers direct streamed message requests with key authentication, their payload, cache and
 header policy, the event framing and repair, and replaceable clients.
 
+The [content-generation guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/content-generation.md)
+covers the shared conversation, tool and finish-reason conversion of the Gemini-style protocols.
+
 See [Tool arguments](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/arguments.md) for shared JSON completion and repair.
 
 The [conversation projection](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/conversation-projection.md)
