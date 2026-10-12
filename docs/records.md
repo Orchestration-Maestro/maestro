@@ -188,3 +188,9 @@ file-entry representation; typed views are explicit consuming reads. Shared
 message records remain in `maestro-request`, and the existing
 [conversation projection](sessions/messages.md) converts typed messages into
 model input. `Presence<T>` is copyable when its payload is copyable.
+
+`SessionManager` retains raw message values without decoding their payloads;
+borrowed reads and explicit caller-owned copies follow the
+[memory-history interface](sessions/session_manager.md#in-memory-history).
+`NewSessionOptions` carries an optional explicit id and `Presence<String>` parent
+metadata; it is a construction option, not a wire decoder.
