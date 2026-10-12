@@ -1,7 +1,7 @@
 # Tool output and image helpers
 
-`maestro-tools` delivers output selection, native streamed-output accumulation
-and callable image preparation. Read execution is not part of this interface.
+`maestro-tools` delivers output selection, native streamed-output accumulation,
+callable image preparation, generic tool definitions and the native `read` tool.
 
 ## Limits and selection
 
@@ -147,3 +147,74 @@ PNG. BOM/ID3 prefixes retain the detector's 256 re-entry ceiling. Unsupported
 content returns absence; file opening/reading failures remain native I/O errors.
 Pure image operations build on native and browser targets; the file opener is
 native-only.
+
+## Tool definitions
+
+[`types`](../crates/maestro-tools/src/types.rs) declares `ToolDefinition`: an
+executable declaration plus prompt text, a render-shell choice and optional call
+and result renderers. The caller context `C`, parameters `P`, details `D` and
+renderer state `S` are generic, so the type names no application context. The
+renderer records (`ToolRenderContext`, `ToolRenderResultOptions`) carry the row's
+shared arguments and state, stable call id, invalidation, previous component,
+working directory and the execution, argument, partial, expanded, image and error
+flags; building a context or calling a renderer is the caller's job.
+
+[`wrap_tool_definition`](../crates/maestro-tools/src/tool_definition_wrapper.rs)
+turns a definition into an `AgentTool`. Each execution calls the optional context
+factory once; a factory error is the execution's error and the body does not run.
+Call id, arguments, signal and progress observer pass through, and result details
+keep the three states of `AgentToolResult` (absent, explicit null, value).
+`wrap_tool_definitions` wraps in order and keeps duplicates.
+`create_tool_definition_from_agent_tool` is the reverse and leaves prompt text and
+renderers absent. Native and browser builds differ only in whether the stored
+callbacks must be `Send + Sync`.
+
+## Read tool
+
+[`read`](../crates/maestro-tools/src/read/mod.rs) is native-only.
+`create_read_tool_definition` and `create_read_tool` take a working directory and
+`ReadToolOptions`: `auto_resize_images` (absent means `true`) and optional
+`ReadOperations` (`read_file`, `access` and an optional `detect_image_mime_type`
+that defaults to no image). Without operations the tool reads the local
+filesystem; a supplied implementation sees the same absolute path in the same
+`access`, detect, `read_file` order.
+
+The authored path is resolved when the tool is called, before the returned future
+is polled; see [`path_utils`](../crates/maestro-tools/src/path_utils.rs). A leading
+`@` is dropped, U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 become a space,
+and a bare `~` or `~/` becomes the home directory. Relative paths resolve
+lexically through `maestro-path`, with no canonicalization. The process working
+directory is read only for a relative `cwd`, and the home directory only for `~`.
+`resolve_read_path` then keeps the first existing spelling among the resolved
+path, the narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly
+apostrophes.
+
+The signal is checked before each of the three operations and watched while one is
+pending. An abort seen there settles the read with `Operation aborted`, and a
+later operation does not start. A started operating-system call is not
+interrupted.
+
+Text is decoded lossily as UTF-8, split on LF with trailing empty entries kept,
+and selected with `offset` (one-based) and `limit`, both finite numbers handled
+like JavaScript slice bounds: fractions truncate toward zero and a negative end
+counts from the end. The caller limit applies first, then
+[`truncate_head`](../crates/maestro-tools/src/output/truncate.rs) with the default
+2000 lines and 50 KB. The result is plain text with a continuation notice when
+lines remain, `details` holds the truncation record only when the default limits
+cut the text, and an offset past the last line fails with the line count. When the
+first selected line alone exceeds the byte limit the text is a `sed` command for
+that line, quoting the authored path unchanged.
+
+A detected image becomes `Read image file [<mime>]`, then the delegated dimension
+note, then a note when the active model (read from `ReadContext::model` after
+detection) lacks image input, and an image block. Fitting uses the image helpers
+above; `auto_resize_images: false` sends the original bytes, and an image that
+cannot be fitted yields only the text with the omission line. Native detection
+uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
+
+```rust
+use maestro_tools::{ReadToolOptions, create_read_tool};
+
+let tool = create_read_tool("/work".into(), ReadToolOptions::default());
+assert_eq!(tool.definition.name, "read");
+```

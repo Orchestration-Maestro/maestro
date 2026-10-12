@@ -19,6 +19,22 @@ features, for artifact identifiers. Its native dependency closure uses existing
 MIT or Apache-2.0 license options. Files and buffered writes use the standard
 library. The streaming module is excluded from browser builds.
 
+## Tool definitions and read
+
+Generic definitions and wrappers build on native and browser targets with the
+internal `maestro-agent`, `maestro-models`, `maestro-theme` and `maestro-tui`
+crates, workspace `serde_json` (now also a normal dependency) and workspace
+`futures-util =0.3.34` (`std`, `sink`). The read family is native-only:
+`icu_normalizer =2.3.0` with `compiled_data` supplies NFD, `tokio =1.53.2` with
+`rt` and `fs` supplies file reads and blocking probes, and on Unix `rustix =1.1.5`
+with `std` and `fs` checks readability without opening the file. Other targets
+open the file. No package or version beyond the existing lockfile is added.
+Read selection spells floating-point line numbers with `ryu-js`.
+
+The home directory comes from `std::env::home_dir`: an unset or empty `HOME`
+falls back to the account's home entry, where the JavaScript runtime would return
+an empty string, and a missing entry is a lookup error returned only for `~` paths.
+
 ## Image libraries
 
 Image operations use `image =0.24.9` (MIT or Apache-2.0) directly, with
