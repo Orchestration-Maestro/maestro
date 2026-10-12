@@ -63,7 +63,7 @@ are later scope, not active foundation concepts.
 - **SessionManager:** The owner of session entries, branch position, labels, resolved context and JSONL persistence.
 - **Session:** A conversation history with a selected branch, backed by a native JSONL file or explicit memory storage.
 - **AgentSession:** The application session coordinating agent execution, prompt delivery, events, selection, compaction, retries and navigation.
-- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record.
+- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record. The declared `maestro-entry` library, which depends only on `maestro-request`, owns the session interchange records; `maestro-session` keeps history and storage.
 - **Active branch:** The path from the root to the selected position.
 - **Context projection:** The selected-ancestry message and setting values produced from supplied session entries; persistence remains with the session owner.
 - **Compaction:** Reduction of model context without deleting raw history.
@@ -104,20 +104,20 @@ are later scope, not active foundation concepts.
 - **Chat:** The interactive terminal frontend, including transcript presentation, editor and selectors.
 - **RPC:** The JSONL frontend with correlated responses, stream events and the established command/UI methods.
 - **Web:** The browser frontend, including the offline exported session viewer.
-- **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; `maestro-theme` reads the selected pack to derive the shipped dark and light themes, resolved presentation values, CSS custom properties and filled mark templates, and no consumer hard-codes brand values.
+- **Brand pack:** One JSON file of palette, mode role aliases, fonts, type, spacing, mark paths, glyphs and terminal aliases; the declared `maestro-brand` library, which depends on the text and JSON owners, owns the pack schema and its pure CSS and mark projections once extracted, while `maestro-theme` reads the selected pack to derive the shipped dark and light themes, resolved presentation values, CSS custom properties and filled mark templates, and no consumer hard-codes brand values.
 - **Theme:** The shared presentation library for style resolution and caller-specific code highlighting. A *prepared instance* is an immutable set of color prefixes; the *live theme* is the shared slot that publishes the current instance and may be replaced while callers still hold earlier instances. Component color callbacks read the live theme when called (strikethrough and unselected settings labels do not); border callbacks keep the instance they were created from and the settings cursor keeps the color it had at creation. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns watch/timer effects to `maestro-watch::fs_watch`, leaving theme reload policy here.
 
 ### Structure
 
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
-- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context.
+- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The declared `maestro-tool` library, which depends only on `maestro-request`, owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
-- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation and the optional foundation utility, without application selectors or framework/highlighting engines.
+- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf and the optional foundation utility, without application selectors or framework/highlighting engines.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
 - **Overlay:** A retained component layered over the frame, with live placement/visibility options and a public handle for focus, temporary hiding and removal.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
 - **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, local future execution, environment queries and log files.
-- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit and, optionally, the foundation utility.
+- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit, the text leaf and, optionally, the foundation utility; it requires only the toolkit until `maestro-text` exists.
 - **OutputAccumulator:** A native tool-output stream that owns decoded snapshot accounting and an optional raw overflow artifact.
 - **Grapheme:** A user-perceived character cluster, indivisible when terminal text is wrapped, truncated or sliced; escapes inside it never split it. Tool-output line clipping instead counts Unicode scalars.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
@@ -135,10 +135,12 @@ are later scope, not active foundation concepts.
 - **Fragment:** An incomplete escape sequence the input buffer retains for more input; it can be completed, explicitly flushed or cleared, released as it is at a representable deadline, or delivered as data immediately before a paste starts.
 - **Bracketed paste:** Text a terminal wraps in start and end markers; the input buffer delivers it as one paste event without the markers.
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
-- **Guest authoring:** The `maestro-extensions-wasm` library, whose only allowed internal dependency is `maestro-request`, owning the canonical WIT source inputs and the facade extension authors write against.
-- **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, the four application message records and their existing `Presence<T>` wrapper; only models, resources, theme, session and guest authoring may depend on it directly, and it depends on no workspace crate.
+- **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, entry, tool and JSON owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
+- **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, the four application message records and their existing `Presence<T>` wrapper; it also owns the resolved request-auth record, default zero usage and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends on no workspace crate.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
+- **Text:** The declared core leaf `maestro-text` below layer 0, owning common text operations (whitespace, lexical comparison, markup escaping, locale construction); it depends on no workspace crate and `maestro-pattern` depends on it.
+- **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text); it depends on no workspace crate.
 - **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.

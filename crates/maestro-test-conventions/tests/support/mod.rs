@@ -109,6 +109,11 @@ pub fn exact(name: &str) -> bool {
 }
 
 #[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
+pub fn required(name: &str) -> &'static [&'static str] {
+    policy::required(name)
+}
+
+#[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
 }
@@ -122,9 +127,9 @@ impl Workspace {
             if !entries.insert(name) {
                 continue;
             }
-            let targets = policy::rule(name).unwrap().dependencies;
+            let targets = required(name);
             let mut dependencies = String::new();
-            if exact(name) {
+            if !targets.is_empty() {
                 dependencies.push_str("[dependencies]\n");
                 pending.extend(targets);
                 dependencies.extend(

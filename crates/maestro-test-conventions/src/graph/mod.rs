@@ -250,10 +250,7 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
 fn complete(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     for package in members(metadata) {
         let name = package.name.as_str();
-        if !policy::exact(name) {
-            continue;
-        }
-        for required in rule(name).ok_or("unknown scoped source")?.dependencies {
+        for required in policy::required(name) {
             if !edges.iter().any(|edge| {
                 edge.from == name && edge.to == *required && edge.kind != Kind::Development
             }) {
