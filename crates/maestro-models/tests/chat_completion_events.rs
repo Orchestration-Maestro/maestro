@@ -1110,7 +1110,7 @@ async fn observe(
     let (labels, message) = drain(&stream).await?;
     let mut message = serde_json::to_value(message)?;
     if let Some(object) = message.as_object_mut() {
-        object.remove("timestamp");
+        object.shift_remove("timestamp");
     }
     Ok((labels, message))
 }

@@ -109,7 +109,7 @@ fn maestro_raw_xhigh_preserves_server_rejection() -> TestResult {
     let mut chat_description = serde_json::to_value(&responses)?;
     chat_description["api"] = json!("openai-completions");
     if let Some(object) = chat_description.as_object_mut() {
-        object.remove("compat");
+        object.shift_remove("compat");
     }
     let chat_model: Model = serde_json::from_value(chat_description)?;
     for (model, field) in [

@@ -574,7 +574,9 @@ async fn assert_setup_error(
     for result in results {
         let mut seen = serde_json::to_value(&*result.read().map_err(|_| "poisoned")?)?;
         assert!(seen["timestamp"].is_number(), "{} timestamp", protocol.api);
-        seen.as_object_mut().ok_or("object")?.remove("timestamp");
+        seen.as_object_mut()
+            .ok_or("object")?
+            .shift_remove("timestamp");
         assert_eq!(seen, expected_setup_error(protocol), "{}", protocol.api);
     }
     Ok(())
@@ -1345,7 +1347,9 @@ async fn assert_raw_key_error(key: Option<String>, aborted: bool, route: Route) 
     };
     let mut seen = serde_json::to_value(&*result.read().map_err(|_| "poisoned")?)?;
     assert!(seen["timestamp"].is_number());
-    seen.as_object_mut().ok_or("object")?.remove("timestamp");
+    seen.as_object_mut()
+        .ok_or("object")?
+        .shift_remove("timestamp");
     let mut expected = expected_setup_error(&PROTOCOLS[5]);
     if aborted {
         expected["stopReason"] = json!("aborted");

@@ -254,7 +254,7 @@ fn set(doc: &mut Value, path: &[&str], value: Option<Value>) {
     match value {
         Some(value) => parent[*last] = value,
         None => {
-            parent.as_object_mut().unwrap().remove(*last);
+            parent.as_object_mut().unwrap().shift_remove(*last);
         }
     }
 }

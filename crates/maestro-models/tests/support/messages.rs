@@ -227,7 +227,7 @@ pub async fn collect(stream: &AssistantMessageEventStream) -> TestResult<(Vec<Va
     let message = stream.result().await;
     let mut result = serde_json::to_value(&*message.read().map_err(|error| error.to_string())?)?;
     if let Some(members) = result.as_object_mut() {
-        members.remove("timestamp");
+        members.shift_remove("timestamp");
     }
     Ok((events, result))
 }

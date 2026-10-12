@@ -395,7 +395,7 @@ fn optional_entry_fields() {
                 .find(|value| value["type"] == kind)
                 .unwrap()
                 .clone();
-            entry.as_object_mut().unwrap().remove(field);
+            entry.as_object_mut().unwrap().shift_remove(field);
             if let Some(value) = &state {
                 entry[field] = value.clone();
             }

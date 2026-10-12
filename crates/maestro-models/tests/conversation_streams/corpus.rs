@@ -101,12 +101,12 @@ pub async fn rows(test: &str) -> TestResult {
             let mut value = serde_json::to_value(event)?;
             let object = value.as_object_mut().unwrap();
             for key in ["partial", "message", "error"] {
-                object.remove(key);
+                object.shift_remove(key);
             }
             events.push(value);
         }
         let mut value = serde_json::to_value(&*result.read().unwrap())?;
-        value.as_object_mut().unwrap().remove("timestamp");
+        value.as_object_mut().unwrap().shift_remove("timestamp");
         if row["expected"].get("native_error").is_some() {
             assert_eq!(row["expected"]["native_error"], true, "{name}");
             assert!(
@@ -115,7 +115,7 @@ pub async fn rows(test: &str) -> TestResult {
                     .is_some_and(|message| !message.is_empty()),
                 "{name}: expected native failure, got {value}"
             );
-            value.as_object_mut().unwrap().remove("errorMessage");
+            value.as_object_mut().unwrap().shift_remove("errorMessage");
         }
         // Fixed record field order is not an identity; tool dictionaries are.
         compare(&value, &row["expected"]["result"], name);

@@ -112,7 +112,7 @@ mod tests {
         let compat = &mut model.compat.as_mut().unwrap().0;
         compat.insert("old".into(), Value::Bool(true));
         compat.insert("new".into(), Value::Null);
-        compat.remove("remove");
+        compat.shift_remove("remove");
         assert_eq!(
             serde_json::to_value(model).unwrap()["compat"],
             serde_json::json!({"old":true,"nested":{"values":["b","a","b"]},"new":null})

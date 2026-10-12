@@ -299,8 +299,8 @@ async fn gated_resolution(
 fn command_output(call: &Value, base: &str) -> Value {
     let mut call: Value = serde_json::from_str(&call.to_string().replace(base, "$BASE")).unwrap();
     let object = call.as_object_mut().unwrap();
-    object.remove("mode");
-    if let Some(cwd) = object.remove("cwd") {
+    object.shift_remove("mode");
+    if let Some(cwd) = object.shift_remove("cwd") {
         object.insert("options".into(), json!({"cwd":cwd}));
     }
     call
@@ -311,7 +311,10 @@ fn output(result: maestro_packages::ResolvedPaths, base: &str) -> Value {
     for items in result.as_object_mut().unwrap().values_mut() {
         for item in items.as_array_mut().unwrap() {
             if item["metadata"]["baseDir"].is_null() {
-                item["metadata"].as_object_mut().unwrap().remove("baseDir");
+                item["metadata"]
+                    .as_object_mut()
+                    .unwrap()
+                    .shift_remove("baseDir");
             }
         }
     }

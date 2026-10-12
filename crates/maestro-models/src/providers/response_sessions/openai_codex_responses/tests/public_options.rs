@@ -633,7 +633,7 @@ fn assert_base(
         "synthetic key marker differs"
     );
     let mut expected = expected;
-    expected.as_object_mut().unwrap().remove("apiKey");
+    expected.as_object_mut().unwrap().shift_remove("apiKey");
     for (name, value) in expected.as_object().unwrap() {
         assert!(
             crate::providers::json_text::compact_json(&actual[name]).unwrap()

@@ -383,7 +383,7 @@ async fn observe(
     let result = stream.result().await;
     let snapshot = result.read().unwrap().clone();
     let mut result = serde_json::to_value(snapshot)?;
-    result.as_object_mut().unwrap().remove("timestamp");
+    result.as_object_mut().unwrap().shift_remove("timestamp");
     Ok((events, result))
 }
 
@@ -450,7 +450,7 @@ fn assert_run(row: &Row, seen: &Seen, events: &[Value], mut result: Value) -> Te
                         .is_some_and(|message| !message.is_empty()),
                     "native cause required"
                 );
-                result.as_object_mut().unwrap().remove("errorMessage");
+                result.as_object_mut().unwrap().shift_remove("errorMessage");
             }
             let actual = json!({"trace":seen.trace,"requests":seen.requests,"payloads":seen.payloads,"responses":seen.responses,"events":events,"result":result});
             assert_eq!(

@@ -277,7 +277,7 @@ fn opening_selects_override_then_header_then_runtime_cwd() {
         if let Some(value) = &stored {
             record["cwd"] = value.clone();
         } else {
-            record.as_object_mut().unwrap().remove("cwd");
+            record.as_object_mut().unwrap().shift_remove("cwd");
         }
         let path = directory.file("cwd.jsonl", jsonl(&[record]));
         for explicit in [Some("override"), Some(""), None] {

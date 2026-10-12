@@ -34,11 +34,11 @@ fn check(name: &str) -> TestResult {
             actual
                 .as_object_mut()
                 .ok_or("missing result")?
-                .remove("data");
+                .shift_remove("data");
             expected
                 .as_object_mut()
                 .ok_or("missing reference")?
-                .remove("data");
+                .shift_remove("data");
         }
         assert_eq!(actual, expected, "{}", case.id);
     }

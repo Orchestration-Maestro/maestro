@@ -133,7 +133,10 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
         assert!(ids.insert(row["id"].to_string()), "duplicate row id");
         let mut query = row["input"].clone();
         for field in ["pongs", "smokeText"] {
-            query.as_object_mut().ok_or("input object")?.remove(field);
+            query
+                .as_object_mut()
+                .ok_or("input object")?
+                .shift_remove(field);
         }
         assert!(
             inputs.insert(canonical(query).to_string()),
@@ -269,7 +272,7 @@ fn descriptor(wire: &Wire, id: &str) -> TestResult<Model> {
             actual
                 .as_object_mut()
                 .ok_or("model object")?
-                .remove("compat");
+                .shift_remove("compat");
         }
     }
     assert!(
@@ -403,7 +406,7 @@ async fn invoke(wire: &Wire, id: &str, expected: &Value) -> TestResult<Value> {
     message
         .as_object_mut()
         .ok_or("message object")?
-        .remove("timestamp");
+        .shift_remove("timestamp");
     let seen = bundled::recorded(&requests);
     assert_eq!(seen.len(), 1, "single completed invocation");
     let mut output =
@@ -477,7 +480,7 @@ fn event_record(event: &maestro_models::AssistantMessageEvent) -> TestResult<Val
     let mut record = serde_json::to_value(event)?;
     let object = record.as_object_mut().ok_or("event object")?;
     for field in ["partial", "message", "error"] {
-        object.remove(field);
+        object.shift_remove(field);
     }
     Ok(record)
 }

@@ -122,7 +122,7 @@ fn normalized_query(case: &Value) -> TestResult<String> {
     let mut query = case.clone();
     let object = query.as_object_mut().ok_or("case object")?;
     object
-        .remove("entry")
+        .shift_remove("entry")
         .filter(|v| v != "raw")
         .map(|v| object.insert("entry".into(), v));
     for field in ["model", "options", "env", "context"] {
@@ -138,7 +138,7 @@ fn normalized_query(case: &Value) -> TestResult<String> {
         let target = query[field].as_object_mut().ok_or("query object")?;
         for (key, value) in defaults.as_object().ok_or("defaults")? {
             if target.get(key).is_some_and(|v| v == value) {
-                target.remove(key);
+                target.shift_remove(key);
             }
         }
     }

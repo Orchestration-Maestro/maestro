@@ -238,7 +238,7 @@ async fn collect(
         if let Some(object) = value.as_object_mut() {
             log.note(object["type"].as_str().unwrap_or_default());
             for handle in ["partial", "message", "error"] {
-                object.remove(handle);
+                object.shift_remove(handle);
             }
         }
         events.push(value);
@@ -246,7 +246,7 @@ async fn collect(
     let message = stream.result().await;
     let mut result = serde_json::to_value(&*message.read().map_err(|e| e.to_string())?)?;
     if let Some(object) = result.as_object_mut() {
-        object.remove("timestamp");
+        object.shift_remove("timestamp");
     }
     Ok((events, result))
 }
@@ -289,7 +289,7 @@ pub fn assert_observed(row: &Value, observed: &Observed) {
     if row["nativeMessage"] == json!(true) {
         let message = actual["result"]
             .as_object_mut()
-            .and_then(|result| result.remove("errorMessage"));
+            .and_then(|result| result.shift_remove("errorMessage"));
         assert!(
             message.is_some_and(|text| text.as_str().is_some_and(|text| !text.is_empty())),
             "{id} reports a native cause"

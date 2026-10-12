@@ -440,13 +440,13 @@ mod tests {
                     pack["fonts"]["body"]
                         .as_object_mut()
                         .unwrap()
-                        .remove("family");
+                        .shift_remove("family");
                 }
                 "role" => {
                     pack["modes"]["dark"]["colors"]
                         .as_object_mut()
                         .unwrap()
-                        .remove("text");
+                        .shift_remove("text");
                 }
                 _ => pack["modes"]["dark"]["colors"]["text"] = serde_json::json!("dangling"),
             }

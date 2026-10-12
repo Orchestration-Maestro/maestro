@@ -145,6 +145,10 @@ scratch workspaces, not certified as delivered capabilities.
 
 ## Quality checks
 
+Clippy rejects the ambiguous `serde_json::Map::remove` in every target `just check`
+compiles. `shift_remove` keeps the remaining key order; `swap_remove` is only for
+maps whose remaining order is never observed. Ordinary maps are unaffected.
+
 Tests wait on completion signals; shared CI bounds the whole job. Conventions
 report recognized test-owned timer calls with file and line: Tokio
 `timeout`/`timeout_at`, standard `recv_timeout`, `recv_deadline`, `wait_timeout`,

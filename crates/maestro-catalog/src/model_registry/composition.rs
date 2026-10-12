@@ -141,7 +141,7 @@ pub(super) fn providers(value: Value) -> Result<Vec<(String, ProviderConfig)>, s
         Value::Object(root) => root,
         value => serde_json::from_value(value)?,
     };
-    let mut entries: Vec<_> = match root.remove("providers") {
+    let mut entries: Vec<_> = match root.swap_remove("providers") {
         Some(Value::Object(providers)) => providers.into_iter().collect(),
         _ => Vec::new(),
     };

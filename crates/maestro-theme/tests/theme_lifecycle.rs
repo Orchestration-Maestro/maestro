@@ -657,7 +657,7 @@ fn maestro_theme_keeps_last_good_file_on_reload_error() {
     missing_color["colors"]
         .as_object_mut()
         .unwrap()
-        .remove("text");
+        .shift_remove("text");
     let mut bad_alias = custom_json("broken", "#010203");
     bad_alias["colors"]["accent"] = "undefinedVariable".into();
     let broken = [

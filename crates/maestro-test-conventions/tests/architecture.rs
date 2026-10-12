@@ -60,7 +60,7 @@ fn unlisted_member_is_rejected_and_listing_it_passes() {
         let path = workspace.root.join("workspace-crates.json");
         let mut list: serde_json::Value =
             serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
-        list.as_object_mut().unwrap().remove(name);
+        list.as_object_mut().unwrap().shift_remove(name);
         std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
         assert_eq!(
             check_workspace(&workspace.root),
@@ -993,7 +993,7 @@ fn invalid_resolved_metadata(workspace: &Workspace, valid: &serde_json::Value) {
             .unwrap()
             .as_object_mut()
             .unwrap()
-            .remove(key);
+            .shift_remove(key);
         workspace.metadata_probe(valid, &value, "invalid cargo metadata");
     }
     invalid_resolved_edges(workspace, valid);

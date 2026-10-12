@@ -308,7 +308,7 @@ async fn preparation_failures(driver: &mut impl Driver, mut config: Value) -> Ex
     config
         .as_object_mut()
         .expect("configuration object")
-        .remove("prepareError");
+        .shift_remove("prepareError");
     config["catchEmission"] = json!(true);
     config["emissions"] = json!([7]);
     driver.reject_bus_emission(Some("host emission rejected Ω".into()));

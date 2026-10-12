@@ -690,7 +690,7 @@ fn theme_lookup_suppresses_load_failures() {
     fs::create_dir_all(scratch.path("custom/directory.json")).unwrap();
     scratch.write("custom/malformed.json", "{");
     let mut schema = shipped_dark();
-    schema.as_object_mut().unwrap().remove("colors");
+    schema.as_object_mut().unwrap().shift_remove("colors");
     scratch.write("custom/schema.json", &schema.to_string());
     let mut alias = shipped_dark();
     alias["colors"]["accent"] = "no-such-variable".into();

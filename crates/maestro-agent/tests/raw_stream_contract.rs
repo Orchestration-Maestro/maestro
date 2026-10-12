@@ -879,7 +879,7 @@ fn request_adapter(requests: &Arc<Mutex<Vec<serde_json::Value>>>) -> AgentLoopOp
             for message in value["messages"].as_array_mut().unwrap() {
                 if message["role"] == "toolResult" {
                     assert!(message["timestamp"].as_f64().unwrap().is_finite());
-                    message.as_object_mut().unwrap().remove("timestamp");
+                    message.as_object_mut().unwrap().shift_remove("timestamp");
                 }
             }
             requests.lock().unwrap().push(value);

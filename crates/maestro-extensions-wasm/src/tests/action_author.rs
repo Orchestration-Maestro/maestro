@@ -139,7 +139,7 @@ fn commands(api: &ExtensionAPI, input: &Value) -> ExtensionResult<Value> {
     let mut value = serde_json::to_value(api.get_commands()?).map_err(|e| e.to_string())?;
     for command in value.as_array_mut().unwrap() {
         if command["description"].is_null() {
-            command.as_object_mut().unwrap().remove("description");
+            command.as_object_mut().unwrap().shift_remove("description");
         }
     }
     Ok(value)

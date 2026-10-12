@@ -1249,7 +1249,7 @@ fn invalid_device_fields(key: &str, wrong: bool) -> String {
             12.into()
         };
     } else {
-        fields.as_object_mut().unwrap().remove(key);
+        fields.as_object_mut().unwrap().shift_remove(key);
     }
     fields.to_string()
 }

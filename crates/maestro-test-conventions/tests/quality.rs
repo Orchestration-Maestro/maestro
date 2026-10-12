@@ -678,3 +678,15 @@ fn reject_widened_sources(workspace: &Workspace, root: &std::path::Path) {
     write("tests/helper.rs", FORBID);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+#[test]
+fn ordered_json_map_removal_stays_disallowed() {
+    let config: toml::Table = include_str!("../../../clippy.toml").parse().unwrap();
+    let entries = config["disallowed-methods"].as_array().unwrap();
+    assert!(entries.iter().any(|entry| {
+        entry["path"].as_str() == Some("serde_json::map::Map::remove")
+            && entry["reason"].as_str().is_some_and(|reason| {
+                reason.contains("shift_remove") && reason.contains("swap_remove")
+            })
+    }));
+}
