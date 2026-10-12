@@ -1,0 +1,4470 @@
+{
+  "default_locale": "en-US",
+  "theme_keys": [
+    "toolTitle",
+    "accent",
+    "toolOutput",
+    "muted",
+    "warning",
+    "error",
+    "dim"
+  ],
+  "cases": [
+    {
+      "test": "ls_definition_keeps_schema_metadata_and_optional_inputs",
+      "id": "definition",
+      "op": "definition",
+      "input": {},
+      "expected": {
+        "name": "ls",
+        "label": "ls",
+        "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+        "promptSnippet": "List directory contents",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory to list (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of entries to return (default: 500)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "ls_factory_wraps_supplied_operations",
+      "id": "wrapped",
+      "op": "execute",
+      "input": {
+        "wrapped": true,
+        "entries": [
+          "z",
+          "a"
+        ],
+        "directories": [
+          "z"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nz/"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/z"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "missing",
+      "op": "execute",
+      "input": {
+        "params": {},
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "empty",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": ""
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "dot",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "."
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "relative",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "nested/../child"
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work/child"
+          ],
+          [
+            "stat",
+            "/work/child"
+          ],
+          [
+            "readdir",
+            "/work/child"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "absolute",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "/other/../kept"
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/other/../kept"
+          ],
+          [
+            "stat",
+            "/other/../kept"
+          ],
+          [
+            "readdir",
+            "/other/../kept"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "at",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "@child"
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work/child"
+          ],
+          [
+            "stat",
+            "/work/child"
+          ],
+          [
+            "readdir",
+            "/work/child"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "space",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "child\u00a0name"
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work/child name"
+          ],
+          [
+            "stat",
+            "/work/child name"
+          ],
+          [
+            "readdir",
+            "/work/child name"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_and_authored_paths_reach_operations",
+      "id": "home",
+      "op": "execute",
+      "input": {
+        "params": {
+          "path": "~"
+        },
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "$HOME"
+          ],
+          [
+            "stat",
+            "$HOME"
+          ],
+          [
+            "readdir",
+            "$HOME"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "case",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "B",
+          "a",
+          "A",
+          "b",
+          "a"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nA\na\nB\nb"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/A"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/B"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "accent",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "z",
+          "\u00e4",
+          "a",
+          "\u00e9",
+          "e\u0301",
+          "E"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\u00e4\nE\n\u00e9\ne\u0301\nz"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/\u00e4"
+          ],
+          [
+            "stat",
+            "/work/E"
+          ],
+          [
+            "stat",
+            "/work/\u00e9"
+          ],
+          [
+            "stat",
+            "/work/e\u0301"
+          ],
+          [
+            "stat",
+            "/work/z"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "numeric",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "x10",
+          "x2",
+          "x1"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x1\nx10\nx2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/x1"
+          ],
+          [
+            "stat",
+            "/work/x10"
+          ],
+          [
+            "stat",
+            "/work/x2"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "unicode",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "\u03a3",
+          "\u03c2",
+          "\u03c3",
+          "\u0130",
+          "i",
+          "I"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "i\nI\n\u0130\n\u03a3\n\u03c3\n\u03c2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/i"
+          ],
+          [
+            "stat",
+            "/work/I"
+          ],
+          [
+            "stat",
+            "/work/\u0130"
+          ],
+          [
+            "stat",
+            "/work/\u03a3"
+          ],
+          [
+            "stat",
+            "/work/\u03c3"
+          ],
+          [
+            "stat",
+            "/work/\u03c2"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limit_counts_only_successfully_statted_entries",
+      "id": "skip",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "d",
+          "c",
+          "b",
+          "a"
+        ],
+        "skip": [
+          "a",
+          "c"
+        ],
+        "params": {
+          "limit": 2
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "b\nd"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ],
+          [
+            "stat",
+            "/work/c"
+          ],
+          [
+            "stat",
+            "/work/d"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limit_counts_only_successfully_statted_entries",
+      "id": "before-stat",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "b",
+          "a"
+        ],
+        "params": {
+          "limit": 1
+        },
+        "skip": [
+          "b"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n[1 entries limit reached. Use limit=2 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 1
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "0",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 0
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "-1",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": -1
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "0.5",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 0.5
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n[0.5 entries limit reached. Use limit=1 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 0.5
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "1",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 1
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\n[1 entries limit reached. Use limit=2 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 1
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "1.5",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 1.5
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nb\n\n[1.5 entries limit reached. Use limit=3 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 1.5
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "2",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 2
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nb\n\n[2 entries limit reached. Use limit=4 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 2
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "2.1",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 2.1
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nb\nc"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ],
+          [
+            "stat",
+            "/work/c"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_limits_keep_zero_negative_fractional_boundaries",
+      "id": "3",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "c",
+          "a",
+          "b"
+        ],
+        "params": {
+          "limit": 3
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nb\nc"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ],
+          [
+            "stat",
+            "/work/c"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_limit_and_exact_boundary_notices",
+      "id": "499",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 499,
+              "suffix": "-xxxx"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx\n00021-xxxx\n00022-xxxx\n00023-xxxx\n00024-xxxx\n00025-xxxx\n00026-xxxx\n00027-xxxx\n00028-xxxx\n00029-xxxx\n00030-xxxx\n00031-xxxx\n00032-xxxx\n00033-xxxx\n00034-xxxx\n00035-xxxx\n00036-xxxx\n00037-xxxx\n00038-xxxx\n00039-xxxx\n00040-xxxx\n00041-xxxx\n00042-xxxx\n00043-xxxx\n00044-xxxx\n00045-xxxx\n00046-xxxx\n00047-xxxx\n00048-xxxx\n00049-xxxx\n00050-xxxx\n00051-xxxx\n00052-xxxx\n00053-xxxx\n00054-xxxx\n00055-xxxx\n00056-xxxx\n00057-xxxx\n00058-xxxx\n00059-xxxx\n00060-xxxx\n00061-xxxx\n00062-xxxx\n00063-xxxx\n00064-xxxx\n00065-xxxx\n00066-xxxx\n00067-xxxx\n00068-xxxx\n00069-xxxx\n00070-xxxx\n00071-xxxx\n00072-xxxx\n00073-xxxx\n00074-xxxx\n00075-xxxx\n00076-xxxx\n00077-xxxx\n00078-xxxx\n00079-xxxx\n00080-xxxx\n00081-xxxx\n00082-xxxx\n00083-xxxx\n00084-xxxx\n00085-xxxx\n00086-xxxx\n00087-xxxx\n00088-xxxx\n00089-xxxx\n00090-xxxx\n00091-xxxx\n00092-xxxx\n00093-xxxx\n00094-xxxx\n00095-xxxx\n00096-xxxx\n00097-xxxx\n00098-xxxx\n00099-xxxx\n00100-xxxx\n00101-xxxx\n00102-xxxx\n00103-xxxx\n00104-xxxx\n00105-xxxx\n00106-xxxx\n00107-xxxx\n00108-xxxx\n00109-xxxx\n00110-xxxx\n00111-xxxx\n00112-xxxx\n00113-xxxx\n00114-xxxx\n00115-xxxx\n00116-xxxx\n00117-xxxx\n00118-xxxx\n00119-xxxx\n00120-xxxx\n00121-xxxx\n00122-xxxx\n00123-xxxx\n00124-xxxx\n00125-xxxx\n00126-xxxx\n00127-xxxx\n00128-xxxx\n00129-xxxx\n00130-xxxx\n00131-xxxx\n00132-xxxx\n00133-xxxx\n00134-xxxx\n00135-xxxx\n00136-xxxx\n00137-xxxx\n00138-xxxx\n00139-xxxx\n00140-xxxx\n00141-xxxx\n00142-xxxx\n00143-xxxx\n00144-xxxx\n00145-xxxx\n00146-xxxx\n00147-xxxx\n00148-xxxx\n00149-xxxx\n00150-xxxx\n00151-xxxx\n00152-xxxx\n00153-xxxx\n00154-xxxx\n00155-xxxx\n00156-xxxx\n00157-xxxx\n00158-xxxx\n00159-xxxx\n00160-xxxx\n00161-xxxx\n00162-xxxx\n00163-xxxx\n00164-xxxx\n00165-xxxx\n00166-xxxx\n00167-xxxx\n00168-xxxx\n00169-xxxx\n00170-xxxx\n00171-xxxx\n00172-xxxx\n00173-xxxx\n00174-xxxx\n00175-xxxx\n00176-xxxx\n00177-xxxx\n00178-xxxx\n00179-xxxx\n00180-xxxx\n00181-xxxx\n00182-xxxx\n00183-xxxx\n00184-xxxx\n00185-xxxx\n00186-xxxx\n00187-xxxx\n00188-xxxx\n00189-xxxx\n00190-xxxx\n00191-xxxx\n00192-xxxx\n00193-xxxx\n00194-xxxx\n00195-xxxx\n00196-xxxx\n00197-xxxx\n00198-xxxx\n00199-xxxx\n00200-xxxx\n00201-xxxx\n00202-xxxx\n00203-xxxx\n00204-xxxx\n00205-xxxx\n00206-xxxx\n00207-xxxx\n00208-xxxx\n00209-xxxx\n00210-xxxx\n00211-xxxx\n00212-xxxx\n00213-xxxx\n00214-xxxx\n00215-xxxx\n00216-xxxx\n00217-xxxx\n00218-xxxx\n00219-xxxx\n00220-xxxx\n00221-xxxx\n00222-xxxx\n00223-xxxx\n00224-xxxx\n00225-xxxx\n00226-xxxx\n00227-xxxx\n00228-xxxx\n00229-xxxx\n00230-xxxx\n00231-xxxx\n00232-xxxx\n00233-xxxx\n00234-xxxx\n00235-xxxx\n00236-xxxx\n00237-xxxx\n00238-xxxx\n00239-xxxx\n00240-xxxx\n00241-xxxx\n00242-xxxx\n00243-xxxx\n00244-xxxx\n00245-xxxx\n00246-xxxx\n00247-xxxx\n00248-xxxx\n00249-xxxx\n00250-xxxx\n00251-xxxx\n00252-xxxx\n00253-xxxx\n00254-xxxx\n00255-xxxx\n00256-xxxx\n00257-xxxx\n00258-xxxx\n00259-xxxx\n00260-xxxx\n00261-xxxx\n00262-xxxx\n00263-xxxx\n00264-xxxx\n00265-xxxx\n00266-xxxx\n00267-xxxx\n00268-xxxx\n00269-xxxx\n00270-xxxx\n00271-xxxx\n00272-xxxx\n00273-xxxx\n00274-xxxx\n00275-xxxx\n00276-xxxx\n00277-xxxx\n00278-xxxx\n00279-xxxx\n00280-xxxx\n00281-xxxx\n00282-xxxx\n00283-xxxx\n00284-xxxx\n00285-xxxx\n00286-xxxx\n00287-xxxx\n00288-xxxx\n00289-xxxx\n00290-xxxx\n00291-xxxx\n00292-xxxx\n00293-xxxx\n00294-xxxx\n00295-xxxx\n00296-xxxx\n00297-xxxx\n00298-xxxx\n00299-xxxx\n00300-xxxx\n00301-xxxx\n00302-xxxx\n00303-xxxx\n00304-xxxx\n00305-xxxx\n00306-xxxx\n00307-xxxx\n00308-xxxx\n00309-xxxx\n00310-xxxx\n00311-xxxx\n00312-xxxx\n00313-xxxx\n00314-xxxx\n00315-xxxx\n00316-xxxx\n00317-xxxx\n00318-xxxx\n00319-xxxx\n00320-xxxx\n00321-xxxx\n00322-xxxx\n00323-xxxx\n00324-xxxx\n00325-xxxx\n00326-xxxx\n00327-xxxx\n00328-xxxx\n00329-xxxx\n00330-xxxx\n00331-xxxx\n00332-xxxx\n00333-xxxx\n00334-xxxx\n00335-xxxx\n00336-xxxx\n00337-xxxx\n00338-xxxx\n00339-xxxx\n00340-xxxx\n00341-xxxx\n00342-xxxx\n00343-xxxx\n00344-xxxx\n00345-xxxx\n00346-xxxx\n00347-xxxx\n00348-xxxx\n00349-xxxx\n00350-xxxx\n00351-xxxx\n00352-xxxx\n00353-xxxx\n00354-xxxx\n00355-xxxx\n00356-xxxx\n00357-xxxx\n00358-xxxx\n00359-xxxx\n00360-xxxx\n00361-xxxx\n00362-xxxx\n00363-xxxx\n00364-xxxx\n00365-xxxx\n00366-xxxx\n00367-xxxx\n00368-xxxx\n00369-xxxx\n00370-xxxx\n00371-xxxx\n00372-xxxx\n00373-xxxx\n00374-xxxx\n00375-xxxx\n00376-xxxx\n00377-xxxx\n00378-xxxx\n00379-xxxx\n00380-xxxx\n00381-xxxx\n00382-xxxx\n00383-xxxx\n00384-xxxx\n00385-xxxx\n00386-xxxx\n00387-xxxx\n00388-xxxx\n00389-xxxx\n00390-xxxx\n00391-xxxx\n00392-xxxx\n00393-xxxx\n00394-xxxx\n00395-xxxx\n00396-xxxx\n00397-xxxx\n00398-xxxx\n00399-xxxx\n00400-xxxx\n00401-xxxx\n00402-xxxx\n00403-xxxx\n00404-xxxx\n00405-xxxx\n00406-xxxx\n00407-xxxx\n00408-xxxx\n00409-xxxx\n00410-xxxx\n00411-xxxx\n00412-xxxx\n00413-xxxx\n00414-xxxx\n00415-xxxx\n00416-xxxx\n00417-xxxx\n00418-xxxx\n00419-xxxx\n00420-xxxx\n00421-xxxx\n00422-xxxx\n00423-xxxx\n00424-xxxx\n00425-xxxx\n00426-xxxx\n00427-xxxx\n00428-xxxx\n00429-xxxx\n00430-xxxx\n00431-xxxx\n00432-xxxx\n00433-xxxx\n00434-xxxx\n00435-xxxx\n00436-xxxx\n00437-xxxx\n00438-xxxx\n00439-xxxx\n00440-xxxx\n00441-xxxx\n00442-xxxx\n00443-xxxx\n00444-xxxx\n00445-xxxx\n00446-xxxx\n00447-xxxx\n00448-xxxx\n00449-xxxx\n00450-xxxx\n00451-xxxx\n00452-xxxx\n00453-xxxx\n00454-xxxx\n00455-xxxx\n00456-xxxx\n00457-xxxx\n00458-xxxx\n00459-xxxx\n00460-xxxx\n00461-xxxx\n00462-xxxx\n00463-xxxx\n00464-xxxx\n00465-xxxx\n00466-xxxx\n00467-xxxx\n00468-xxxx\n00469-xxxx\n00470-xxxx\n00471-xxxx\n00472-xxxx\n00473-xxxx\n00474-xxxx\n00475-xxxx\n00476-xxxx\n00477-xxxx\n00478-xxxx\n00479-xxxx\n00480-xxxx\n00481-xxxx\n00482-xxxx\n00483-xxxx\n00484-xxxx\n00485-xxxx\n00486-xxxx\n00487-xxxx\n00488-xxxx\n00489-xxxx\n00490-xxxx\n00491-xxxx\n00492-xxxx\n00493-xxxx\n00494-xxxx\n00495-xxxx\n00496-xxxx\n00497-xxxx\n00498-xxxx"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 499,
+                    "suffix": "-xxxx"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_limit_and_exact_boundary_notices",
+      "id": "500",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 500,
+              "suffix": "-xxxx"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx\n00021-xxxx\n00022-xxxx\n00023-xxxx\n00024-xxxx\n00025-xxxx\n00026-xxxx\n00027-xxxx\n00028-xxxx\n00029-xxxx\n00030-xxxx\n00031-xxxx\n00032-xxxx\n00033-xxxx\n00034-xxxx\n00035-xxxx\n00036-xxxx\n00037-xxxx\n00038-xxxx\n00039-xxxx\n00040-xxxx\n00041-xxxx\n00042-xxxx\n00043-xxxx\n00044-xxxx\n00045-xxxx\n00046-xxxx\n00047-xxxx\n00048-xxxx\n00049-xxxx\n00050-xxxx\n00051-xxxx\n00052-xxxx\n00053-xxxx\n00054-xxxx\n00055-xxxx\n00056-xxxx\n00057-xxxx\n00058-xxxx\n00059-xxxx\n00060-xxxx\n00061-xxxx\n00062-xxxx\n00063-xxxx\n00064-xxxx\n00065-xxxx\n00066-xxxx\n00067-xxxx\n00068-xxxx\n00069-xxxx\n00070-xxxx\n00071-xxxx\n00072-xxxx\n00073-xxxx\n00074-xxxx\n00075-xxxx\n00076-xxxx\n00077-xxxx\n00078-xxxx\n00079-xxxx\n00080-xxxx\n00081-xxxx\n00082-xxxx\n00083-xxxx\n00084-xxxx\n00085-xxxx\n00086-xxxx\n00087-xxxx\n00088-xxxx\n00089-xxxx\n00090-xxxx\n00091-xxxx\n00092-xxxx\n00093-xxxx\n00094-xxxx\n00095-xxxx\n00096-xxxx\n00097-xxxx\n00098-xxxx\n00099-xxxx\n00100-xxxx\n00101-xxxx\n00102-xxxx\n00103-xxxx\n00104-xxxx\n00105-xxxx\n00106-xxxx\n00107-xxxx\n00108-xxxx\n00109-xxxx\n00110-xxxx\n00111-xxxx\n00112-xxxx\n00113-xxxx\n00114-xxxx\n00115-xxxx\n00116-xxxx\n00117-xxxx\n00118-xxxx\n00119-xxxx\n00120-xxxx\n00121-xxxx\n00122-xxxx\n00123-xxxx\n00124-xxxx\n00125-xxxx\n00126-xxxx\n00127-xxxx\n00128-xxxx\n00129-xxxx\n00130-xxxx\n00131-xxxx\n00132-xxxx\n00133-xxxx\n00134-xxxx\n00135-xxxx\n00136-xxxx\n00137-xxxx\n00138-xxxx\n00139-xxxx\n00140-xxxx\n00141-xxxx\n00142-xxxx\n00143-xxxx\n00144-xxxx\n00145-xxxx\n00146-xxxx\n00147-xxxx\n00148-xxxx\n00149-xxxx\n00150-xxxx\n00151-xxxx\n00152-xxxx\n00153-xxxx\n00154-xxxx\n00155-xxxx\n00156-xxxx\n00157-xxxx\n00158-xxxx\n00159-xxxx\n00160-xxxx\n00161-xxxx\n00162-xxxx\n00163-xxxx\n00164-xxxx\n00165-xxxx\n00166-xxxx\n00167-xxxx\n00168-xxxx\n00169-xxxx\n00170-xxxx\n00171-xxxx\n00172-xxxx\n00173-xxxx\n00174-xxxx\n00175-xxxx\n00176-xxxx\n00177-xxxx\n00178-xxxx\n00179-xxxx\n00180-xxxx\n00181-xxxx\n00182-xxxx\n00183-xxxx\n00184-xxxx\n00185-xxxx\n00186-xxxx\n00187-xxxx\n00188-xxxx\n00189-xxxx\n00190-xxxx\n00191-xxxx\n00192-xxxx\n00193-xxxx\n00194-xxxx\n00195-xxxx\n00196-xxxx\n00197-xxxx\n00198-xxxx\n00199-xxxx\n00200-xxxx\n00201-xxxx\n00202-xxxx\n00203-xxxx\n00204-xxxx\n00205-xxxx\n00206-xxxx\n00207-xxxx\n00208-xxxx\n00209-xxxx\n00210-xxxx\n00211-xxxx\n00212-xxxx\n00213-xxxx\n00214-xxxx\n00215-xxxx\n00216-xxxx\n00217-xxxx\n00218-xxxx\n00219-xxxx\n00220-xxxx\n00221-xxxx\n00222-xxxx\n00223-xxxx\n00224-xxxx\n00225-xxxx\n00226-xxxx\n00227-xxxx\n00228-xxxx\n00229-xxxx\n00230-xxxx\n00231-xxxx\n00232-xxxx\n00233-xxxx\n00234-xxxx\n00235-xxxx\n00236-xxxx\n00237-xxxx\n00238-xxxx\n00239-xxxx\n00240-xxxx\n00241-xxxx\n00242-xxxx\n00243-xxxx\n00244-xxxx\n00245-xxxx\n00246-xxxx\n00247-xxxx\n00248-xxxx\n00249-xxxx\n00250-xxxx\n00251-xxxx\n00252-xxxx\n00253-xxxx\n00254-xxxx\n00255-xxxx\n00256-xxxx\n00257-xxxx\n00258-xxxx\n00259-xxxx\n00260-xxxx\n00261-xxxx\n00262-xxxx\n00263-xxxx\n00264-xxxx\n00265-xxxx\n00266-xxxx\n00267-xxxx\n00268-xxxx\n00269-xxxx\n00270-xxxx\n00271-xxxx\n00272-xxxx\n00273-xxxx\n00274-xxxx\n00275-xxxx\n00276-xxxx\n00277-xxxx\n00278-xxxx\n00279-xxxx\n00280-xxxx\n00281-xxxx\n00282-xxxx\n00283-xxxx\n00284-xxxx\n00285-xxxx\n00286-xxxx\n00287-xxxx\n00288-xxxx\n00289-xxxx\n00290-xxxx\n00291-xxxx\n00292-xxxx\n00293-xxxx\n00294-xxxx\n00295-xxxx\n00296-xxxx\n00297-xxxx\n00298-xxxx\n00299-xxxx\n00300-xxxx\n00301-xxxx\n00302-xxxx\n00303-xxxx\n00304-xxxx\n00305-xxxx\n00306-xxxx\n00307-xxxx\n00308-xxxx\n00309-xxxx\n00310-xxxx\n00311-xxxx\n00312-xxxx\n00313-xxxx\n00314-xxxx\n00315-xxxx\n00316-xxxx\n00317-xxxx\n00318-xxxx\n00319-xxxx\n00320-xxxx\n00321-xxxx\n00322-xxxx\n00323-xxxx\n00324-xxxx\n00325-xxxx\n00326-xxxx\n00327-xxxx\n00328-xxxx\n00329-xxxx\n00330-xxxx\n00331-xxxx\n00332-xxxx\n00333-xxxx\n00334-xxxx\n00335-xxxx\n00336-xxxx\n00337-xxxx\n00338-xxxx\n00339-xxxx\n00340-xxxx\n00341-xxxx\n00342-xxxx\n00343-xxxx\n00344-xxxx\n00345-xxxx\n00346-xxxx\n00347-xxxx\n00348-xxxx\n00349-xxxx\n00350-xxxx\n00351-xxxx\n00352-xxxx\n00353-xxxx\n00354-xxxx\n00355-xxxx\n00356-xxxx\n00357-xxxx\n00358-xxxx\n00359-xxxx\n00360-xxxx\n00361-xxxx\n00362-xxxx\n00363-xxxx\n00364-xxxx\n00365-xxxx\n00366-xxxx\n00367-xxxx\n00368-xxxx\n00369-xxxx\n00370-xxxx\n00371-xxxx\n00372-xxxx\n00373-xxxx\n00374-xxxx\n00375-xxxx\n00376-xxxx\n00377-xxxx\n00378-xxxx\n00379-xxxx\n00380-xxxx\n00381-xxxx\n00382-xxxx\n00383-xxxx\n00384-xxxx\n00385-xxxx\n00386-xxxx\n00387-xxxx\n00388-xxxx\n00389-xxxx\n00390-xxxx\n00391-xxxx\n00392-xxxx\n00393-xxxx\n00394-xxxx\n00395-xxxx\n00396-xxxx\n00397-xxxx\n00398-xxxx\n00399-xxxx\n00400-xxxx\n00401-xxxx\n00402-xxxx\n00403-xxxx\n00404-xxxx\n00405-xxxx\n00406-xxxx\n00407-xxxx\n00408-xxxx\n00409-xxxx\n00410-xxxx\n00411-xxxx\n00412-xxxx\n00413-xxxx\n00414-xxxx\n00415-xxxx\n00416-xxxx\n00417-xxxx\n00418-xxxx\n00419-xxxx\n00420-xxxx\n00421-xxxx\n00422-xxxx\n00423-xxxx\n00424-xxxx\n00425-xxxx\n00426-xxxx\n00427-xxxx\n00428-xxxx\n00429-xxxx\n00430-xxxx\n00431-xxxx\n00432-xxxx\n00433-xxxx\n00434-xxxx\n00435-xxxx\n00436-xxxx\n00437-xxxx\n00438-xxxx\n00439-xxxx\n00440-xxxx\n00441-xxxx\n00442-xxxx\n00443-xxxx\n00444-xxxx\n00445-xxxx\n00446-xxxx\n00447-xxxx\n00448-xxxx\n00449-xxxx\n00450-xxxx\n00451-xxxx\n00452-xxxx\n00453-xxxx\n00454-xxxx\n00455-xxxx\n00456-xxxx\n00457-xxxx\n00458-xxxx\n00459-xxxx\n00460-xxxx\n00461-xxxx\n00462-xxxx\n00463-xxxx\n00464-xxxx\n00465-xxxx\n00466-xxxx\n00467-xxxx\n00468-xxxx\n00469-xxxx\n00470-xxxx\n00471-xxxx\n00472-xxxx\n00473-xxxx\n00474-xxxx\n00475-xxxx\n00476-xxxx\n00477-xxxx\n00478-xxxx\n00479-xxxx\n00480-xxxx\n00481-xxxx\n00482-xxxx\n00483-xxxx\n00484-xxxx\n00485-xxxx\n00486-xxxx\n00487-xxxx\n00488-xxxx\n00489-xxxx\n00490-xxxx\n00491-xxxx\n00492-xxxx\n00493-xxxx\n00494-xxxx\n00495-xxxx\n00496-xxxx\n00497-xxxx\n00498-xxxx\n00499-xxxx"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 500,
+                    "suffix": "-xxxx"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_limit_and_exact_boundary_notices",
+      "id": "501",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 501,
+              "suffix": "-xxxx"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx\n00021-xxxx\n00022-xxxx\n00023-xxxx\n00024-xxxx\n00025-xxxx\n00026-xxxx\n00027-xxxx\n00028-xxxx\n00029-xxxx\n00030-xxxx\n00031-xxxx\n00032-xxxx\n00033-xxxx\n00034-xxxx\n00035-xxxx\n00036-xxxx\n00037-xxxx\n00038-xxxx\n00039-xxxx\n00040-xxxx\n00041-xxxx\n00042-xxxx\n00043-xxxx\n00044-xxxx\n00045-xxxx\n00046-xxxx\n00047-xxxx\n00048-xxxx\n00049-xxxx\n00050-xxxx\n00051-xxxx\n00052-xxxx\n00053-xxxx\n00054-xxxx\n00055-xxxx\n00056-xxxx\n00057-xxxx\n00058-xxxx\n00059-xxxx\n00060-xxxx\n00061-xxxx\n00062-xxxx\n00063-xxxx\n00064-xxxx\n00065-xxxx\n00066-xxxx\n00067-xxxx\n00068-xxxx\n00069-xxxx\n00070-xxxx\n00071-xxxx\n00072-xxxx\n00073-xxxx\n00074-xxxx\n00075-xxxx\n00076-xxxx\n00077-xxxx\n00078-xxxx\n00079-xxxx\n00080-xxxx\n00081-xxxx\n00082-xxxx\n00083-xxxx\n00084-xxxx\n00085-xxxx\n00086-xxxx\n00087-xxxx\n00088-xxxx\n00089-xxxx\n00090-xxxx\n00091-xxxx\n00092-xxxx\n00093-xxxx\n00094-xxxx\n00095-xxxx\n00096-xxxx\n00097-xxxx\n00098-xxxx\n00099-xxxx\n00100-xxxx\n00101-xxxx\n00102-xxxx\n00103-xxxx\n00104-xxxx\n00105-xxxx\n00106-xxxx\n00107-xxxx\n00108-xxxx\n00109-xxxx\n00110-xxxx\n00111-xxxx\n00112-xxxx\n00113-xxxx\n00114-xxxx\n00115-xxxx\n00116-xxxx\n00117-xxxx\n00118-xxxx\n00119-xxxx\n00120-xxxx\n00121-xxxx\n00122-xxxx\n00123-xxxx\n00124-xxxx\n00125-xxxx\n00126-xxxx\n00127-xxxx\n00128-xxxx\n00129-xxxx\n00130-xxxx\n00131-xxxx\n00132-xxxx\n00133-xxxx\n00134-xxxx\n00135-xxxx\n00136-xxxx\n00137-xxxx\n00138-xxxx\n00139-xxxx\n00140-xxxx\n00141-xxxx\n00142-xxxx\n00143-xxxx\n00144-xxxx\n00145-xxxx\n00146-xxxx\n00147-xxxx\n00148-xxxx\n00149-xxxx\n00150-xxxx\n00151-xxxx\n00152-xxxx\n00153-xxxx\n00154-xxxx\n00155-xxxx\n00156-xxxx\n00157-xxxx\n00158-xxxx\n00159-xxxx\n00160-xxxx\n00161-xxxx\n00162-xxxx\n00163-xxxx\n00164-xxxx\n00165-xxxx\n00166-xxxx\n00167-xxxx\n00168-xxxx\n00169-xxxx\n00170-xxxx\n00171-xxxx\n00172-xxxx\n00173-xxxx\n00174-xxxx\n00175-xxxx\n00176-xxxx\n00177-xxxx\n00178-xxxx\n00179-xxxx\n00180-xxxx\n00181-xxxx\n00182-xxxx\n00183-xxxx\n00184-xxxx\n00185-xxxx\n00186-xxxx\n00187-xxxx\n00188-xxxx\n00189-xxxx\n00190-xxxx\n00191-xxxx\n00192-xxxx\n00193-xxxx\n00194-xxxx\n00195-xxxx\n00196-xxxx\n00197-xxxx\n00198-xxxx\n00199-xxxx\n00200-xxxx\n00201-xxxx\n00202-xxxx\n00203-xxxx\n00204-xxxx\n00205-xxxx\n00206-xxxx\n00207-xxxx\n00208-xxxx\n00209-xxxx\n00210-xxxx\n00211-xxxx\n00212-xxxx\n00213-xxxx\n00214-xxxx\n00215-xxxx\n00216-xxxx\n00217-xxxx\n00218-xxxx\n00219-xxxx\n00220-xxxx\n00221-xxxx\n00222-xxxx\n00223-xxxx\n00224-xxxx\n00225-xxxx\n00226-xxxx\n00227-xxxx\n00228-xxxx\n00229-xxxx\n00230-xxxx\n00231-xxxx\n00232-xxxx\n00233-xxxx\n00234-xxxx\n00235-xxxx\n00236-xxxx\n00237-xxxx\n00238-xxxx\n00239-xxxx\n00240-xxxx\n00241-xxxx\n00242-xxxx\n00243-xxxx\n00244-xxxx\n00245-xxxx\n00246-xxxx\n00247-xxxx\n00248-xxxx\n00249-xxxx\n00250-xxxx\n00251-xxxx\n00252-xxxx\n00253-xxxx\n00254-xxxx\n00255-xxxx\n00256-xxxx\n00257-xxxx\n00258-xxxx\n00259-xxxx\n00260-xxxx\n00261-xxxx\n00262-xxxx\n00263-xxxx\n00264-xxxx\n00265-xxxx\n00266-xxxx\n00267-xxxx\n00268-xxxx\n00269-xxxx\n00270-xxxx\n00271-xxxx\n00272-xxxx\n00273-xxxx\n00274-xxxx\n00275-xxxx\n00276-xxxx\n00277-xxxx\n00278-xxxx\n00279-xxxx\n00280-xxxx\n00281-xxxx\n00282-xxxx\n00283-xxxx\n00284-xxxx\n00285-xxxx\n00286-xxxx\n00287-xxxx\n00288-xxxx\n00289-xxxx\n00290-xxxx\n00291-xxxx\n00292-xxxx\n00293-xxxx\n00294-xxxx\n00295-xxxx\n00296-xxxx\n00297-xxxx\n00298-xxxx\n00299-xxxx\n00300-xxxx\n00301-xxxx\n00302-xxxx\n00303-xxxx\n00304-xxxx\n00305-xxxx\n00306-xxxx\n00307-xxxx\n00308-xxxx\n00309-xxxx\n00310-xxxx\n00311-xxxx\n00312-xxxx\n00313-xxxx\n00314-xxxx\n00315-xxxx\n00316-xxxx\n00317-xxxx\n00318-xxxx\n00319-xxxx\n00320-xxxx\n00321-xxxx\n00322-xxxx\n00323-xxxx\n00324-xxxx\n00325-xxxx\n00326-xxxx\n00327-xxxx\n00328-xxxx\n00329-xxxx\n00330-xxxx\n00331-xxxx\n00332-xxxx\n00333-xxxx\n00334-xxxx\n00335-xxxx\n00336-xxxx\n00337-xxxx\n00338-xxxx\n00339-xxxx\n00340-xxxx\n00341-xxxx\n00342-xxxx\n00343-xxxx\n00344-xxxx\n00345-xxxx\n00346-xxxx\n00347-xxxx\n00348-xxxx\n00349-xxxx\n00350-xxxx\n00351-xxxx\n00352-xxxx\n00353-xxxx\n00354-xxxx\n00355-xxxx\n00356-xxxx\n00357-xxxx\n00358-xxxx\n00359-xxxx\n00360-xxxx\n00361-xxxx\n00362-xxxx\n00363-xxxx\n00364-xxxx\n00365-xxxx\n00366-xxxx\n00367-xxxx\n00368-xxxx\n00369-xxxx\n00370-xxxx\n00371-xxxx\n00372-xxxx\n00373-xxxx\n00374-xxxx\n00375-xxxx\n00376-xxxx\n00377-xxxx\n00378-xxxx\n00379-xxxx\n00380-xxxx\n00381-xxxx\n00382-xxxx\n00383-xxxx\n00384-xxxx\n00385-xxxx\n00386-xxxx\n00387-xxxx\n00388-xxxx\n00389-xxxx\n00390-xxxx\n00391-xxxx\n00392-xxxx\n00393-xxxx\n00394-xxxx\n00395-xxxx\n00396-xxxx\n00397-xxxx\n00398-xxxx\n00399-xxxx\n00400-xxxx\n00401-xxxx\n00402-xxxx\n00403-xxxx\n00404-xxxx\n00405-xxxx\n00406-xxxx\n00407-xxxx\n00408-xxxx\n00409-xxxx\n00410-xxxx\n00411-xxxx\n00412-xxxx\n00413-xxxx\n00414-xxxx\n00415-xxxx\n00416-xxxx\n00417-xxxx\n00418-xxxx\n00419-xxxx\n00420-xxxx\n00421-xxxx\n00422-xxxx\n00423-xxxx\n00424-xxxx\n00425-xxxx\n00426-xxxx\n00427-xxxx\n00428-xxxx\n00429-xxxx\n00430-xxxx\n00431-xxxx\n00432-xxxx\n00433-xxxx\n00434-xxxx\n00435-xxxx\n00436-xxxx\n00437-xxxx\n00438-xxxx\n00439-xxxx\n00440-xxxx\n00441-xxxx\n00442-xxxx\n00443-xxxx\n00444-xxxx\n00445-xxxx\n00446-xxxx\n00447-xxxx\n00448-xxxx\n00449-xxxx\n00450-xxxx\n00451-xxxx\n00452-xxxx\n00453-xxxx\n00454-xxxx\n00455-xxxx\n00456-xxxx\n00457-xxxx\n00458-xxxx\n00459-xxxx\n00460-xxxx\n00461-xxxx\n00462-xxxx\n00463-xxxx\n00464-xxxx\n00465-xxxx\n00466-xxxx\n00467-xxxx\n00468-xxxx\n00469-xxxx\n00470-xxxx\n00471-xxxx\n00472-xxxx\n00473-xxxx\n00474-xxxx\n00475-xxxx\n00476-xxxx\n00477-xxxx\n00478-xxxx\n00479-xxxx\n00480-xxxx\n00481-xxxx\n00482-xxxx\n00483-xxxx\n00484-xxxx\n00485-xxxx\n00486-xxxx\n00487-xxxx\n00488-xxxx\n00489-xxxx\n00490-xxxx\n00491-xxxx\n00492-xxxx\n00493-xxxx\n00494-xxxx\n00495-xxxx\n00496-xxxx\n00497-xxxx\n00498-xxxx\n00499-xxxx\n\n[500 entries limit reached. Use limit=1000 for more]"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 500
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 500,
+                    "suffix": "-xxxx"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_default_limit_and_exact_boundary_notices",
+      "id": "custom-exact",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "b",
+          "a"
+        ],
+        "params": {
+          "limit": 2
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nb"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_cap_has_no_separate_line_limit",
+      "id": "2200-rows",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 2200,
+              "suffix": "-xxxx"
+            }
+          }
+        ],
+        "params": {
+          "limit": 3000
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 2200,
+                      "suffix": "-xxxx"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 2200,
+                    "suffix": "-xxxx"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_cap_has_no_separate_line_limit",
+      "id": "multibyte",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 600,
+              "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9"
+            }
+          }
+        ],
+        "params": {
+          "limit": 700
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 501,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9"
+                    }
+                  }
+                ],
+                "suffix": "\n\n[50.0KB limit reached]"
+              }
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 501,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9"
+                    }
+                  }
+                ]
+              },
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 600,
+              "totalBytes": 61199,
+              "outputLines": 501,
+              "outputBytes": 51101,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 9007199254740991,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 600,
+                    "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_cap_has_no_separate_line_limit",
+      "id": "bytes-99",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 511,
+              "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          },
+          "99999----------------------------------------------------------------------------------------------"
+        ],
+        "params": {
+          "limit": 1000
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 511,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  },
+                  "99999----------------------------------------------------------------------------------------------"
+                ]
+              }
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 511,
+                    "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  }
+                },
+                "99999----------------------------------------------------------------------------------------------"
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_cap_has_no_separate_line_limit",
+      "id": "bytes-100",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 511,
+              "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          },
+          "99999-----------------------------------------------------------------------------------------------"
+        ],
+        "params": {
+          "limit": 1000
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 511,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  },
+                  "99999-----------------------------------------------------------------------------------------------"
+                ]
+              }
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 511,
+                    "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  }
+                },
+                "99999-----------------------------------------------------------------------------------------------"
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_cap_has_no_separate_line_limit",
+      "id": "bytes-101",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 511,
+              "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          },
+          "99999------------------------------------------------------------------------------------------------"
+        ],
+        "params": {
+          "limit": 1000
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 511,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ],
+                "suffix": "\n\n[50.0KB limit reached]"
+              }
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 511,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ]
+              },
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 512,
+              "totalBytes": 51201,
+              "outputLines": 511,
+              "outputBytes": 51099,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 9007199254740991,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 511,
+                    "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  }
+                },
+                "99999------------------------------------------------------------------------------------------------"
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_byte_and_entry_notices_keep_order_and_details",
+      "id": "combined",
+      "op": "execute",
+      "input": {
+        "entries": [
+          {
+            "rows": {
+              "count": 701,
+              "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            }
+          }
+        ],
+        "params": {
+          "limit": 600
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 506,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ],
+                "suffix": "\n\n[600 entries limit reached. Use limit=1200 for more. 50.0KB limit reached]"
+              }
+            }
+          ],
+          "details": {
+            "entryLimitReached": 600,
+            "truncation": {
+              "content": {
+                "lines": [
+                  {
+                    "rows": {
+                      "count": 506,
+                      "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ]
+              },
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 600,
+              "totalBytes": 60599,
+              "outputLines": 506,
+              "outputBytes": 51105,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 9007199254740991,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          {
+            "statEach": {
+              "directory": "/work",
+              "names": [
+                {
+                  "rows": {
+                    "count": 600,
+                    "suffix": "-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_empty_and_unstattable_directories_have_no_details",
+      "id": "empty",
+      "op": "execute",
+      "input": {
+        "entries": []
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_empty_and_unstattable_directories_have_no_details",
+      "id": "skipped",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "b",
+          "a"
+        ],
+        "skip": [
+          "a",
+          "b"
+        ]
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_path_and_directory_failures_keep_precedence",
+      "id": "absent",
+      "op": "execute",
+      "input": {
+        "exists": false,
+        "fail": "readdir"
+      },
+      "expected": {
+        "error": "Path not found: /work",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_path_and_directory_failures_keep_precedence",
+      "id": "file",
+      "op": "execute",
+      "input": {
+        "directory": false,
+        "fail": "readdir"
+      },
+      "expected": {
+        "error": "Not a directory: /work",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_root_operation_errors_keep_catch_boundaries",
+      "id": "exists",
+      "op": "execute",
+      "input": {
+        "fail": "exists"
+      },
+      "expected": {
+        "error": "exists denied",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_root_operation_errors_keep_catch_boundaries",
+      "id": "root_stat",
+      "op": "execute",
+      "input": {
+        "fail": "root_stat"
+      },
+      "expected": {
+        "error": "root_stat denied",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_root_operation_errors_keep_catch_boundaries",
+      "id": "readdir",
+      "op": "execute",
+      "input": {
+        "fail": "readdir"
+      },
+      "expected": {
+        "error": "Cannot read directory: read denied",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "before",
+      "op": "execute",
+      "input": {
+        "abort": "before"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "exists",
+      "op": "execute",
+      "input": {
+        "abort": "exists"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "root_stat",
+      "op": "execute",
+      "input": {
+        "abort": "root_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "readdir",
+      "op": "execute",
+      "input": {
+        "abort": "readdir"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "entry_stat",
+      "op": "execute",
+      "input": {
+        "abort": "entry_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "pending-exists",
+      "op": "execute",
+      "input": {
+        "pending": "exists"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "competing-exists",
+      "op": "execute",
+      "input": {
+        "abort": "exists",
+        "fail": "exists"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "pending-root_stat",
+      "op": "execute",
+      "input": {
+        "pending": "root_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "competing-root_stat",
+      "op": "execute",
+      "input": {
+        "abort": "root_stat",
+        "fail": "root_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "pending-readdir",
+      "op": "execute",
+      "input": {
+        "pending": "readdir"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "competing-readdir",
+      "op": "execute",
+      "input": {
+        "abort": "readdir",
+        "fail": "readdir"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "pending-entry_stat",
+      "op": "execute",
+      "input": {
+        "pending": "entry_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_cancellation_rejects_before_and_during_operations",
+      "id": "competing-entry_stat",
+      "op": "execute",
+      "input": {
+        "abort": "entry_stat",
+        "fail": "entry_stat"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_lists_hidden_ignored_and_linked_entries",
+      "id": "native",
+      "op": "native",
+      "input": {
+        "path": "$ROOT"
+      },
+      "expected": {
+        "content": [
+          {
+            "type": "text",
+            "text": ".git/\n.gitignore\n.hidden-dir/\n.hidden-file\nA\na\ne\u0301\n\u00e9\nignored\nlinked-dir/"
+          }
+        ]
+      }
+    },
+    {
+      "test": "ls_native_missing_and_file_paths_fail",
+      "id": "missing",
+      "op": "native-error",
+      "input": {
+        "path": "$ROOT/missing"
+      },
+      "expected": {
+        "error": "Path not found: $ROOT/missing"
+      }
+    },
+    {
+      "test": "ls_native_missing_and_file_paths_fail",
+      "id": ".hidden-file",
+      "op": "native-error",
+      "input": {
+        "path": "$ROOT/.hidden-file"
+      },
+      "expected": {
+        "error": "Not a directory: $ROOT/.hidden-file"
+      }
+    },
+    {
+      "test": "ls_native_non_utf8_names_follow_stat_filtering",
+      "id": "invalid",
+      "op": "native",
+      "input": {
+        "path": "$ROOT/invalid"
+      },
+      "expected": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ]
+      }
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "missing",
+      "op": "call",
+      "input": {
+        "args": {},
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2m.\u001b[39m                                                                            "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "null",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": null
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2m.\u001b[39m                                                                            "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "empty",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": ""
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2m.\u001b[39m                                                                            "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "relative",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src"
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "home",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "$HOME/notes"
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2m~/notes\u001b[39m                                                                      "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "boolean",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": true
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;6m[invalid arg]\u001b[39m                                                                "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "number",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": 4
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;6m[invalid arg]\u001b[39m                                                                "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "array",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": []
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;6m[invalid arg]\u001b[39m                                                                "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_handles_path_presence_and_invalid_arguments",
+      "id": "object",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": {}
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;6m[invalid arg]\u001b[39m                                                                "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "0",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": 0
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit 0)\u001b[39m                                                                "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "-1",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": -1
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit -1)\u001b[39m                                                               "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "1.5",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": 1.5
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit 1.5)\u001b[39m                                                              "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "1e+21",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": 1e+21
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit 1e+21)\u001b[39m                                                            "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "1e-7",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": 1e-07
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit 1e-7)\u001b[39m                                                             "
+      ]
+    },
+    {
+      "test": "ls_call_renderer_keeps_numeric_limit_spelling",
+      "id": "null",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "src",
+          "limit": null
+        },
+        "context": {}
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2msrc\u001b[39m\u001b[38;5;3m (limit null)\u001b[39m                                                             "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "0-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": []
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "0-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": []
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "1-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "1-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "19-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "19-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "20-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 19\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "20-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 19\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "21-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19\nrow 20"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 19\u001b[39m\u001b[38;5;4m                                                                          ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                            "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "21-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "row 0\nrow 1\nrow 2\nrow 3\nrow 4\nrow 5\nrow 6\nrow 7\nrow 8\nrow 9\nrow 10\nrow 11\nrow 12\nrow 13\nrow 14\nrow 15\nrow 16\nrow 17\nrow 18\nrow 19\nrow 20"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mrow 0\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 1\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 2\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 3\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 4\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 5\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 6\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 7\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 8\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 9\u001b[39m                                                                           ",
+        "\u001b[38;5;3mrow 10\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 11\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 12\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 13\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 14\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 15\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 16\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 17\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 18\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 19\u001b[39m                                                                          ",
+        "\u001b[38;5;3mrow 20\u001b[39m                                                                          "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "space",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\r\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": []
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "bom",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\ufeffa\ufeff"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "nel",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u0085a\u0085"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m\u0085a\u0085\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "wide_space",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u2003a\u2003"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "internal",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " a \n\n b \n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3ma \u001b[39m                                                                              ",
+        "\u001b[38;5;3m\u001b[39m                                                                                ",
+        "\u001b[38;5;3m b\u001b[39m                                                                              "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "tab",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\tb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3ma   b\u001b[39m                                                                           "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_trims_accepted_whitespace_and_previews_twenty_rows",
+      "id": "controls",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u0000b\u0085c"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mab\u0085c\u001b[39m                                                                             "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "none",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {}
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "zero",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "negative",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "entryLimitReached": -1
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: -1 entries limit]\u001b[39m                                                   "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "fraction",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 1.5
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: 1.5 entries limit]\u001b[39m                                                  "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "count",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 500
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: 500 entries limit]\u001b[39m                                                  "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "bytes",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "both",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "entryLimitReached": 500,
+            "truncation": {
+              "truncated": true,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: 500 entries limit, 50.0KB limit]\u001b[39m                                    "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "not_cut",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": false,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_combines_limit_warnings",
+      "id": "custom",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "maxBytes": 2048
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mx\u001b[39m                                                                               ",
+        "\u001b[38;5;5m[Truncated: 2.0KB limit]\u001b[39m                                                        "
+      ]
+    },
+    {
+      "test": "ls_renderers_reuse_text_without_mutating_on_errors",
+      "id": "call",
+      "op": "reuse",
+      "input": {
+        "slot": "call"
+      },
+      "expected": {
+        "same": true,
+        "lines": [
+          "\u001b[38;5;1m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;2mafter\u001b[39m                                                                        "
+        ]
+      }
+    },
+    {
+      "test": "ls_renderers_reuse_text_without_mutating_on_errors",
+      "id": "result",
+      "op": "reuse",
+      "input": {
+        "slot": "result"
+      },
+      "expected": {
+        "same": true,
+        "lines": [
+          "                                                                                ",
+          "\u001b[38;5;3mafter\u001b[39m                                                                           "
+        ]
+      }
+    },
+    {
+      "test": "ls_renderers_reuse_text_without_mutating_on_errors",
+      "id": "error-call",
+      "op": "theme-error",
+      "input": {
+        "slot": "call"
+      },
+      "expected": {
+        "error": "Unknown theme color: error",
+        "lines": [
+          "before                                                                          "
+        ]
+      }
+    },
+    {
+      "test": "ls_renderers_reuse_text_without_mutating_on_errors",
+      "id": "error-result",
+      "op": "theme-error",
+      "input": {
+        "slot": "result"
+      },
+      "expected": {
+        "error": "Unknown theme color: toolOutput",
+        "lines": [
+          "before                                                                          "
+        ]
+      }
+    },
+    {
+      "test": "ls_renderers_use_live_keybindings_and_supplied_theme",
+      "id": "[]",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true,
+          "binding": []
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7m\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                                  "
+      ]
+    },
+    {
+      "test": "ls_renderers_use_live_keybindings_and_supplied_theme",
+      "id": "[\"alt+x\"]",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true,
+          "binding": [
+            "alt+x"
+          ]
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                             "
+      ]
+    },
+    {
+      "test": "ls_renderers_use_live_keybindings_and_supplied_theme",
+      "id": "[\"alt+x\",\"ctrl+o\",\"alt+x\"]",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true,
+          "binding": [
+            "alt+x",
+            "ctrl+o",
+            "alt+x"
+          ]
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7malt+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                      "
+      ]
+    },
+    {
+      "test": "ls_renderers_use_live_keybindings_and_supplied_theme",
+      "id": "theme-20",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "a"
+        },
+        "context": {
+          "themeShift": 20
+        }
+      },
+      "expected": [
+        "\u001b[38;5;21m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;22ma\u001b[39m                                                                            "
+      ]
+    },
+    {
+      "test": "ls_renderers_use_live_keybindings_and_supplied_theme",
+      "id": "theme-40",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "a"
+        },
+        "context": {
+          "themeShift": 40
+        }
+      },
+      "expected": [
+        "\u001b[38;5;41m\u001b[1mls\u001b[22m\u001b[39m \u001b[38;5;42ma\u001b[39m                                                                            "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_reuses_sanitized_text_and_image_fallback",
+      "id": "null-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "\u001b[31mz\u001b[0m\r\na\u0000"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": false,
+          "images": null
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_reuses_sanitized_text_and_image_fallback",
+      "id": "null-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "\u001b[31mz\u001b[0m\r\na\u0000"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true,
+          "images": null
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_reuses_sanitized_text_and_image_fallback",
+      "id": "kitty-false",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "\u001b[31mz\u001b[0m\r\na\u0000"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": false,
+          "images": "kitty"
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        ",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m                                                        "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_reuses_sanitized_text_and_image_fallback",
+      "id": "kitty-true",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "\u001b[31mz\u001b[0m\r\na\u0000"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true,
+          "images": "kitty"
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               ",
+        "\u001b[38;5;3ma\u001b[39m                                                                               ",
+        "\u001b[38;5;3mz\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_uses_only_its_expansion_option",
+      "id": "{\"expanded\":true}",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": true
+        },
+        "context": {
+          "showImages": true,
+          "expanded": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                            "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_uses_only_its_expansion_option",
+      "id": "{\"isError\":true}",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": true
+        },
+        "context": {
+          "showImages": true,
+          "isError": true
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                            "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_uses_only_its_expansion_option",
+      "id": "{\"executionStarted\":true,\"argsComplete\":false}",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "00000-xxxx\n00001-xxxx\n00002-xxxx\n00003-xxxx\n00004-xxxx\n00005-xxxx\n00006-xxxx\n00007-xxxx\n00008-xxxx\n00009-xxxx\n00010-xxxx\n00011-xxxx\n00012-xxxx\n00013-xxxx\n00014-xxxx\n00015-xxxx\n00016-xxxx\n00017-xxxx\n00018-xxxx\n00019-xxxx\n00020-xxxx"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": true
+        },
+        "context": {
+          "showImages": true,
+          "executionStarted": true,
+          "argsComplete": false
+        },
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;3m00000-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00001-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00002-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00003-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00004-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00005-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00006-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00007-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00008-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00009-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00010-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00011-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00012-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00013-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00014-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00015-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00016-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00017-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00018-xxxx\u001b[39m                                                                      ",
+        "\u001b[38;5;3m00019-xxxx\u001b[39m\u001b[38;5;4m                                                                      ",
+        "\u001b[38;5;4m... (1 more lines,\u001b[39m \u001b[38;5;7mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)                                            "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_wraps_with_shared_text_component",
+      "id": "12",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "long-entry-directory/\n\u7b2c\u4e8c\u4e2a/"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 12
+      },
+      "expected": [
+        "            ",
+        "\u001b[38;5;3mlong-entry-d",
+        "\u001b[38;5;3mirectory/\u001b[39m   ",
+        "\u001b[38;5;3m\u7b2c\u4e8c\u4e2a/\u001b[39m     "
+      ]
+    },
+    {
+      "test": "ls_result_renderer_wraps_with_shared_text_component",
+      "id": "25",
+      "op": "render",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "long-entry-directory/\n\u7b2c\u4e8c\u4e2a/"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "showImages": true
+        },
+        "width": 25
+      },
+      "expected": [
+        "                         ",
+        "\u001b[38;5;3mlong-entry-directory/\u001b[39m    ",
+        "\u001b[38;5;3m\u7b2c\u4e8c\u4e2a/\u001b[39m                  "
+      ]
+    },
+    {
+      "test": "ls_resolution_reads_host_cwd_only_when_needed",
+      "id": "absolute",
+      "op": "execute",
+      "input": {
+        "cwd": "/work",
+        "entries": [],
+        "ambientCwd": "removed"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(empty directory)"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_resolution_reads_host_cwd_only_when_needed",
+      "id": "required-failure",
+      "op": "execute",
+      "input": {
+        "cwd": ".",
+        "entries": [],
+        "ambientCwd": "removed"
+      },
+      "expected": {
+        "calls": [],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_resolution_reads_host_cwd_only_when_needed",
+      "id": "pre-abort",
+      "op": "execute",
+      "input": {
+        "cwd": ".",
+        "abort": "before",
+        "entries": [],
+        "ambientCwd": "removed"
+      },
+      "expected": {
+        "error": "Operation aborted",
+        "calls": [],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "case-sv-SE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "B",
+          "a",
+          "A",
+          "b",
+          "a"
+        ],
+        "locale": "sv-SE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nA\na\nB\nb"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/A"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/B"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "accent-sv-SE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "z",
+          "\u00e4",
+          "a",
+          "\u00e9",
+          "e\u0301",
+          "E"
+        ],
+        "locale": "sv-SE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nE\n\u00e9\ne\u0301\nz\n\u00e4"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/E"
+          ],
+          [
+            "stat",
+            "/work/\u00e9"
+          ],
+          [
+            "stat",
+            "/work/e\u0301"
+          ],
+          [
+            "stat",
+            "/work/z"
+          ],
+          [
+            "stat",
+            "/work/\u00e4"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "numeric-sv-SE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "x10",
+          "x2",
+          "x1"
+        ],
+        "locale": "sv-SE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x1\nx10\nx2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/x1"
+          ],
+          [
+            "stat",
+            "/work/x10"
+          ],
+          [
+            "stat",
+            "/work/x2"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "unicode-sv-SE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "\u03a3",
+          "\u03c2",
+          "\u03c3",
+          "\u0130",
+          "i",
+          "I"
+        ],
+        "locale": "sv-SE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "i\nI\n\u0130\n\u03a3\n\u03c3\n\u03c2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/i"
+          ],
+          [
+            "stat",
+            "/work/I"
+          ],
+          [
+            "stat",
+            "/work/\u0130"
+          ],
+          [
+            "stat",
+            "/work/\u03a3"
+          ],
+          [
+            "stat",
+            "/work/\u03c3"
+          ],
+          [
+            "stat",
+            "/work/\u03c2"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "case-de-DE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "B",
+          "a",
+          "A",
+          "b",
+          "a"
+        ],
+        "locale": "de-DE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\nA\na\nB\nb"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/A"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/B"
+          ],
+          [
+            "stat",
+            "/work/b"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "accent-de-DE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "z",
+          "\u00e4",
+          "a",
+          "\u00e9",
+          "e\u0301",
+          "E"
+        ],
+        "locale": "de-DE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\u00e4\nE\n\u00e9\ne\u0301\nz"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/a"
+          ],
+          [
+            "stat",
+            "/work/\u00e4"
+          ],
+          [
+            "stat",
+            "/work/E"
+          ],
+          [
+            "stat",
+            "/work/\u00e9"
+          ],
+          [
+            "stat",
+            "/work/e\u0301"
+          ],
+          [
+            "stat",
+            "/work/z"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "numeric-de-DE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "x10",
+          "x2",
+          "x1"
+        ],
+        "locale": "de-DE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "x1\nx10\nx2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/x1"
+          ],
+          [
+            "stat",
+            "/work/x10"
+          ],
+          [
+            "stat",
+            "/work/x2"
+          ]
+        ],
+        "updates": 0
+      }
+    },
+    {
+      "test": "ls_sort_is_stable_case_insensitive_locale_order",
+      "id": "unicode-de-DE",
+      "op": "execute",
+      "input": {
+        "entries": [
+          "\u03a3",
+          "\u03c2",
+          "\u03c3",
+          "\u0130",
+          "i",
+          "I"
+        ],
+        "locale": "de-DE"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "i\nI\n\u0130\n\u03a3\n\u03c3\n\u03c2"
+            }
+          ]
+        },
+        "calls": [
+          [
+            "exists",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work"
+          ],
+          [
+            "readdir",
+            "/work"
+          ],
+          [
+            "stat",
+            "/work/i"
+          ],
+          [
+            "stat",
+            "/work/I"
+          ],
+          [
+            "stat",
+            "/work/\u0130"
+          ],
+          [
+            "stat",
+            "/work/\u03a3"
+          ],
+          [
+            "stat",
+            "/work/\u03c3"
+          ],
+          [
+            "stat",
+            "/work/\u03c2"
+          ]
+        ],
+        "updates": 0
+      }
+    }
+  ]
+}

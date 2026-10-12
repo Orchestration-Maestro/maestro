@@ -1,26 +1,23 @@
 //! Terminal rendering of read calls and results.
 
-use super::{
-    ReadToolDetails, failure,
-    native::diagnostic,
-    text::{float, num},
-};
+use super::ReadToolDetails;
 use crate::{
-    keybinding_hints::{key_hint, key_text},
+    keybinding_hints::{EXPAND, key_text},
     output::{
+        render_parts::{expand_hint, float, into_text, num, paint, themed},
         render_utils::{get_text_output, invalid_arg_text, replace_tabs, shorten_path, str},
         truncate::{TruncationBy, format_size},
     },
     path_utils::resolve_read_path,
     types::{ToolRenderContext, ToolRenderResultOptions},
+    utils::diagnostics::diagnostic,
 };
 use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
-use maestro_theme::{Theme, ThemeColor, ThemeError, get_language_from_path, highlight_code};
-use maestro_tui::{Text, tui::ComponentHandle};
+use maestro_theme::{Theme, ThemeColor, get_language_from_path, highlight_code};
+use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
-use std::{any::Any, rc::Rc};
 
 /// Result of a render step.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
@@ -29,8 +26,6 @@ type Rendered<T> = Result<T, DiagnosticErrorInfo>;
 const PREVIEW_LINES: usize = 10;
 /// Names that mark a resource file.
 const RESOURCE_FILE_NAMES: [&str; 4] = ["AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"];
-/// Keybinding that expands a row.
-const EXPAND: &str = "app.tools.expand";
 
 /// What a compact read is shown as.
 enum Kind {
@@ -48,16 +43,6 @@ struct Classification {
     kind: Kind,
     /// Name shown for it.
     label: String,
-}
-
-/// Carry a theme failure to the renderer's caller.
-fn themed<T>(result: Result<T, ThemeError>) -> Rendered<T> {
-    result.map_err(|error| failure(&error.to_string()))
-}
-
-/// `text` in `color`.
-fn paint(theme: &Theme, color: &ThemeColor, text: &str) -> Rendered<String> {
-    themed(theme.fg(color, text))
 }
 
 /// The path argument: `file_path` unless it is absent or null, then `path`.
@@ -198,18 +183,6 @@ fn format_compact_call(
     ))
 }
 
-/// Put `text` in the previous row component when it is a `Text`, otherwise in a new one.
-fn into_text(previous: Option<&ComponentHandle>, text: String) -> ComponentHandle {
-    if let Some(handle) = previous {
-        let component: &dyn Any = &**handle;
-        if let Some(existing) = component.downcast_ref::<Text>() {
-            existing.set_text(text);
-            return Rc::clone(handle);
-        }
-    }
-    Rc::new(Text::new(text, 0, 0, None))
-}
-
 /// Draw a read call, reusing the row's previous `Text`.
 ///
 /// # Errors
@@ -301,13 +274,7 @@ fn format_read_result(
         .collect::<Rendered<Vec<_>>>()?;
     let mut text = ["\n", &rows.join("\n")].concat();
     if lines.len() > shown {
-        let more = paint(
-            theme,
-            &ThemeColor::Muted,
-            &format!("\n... ({} more lines,", lines.len() - shown),
-        )?;
-        let hint = themed(key_hint(EXPAND, "to expand", &context.live_theme))?;
-        text.extend([&more, " ", &hint, ")"]);
+        text += &expand_hint(lines.len() - shown, theme, &context.live_theme)?;
     }
     Ok(text + &truncation_notice(result.details.as_ref(), theme)?)
 }

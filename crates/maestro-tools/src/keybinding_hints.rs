@@ -3,6 +3,10 @@
 use maestro_theme::{LiveTheme, ThemeColor, ThemeError};
 use maestro_tui::get_keybindings;
 
+/// The keybinding that expands a collapsed tool row.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) const EXPAND: &str = "app.tools.expand";
+
 /// The keys bound to `keybinding`, joined with `/` in registry order; empty when unbound.
 #[must_use]
 pub fn key_text(keybinding: &str) -> String {

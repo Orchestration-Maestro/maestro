@@ -89,6 +89,11 @@ It sorts with a stable locale collator built once per call from the first presen
 dropped, `C` and `POSIX` mean `en-US`, and an unusable locale selects the library default.
 Tests and browser callers supply their own.
 
+`Collator` (not built for browsers) is that comparison on its own: `Collator::new` takes an
+environment lookup and applies the same locale selection, and `compare` orders two strings.
+Other native code that needs the process locale's ordering, such as the
+[directory listing](tools-search.md#listing), builds one with it.
+
 ## Registration and discovery
 
 `ThemeState` holds the application-supplied `ThemeDirectories` (the shipped themes

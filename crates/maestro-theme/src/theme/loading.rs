@@ -54,7 +54,7 @@ impl ThemeOperations for NativeThemeOperations {
             .collect())
     }
     fn sort_by_name(&self, themes: &mut [ThemeInfo]) -> std::io::Result<()> {
-        let collator = super::collation::collator(&|name| self.environment(name))?;
+        let collator = super::collation::Collator::new(&|name| self.environment(name))?;
         themes.sort_by(|a, b| collator.compare(&a.name, &b.name));
         Ok(())
     }

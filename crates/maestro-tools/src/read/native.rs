@@ -1,28 +1,12 @@
 //! Local-filesystem read operations.
 
-use super::{ReadOperations, failure};
-use crate::utils::mime::detect_supported_image_mime_type_from_file;
-use maestro_models::{BoxFuture, DiagnosticCode, DiagnosticErrorInfo};
+use super::ReadOperations;
+use crate::utils::{
+    diagnostics::{blocking, diagnostic},
+    mime::detect_supported_image_mime_type_from_file,
+};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::{io, path::PathBuf};
-
-/// Describe a native failure with its message and operating-system error number.
-pub(super) fn diagnostic(error: &io::Error) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        code: error
-            .raw_os_error()
-            .map(|errno| DiagnosticCode::Number(f64::from(errno))),
-        ..failure(&error.to_string())
-    }
-}
-
-/// Run blocking filesystem work off the caller's task.
-async fn blocking<T: Send + 'static>(
-    work: impl FnOnce() -> io::Result<T> + Send + 'static,
-) -> Result<T, DiagnosticErrorInfo> {
-    let task = tokio::task::spawn_blocking(work);
-    let result = task.await.map_err(io::Error::other).and_then(|done| done);
-    result.map_err(|error| diagnostic(&error))
-}
 
 /// Check readability without opening the file where the platform allows it.
 fn readable(path: &PathBuf) -> io::Result<()> {

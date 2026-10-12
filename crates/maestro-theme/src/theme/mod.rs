@@ -24,6 +24,8 @@ pub use brand::{
     load_brand_pack,
 };
 pub use code::{highlight_code, highlight_html};
+#[cfg(not(target_arch = "wasm32"))]
+pub use collation::Collator;
 pub use components::{
     get_editor_theme, get_markdown_theme, get_select_list_theme, get_settings_list_theme,
 };

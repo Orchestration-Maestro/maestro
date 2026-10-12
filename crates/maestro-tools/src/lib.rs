@@ -32,6 +32,8 @@ pub mod output;
 pub mod path_utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod read;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod search;
 pub mod tool_definition_wrapper;
 pub mod types;
 pub mod utils;
@@ -47,6 +49,11 @@ pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
 pub use read::{
     ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, create_read_tool,
     create_read_tool_definition,
+};
+#[cfg(not(target_arch = "wasm32"))]
+pub use search::ls::{
+    LsOperations, LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool,
+    create_ls_tool_definition,
 };
 pub use tool_definition_wrapper::{
     create_tool_definition_from_agent_tool, wrap_tool_definition, wrap_tool_definitions,

@@ -1,41 +1,16 @@
 //! Cancellable dispatch of one read to its text or image route.
 
-use super::{
-    ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, failure, text::read_text,
+use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
+use crate::utils::{
+    diagnostics::{aborted, guarded},
+    image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
 };
-use crate::utils::image_resize::{ImageResizeOptions, format_dimension_note, resize_image};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use futures_util::future::{Either, select};
 use maestro_agent::AgentToolResult;
 use maestro_models::{
     Cancellation, DiagnosticErrorInfo, ImageContent, Model, ModelInput, TextContent, UserBlock,
 };
-use std::{future::Future, pin::pin, sync::Arc};
-
-/// The failure every cancelled read settles with.
-fn aborted() -> DiagnosticErrorInfo {
-    failure("Operation aborted")
-}
-
-/// Start one operation unless cancelled, and settle as cancelled if the signal fires first.
-///
-/// Cancellation wins over any result or failure observed after it.
-async fn guarded<T, F: Future<Output = Result<T, DiagnosticErrorInfo>>>(
-    signal: Option<&Cancellation>,
-    start: impl FnOnce() -> F,
-) -> Result<T, DiagnosticErrorInfo> {
-    let Some(signal) = signal else {
-        return start().await;
-    };
-    let cancelled = signal.cancelled();
-    if signal.is_aborted() {
-        return Err(aborted());
-    }
-    match select(pin!(start()), pin!(cancelled)).await {
-        Either::Left((result, _)) if !signal.is_aborted() => result,
-        _ => Err(aborted()),
-    }
-}
+use std::sync::Arc;
 
 /// Sent in place of an image that cannot be fitted.
 const OMITTED: &str = "[Image omitted: could not be resized below the inline image size limit.]";
