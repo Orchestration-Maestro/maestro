@@ -9177,56 +9177,56 @@
     {
       "platform": "linux",
       "nocase": false,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//server/share/a",
       "expected": false
     },
     {
       "platform": "linux",
       "nocase": true,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//server/share/a",
       "expected": true
     },
     {
       "platform": "win32",
       "nocase": false,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//server/share/a",
       "expected": false
     },
     {
       "platform": "win32",
       "nocase": true,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//server/share/a",
       "expected": true
     },
     {
       "platform": "linux",
       "nocase": false,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//other/share/a",
       "expected": false
     },
     {
       "platform": "linux",
       "nocase": true,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//other/share/a",
       "expected": false
     },
     {
       "platform": "win32",
       "nocase": false,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//other/share/a",
       "expected": false
     },
     {
       "platform": "win32",
       "nocase": true,
-      "pattern": "//Ser*/Share/A",
+      "pattern": "//Serve*/Share/A",
       "input": "//other/share/a",
       "expected": false
     },
