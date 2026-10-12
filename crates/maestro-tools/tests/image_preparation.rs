@@ -3,6 +3,7 @@
 mod support;
 use support::TestResult;
 
+use base64::Engine;
 use maestro_tools::utils::image_convert::convert_to_png;
 use maestro_tools::utils::image_resize::{
     ImageResizeOptions, ResizedImage, format_dimension_note, resize_image,
@@ -20,11 +21,75 @@ pub struct ConversionInput {
     pub mime_type: String,
 }
 
-/// Compare each complete result through its public operation.
+/// Compare records exactly, allowing native JPEG decoding's channel rounding.
 fn check(name: &str) -> TestResult {
     for case in cases("image_preparation", name)? {
-        let (actual, expected) = observe(&case.operation, case.input, case.expected)?;
+        let jpeg = jpeg_is_reencoded(&case.operation, &case.input, &case.expected)?;
+        let (mut actual, mut expected) = observe(&case.operation, case.input, case.expected)?;
+        if jpeg {
+            compare_pixels(&actual["data"], &expected["data"], &case.id)?;
+            actual
+                .as_object_mut()
+                .ok_or("missing result")?
+                .remove("data");
+            expected
+                .as_object_mut()
+                .ok_or("missing reference")?
+                .remove("data");
+        }
         assert_eq!(actual, expected, "{}", case.id);
+    }
+    Ok(())
+}
+
+/// Identify JPEG byte inputs only when the operation produces new encoded data.
+fn jpeg_is_reencoded(
+    operation: &str,
+    input: &serde_json::Value,
+    expected: &serde_json::Value,
+) -> TestResult<bool> {
+    let image = if operation == "resize" {
+        &input["image"]
+    } else {
+        input
+    };
+    if operation != "convert" && expected["wasResized"] != true {
+        return Ok(false);
+    }
+    let Some(data) = image["data"].as_str() else {
+        return Ok(false);
+    };
+    // Failed decoding and PNG passthrough retain their exact observations.
+    if expected.is_null() || image["mimeType"] == "image/png" && operation == "convert" {
+        return Ok(false);
+    }
+    let bytes = base64::engine::general_purpose::STANDARD.decode(data)?;
+    Ok(bytes.starts_with(&[0xff, 0xd8]))
+}
+
+/// Check output format, geometry and every RGBA channel against recorded pixels.
+fn compare_pixels(
+    actual: &serde_json::Value,
+    expected: &serde_json::Value,
+    id: &str,
+) -> TestResult {
+    let actual =
+        base64::engine::general_purpose::STANDARD.decode(actual.as_str().ok_or("data")?)?;
+    let expected = base64::engine::general_purpose::STANDARD
+        .decode(expected.as_str().ok_or("reference data")?)?;
+    assert_eq!(
+        image::guess_format(&actual)?,
+        image::guess_format(&expected)?,
+        "{id}"
+    );
+    let actual = image::load_from_memory(&actual)?.to_rgba8();
+    let expected = image::load_from_memory(&expected)?.to_rgba8();
+    assert_eq!(actual.dimensions(), expected.dimensions(), "{id}");
+    for (channel, (actual, expected)) in actual.as_raw().iter().zip(expected.as_raw()).enumerate() {
+        assert!(
+            actual.abs_diff(*expected) <= 1,
+            "{id}: channel {channel}: {actual} != {expected}"
+        );
     }
     Ok(())
 }
