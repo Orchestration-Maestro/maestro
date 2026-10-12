@@ -18,9 +18,6 @@ struct Case {
     expected: Value,
     /// Owning witness.
     test: String,
-    /// Constructor wire result.
-    #[serde(default)]
-    serialized_expected: Option<Value>,
 }
 
 /// Evaluate shell cases in one group.
@@ -30,7 +27,6 @@ fn shell_group(name: &str) {
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         assert_eq!(case.operation, "bashExecutionToText");
-        assert!(case.serialized_expected.is_none());
         let message = serde_json::from_value(decode(case.args[0].clone())).unwrap();
         assert_eq!(
             bash_execution_to_text(&message),
@@ -88,14 +84,14 @@ fn cases(name: &str) -> Vec<Case> {
     selected
 }
 
-/// Run date cases in a fresh UTC process.
-fn in_utc(name: &str) -> bool {
+/// Run date cases in a fresh process with the selected timezone.
+fn in_timezone(name: &str, timezone: &str) -> bool {
     if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
         return true;
     }
     let status = std::process::Command::new(std::env::current_exe().unwrap())
         .args(["--exact", name, "--nocapture"])
-        .env("TZ", "UTC")
+        .env("TZ", timezone)
         .env("MAESTRO_DATE_CHILD", name)
         .status()
         .unwrap();
@@ -117,19 +113,13 @@ fn assert_constructor(case: &Case, actual: Value, timestamp: f64) {
             case.id
         );
     }
-    assert_eq!(decode(actual.clone()), expected, "{}", case.id);
-    assert_eq!(
-        decode(actual),
-        decode(case.serialized_expected.clone().unwrap()),
-        "{}",
-        case.id
-    );
+    assert_eq!(decode(actual), expected, "{}", case.id);
 }
 
 #[test]
 fn summary_constructors_preserve_fields_and_time() {
     let name = "summary_constructors_preserve_fields_and_time";
-    if !in_utc(name) {
+    if !in_timezone(name, "UTC") {
         return;
     }
     for case in cases(name) {
@@ -192,9 +182,46 @@ fn custom_factory_group(name: &str) {
 }
 
 #[test]
+fn constructors_use_local_datetimes_and_utc_dates() {
+    let name = "constructors_use_local_datetimes_and_utc_dates";
+    if !in_timezone(name, "America/New_York") {
+        return;
+    }
+    for (input, expected) in [
+        ("2025-03-04T05:06:07.008", 1_741_082_767_008.0_f64),
+        ("2025-03-04", 1_741_046_400_000.0),
+    ] {
+        let branch = create_branch_summary_message("branch".into(), "from".into(), input);
+        let compaction = create_compaction_summary_message("compaction".into(), 19.5, input);
+        let custom = create_custom_message::<Value>(
+            "note".into(),
+            maestro_models::UserContent::Text("custom".into()),
+            false,
+            Presence::Missing,
+            input,
+        );
+        assert_eq!(
+            branch.timestamp.to_bits(),
+            expected.to_bits(),
+            "branch: {input}"
+        );
+        assert_eq!(
+            compaction.timestamp.to_bits(),
+            expected.to_bits(),
+            "compaction: {input}"
+        );
+        assert_eq!(
+            custom.timestamp.to_bits(),
+            expected.to_bits(),
+            "custom: {input}"
+        );
+    }
+}
+
+#[test]
 fn custom_constructor_preserves_time() {
     let name = "custom_constructor_preserves_time";
-    if in_utc(name) {
+    if in_timezone(name, "UTC") {
         custom_factory_group(name);
     }
 }
@@ -260,7 +287,6 @@ fn entry(value: Value) -> Entry {
 fn conversion_group(name: &str) {
     for case in cases(name) {
         assert_eq!(case.operation, "convertToLlm");
-        assert!(case.serialized_expected.is_none());
         let mut entries: Vec<_> = case.args[0]
             .as_array()
             .unwrap()
@@ -331,7 +357,6 @@ fn conversion_observes_changes_through_retained_inputs() {
     let input = entry(rows[0].args[0][0].clone());
     for (index, case) in rows.into_iter().enumerate() {
         assert_eq!(case.operation, "convertToLlm");
-        assert!(case.serialized_expected.is_none());
         if index == 1 {
             let Entry::User(message) = &input else {
                 panic!("expected user")

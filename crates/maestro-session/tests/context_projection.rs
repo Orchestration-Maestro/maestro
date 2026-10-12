@@ -119,6 +119,11 @@ fn settings_observe_the_entire_selected_path() {
 }
 
 #[test]
+fn precompaction_model_change_survives_without_overwrite() {
+    support::session_context::group("precompaction_model_change_survives_without_overwrite");
+}
+
+#[test]
 fn kept_range_uses_the_precompaction_path() {
     support::session_context::group("kept_range_uses_the_precompaction_path");
 }

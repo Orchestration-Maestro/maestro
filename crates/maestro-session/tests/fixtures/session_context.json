@@ -7570,5 +7570,62 @@
         ]
       }
     }
+  },
+  {
+    "id": "precompaction-model-survives",
+    "test": "precompaction_model_change_survives_without_overwrite",
+    "operation": "context",
+    "args": [
+      [
+        {
+          "type": "model_change",
+          "id": "model",
+          "parentId": null,
+          "provider": "before-provider",
+          "modelId": "before-model"
+        },
+        {
+          "type": "compaction",
+          "id": "compaction",
+          "parentId": "model",
+          "timestamp": "2025-01-02T03:04:05.678Z",
+          "summary": "compact",
+          "tokensBefore": 23.5,
+          "firstKeptEntryId": "absent"
+        },
+        {
+          "type": "message",
+          "id": "after",
+          "parentId": "compaction",
+          "message": {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        }
+      ]
+    ],
+    "expected": {
+      "ok": {
+        "messages": [
+          {
+            "role": "compactionSummary",
+            "summary": "compact",
+            "tokensBefore": 23.5,
+            "timestamp": 1735787045678
+          },
+          {
+            "role": "user",
+            "content": "after",
+            "timestamp": 1
+          }
+        ],
+        "thinkingLevel": "off",
+        "model": {
+          "provider": "before-provider",
+          "modelId": "before-model"
+        }
+      }
+    }
   }
 ]
