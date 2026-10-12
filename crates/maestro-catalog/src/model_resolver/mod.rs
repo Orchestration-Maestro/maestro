@@ -3,8 +3,10 @@ mod matching;
 pub use matching::{find_exact_model_reference_match, parse_model_pattern};
 mod collation;
 pub use collation::model_id_comparator;
-use maestro_models::{Model, ModelThinkingLevel};
-use std::sync::{Arc, RwLock};
+use maestro_models::{DiagnosticErrorInfo, Model, ModelThinkingLevel};
+use owo_colors::OwoColorize;
+use std::io::Write;
+use std::sync::{Arc, PoisonError, RwLock};
 /// Model selection with independently optional thinking and warning.
 #[derive(Default)]
 pub struct ParsedModelResult {
@@ -101,3 +103,63 @@ pub static DEFAULT_MODEL_PER_PROVIDER: LazyLock<RwLock<IndexMap<String, String>>
             .collect(),
         )
     });
+mod scope;
+pub use scope::resolve_model_scope;
+mod selection;
+pub use selection::{FindInitialModelOptions, InitialModelResult, find_initial_model};
+mod restoration;
+pub use restoration::{
+    RestoreModelFromSessionOptions, RestoreModelFromSessionResult, restore_model_from_session,
+};
+/// A shared descriptor with an optional explicit thinking choice.
+pub struct ScopedModel {
+    /// Shared catalog descriptor.
+    pub model: Arc<RwLock<Model>>,
+    /// Effort named by the pattern, without capability clamping.
+    pub thinking_level: Option<ModelThinkingLevel>,
+}
+/// Caller-owned diagnostic streams and their styling policy.
+pub struct ModelResolverOutput<'a> {
+    /// Receives restoration progress notices.
+    pub stdout: &'a mut dyn Write,
+    /// Receives warnings.
+    pub stderr: &'a mut dyn Write,
+    /// Wrap each whole message in its terminal style.
+    pub color: bool,
+}
+impl ModelResolverOutput<'_> {
+    /// Write a yellow `Warning: ` line to stderr.
+    fn warn(&mut self, message: &str) {
+        let line = format!("Warning: {message}");
+        // A broken diagnostic stream must never change which model is selected.
+        let _ = if self.color {
+            writeln!(self.stderr, "{}", line.yellow())
+        } else {
+            writeln!(self.stderr, "{line}")
+        };
+    }
+    /// Write a dim progress line to stdout, ending only the intensity (`owo-colors` resets all).
+    fn note(&mut self, message: &str) {
+        // A broken diagnostic stream must never change which model is selected.
+        let _ = if self.color {
+            writeln!(self.stdout, "\u{1b}[2m{message}\u{1b}[22m")
+        } else {
+            writeln!(self.stdout, "{message}")
+        };
+    }
+}
+/// Own a selection diagnostic in the catalog error type.
+fn diagnostic(message: String) -> CatalogError {
+    DiagnosticErrorInfo {
+        message,
+        name: None,
+        stack: None,
+        code: None,
+    }
+    .into()
+}
+/// Copy a descriptor's provider and ID.
+fn identity(handle: &Arc<RwLock<Model>>) -> (String, String) {
+    let model = handle.read().unwrap_or_else(PoisonError::into_inner);
+    (model.provider.clone(), model.id.clone())
+}
