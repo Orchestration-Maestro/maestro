@@ -103,7 +103,8 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   or workspace dependency.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
-  lexical comparison, markup escaping, locale construction); JSON owns JSON
+  lexical comparison, markup escaping, locale construction, newline
+  normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (object acceptance, canonical keys, truth, compact and
   pretty text). `maestro-entry` and `maestro-tool` define session and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`

@@ -200,7 +200,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json` | 2 |
-| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-process` | 2 |
+| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
 | `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text` | 4 |
@@ -224,7 +224,8 @@ tool interchange records. `maestro-brand` is a core domain library below layer 0
 depends on text and JSON and projects a brand pack. These five owners are declared by
 policy; `maestro-text` exists, and the code the other four will own moves in later
 extraction issues, which create those crates. No `common`, `utils`, `shared-types` or
-background-runtime crate is added.
+background-runtime crate is added. `maestro-tools` depends on `maestro-text`, the
+single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus

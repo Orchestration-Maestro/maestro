@@ -435,6 +435,7 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro-process", "maestro-packages"),
         ("maestro-process", "maestro-tui"),
         ("maestro-models", "maestro-process"),
+        ("maestro-text", "maestro-tools"),
     ] {
         let workspace = Workspace::new();
         workspace.list(&[(from, support::class(from)), (to, support::class(to))]);
@@ -633,7 +634,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        108
+        109
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
