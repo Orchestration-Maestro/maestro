@@ -133,6 +133,13 @@ impl CapturedChild {
         }
     }
 
+    /// Drops retained stderr bytes when a wait discards stderr.
+    fn apply(&mut self, stderr: StderrMode) {
+        if stderr == StderrMode::Discard {
+            self.err.clear();
+        }
+    }
+
     /// Starts a wait's termination request without waiting for the exit.
     async fn begin(&mut self, requested: Termination) -> io::Result<Next> {
         Ok(match requested {
@@ -217,6 +224,11 @@ async fn fill(
     Ok(())
 }
 
+/// A timer for `after`, if one is selected.
+fn timer(after: Option<Duration>) -> Option<Pin<Box<Sleep>>> {
+    after.map(|after| Box::pin(tokio::time::sleep(after)))
+}
+
 /// Resolves when `timer` fires; never resolves while it is unset.
 async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
     match timer {
@@ -225,15 +237,20 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
     }
 }
 
-/// Waits for the exit and both pipe EOFs, honouring one termination request.
+/// Waits for the exit and both pipe EOFs (or the selected grace), honouring one
+/// termination request.
 ///
-/// `termination` is polled until it yields once. [`Termination::Terminate`] and
-/// [`Termination::TerminateThenKill`] keep collecting until exit and both EOFs, the
-/// latter killing a child still running after its delay. [`Termination::Kill`]
+/// `termination` is polled before any pipe or status, until it yields once, so a
+/// request that is already ready is honoured even when the child has finished.
+/// [`Termination::Terminate`] and [`Termination::TerminateThenKill`] keep collecting
+/// until exit and both EOFs, the latter killing a child still running after its delay.
+/// [`Termination::Kill`]
 /// abandons readers that have not finished, returns once the direct child is reaped
 /// and gives empty bytes for each abandoned stream; completed streams keep theirs.
+/// [`StderrMode::Discard`] also drops stderr bytes retained by an earlier wait.
 /// A `post_exit_grace` ends the wait that long after the exit with the bytes
-/// consumed so far. The future is dropped when this function returns.
+/// consumed so far; without one the wait ends at the exit and both end-of-file
+/// events. The future is dropped when this function returns.
 ///
 /// # Errors
 /// Returns the first native pipe, status or termination error unchanged; bytes
@@ -251,30 +268,29 @@ where
     let mut grace = None;
     let mut escalation = None;
     let mut stopped = false;
+    child.apply(options.stderr);
     while child.stdout.is_some() || child.stderr.is_some() || status.is_none() {
         tokio::select! {
             biased;
-            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => value?,
-            value = fill(&mut child.stderr, &mut child.err, options.stderr == StderrMode::Capture), if child.stderr.is_some() => value?,
-            value = child.child.wait(), if status.is_none() => {
-                status = Some(value?);
-                escalation = None;
-                grace = options.post_exit_grace.map(|after| Box::pin(tokio::time::sleep(after)));
+            requested = &mut termination, if !stopped => {
+                stopped = true;
+                let Next::Resume(after) = child.begin(requested).await? else {
+                    break;
+                };
+                escalation = timer(after);
             }
-            () = fires(&mut grace) => break,
             () = fires(&mut escalation) => {
                 escalation = None;
                 child.kill_if_running().await?;
             }
-            requested = &mut termination, if !stopped => {
-                stopped = true;
-                match child.begin(requested).await? {
-                    Next::Resume(after) => {
-                        escalation = after.map(|after| Box::pin(tokio::time::sleep(after)));
-                    }
-                    Next::Abandon => break,
-                }
+            () = fires(&mut grace) => break,
+            value = child.child.wait(), if status.is_none() => {
+                status = Some(value?);
+                escalation = None;
+                grace = timer(options.post_exit_grace);
             }
+            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => value?,
+            value = fill(&mut child.stderr, &mut child.err, options.stderr == StderrMode::Capture), if child.stderr.is_some() => value?,
         }
     }
     child.stdout = None;

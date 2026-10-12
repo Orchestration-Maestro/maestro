@@ -5,9 +5,11 @@ mod process_support;
 
 use maestro_models::Cancellation;
 use maestro_tools::{ExecOptions, ExecResult, exec_command};
-use process_support::{poll_once, polled_to_completion};
+use process_support::{complete, forward, poll_once, poll_through, polled_to_completion};
 use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task::Poll;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
@@ -96,6 +98,17 @@ fn python<'a>(
     run("python3", &all, options)
 }
 
+/// Polls `future` between scheduler turns until it settles; `None` if it does not.
+async fn settle<F: Future>(future: &mut Pin<&mut F>) -> Option<F::Output> {
+    for _ in 0..200_000 {
+        if let Poll::Ready(value) = poll_once(future).await {
+            return Some(value);
+        }
+        tokio::task::yield_now().await;
+    }
+    None
+}
+
 /// A held child's readiness socket and process id.
 struct Held {
     /// The connection the child waits on.
@@ -178,16 +191,25 @@ sys.stderr.buffer.write(b'e' * 300000 + b'\r\n')
 fn exec_preserves_utf8_across_pipe_fragments() {
     runtime().block_on(async {
         let script = r"
-import sys, time
-split = int(sys.argv[1])
-for stream in (sys.stdout.buffer, sys.stderr.buffer):
-    stream.write(b'\xf0\x90\x8d\x88'[:split]); stream.flush()
-time.sleep(0.05)
-for stream in (sys.stdout.buffer, sys.stderr.buffer):
-    stream.write(b'\xf0\x90\x8d\x88'[split:]); stream.flush()
+import os, socket, sys
+split = int(sys.argv[2])
+for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[:split])
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+s.sendall(b'READY%d\n' % os.getpid())
+s.recv(1)
+for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[split:])
 ";
         for split in ["1", "2", "3"] {
-            let result = python(script, &[split], ExecOptions::default()).await;
+            let (listener, port) = listen().await;
+            let exec = python(script, &[&port, split], ExecOptions::default());
+            tokio::pin!(exec);
+            assert!(poll_once(&mut exec).await.is_pending(), "spawned");
+            let held = ready(&listener).await;
+            assert!(
+                poll_once(&mut exec).await.is_pending(),
+                "first fragments read before the rest is written"
+            );
+            let (result, _) = tokio::join!(exec, release(held));
             assert_eq!(
                 (result.stdout.as_str(), result.stderr.as_str()),
                 ("\u{10348}", "\u{10348}"),
@@ -278,6 +300,11 @@ fn exec_spawns_before_observing_preaborted_signal() {
             (result.code, result.killed),
             (0, true),
             "started, then terminated"
+        );
+        let result = run("true", &[], options()).await;
+        assert!(
+            result.killed,
+            "a command that finishes at once still sees the abort"
         );
     });
 }
@@ -428,7 +455,7 @@ fn exec_kills_and_reaps_a_term_resistant_child() {
             "ignored the first signal and still running at 4999 ms"
         );
         tokio::time::advance(Duration::from_millis(1)).await;
-        let result = exec.await;
+        let result = settle(&mut exec).await.expect("killed at the delay");
         assert_eq!((result.code, result.killed), (0, true));
         assert!(!alive(&pid), "killed and reaped");
         assert_eq!(std::io::Read::read(&mut socket, &mut [0; 1]).unwrap(), 0);
@@ -481,5 +508,65 @@ fn exec_settlement_releases_cancellation_observation() {
             polled_to_completion(exec_command("sleep", &args(&["60"]), &cwd(), options)).await;
         assert!(result.unwrap().killed, "already aborted: terminated");
         assert_eq!(Arc::strong_count(&forward), 1);
+    });
+}
+
+#[test]
+fn exec_timeout_requests_termination_exactly_at_the_deadline() {
+    paused_runtime().block_on(async {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port().to_string();
+        let options = ExecOptions {
+            signal: None,
+            timeout: Some(Duration::from_secs(1)),
+        };
+        let exec = python(HOLDER, &[&port, "stubborn"], options);
+        tokio::pin!(exec);
+        assert!(poll_once(&mut exec).await.is_pending(), "spawned");
+        let (mut socket, _) = listener.accept().unwrap();
+        read_line(&mut socket);
+        tokio::time::advance(Duration::from_millis(999)).await;
+        assert!(poll_once(&mut exec).await.is_pending());
+        socket.set_nonblocking(true).unwrap();
+        let early = std::io::Read::read(&mut socket, &mut [0; 1]);
+        assert_eq!(
+            early.unwrap_err().kind(),
+            std::io::ErrorKind::WouldBlock,
+            "no request 1 ms before the deadline"
+        );
+        socket.set_nonblocking(false).unwrap();
+        tokio::time::advance(Duration::from_millis(1)).await;
+        assert!(poll_once(&mut exec).await.is_pending());
+        let mut request = [0; 1];
+        std::io::Read::read_exact(&mut socket, &mut request).unwrap();
+        assert_eq!(&request, b"T", "requested at the deadline");
+        std::io::Write::write_all(&mut socket, b"g").unwrap();
+        assert!(exec.await.killed);
+    });
+}
+
+#[test]
+fn exec_registers_a_cancellation_observer_until_it_settles() {
+    runtime().block_on(async {
+        let (listener, port) = listen().await;
+        let signal = Cancellation::new();
+        let options = ExecOptions {
+            signal: Some(&signal),
+            timeout: Some(Duration::from_secs(600)),
+        };
+        let owner = forward();
+        let mut exec = Box::pin(python(HOLDER, &[&port, "plain"], options));
+        let pending = std::future::poll_fn(|cx| {
+            Poll::Ready(poll_through(&owner, &mut exec, cx).is_pending())
+        });
+        assert!(pending.await);
+        assert!(
+            Arc::strong_count(&owner) > 1,
+            "the running execution holds a waker"
+        );
+        let held = ready(&listener).await;
+        let (result, _) = tokio::join!(complete(&owner, exec), release(held));
+        assert_eq!(result.stdout, "bye");
+        assert_eq!(Arc::strong_count(&owner), 1);
     });
 }

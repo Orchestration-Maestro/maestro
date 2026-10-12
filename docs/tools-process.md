@@ -28,8 +28,8 @@ zero set no deadline, and there is no default deadline. Termination is a request
 command is killed if it is still running five seconds later, judged from its actual
 state. The abort and the timeout together request termination once.
 
-`ExecResult` holds `stdout` and `stderr` decoded separately and in full, with
-malformed UTF-8 replaced after the whole stream is read, the exit `code` and `killed`
+`ExecResult` holds `stdout` and `stderr` decoded separately from the bytes the wait
+collected, with malformed UTF-8 replaced once over each collected stream, the exit `code` and `killed`
 (whether the abort or the timeout requested termination). A command ended by a signal
 has code 0.
 
@@ -39,7 +39,7 @@ invalid (such as a NUL byte) returns the native `std::io::Error`. A failed wait 
 code 1 with the bytes already read.
 
 A descendant that keeps the pipes open after the command exits does not hold the
-result: it is returned 100 ms after the exit with what was read. The lifecycle is owned
+result: at the latest 100 ms after the exit it is returned with what was read. The lifecycle is owned
 by [`maestro-process`](../crates/maestro-process/README.md).
 
 ## Waiting

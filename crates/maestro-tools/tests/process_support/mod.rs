@@ -20,19 +20,37 @@ impl Wake for Forward {
     }
 }
 
-/// Drives `future` to completion with a waker that [`Forward`] owns, drops the
-/// future, and returns its output with that owner: a count of one means nothing the
-/// future registered still holds a waker.
-pub async fn polled_to_completion<F: Future>(future: F) -> (F::Output, Arc<Forward>) {
-    let forward = Arc::new(Forward(Mutex::new(None)));
-    let mut future = Box::pin(future);
-    let output = std::future::poll_fn(|cx| {
-        *forward.0.lock().unwrap() = Some(cx.waker().clone());
-        let waker = Waker::from(Arc::clone(&forward));
-        future.as_mut().poll(&mut Context::from_waker(&waker))
-    })
-    .await;
+/// A fresh [`Forward`] that no waker has been stored in yet.
+pub fn forward() -> Arc<Forward> {
+    Arc::new(Forward(Mutex::new(None)))
+}
+
+/// Polls `future` once with a waker owned by `forward`, so wake-ups it registers reach
+/// the task polling through `cx`.
+pub fn poll_through<F: Future>(
+    forward: &Arc<Forward>,
+    future: &mut Pin<Box<F>>,
+    cx: &Context<'_>,
+) -> Poll<F::Output> {
+    *forward.0.lock().unwrap() = Some(cx.waker().clone());
+    let waker = Waker::from(Arc::clone(forward));
+    future.as_mut().poll(&mut Context::from_waker(&waker))
+}
+
+/// Drives `future` to completion through `forward`, drops the future, and clears the
+/// stored task waker: a count of one means nothing the future registered still holds a
+/// waker.
+pub async fn complete<F: Future>(forward: &Arc<Forward>, mut future: Pin<Box<F>>) -> F::Output {
+    let output = std::future::poll_fn(|cx| poll_through(forward, &mut future, cx)).await;
     drop(future);
     *forward.0.lock().unwrap() = None;
-    (output, forward)
+    output
+}
+
+/// Drives `future` to completion with a fresh [`forward`] owner and returns its output
+/// with that owner.
+pub async fn polled_to_completion<F: Future>(future: F) -> (F::Output, Arc<Forward>) {
+    let owner = forward();
+    let output = complete(&owner, Box::pin(future)).await;
+    (output, owner)
 }

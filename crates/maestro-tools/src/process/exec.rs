@@ -26,9 +26,9 @@ pub struct ExecOptions<'a> {
 
 /// What one execution produced.
 pub struct ExecResult {
-    /// Everything the command wrote to stdout, decoded lossily.
+    /// The stdout bytes collected by the wait, decoded lossily.
     pub stdout: String,
-    /// Everything the command wrote to stderr, decoded lossily.
+    /// The stderr bytes collected by the wait, decoded lossily.
     pub stderr: String,
     /// The exit code; 0 when a signal ended the command, 1 when it did not start or
     /// waiting failed.
@@ -40,8 +40,8 @@ pub struct ExecResult {
 /// Runs `command` with `args` in `cwd`, without a shell and with stdin closed.
 ///
 /// A command that cannot start (missing program or directory, permission denied)
-/// yields code 1 with empty streams; the stream and exit text is otherwise the
-/// command's own.
+/// yields code 1 with empty streams. Which bytes a finished or failed wait collects
+/// is decided by [`wait_for_child_process`].
 ///
 /// # Errors
 /// Returns the native error for an operand the operating system rejects as invalid.

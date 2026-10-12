@@ -1,11 +1,15 @@
 //! Private collector, grace and escalation behaviour.
+use super::StderrMode;
 use super::{CapturedChild, Termination, WaitOptions, fill, wait_for_child_process};
 use std::{
     cell::Cell,
     future::Future,
     io,
+    os::unix::process::ExitStatusExt,
+    path::PathBuf,
     pin::Pin,
     rc::Rc,
+    sync::atomic::{AtomicU32, Ordering},
     task::{Context, Poll},
     time::Duration,
 };
@@ -47,24 +51,6 @@ impl AsyncRead for Failing {
         _: &mut ReadBuf<'_>,
     ) -> Poll<io::Result<()>> {
         Poll::Ready(Err(io::Error::other(Marker)))
-    }
-}
-
-/// A reader that yields one chunk and then fails with the marker.
-struct ThenFailing(Option<&'static [u8]>);
-impl AsyncRead for ThenFailing {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        _: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
-        match self.0.take() {
-            Some(chunk) => {
-                buf.put_slice(chunk);
-                Poll::Ready(Ok(()))
-            }
-            None => Poll::Ready(Err(io::Error::other(Marker))),
-        }
     }
 }
 
@@ -115,29 +101,76 @@ fn pipe_failures_preserve_the_original_io_error() {
     }
 }
 
-#[test]
-fn wait_failure_leaves_consumed_bytes_available() {
-    runtime().block_on(async {
-        let mut pipe = Some(ThenFailing(Some(b"prefix")));
-        let mut buf = Vec::new();
-        fill(&mut pipe, &mut buf, true).await.unwrap();
-        let error = fill(&mut pipe, &mut buf, true).await.unwrap_err();
-        assert!(error.into_inner().unwrap().is::<Marker>());
-        assert!(pipe.is_none(), "failed pipe closed");
-        let mut child = CapturedChild::spawn(&mut Command::new("true")).unwrap();
-        child.out = buf;
-        assert_eq!(child.take_output(), (b"prefix".to_vec(), vec![]));
-        assert_eq!(child.take_output(), (vec![], vec![]));
-    });
+/// Control files that gate a shell and the background reader it leaves behind.
+struct Held {
+    /// The shell, not yet reaped.
+    child: CapturedChild,
+    /// The process id of the background reader holding both pipes.
+    pid: String,
+    /// Opening this file for writing lets the background reader end.
+    hold: PathBuf,
+    /// Opening this file for writing lets the shell exit.
+    gate: PathBuf,
+    /// Whether the background reader was released.
+    released: bool,
 }
 
-/// Starts a shell whose direct exit leaves a background sleep holding both pipes,
-/// returning the child and the sleep's process id.
-async fn held_pipes() -> (CapturedChild, String) {
+impl Held {
+    /// Lets the shell exit.
+    fn open_gate(&self) {
+        std::fs::write(&self.gate, b"").unwrap();
+    }
+
+    /// Lets the background reader end.
+    fn release(&mut self) {
+        std::fs::write(&self.hold, b"").unwrap();
+        self.released = true;
+    }
+}
+
+impl Drop for Held {
+    fn drop(&mut self) {
+        if !self.released {
+            let _ = std::process::Command::new("kill").arg(&self.pid).status();
+        }
+        let _ = std::fs::remove_file(&self.hold);
+        let _ = std::fs::remove_file(&self.gate);
+    }
+}
+
+/// A fresh named pipe in the temporary directory.
+fn fifo(label: &str) -> PathBuf {
+    static NEXT: AtomicU32 = AtomicU32::new(0);
+    let path = std::env::temp_dir().join(format!(
+        "maestro-{label}-{}-{}",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(&path)
+            .status()
+            .unwrap()
+            .success()
+    );
+    path
+}
+
+/// Starts a shell that writes `diag` to stderr, leaves a background reader holding
+/// both pipes, reports the reader's process id and exits once its gate opens.
+async fn held_shell() -> Held {
+    let (hold, gate) = (fifo("hold"), fifo("gate"));
     let mut command = Command::new("sh");
-    command.args(["-c", "sleep 60 & echo $!; exit 0"]);
+    command
+        .args([
+            "-c",
+            "echo diag >&2; read r < \"$1\" & echo $!; read g < \"$2\"; exit 0",
+        ])
+        .arg("sh")
+        .arg(&hold)
+        .arg(&gate)
+        .kill_on_drop(true);
     let mut child = CapturedChild::spawn(&mut command).unwrap();
-    child.child.wait().await.unwrap();
     let mut stdout = child.stdout.take().unwrap();
     let mut pid = [0; 16];
     let mut length = 0;
@@ -145,21 +178,21 @@ async fn held_pipes() -> (CapturedChild, String) {
         length += stdout.read(&mut pid[length..]).await.unwrap();
     }
     child.stdout = Some(stdout);
-    (
+    Held {
         child,
-        String::from_utf8(pid[..length - 1].to_vec()).unwrap(),
-    )
+        pid: String::from_utf8(pid[..length - 1].to_vec()).unwrap(),
+        hold,
+        gate,
+        released: false,
+    }
 }
 
-/// Ends the background sleep started by [`held_pipes`].
-fn release_held(pid: &str) {
-    assert!(
-        std::process::Command::new("kill")
-            .arg(pid)
-            .status()
-            .unwrap()
-            .success()
-    );
+/// Like [`held_shell`], with the shell already exited.
+async fn held_pipes() -> Held {
+    let mut held = held_shell().await;
+    held.open_gate();
+    held.child.child.wait().await.unwrap();
+    held
 }
 
 /// Polls `future` once and reports whether it is still pending.
@@ -167,24 +200,139 @@ async fn is_pending<F: Future + Unpin>(future: &mut F) -> bool {
     std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx).is_pending())).await
 }
 
+/// Polls `future` between scheduler turns until it settles; `None` if it does not.
+async fn settle<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
+    for _ in 0..200_000 {
+        if let Poll::Ready(value) =
+            std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx))).await
+        {
+            return Some(value);
+        }
+        tokio::task::yield_now().await;
+    }
+    None
+}
+
+/// Whether the process has exited, reaped or not.
+fn has_exited(pid: u32) -> bool {
+    std::fs::read_to_string(format!("/proc/{pid}/stat")).map_or(true, |stat| {
+        stat.rsplit(") ")
+            .next()
+            .is_some_and(|rest| rest.starts_with('Z'))
+    })
+}
+
 #[test]
 fn grace_deadline_begins_after_child_exit() {
     paused_runtime().block_on(async {
         for grace in [Duration::from_millis(100), Duration::from_millis(250)] {
-            let (mut child, pid) = held_pipes().await;
+            let mut held = held_shell().await;
+            let shell = held.child.child.id().unwrap();
             let options = WaitOptions {
                 post_exit_grace: Some(grace),
                 ..WaitOptions::default()
             };
-            let wait = wait_for_child_process(&mut child, options, std::future::pending());
-            tokio::pin!(wait);
-            assert!(is_pending(&mut wait).await, "{grace:?} at exit");
+            let gate = held.gate.clone();
+            let mut wait = Box::pin(wait_for_child_process(
+                &mut held.child,
+                options,
+                std::future::pending(),
+            ));
+            assert!(is_pending(&mut wait).await, "{grace:?} before the exit");
+            tokio::time::advance(grace * 10).await;
+            assert!(is_pending(&mut wait).await, "{grace:?} long after start");
+            std::fs::write(&gate, b"").unwrap();
+            while !has_exited(shell) {
+                tokio::task::yield_now().await;
+            }
+            for _ in 0..200 {
+                assert!(is_pending(&mut wait).await, "{grace:?} at exit");
+                tokio::task::yield_now().await;
+            }
             tokio::time::advance(grace.checked_sub(Duration::from_millis(1)).unwrap()).await;
             assert!(is_pending(&mut wait).await, "{grace:?} before the deadline");
             tokio::time::advance(Duration::from_millis(1)).await;
-            assert!(wait.await.unwrap().status.success(), "{grace:?}");
-            release_held(&pid);
+            let output = settle(&mut wait).await.expect("settled at the deadline");
+            assert!(output.unwrap().status.success(), "{grace:?}");
+            drop(wait);
+            held.release();
         }
+    });
+}
+
+#[test]
+fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
+    paused_runtime().block_on(async {
+        let mut held = held_pipes().await;
+        let capture = wait_for_child_process(
+            &mut held.child,
+            WaitOptions::default(),
+            std::future::pending(),
+        );
+        assert!(
+            tokio::time::timeout(Duration::from_secs(1), capture)
+                .await
+                .is_err(),
+            "held pipes keep the capture wait pending"
+        );
+        let options = WaitOptions {
+            stderr: StderrMode::Discard,
+            post_exit_grace: Some(Duration::from_millis(10)),
+        };
+        let output = wait_for_child_process(&mut held.child, options, std::future::pending())
+            .await
+            .unwrap();
+        assert_eq!(output.stderr, b"");
+        held.release();
+    });
+}
+
+#[test]
+fn ready_termination_is_observed_even_when_the_child_already_finished() {
+    runtime().block_on(async {
+        let mut command = Command::new("sh");
+        command.args(["-c", "echo out; echo err >&2"]);
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        child.child.wait().await.unwrap();
+        let polled = Rc::new(Cell::new(false));
+        let seen = polled.clone();
+        let stop = async move {
+            seen.set(true);
+            Termination::Terminate
+        };
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+            .await
+            .unwrap();
+        assert!(polled.get(), "termination polled before completion");
+        assert_eq!(
+            (output.stdout, output.stderr),
+            (b"out\n".to_vec(), b"err\n".to_vec())
+        );
+    });
+}
+
+#[test]
+fn termination_is_polled_while_a_stream_stays_ready() {
+    runtime().block_on(async {
+        let mut command = Command::new("yes");
+        command.kill_on_drop(true);
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        let polls = Rc::new(Cell::new(0));
+        let counter = polls.clone();
+        let stop = std::future::poll_fn(move |cx| {
+            counter.set(counter.get() + 1);
+            if counter.get() < 50 {
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            } else {
+                Poll::Ready(Termination::Kill)
+            }
+        });
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+            .await
+            .unwrap();
+        assert_eq!(output.status.signal(), Some(9));
+        assert_eq!(output.stdout, b"", "abandoned stream is empty");
     });
 }
 
@@ -217,16 +365,62 @@ fn settled_wait_releases_timers_and_stop_future() {
         assert!(dropped.get(), "end of file");
 
         let dropped = Rc::new(Cell::new(false));
-        let (mut child, pid) = held_pipes().await;
+        let mut held = held_pipes().await;
         let options = WaitOptions {
             post_exit_grace: Some(Duration::from_millis(100)),
             ..WaitOptions::default()
         };
-        wait_for_child_process(&mut child, options, Observed(dropped.clone()))
+        wait_for_child_process(&mut held.child, options, Observed(dropped.clone()))
             .await
             .unwrap();
         assert!(dropped.get(), "grace expiry");
-        release_held(&pid);
+        held.release();
+
+        let dropped = Rc::new(Cell::new(false));
+        let mut child = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        child.child.wait().await.unwrap();
+        child.stderr = Some(unreadable_stderr().await);
+        wait_for_child_process(
+            &mut child,
+            WaitOptions::default(),
+            Observed(dropped.clone()),
+        )
+        .await
+        .unwrap_err();
+        assert!(dropped.get(), "pipe failure");
+    });
+}
+
+/// A stderr whose reads fail with a connection reset: a socket whose peer reset it.
+async fn unreadable_stderr() -> tokio::process::ChildStderr {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
+    let client = tokio::net::TcpStream::connect(listener.local_addr().unwrap())
+        .await
+        .unwrap();
+    let (server, _) = listener.accept().await.unwrap();
+    server.set_zero_linger().unwrap();
+    drop(server);
+    let stderr =
+        std::process::ChildStderr::from(std::os::fd::OwnedFd::from(client.into_std().unwrap()));
+    tokio::process::ChildStderr::from_std(stderr).unwrap()
+}
+
+#[test]
+fn failed_wait_leaves_consumed_bytes_available() {
+    runtime().block_on(async {
+        let mut command = Command::new("printf");
+        command.arg("prefix");
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        child.child.wait().await.unwrap();
+        child.stderr = Some(unreadable_stderr().await);
+        let error =
+            wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
+                .await
+                .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);
+        assert!(child.stderr.is_none(), "failed pipe closed");
+        assert_eq!(child.take_output(), (b"prefix".to_vec(), vec![]));
+        assert_eq!(child.take_output(), (vec![], vec![]));
     });
 }
 
@@ -245,11 +439,13 @@ fn escalation_checks_live_state_before_forced_kill() {
     paused_runtime().block_on(async {
         let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
         let mut command = Command::new("python3");
-        command.args([
-            "-c",
-            STUBBORN,
-            &listener.local_addr().unwrap().port().to_string(),
-        ]);
+        command
+            .args([
+                "-c",
+                STUBBORN,
+                &listener.local_addr().unwrap().port().to_string(),
+            ])
+            .kill_on_drop(true);
         let mut live = CapturedChild::spawn(&mut command).unwrap();
         let (mut socket, _) = listener.accept().await.unwrap();
         socket.read_exact(&mut [0; 5]).await.unwrap();
@@ -262,7 +458,10 @@ fn escalation_checks_live_state_before_forced_kill() {
             tokio::time::advance(after.checked_sub(Duration::from_millis(1)).unwrap()).await;
             assert!(is_pending(&mut terminate).await, "running before the delay");
             tokio::time::advance(Duration::from_millis(1)).await;
-            terminate.await.unwrap();
+            settle(&mut terminate)
+                .await
+                .expect("killed at the delay")
+                .unwrap();
         }
         assert!(
             live.child.try_wait().unwrap().is_some(),
