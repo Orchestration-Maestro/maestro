@@ -631,6 +631,26 @@ fn invalid_candidates_still_advance_progress() {
 }
 
 #[cfg(unix)]
+/// Hold the pipe's writer open once the reader arrives, until released.
+fn hold_pipe_open(
+    pipe: std::path::PathBuf,
+) -> (
+    mpsc::Receiver<()>,
+    mpsc::Sender<()>,
+    std::thread::JoinHandle<()>,
+) {
+    let (opened, wait_opened) = mpsc::channel();
+    let (release, wait_release) = mpsc::channel();
+    let producer = std::thread::spawn(move || {
+        let writer = std::fs::OpenOptions::new().write(true).open(&pipe).unwrap();
+        opened.send(()).unwrap();
+        wait_release.recv().unwrap();
+        drop(writer);
+    });
+    (wait_opened, release, producer)
+}
+
+#[cfg(unix)]
 #[test]
 fn progress_error_returns_empty_without_draining_reads() {
     for all_projects in [false, true] {
@@ -641,30 +661,32 @@ fn progress_error_returns_empty_without_draining_reads() {
             Path::new(scratch.text()).to_path_buf()
         };
         std::fs::create_dir_all(&dir).unwrap();
-        fifo(&dir, "pipe.jsonl");
-        std::fs::write(dir.join("ready.jsonl"), session_text("ready", &[])).unwrap();
+        let pipe = pipe_enumerated_first(&dir);
+        let (wait_opened, release, producer) = hold_pipe_open(pipe);
         let mut calls = 0;
+        let mut opened = false;
         let mut fail = |_, _| {
             calls += 1;
+            opened = wait_opened.recv().is_ok();
             Err(io::Error::other("stop"))
         };
         let runtime = runtime();
         let listed = if all_projects {
-            runtime.block_on(SessionManager::list_all(scratch.text(), Some(&mut fail)))
+            Ok(runtime.block_on(SessionManager::list_all(scratch.text(), Some(&mut fail))))
         } else {
-            runtime
-                .block_on(SessionManager::list(
-                    "/w",
-                    Some(scratch.text()),
-                    "unused",
-                    Some(&mut fail),
-                ))
-                .unwrap()
+            runtime.block_on(SessionManager::list(
+                "/w",
+                Some(scratch.text()),
+                "unused",
+                Some(&mut fail),
+            ))
         };
-        assert!(listed.is_empty());
+        release.send(()).unwrap();
+        producer.join().unwrap();
+        drop(runtime);
+        assert!(opened);
         assert_eq!(calls, 1);
-        // The abandoned read may still be blocked in the pipe open; do not wait for it.
-        runtime.shutdown_background();
+        assert!(listed.unwrap().is_empty());
     }
 }
 

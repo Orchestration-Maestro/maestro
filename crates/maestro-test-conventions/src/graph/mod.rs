@@ -246,7 +246,7 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     Ok(())
 }
 
-/// Require the full direct dependency set for crates with exact boundaries.
+/// Require each crate's currently required direct dependencies.
 fn complete(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
     for package in members(metadata) {
         let name = package.name.as_str();

@@ -4,7 +4,7 @@ Settings are JSON files in two scopes, and the project file overrides the global
 one. This guide says what to set and where to look; the
 [settings reference](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/settings.md)
 is the one authority for storage, merging, conversions and each setting's type and
-default. Defaults are not repeated here.
+default.
 
 | Scope | File |
 | --- | --- |

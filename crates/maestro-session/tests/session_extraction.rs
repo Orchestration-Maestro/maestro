@@ -470,28 +470,114 @@ fn extraction_reconnects_removed_labels_without_mutating_old_copies() {
     }
 }
 
+/// Header, entries, identity, leaf, label and label timestamp of a history.
+type Observed = (
+    Option<Value>,
+    Vec<Value>,
+    String,
+    Option<String>,
+    Option<Value>,
+    Option<Value>,
+);
+
+/// Owned snapshot of the observable history state with the label of `target`.
+fn observe(manager: &SessionManager, target: &str) -> Observed {
+    (
+        manager.get_header().cloned(),
+        manager.get_entries().into_iter().cloned().collect(),
+        manager.get_session_id().to_owned(),
+        manager.get_leaf_id().map(str::to_owned),
+        manager.get_label(target).cloned(),
+        manager.get_tree()[0].label_timestamp.cloned(),
+    )
+}
+
+#[test]
+fn populated_memory_rejects_extraction_without_losing_history() {
+    let scratch = Scratch::new();
+    let mut manager = SessionManager::in_memory(Some("/work")).unwrap();
+    let selected = format!("{}/absent.jsonl", scratch.text());
+    manager.set_session_file(&selected).unwrap();
+    let user = manager
+        .append_message(json!({"role": "user", "content": "question", "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "assistant", "content": "answer", "timestamp": 2}))
+        .unwrap();
+    manager
+        .append_label_change(&user, Presence::Present("mark"))
+        .unwrap();
+    let before = observe(&manager, &user);
+    assert!(before.5.is_some());
+    for leaf in ["missing", ""] {
+        let error = manager.create_branched_session(leaf).unwrap_err();
+        assert_eq!(error.to_string(), format!("Entry {leaf} not found"));
+        assert_eq!(observe(&manager, &user), before);
+        assert_eq!(manager.get_session_file(), Some(selected.as_str()));
+    }
+    let entries = before.1;
+    let prior_leaf = manager.get_leaf_id().unwrap().to_owned();
+    let later = manager
+        .append_message(json!({"role": "user", "content": "later", "timestamp": 3}))
+        .unwrap();
+    assert_eq!(manager.get_entry(&later).unwrap()["parentId"], prior_leaf);
+    assert_eq!(manager.get_leaf_id(), Some(later.as_str()));
+    let all: Vec<Value> = manager.get_entries().into_iter().cloned().collect();
+    assert_eq!(all[..entries.len()], entries);
+    assert_eq!(all.len(), entries.len() + 1);
+    assert!(!fs::exists(&selected).unwrap());
+}
+
 #[test]
 fn user_only_extraction_publishes_once_when_assistant_arrives() {
     let scratch = Scratch::new();
     let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
-    let user = manager
-        .append_message(json!({"role": "user", "content": "u", "timestamp": 1}))
-        .unwrap();
+    let mut first = None;
+    for (index, role) in ["user", "assistant", "user", "assistant"]
+        .into_iter()
+        .enumerate()
+    {
+        let id = manager
+            .append_message(json!({"role": role, "content": role, "timestamp": index}))
+            .unwrap();
+        first.get_or_insert(id);
+    }
+    let user = first.unwrap();
+    let source = manager.get_session_file().unwrap().to_owned();
+    let before = fs::read(&source).unwrap();
+    assert_eq!(records(&source).len(), 5);
     let path = manager.create_branched_session(&user).unwrap().unwrap();
     assert_eq!(manager.get_session_file(), Some(path.as_str()));
+    assert_ne!(path, source);
     assert!(!fs::exists(&path).unwrap());
     manager.append_custom_entry("k", Presence::Missing).unwrap();
     assert!(!fs::exists(&path).unwrap());
     manager
         .append_message(json!({"role": "assistant", "content": "a", "timestamp": 2}))
         .unwrap();
-    assert_eq!(records(&path).len(), 4);
+    let published = records(&path);
+    assert_eq!(published.len(), 4);
+    let types: Vec<&str> = published
+        .iter()
+        .map(|r| r["type"].as_str().unwrap())
+        .collect();
+    assert_eq!(types, ["session", "message", "custom", "message"]);
     manager
         .append_message(json!({"role": "user", "content": "v", "timestamp": 3}))
         .unwrap();
     let written = records(&path);
     assert_eq!(written.len(), 5);
     assert_eq!(written.iter().filter(|r| r["type"] == "session").count(), 1);
+    let wire: Vec<&str> = written[1..]
+        .iter()
+        .map(|r| r["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(wire, ids(&manager));
+    let mut unique = wire.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(unique.len(), wire.len());
+    assert_eq!(fs::read(&source).unwrap(), before);
 }
 
 #[test]

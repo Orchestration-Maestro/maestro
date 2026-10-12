@@ -53,7 +53,9 @@ is not failed; those lines are skipped by the shared parser.
   independently of whether their text is empty. A
   numeric message `timestamp` is that message's activity (even zero or
   negative); otherwise its record `timestamp` string is parsed. When no positive
-  activity exists, the header time is used, then the file's modification time.
+  activity exists, a header `timestamp` that is a date-parsable string is used;
+  a numeric, null, missing or unparsable header time does not qualify, and the
+  file's modification time is used instead.
   Dates are epoch milliseconds; fractional values truncate. Custom and tool
   records never move `modified`, which also makes it differ from
   `continue_recent`, which orders files by modification time.
