@@ -142,7 +142,8 @@ mod native {
 
     /// The next known event of the stream, or none at its end. Events of an unknown kind are
     /// skipped here, so nothing downstream sees them. The response hook waits for the first
-    /// known event, so a stream that fails before it never reaches the hook.
+    /// known event or the end of the stream, so a stream that fails before either never reaches
+    /// the hook.
     async fn next_event(
         events: &mut EventReceiver<ConverseStreamOutput, ConverseStreamOutputError>,
         signal: Option<&Cancellation>,

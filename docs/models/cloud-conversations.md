@@ -35,8 +35,11 @@ after the payload hook ran.
 ## Authentication
 
 The SDK's credential chain signs the request unless a bearer token is selected. When a profile
-is selected the chain skips the environment's access keys and tries that profile, then web
-identity, then the container and instance metadata services; an empty `AWS_PROFILE` selects
+is selected the chain skips the standalone environment-keys step and tries that profile, then
+web identity, then the container and instance metadata services; a profile may still name the
+environment as its credential source, which the SDK's profile resolution decides. A profile
+whose credential process fails lets the chain go on to the next source; any other profile
+failure ends it. Without a nonempty explicit `profile` option, an empty `AWS_PROFILE` selects
 nothing, so the environment's keys come first and the `default` profile is the fallback. The token is the
 nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs
@@ -80,7 +83,7 @@ errors, and any other service error uses its own class name; an exception frame 
 stream uses the same prefixes. Other SDK failures keep the SDK's own text with its causes.
 
 Events of a kind the SDK does not know are skipped before anything else sees them; the
-response hook waits for the first known event. Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
+response hook waits for the first known event or the end of the stream. Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
 block for its block number when none is open and appends, `contentBlockStop` closes the block
 of that number, `messageStop` sets the stop reason (`end_turn` and `stop_sequence` stop,
 `max_tokens` and `model_context_window_exceeded` length, `tool_use` tool use, anything else

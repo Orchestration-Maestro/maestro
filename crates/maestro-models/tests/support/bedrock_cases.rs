@@ -51,6 +51,8 @@ pub struct Case {
     pub profile: Option<&'static str>,
     pub bearer: Option<&'static str>,
     pub env: &'static [(&'static str, &'static str)],
+    /// Whether the case runs on a paused clock; real processes and sockets need a running one.
+    pub paused: bool,
     pub expect: Expect,
 }
 
@@ -64,6 +66,7 @@ impl Case {
             profile: None,
             bearer: None,
             env: &[],
+            paused: true,
             expect,
         }
     }
@@ -79,7 +82,8 @@ impl AwsFiles {
         std::fs::create_dir_all(&dir)?;
         std::fs::write(
             dir.join("config"),
-            "[default]\nregion = ap-south-1\n[profile selected]\nregion = us-west-2\n",
+            "[default]\nregion = ap-south-1\n[profile selected]\nregion = us-west-2\n\
+             [profile broken]\nregion = us-west-2\ncredential_process = false\n",
         )?;
         std::fs::write(
             dir.join("credentials"),
@@ -123,7 +127,7 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
             .iter()
             .find(|case| case.id == id)
             .ok_or("unknown case")?;
-        return block_on(true, check(case));
+        return block_on(case.paused, check(case));
     }
     let files = AwsFiles::create(test)?;
     for case in cases {
