@@ -6,7 +6,7 @@ use crate::{
 };
 use maestro_theme::{get_language_from_path, highlight_code};
 
-/// Rows refreshed together at the start of the content after every partial update.
+/// Rows re-highlighted together at the start of the content when a cached update extends it.
 const FULL_HIGHLIGHT_LINES: usize = 50;
 
 /// The rows of `code` in `language`.
@@ -87,8 +87,9 @@ fn refresh_prefix(cache: &mut HighlightCache, context: &ToolRenderContext<'_>) {
     }
 }
 
-/// Bring the cache up to date with `content`, highlighting only what changed when `content`
-/// extends the cached content of the same path.
+/// Bring the cache up to date with `text`: when it extends the cached content of the same
+/// path, re-highlight the changed last line, the new lines and the first rows; otherwise
+/// highlight it all.
 pub(super) fn update(
     cache: Option<HighlightCache>,
     raw_path: &str,

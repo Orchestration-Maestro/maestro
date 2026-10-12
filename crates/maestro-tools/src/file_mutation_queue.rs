@@ -94,9 +94,10 @@ impl Drop for Admission {
 /// Run `operation` once every earlier call for the same file has finished.
 ///
 /// The call takes its place in the queue immediately, before the returned future is first
-/// polled. Files are identified by canonical path, so symlink aliases share a queue and
-/// different files proceed independently. A failed operation never blocks later calls, and
-/// dropping the returned future leaves the queue without running `operation`.
+/// polled. Files are identified by canonical path when it can be resolved, otherwise by lexical
+/// absolute path; symlink aliases that canonicalize share a queue and different files proceed
+/// independently. A failed operation never blocks later calls. Dropping the returned future
+/// before `operation` has started leaves the queue without running it.
 pub fn with_file_mutation_queue<T, F>(
     file_path: &str,
     operation: impl FnOnce() -> F + Send + 'static,
@@ -112,7 +113,7 @@ where
     let (admission, turn) = Admission::join(key);
     Box::pin(async move {
         if let Some(turn) = turn {
-            // The sender lives in the queue until this caller's admission is dropped.
+            // The predecessor's admission drop sends or removes this sender.
             let _ = turn.await;
         }
         let result = operation().await;

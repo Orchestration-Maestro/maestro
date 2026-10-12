@@ -11,7 +11,7 @@ use read_support::TempDir;
 use serde_json::json;
 use std::{future::Future, task::Poll};
 use tokio::sync::oneshot;
-use write_support::{Gate, Journal, poll_once, ready, rows};
+use write_support::{Gate, Journal, poll_once, ready, rows, single_expected};
 
 /// A queued operation that journals its start, waits for `gate` when given, then journals its end.
 fn tracked(
@@ -42,9 +42,7 @@ fn queue<T: Send + 'static, F: Future<Output = Result<T, DiagnosticErrorInfo>> +
 
 /// The expected journal of a single-row group.
 fn expected_journal(test: &str) -> Vec<String> {
-    let row = rows(test).remove(0);
-    assert_eq!(row.input, json!({}));
-    serde_json::from_value(row.expected).unwrap()
+    serde_json::from_value(single_expected(test)).unwrap()
 }
 
 #[test]
@@ -189,12 +187,7 @@ fn mutation_queue_failure_does_not_poison_following_work() {
     let error = ready(&mut a).unwrap_err();
     assert_eq!(error, expected_error);
     let outcome = [error.message, ready(&mut b).unwrap().to_owned()];
-    let expected: Vec<String> = serde_json::from_value(
-        rows("mutation_queue_failure_does_not_poison_following_work")[0]
-            .expected
-            .clone(),
-    )
-    .unwrap();
+    let expected = expected_journal("mutation_queue_failure_does_not_poison_following_work");
     assert_eq!(outcome.to_vec(), expected);
     let mut later = queue(&path, || async { Ok(()) });
     ready(&mut later).unwrap();

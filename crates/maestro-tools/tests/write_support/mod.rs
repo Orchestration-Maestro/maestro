@@ -89,6 +89,19 @@ pub fn rows(test: &str) -> Vec<Row> {
     rows
 }
 
+/// The expectation of a group holding exactly one row whose input is `{}`.
+pub fn single_expected(test: &str) -> Value {
+    let mut rows = rows(test);
+    assert_eq!(rows.len(), 1, "group {test} must hold one row");
+    let row = rows.remove(0);
+    assert_eq!(
+        row.input,
+        serde_json::json!({}),
+        "group {test} takes no input"
+    );
+    row.expected
+}
+
 /// Poll `future` once with a waker that does nothing, so progress happens only when the test says.
 pub fn poll_once<T>(future: &mut BoxFuture<T>) -> Poll<T> {
     Pin::new(future).poll(&mut Context::from_waker(Waker::noop()))

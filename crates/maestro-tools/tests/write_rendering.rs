@@ -23,7 +23,7 @@ use read_support::TempDir;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{any::Any, rc::Rc, sync::Arc};
-use write_support::{Journal, ScriptedWrite, rows, theme_keys};
+use write_support::{Journal, ScriptedWrite, rows, single_expected, theme_keys};
 
 /// The write definition under test.
 type Tool = ToolDefinition<(), WriteToolInput, ()>;
@@ -270,6 +270,7 @@ fn write_streaming_cache_rebuilds_or_appends_at_owned_boundaries() {
         steps: Vec<(String, Value, bool)>,
     }
     #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
     struct Operand {
         code: String,
         lang: String,
@@ -335,9 +336,10 @@ fn write_renderers_reuse_call_and_result_components() {
         same_error: bool,
         error: Vec<String>,
     }
-    let row = rows("write_renderers_reuse_call_and_result_components").remove(0);
-    assert_eq!(row.input, json!({}));
-    let expected: Expected = serde_json::from_value(row.expected).unwrap();
+    let expected: Expected = serde_json::from_value(single_expected(
+        "write_renderers_reuse_call_and_result_components",
+    ))
+    .unwrap();
     let _bindings = bind(&["ctrl+o".to_owned()]);
     let env = env();
     let padded_rows = |rows: &[String]| -> Vec<String> {
@@ -359,9 +361,12 @@ fn write_renderers_reuse_call_and_result_components() {
     assert_eq!(first.render(WIDTH), padded_rows(&expected.call));
 
     let ok = result_of(vec![text_block("fine")]);
-    let first = draw_result(&ok, &setup(false), &env, None);
-    let second = draw_result(&ok, &setup(false), &env, Some(Rc::clone(&first)));
-    assert_eq!(Rc::ptr_eq(&first, &second), expected.same_empty);
+    let retained = Rc::new(Container::new());
+    retained.add_child(Rc::new(Text::new("old".into(), 0, 0, None)));
+    let kept: ComponentHandle = retained;
+    assert_eq!(kept.render(WIDTH), laid_out("old"));
+    let second = draw_result(&ok, &setup(false), &env, Some(Rc::clone(&kept)));
+    assert_eq!(Rc::ptr_eq(&kept, &second), expected.same_empty);
     assert_eq!(second.render(WIDTH), padded_rows(&expected.empty));
 
     let mut failing = setup(false);

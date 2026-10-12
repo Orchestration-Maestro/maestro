@@ -21,15 +21,12 @@ context. The model supplies two required strings:
 | `path` | File to write, relative to the tool's working directory or absolute. |
 | `content` | Complete new content of the file. |
 
-Other members of the argument object are accepted and ignored. A missing `path` or
-`content`, or an object or array in its place, fails the shared argument validation
-before any file operation; a number or boolean is converted to text by that
-validation. No preparation callback, execution-mode override or shell override is
-declared.
+Other members of the argument object are accepted and ignored. Missing or
+mistyped `path` and `content` follow the shared argument validation. No preparation callback,
+execution-mode override or shell override is declared.
 
-Path resolution is the first step of execution: a leading `@`, a leading `~` and
-Unicode spaces are expanded by [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs),
-and the working directory is read only when the path and the tool's `cwd` cannot
+Path resolution is the first step of execution and follows
+[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs); the working directory is read only when the path and the tool's `cwd` cannot
 anchor the result. The path is resolved when the tool is called, before its future
 is first polled, so a later change of the process working directory does not move
 the write.
@@ -39,7 +36,7 @@ including with empty content. It returns one text block, `Successfully wrote N b
 to <path>`, where `N` is the number of UTF-8 bytes written (`€` counts 3, `😀` counts
 4) and `<path>` is the path as the model wrote it. There are no result details and no
 progress events. A failure of directory creation or of the write is returned
-unchanged, with its operating-system error number when it has one, and a failed
+unchanged unless cancellation fires first, with its operating-system error number when it has one, and a failed
 directory creation prevents the write. The tool performs no permission check, atomic
 replacement or rollback.
 
@@ -74,13 +71,14 @@ after that call has finished.
 ### Previews
 
 The call renderer draws the tool name, the path and a preview of the content as it
-streams in: ten lines when collapsed, all of them when expanded, followed by the
+streams in: up to ten lines when collapsed, all of them when expanded, followed, when lines are hidden, by the
 count of hidden lines and the key bound to expanding. The language is taken from the
 file name alone (`file_path` is accepted as a display alias of `path`; an empty alias
 shows `...` instead of the path); an unrecognized name stays plain. While the received
-content only grows, only the changed last line and the new lines are highlighted
-again, and the first 50 lines are refreshed together; any other change highlights it
-all again. The result renderer draws nothing for a success and the error
+partial content only grows, the changed last line and the new lines are highlighted
+again and the first 50 lines are refreshed together; unchanged partial content does
+nothing, and complete arguments or any other change highlight it all again. A path
+with no recognized language is not highlighted. The result renderer draws nothing for a success and the error
 text for a failure. Display strings, tab expansion and key hints follow the
 [display helpers](tools-read.md#display-helpers). Rendering never writes a file.
 
@@ -92,10 +90,10 @@ runs an operation after every earlier call for the same file has finished.
 - A call takes its place when `with_file_mutation_queue` is called, not when the
   returned future is first polled, so calls run in the order they were made.
 - A file is identified by its canonical path; when the path cannot be canonicalized,
-  by its lexical absolute path. Symlink aliases of one file share a queue, hard links
+  by its lexical absolute path. Symlink aliases that canonicalize share a queue, hard links
   with different names do not, and different files never wait for each other. The
   path is used as written: `@`, `~` and Unicode spaces are not expanded.
 - An operation that fails does not block the calls behind it.
-- Dropping a returned future leaves the queue without running its operation, and
-  does not let a later call run before the call that is active.
+- Dropping a returned future before its operation has started leaves the queue
+  without running it; an operation already started is not undone. Dropping does not let a later call run before the call that is active.
 - When the last call for a file finishes or is dropped, the file has no queue entry.

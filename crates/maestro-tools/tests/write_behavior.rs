@@ -16,7 +16,7 @@ use maestro_tools::{
     ToolDefinition, WriteOperations, WriteToolInput, WriteToolOptions, create_write_tool,
     create_write_tool_definition, with_file_mutation_queue,
 };
-use read_support::{TempDir, isolated};
+use read_support::{TempDir, content_json, isolated};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -28,6 +28,7 @@ use std::{
 };
 use write_support::{
     Gate, Journal, Mode, ScriptedWrite, failure, hex, input, poll_once, ready, rows,
+    single_expected,
 };
 
 /// The write definition under test.
@@ -43,18 +44,13 @@ fn tool_over(ops: &Arc<ScriptedWrite>, cwd: &str) -> Tool {
     )
 }
 
-/// Start one write; nothing runs until the future is polled.
+/// Start one write; the queue entry is adopted before the future is first polled.
 fn start(
     tool: &Tool,
     args: WriteToolInput,
     signal: Option<Cancellation>,
 ) -> BoxFuture<Result<AgentToolResult<()>, DiagnosticErrorInfo>> {
     (tool.execute)("call".into(), args, signal, None, None)
-}
-
-/// The content blocks of a result as the model receives them.
-fn content_json(result: &AgentToolResult<()>) -> Value {
-    serde_json::to_value(&result.content).unwrap()
 }
 
 #[test]
@@ -101,9 +97,10 @@ fn write_definition_keeps_schema_and_prompt_metadata() {
         "hasCall": tool.render_call.is_some(),
         "hasResult": tool.render_result.is_some(),
     });
-    let row = rows("write_definition_keeps_schema_and_prompt_metadata").remove(0);
-    assert_eq!(row.input, json!({}));
-    assert_eq!(observed, row.expected);
+    assert_eq!(
+        observed,
+        single_expected("write_definition_keeps_schema_and_prompt_metadata")
+    );
 }
 
 #[test]
@@ -226,8 +223,7 @@ fn write_propagates_adapter_failures_without_progress() {
 
 #[test]
 fn write_preaborted_call_starts_no_operations() {
-    let row = rows("write_preaborted_call_starts_no_operations").remove(0);
-    let expected: Value = row.expected;
+    let expected = single_expected("write_preaborted_call_starts_no_operations");
     let signal = Cancellation::new();
     signal.abort();
     let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
@@ -255,11 +251,9 @@ fn next_in_line(path: &str, journal: &Journal) -> BoxFuture<Result<(), Diagnosti
 
 #[test]
 fn write_abort_during_mkdir_skips_write_after_queue_release() {
-    let expected: Vec<String> = serde_json::from_value(
-        rows("write_abort_during_mkdir_skips_write_after_queue_release")
-            .remove(0)
-            .expected,
-    )
+    let expected: Vec<String> = serde_json::from_value(single_expected(
+        "write_abort_during_mkdir_skips_write_after_queue_release",
+    ))
     .unwrap();
     let dir = TempDir::new();
     let path = format!("{}/f.txt", dir.text());
@@ -300,11 +294,9 @@ fn write_abort_during_mkdir_skips_write_after_queue_release() {
 
 #[test]
 fn write_abort_releases_queue_and_drops_pending_operation() {
-    let expected: Vec<String> = serde_json::from_value(
-        rows("write_abort_releases_queue_and_drops_pending_operation")
-            .remove(0)
-            .expected,
-    )
+    let expected: Vec<String> = serde_json::from_value(single_expected(
+        "write_abort_releases_queue_and_drops_pending_operation",
+    ))
     .unwrap();
     let dir = TempDir::new();
     let path = format!("{}/f.txt", dir.text());
@@ -349,6 +341,24 @@ fn write_late_abort_cannot_replace_success() {
         assert_eq!(error.message, "Operation aborted");
         assert_eq!(ops.names(), ["mkdir", "write"]);
     }
+}
+
+#[test]
+fn write_abort_after_completed_success_keeps_the_result() {
+    let signal = Cancellation::new();
+    let ops = Arc::new(ScriptedWrite::new(&Journal::default()));
+    let result = read_support::run(start(
+        &tool_over(&ops, "/work"),
+        input("f.txt", "x"),
+        Some(signal.clone()),
+    ))
+    .unwrap();
+    signal.abort();
+    assert_eq!(
+        content_json(&result),
+        json!([{"type": "text", "text": "Successfully wrote 1 bytes to f.txt"}])
+    );
+    assert_eq!(ops.names(), ["mkdir", "write"]);
 }
 
 #[test]
@@ -435,24 +445,24 @@ fn write_native_and_supplied_adapters_share_one_caller() {
     let options = WriteToolOptions {
         operations: Some(Arc::clone(&ops) as Arc<dyn WriteOperations>),
     };
-    let result = through(options, "/work", "x/y.txt", "supplied bytes").unwrap();
+    let cwd = dir.text();
+    let result = through(options, &cwd, "x/y.txt", "supplied bytes").unwrap();
     assert_eq!(
-        content_json_erased(&result),
+        content_json(&result),
         json!([{"type": "text", "text": "Successfully wrote 14 bytes to x/y.txt"}])
     );
     assert_eq!(
         ops.calls(),
         [
-            vec!["mkdir", "/work/x"],
-            vec!["write", "/work/x/y.txt", "supplied bytes"]
+            vec!["mkdir".to_owned(), format!("{cwd}/x")],
+            vec![
+                "write".to_owned(),
+                format!("{cwd}/x/y.txt"),
+                "supplied bytes".to_owned()
+            ]
         ]
     );
     assert!(!dir.0.join("x").exists());
-}
-
-/// The content blocks of an erased result.
-fn content_json_erased(result: &AgentToolResult) -> Value {
-    serde_json::to_value(&result.content).unwrap()
 }
 
 #[test]

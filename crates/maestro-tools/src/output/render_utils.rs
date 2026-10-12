@@ -46,8 +46,8 @@ pub(crate) fn without_trailing_empty<T: AsRef<str>>(lines: &[T]) -> &[T] {
     &lines[..kept]
 }
 
-/// The path in a call title: accent for a path, `...` for an empty one, `[invalid arg]` for
-/// a value that is not text.
+/// The path in a call title: accent for a path, `...` for an empty, absent or null one,
+/// `[invalid arg]` for any other value that is not a string.
 ///
 /// # Errors
 /// Returns a home lookup or theme failure.
