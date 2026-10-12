@@ -51,7 +51,7 @@ shared [file-pattern matcher](package-patterns.md); its failure is returned, sto
 resolution after any warnings already written. Other patterns follow
 `parse_model_pattern` with its default invalid-suffix fallback.
 Patterns are processed in the order supplied; within one glob, matches keep catalog
-order. A model repeats only by provider and ID; the first occurrence keeps its
+order. Duplicate provider/ID pairs are omitted; the first occurrence keeps its
 thinking level. A warning from `parse_model_pattern`, when it returns one, and a
 `No models match pattern` warning, when a pattern selects nothing, go to stderr,
 yellow when color is requested, without stopping later patterns.
@@ -62,21 +62,22 @@ yellow when color is requested, without stopping later patterns.
 both nonempty. If `resolve_cli_model` reports an error, that error is returned as a
 `CatalogError` with no result; if it selects a model, the result carries medium
 thinking (`DEFAULT_THINKING_LEVEL`). Otherwise it takes the
-first scoped model unless continuing, with scoped, supplied default, then medium
-thinking; then the saved default if it exists, without checking authentication;
-then the first available model matching `DEFAULT_MODEL_PER_PROVIDER` in table
+first scoped model unless continuing, with its own scoped level, else the supplied
+default, else medium thinking; then the saved default if it exists, without checking authentication,
+with the supplied default thinking or medium; then the first available model matching `DEFAULT_MODEL_PER_PROVIDER` in table
 order, then the first available model, then none. Every successful result carries
 no fallback message. It neither restores sessions nor clamps thinking.
 
 `restore_model_from_session` returns the saved model when it exists and has
 configured authentication. Otherwise the supplied current model is used without
-checks, then the same default-or-first available choice, then none. A fallback
-carries `Could not restore model <saved> (<reason>). Using <fallback>.`, where the
-reason is `model no longer exists` or `no auth configured`.
+checks, then the same default-or-first available choice, then none. A selected
+fallback model carries `Could not restore model <saved> (<reason>). Using <fallback>.`,
+where the reason is `model no longer exists` or `no auth configured`; when no model
+is selected there is no fallback message.
 
 With printing requested, restoration writes success and fallback notices to stdout
 (dim with color) and the failure warning to stderr (yellow with color). `ModelResolverOutput` borrows
-both writers and the color choice; writes are best-effort and never change the
+both writers and the color choice; a failed write is ignored and never changes the
 selection. A returned model is a shared handle: the catalog's own when it came from
 the catalog, otherwise the caller's current model or a detached command-line descriptor.
 

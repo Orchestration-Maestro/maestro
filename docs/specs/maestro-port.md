@@ -228,7 +228,8 @@ layers stay unchanged; the shared owner precedes its consumers.
 `maestro-pattern` is a core leaf below layer 0 whose one job is matching file
 patterns: glob patterns and ignore rules. It has no workspace dependencies,
 including `maestro-path`. Only `maestro-resources`, `maestro-packages` and `maestro-catalog` (for model-scope
-matching) may depend on it. Move the existing matchers only after this contract lands, through
+matching) may depend on it. Catalog owns model-scope selection and reuses the glob matcher.
+Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
 `maestro-watch` and `maestro-lock` are core leaves below layer 0, with no

@@ -1660,23 +1660,18 @@ async fn agent_scenario(
     done.await.unwrap();
     agent.wait_for_idle().await;
     assert_eq!(&last_assistant(&agent), expected, "{route:?}");
-    let mut kinds = lifecycle.lock().unwrap().clone();
-    kinds.dedup();
-    assert_eq!(
-        kinds,
-        [
-            "AgentStart",
-            "TurnStart",
-            "MessageStart",
-            "MessageEnd",
-            "MessageStart",
-            "MessageUpdate",
-            "MessageEnd",
-            "TurnEnd",
-            "AgentEnd"
-        ],
-        "{route:?}"
-    );
+    let kinds = lifecycle.lock().unwrap().clone();
+    let message_updates = if abort { 1 } else { 4 };
+    let mut expected = vec![
+        "AgentStart",
+        "TurnStart",
+        "MessageStart",
+        "MessageEnd",
+        "MessageStart",
+    ];
+    expected.extend(std::iter::repeat_n("MessageUpdate", message_updates));
+    expected.extend(["MessageEnd", "TurnEnd", "AgentEnd"]);
+    assert_eq!(kinds, expected, "{route:?}");
     assert!(!agent.state().read().unwrap().is_streaming());
     backend.release();
     backend.join();

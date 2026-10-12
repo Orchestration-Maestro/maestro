@@ -17,7 +17,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
 };
 
-/// Initial-choice operands that select the saved default or an available fallback.
+/// Unconfigured initial-choice operands: no saved default, with any scope the caller supplies.
 fn initial<'a>(
     registry: &'a maestro_catalog::ModelRegistry,
     scoped_models: &'a [ScopedModel],

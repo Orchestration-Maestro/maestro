@@ -7587,6 +7587,34 @@
           "id": "tie-a",
           "parentId": "root",
           "timestamp": "2025-01-01T00:00:01.0009Z"
+        },
+        {
+          "type": "custom",
+          "customType": "fixture",
+          "id": "grand-late",
+          "parentId": "early",
+          "timestamp": "2025-01-01T00:00:02Z"
+        },
+        {
+          "type": "custom",
+          "customType": "fixture",
+          "id": "grand-early",
+          "parentId": "early",
+          "timestamp": "2025-01-01T00:00:00Z"
+        },
+        {
+          "type": "custom",
+          "customType": "fixture",
+          "id": "grand-tie-b",
+          "parentId": "early",
+          "timestamp": "2025-01-01T00:00:01.0004Z"
+        },
+        {
+          "type": "custom",
+          "customType": "fixture",
+          "id": "grand-tie-a",
+          "parentId": "early",
+          "timestamp": "2025-01-01T00:00:01.0009Z"
         }
       ],
       "queries": [
@@ -7645,6 +7673,34 @@
               "id": "tie-a",
               "parentId": "root",
               "timestamp": "2025-01-01T00:00:01.0009Z"
+            },
+            {
+              "type": "custom",
+              "customType": "fixture",
+              "id": "grand-late",
+              "parentId": "early",
+              "timestamp": "2025-01-01T00:00:02Z"
+            },
+            {
+              "type": "custom",
+              "customType": "fixture",
+              "id": "grand-early",
+              "parentId": "early",
+              "timestamp": "2025-01-01T00:00:00Z"
+            },
+            {
+              "type": "custom",
+              "customType": "fixture",
+              "id": "grand-tie-b",
+              "parentId": "early",
+              "timestamp": "2025-01-01T00:00:01.0004Z"
+            },
+            {
+              "type": "custom",
+              "customType": "fixture",
+              "id": "grand-tie-a",
+              "parentId": "early",
+              "timestamp": "2025-01-01T00:00:01.0009Z"
             }
           ]
         },
@@ -7667,7 +7723,48 @@
                     "parentId": "root",
                     "timestamp": "2025-01-01T00:00:00Z"
                   },
-                  "children": []
+                  "children": [
+                    {
+                      "entry": {
+                        "type": "custom",
+                        "customType": "fixture",
+                        "id": "grand-early",
+                        "parentId": "early",
+                        "timestamp": "2025-01-01T00:00:00Z"
+                      },
+                      "children": []
+                    },
+                    {
+                      "entry": {
+                        "type": "custom",
+                        "customType": "fixture",
+                        "id": "grand-tie-b",
+                        "parentId": "early",
+                        "timestamp": "2025-01-01T00:00:01.0004Z"
+                      },
+                      "children": []
+                    },
+                    {
+                      "entry": {
+                        "type": "custom",
+                        "customType": "fixture",
+                        "id": "grand-tie-a",
+                        "parentId": "early",
+                        "timestamp": "2025-01-01T00:00:01.0009Z"
+                      },
+                      "children": []
+                    },
+                    {
+                      "entry": {
+                        "type": "custom",
+                        "customType": "fixture",
+                        "id": "grand-late",
+                        "parentId": "early",
+                        "timestamp": "2025-01-01T00:00:02Z"
+                      },
+                      "children": []
+                    }
+                  ]
                 },
                 {
                   "entry": {

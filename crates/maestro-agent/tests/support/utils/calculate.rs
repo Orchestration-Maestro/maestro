@@ -35,7 +35,7 @@ pub fn calculate(expression: &str) -> Result<AgentToolResult<()>, String> {
             text: format!("{expression} = {result}"),
             text_signature: None,
         })],
-        details: Some(()),
+        details: None,
         terminate: None,
     })
 }

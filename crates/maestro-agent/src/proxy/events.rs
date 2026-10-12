@@ -106,7 +106,8 @@ pub enum ProxyAssistantMessageEvent {
     },
 }
 
-/// Accept any finite integral non-negative number as a content index, in any JSON spelling.
+/// Accept a finite integral non-negative JSON number that fits `usize` as a content index,
+/// in any decimal or exponent spelling.
 fn index<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<usize, D::Error> {
     struct Index;
     impl serde::de::Visitor<'_> for Index {

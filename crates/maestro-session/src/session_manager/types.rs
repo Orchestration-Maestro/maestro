@@ -251,7 +251,7 @@ pub struct SessionTreeNode<'a> {
     pub children: Vec<SessionTreeNode<'a>>,
     /// Resolved label, if any.
     pub label: Option<&'a Value>,
-    /// Timestamp of the latest label change, if any; an explicit null stays null.
+    /// Timestamp of the resolved label's record, if a label resolves; an explicit null stays null.
     pub label_timestamp: Option<&'a Value>,
 }
 

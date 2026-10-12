@@ -9,11 +9,13 @@ filesystem access.
 operation with an explicit case mode; `minimatch` is `nocase = false`. With
 `nocase = true`, literal and magic components compare case-insensitively, while
 pattern syntax (escapes, named class names, brackets) is never rewritten. Under
-Windows framing a nonmagic UNC server/share prefix keeps its authored case;
-drive letters compare without case in both modes.
+Windows framing a nonmagic UNC server/share prefix and a drive-relative prefix
+keep their authored case, while a recognized absolute or extended drive aligns
+without case in both modes. For example, `C:Foo/A` matches `C:Foo/a` only with
+`nocase = true`, and never matches `c:foo/a`.
 Filesystem preparation does not use this mode: its literal components stay exact.
 
-With `nocase = false`, matching is case-sensitive outside native Windows drive identity. `*` matches
+With `nocase = false`, matching is case-sensitive outside a recognized native Windows drive. `*` matches
 zero or more scalars within a nonempty component; `?` matches one Unicode scalar.
 Basic wildcard components exclude leading dots unless the pattern explicitly
 starts with a dot, and never match `.` or `..`. Literal `.` and `..` remain matchable.
@@ -30,9 +32,9 @@ Brace alternatives and sequences use the
 Repeated separators collapse except for the extra leading empty component in Windows
 UNC roots; eligible pattern `component/..` pairs reduce,
 without normalizing the input path. Windows input backslashes are separators;
-pattern backslashes remain escapes. Windows drive letters compare without case,
-including extended drive prefixes; with `nocase = false` other components remain
-case-sensitive.
+pattern backslashes remain escapes. A recognized Windows absolute
+or extended drive compares without case; a drive-relative prefix keeps its authored
+case, and with `nocase = false` other components remain case-sensitive.
 
 Patterns longer than 65,536 Unicode scalars return `PatternError::TooLong`, whose
 message is `pattern is too long`.

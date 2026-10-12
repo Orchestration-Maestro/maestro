@@ -406,5 +406,5 @@ fn maestro_calculator_fixture_returns_known_results_and_errors() {
         let missing = (tool.execute)("id".into(), Value::Null, None, None).await;
         (ok.details, bad.is_err(), missing.is_err())
     });
-    assert_eq!(run, (Some(Value::Null), true, true));
+    assert_eq!(run, (None, true, true));
 }
