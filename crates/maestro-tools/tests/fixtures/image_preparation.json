@@ -11280,5 +11280,221 @@
       "height": 1,
       "wasResized": true
     }
+  },
+  {
+    "id": "ico-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::ico_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "AAABAAEABAIAAAAAIABmAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAEAAAAAggGAAAAf6h9YwAAAC1JREFUeAEBIgDd/wAAACj/PAAo/3gAKP+0ACj/AAB4KP88eCj/eHgo/7R4KP/Lzg3psR6nlAAAAABJRU5ErkJggg==",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAALUlEQVR4AQEiAN3/AAAAKP88ACj/eAAo/7QAKP8AAHgo/zx4KP94eCj/tHgo/8vODemxHqeUAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "ico-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::ico_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "AAABAAEABAIAAAAAIABmAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAEAAAAAggGAAAAf6h9YwAAAC1JREFUeAEBIgDd/wAAACj/PAAo/3gAKP+0ACj/AAB4KP88eCj/eHgo/7R4KP/Lzg3psR6nlAAAAABJRU5ErkJggg==",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAFElEQVR4AQEJAPb/ACA8KP+UPCj/DOsDezQC52wAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 2,
+      "width": 2,
+      "height": 1,
+      "wasResized": true
+    }
+  },
+  {
+    "id": "pnm-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::pnm_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "UDYKNCAyIDI1NQoAACg8ACh4ACi0ACgAeCg8eCh4eCi0eCg=",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAALUlEQVR4AQEiAN3/AAAAKP88ACj/eAAo/7QAKP8AAHgo/zx4KP94eCj/tHgo/8vODemxHqeUAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "pnm-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::pnm_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "UDYKNCAyIDI1NQoAACg8ACh4ACi0ACgAeCg8eCh4eCi0eCg=",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAFElEQVR4AQEJAPb/ACA8KP+UPCj/DOsDezQC52wAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 2,
+      "width": 2,
+      "height": 1,
+      "wasResized": true
+    }
+  },
+  {
+    "id": "tiff-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::tiff_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "SUkqAEgAAAAAACj/PAAo/3gAKP+0ACj/AHgo/zx4KP94eCj/tHgo/wgACAAIAAgAAQAAAAEAAAABAAAAAQAAAAEAAQABAAEADQAAAQQAAQAAAAQAAAABAQQAAQAAAAIAAAACAQMABAAAACgAAAADAQMAAQAAAAEAAAAGAQMAAQAAAAIAAAARAQQAAQAAAAgAAAAVAQMAAQAAAAQAAAAWAQQAAQAAACT0AAAXAQQAAQAAACAAAAAaAQUAAQAAADAAAAAbAQUAAQAAADgAAAAoAQMAAQAAAAEAAABTAQMABAAAAEAAAAAAAAAA",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAALUlEQVR4AQEiAN3/AAAAKP88ACj/eAAo/7QAKP8AAHgo/zx4KP94eCj/tHgo/8vODemxHqeUAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "tiff-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::tiff_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "SUkqAEgAAAAAACj/PAAo/3gAKP+0ACj/AHgo/zx4KP94eCj/tHgo/wgACAAIAAgAAQAAAAEAAAABAAAAAQAAAAEAAQABAAEADQAAAQQAAQAAAAQAAAABAQQAAQAAAAIAAAACAQMABAAAACgAAAADAQMAAQAAAAEAAAAGAQMAAQAAAAIAAAARAQQAAQAAAAgAAAAVAQMAAQAAAAQAAAAWAQQAAQAAACT0AAAXAQQAAQAAACAAAAAaAQUAAQAAADAAAAAbAQUAAQAAADgAAAAoAQMAAQAAAAEAAABTAQMABAAAAEAAAAAAAAAA",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAFElEQVR4AQEJAPb/ACA8KP+UPCj/DOsDezQC52wAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 2,
+      "width": 2,
+      "height": 1,
+      "wasResized": true
+    }
+  },
+  {
+    "id": "hdr-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::hdr_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "Iz9SQURJQU5DRQojIFJ1c3QgSERSIGVuY29kZXIKRk9STUFUPTMyLWJpdF9ybGVfcmdiZQoKLVkgMiArWCA0CoAAAIEAgACBAACAgYCAAIFAAICBAECAgYAAQIEAgECB",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAALUlEQVR4AQEiAN3/AP8AAP8A/wD/AAD/////AP8ANwD//wA3////ADf/AP83/yKaEczkASpXAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "hdr-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::hdr_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "Iz9SQURJQU5DRQojIFJ1c3QgSERSIGVuY29kZXIKRk9STUFUPTMyLWJpdF9ybGVfcmdiZQoKLVkgMiArWCA0CoAAAIEAgACBAACAgYCAAIFAAICBAECAgYAAQIEAgECB",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAFElEQVR4AQEJAPb/AFE2iv9sjF7/EVEEZlOSCIYAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 2,
+      "width": 2,
+      "height": 1,
+      "wasResized": true
+    }
+  },
+  {
+    "id": "dds-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::dds_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "RERTIHwAAAAHEAgABAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAEAAAARFhUMQAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA+OAH5OTk5A==",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAATklEQVR4Ae3AA6AkWZbG8f937o3IzKdyS2Oubdu2bdu2bdu2bWmMnpZKr54yMyLu+Xa3anqmhztr1a8aLMOPviP82DtA5TlReU5UnhP/CDTOBQ9CrSzpAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "dds-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::dds_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "RERTIHwAAAAHEAgABAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAEAAAARFhUMQAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAA+OAH5OTk5A==",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAHUlEQVR4AQESAO3/AIh3AP9lmgD/AIh3AP9lmgD/RagH+a7xIeIAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 4,
+      "width": 2,
+      "height": 2,
+      "wasResized": true
+    }
+  },
+  {
+    "id": "farbfeld-conversion",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::farbfeld_bytes_convert_and_resize",
+    "operation": "convert",
+    "input": {
+      "data": "ZmFyYmZlbGQAAAAEAAAAAgAAAAAoKP//PDwAACgo//94eAAAKCj//7S0AAAoKP//AAB4eCgo//88PHh4KCj//3h4eHgoKP//tLR4eCgo//8=",
+      "mimeType": "application/octet-stream"
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAYAAAB/qH1jAAAALUlEQVR4AQEiAN3/AAAAKP88ACj/eAAo/7QAKP8AAHgo/zx4KP94eCj/tHgo/8vODemxHqeUAAAAAElFTkSuQmCC",
+      "mimeType": "image/png"
+    }
+  },
+  {
+    "id": "farbfeld-resize",
+    "test": "crates/maestro-tools/tests/image_preparation.rs::farbfeld_bytes_convert_and_resize",
+    "operation": "resize",
+    "input": {
+      "image": {
+        "data": "ZmFyYmZlbGQAAAAEAAAAAgAAAAAoKP//PDwAACgo//94eAAAKCj//7S0AAAoKP//AAB4eCgo//88PHh4KCj//3h4eHgoKP//tLR4eCgo//8=",
+        "mimeType": "application/octet-stream"
+      },
+      "options": {
+        "maxWidth": 2
+      }
+    },
+    "expected": {
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAABCAYAAAD0In+KAAAAFElEQVR4AQEJAPb/ACA8KP+UPCj/DOsDezQC52wAAAAASUVORK5CYII=",
+      "mimeType": "image/png",
+      "originalWidth": 4,
+      "originalHeight": 2,
+      "width": 2,
+      "height": 1,
+      "wasResized": true
+    }
   }
 ]

@@ -284,3 +284,33 @@ fn encoding_selection_returns_first_fit_not_smallest() -> TestResult {
 fn wide_image_candidates_respect_jpeg_format_dimensions() -> TestResult {
     check("wide_image_candidates_respect_jpeg_format_dimensions")
 }
+
+#[test]
+fn ico_bytes_convert_and_resize() -> TestResult {
+    check("ico_bytes_convert_and_resize")
+}
+
+#[test]
+fn pnm_bytes_convert_and_resize() -> TestResult {
+    check("pnm_bytes_convert_and_resize")
+}
+
+#[test]
+fn tiff_bytes_convert_and_resize() -> TestResult {
+    check("tiff_bytes_convert_and_resize")
+}
+
+#[test]
+fn hdr_bytes_convert_and_resize() -> TestResult {
+    check("hdr_bytes_convert_and_resize")
+}
+
+#[test]
+fn dds_bytes_convert_and_resize() -> TestResult {
+    check("dds_bytes_convert_and_resize")
+}
+
+#[test]
+fn farbfeld_bytes_convert_and_resize() -> TestResult {
+    check("farbfeld_bytes_convert_and_resize")
+}

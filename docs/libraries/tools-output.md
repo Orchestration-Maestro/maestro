@@ -23,7 +23,10 @@ library. The streaming module is excluded from browser builds.
 
 Image operations use `image =0.24.9` (MIT or Apache-2.0) directly, with
 `default-features = false`. The `png` and `jpeg` features supply decoding and
-candidate encoding; `gif`, `webp` and `bmp` retain byte-decoder conversion inputs.
+candidate encoding; `gif`, `webp`, `bmp`, `ico`, `pnm`, `tiff`, `hdr`, `dds`
+and `farbfeld` retain byte-decoder inputs. `dds` enables `dxt` for its compressed
+pixel blocks. These inputs are available to conversion and resizing independently
+of the MIME detector's supported formats.
 The [byte decoder](https://docs.rs/image/0.24.9/image/fn.load_from_memory.html)
 provides fallible decoding. RGBA images use Lanczos3 resizing, axis flips and
 integer quarter-turns from `image::imageops`; `DynamicImage::write_to` encodes
@@ -64,7 +67,7 @@ extra capability.
 | fdeflate | 0.3.7 | none | MIT OR Apache-2.0 |
 | flate2 | 1.1.10 | any_impl, default, miniz_oxide, runtime_detection, rust_backend | MIT OR Apache-2.0 |
 | gif | 0.13.3 | color_quant, default, raii_no_panic, std | MIT OR Apache-2.0 |
-| image | 0.24.9 | bmp, gif, jpeg, png, webp | MIT OR Apache-2.0 |
+| image | 0.24.9 | bmp, dds, dxt, farbfeld, gif, hdr, ico, jpeg, png, pnm, tiff, webp | MIT OR Apache-2.0 |
 | jpeg-decoder | 0.3.2 | platform_independent | MIT OR Apache-2.0 |
 | kamadak-exif | 0.6.1 | none | BSD-2-Clause |
 | miniz_oxide | 0.8.9 | default, simd, simd-adler32, with-alloc | MIT OR Zlib OR Apache-2.0 |
@@ -74,5 +77,6 @@ extra capability.
 | png | 0.17.16 | none | MIT OR Apache-2.0 |
 | ryu-js | 1.0.3 | none | Apache-2.0 OR BSL-1.0 |
 | simd-adler32 | 0.3.10 | const-generics, default, std | MIT |
+| tiff | 0.9.1 | none | MIT |
 | weezl | 0.1.12 | alloc, default, std | MIT OR Apache-2.0 |
 | zlib-rs | 0.6.8 | rust-allocator, std | Zlib |

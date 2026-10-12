@@ -11,7 +11,7 @@ ryu-js.workspace = true
 num-traits.workspace = true
 maestro-models = { path = "../maestro-models" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
-image = { version = "=0.24.9", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
+image = { version = "=0.24.9", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "farbfeld", "dds", "hdr", "tiff", "pnm", "ico"] }
 kamadak-exif = "=0.6.1"
 jpeg-decoder = { version = "=0.3.2", default-features = false, features = ["platform_independent"] }
 
