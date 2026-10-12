@@ -605,6 +605,12 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
     std::fs::remove_dir(&gone).unwrap();
     std::fs::remove_dir(&parent).unwrap();
     assert!(std::env::current_dir().is_err());
+    read_renders_without_process_directory();
+}
+
+/// Renders read calls and results while the process directory is unavailable.
+#[cfg(unix)]
+fn read_renders_without_process_directory() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
     let env = Env::new(0);
     let title = |path: &str, readme: &str| {
@@ -634,4 +640,46 @@ fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
         "read resource AGENTS.md (ctrl+o to expand)"
     );
     assert!(title("/opt/maestro/docs/guide.md", "relative/README.md").is_err());
+    read_results_without_process_directory(&env);
+}
+
+/// Renders read results while the process directory is unavailable.
+#[cfg(unix)]
+fn read_results_without_process_directory(env: &Env) {
+    let readme = "/opt/maestro/README.md";
+    let result = |path: &str, readme: &str| {
+        let args = json!({"path": path});
+        let mut setup = setup();
+        setup.expanded = false;
+        setup.readme = readme.to_owned();
+        let ctx = context(&args, &setup, env, None);
+        (tool().render_result.as_ref().unwrap())(
+            &text_result("served"),
+            settled(false),
+            &env.theme,
+            &ctx,
+        )
+        .map(|row| {
+            row.render(WIDTH)
+                .iter()
+                .map(|line| strip_ansi(line).unwrap())
+                .collect::<String>()
+        })
+    };
+    for hidden in [
+        "/opt/maestro/docs/guide.md",
+        "/opt/maestro/README.md",
+        "/srv/other/AGENTS.md",
+    ] {
+        assert!(
+            !result(hidden, readme).unwrap().contains("served"),
+            "{hidden}"
+        );
+    }
+    assert!(
+        result("/srv/plain/notes.txt", readme)
+            .unwrap()
+            .contains("served")
+    );
+    assert!(result("/opt/maestro/docs/guide.md", "relative/README.md").is_err());
 }
