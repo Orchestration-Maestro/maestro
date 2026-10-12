@@ -56,7 +56,9 @@ check needs no admission.
 `CommandCaptureOptions` for cwd, an optional deadline and environment overrides.
 Native capture returns trimmed stdout after child exit and both pipe EOFs;
 success does not substitute stderr. It ignores stdin and does not query stdout
-takeover. Invalid UTF-8 uses replacement decoding after collecting bytes.
+takeover. The captured child, its pipes and termination come from
+[`maestro-process`](../crates/maestro-process/README.md); this page's deadline,
+decoding and error rules stay with packages. Invalid UTF-8 uses replacement decoding after collecting bytes.
 
 Availability captures use a 10000 ms deadline. Capture deadlines remain active
 through pipe EOF, including pipes retained by descendants. Expiration requests

@@ -72,8 +72,10 @@ teardown semantics; it introduces no generic executor or scheduling policy.
 
 The process leaf `maestro-process` is declared core below layer 0 with no workspace
 dependencies, including path and cancellation. Only tools, packages and the toolkit
-may consume it, on native targets. It owns child-process lifecycles; callers keep
-cancellation, termination, settlement and output policy. The checker verifies
+may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+(captured spawn, raw pipe collection, exit and EOF observation, termination and
+reaping); callers keep cancellation, termination, settlement and output policy.
+Packages and the toolkit consume it today. The checker verifies
 dependency ownership, not target predicates; see the
 [contract](specs/maestro-port.md#crates-and-delivery-order).
 

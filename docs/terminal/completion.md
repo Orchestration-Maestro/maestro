@@ -111,9 +111,11 @@ prefix, basename substring, then path substring; matching directories receive a
 bonus. Empty queries keep process order. Stable score ties retain duplicates and
 only the first 20 ranked candidates are returned. Attachment host I/O errors and
 observed cancellation return no suggestions; runtime panics are not caught.
-Native cancellation checks child
-status, then kills and waits when the child remains running; status or kill
-failures return I/O errors to the provider.
+The captured child comes from
+[`maestro-process`](../../crates/maestro-process/README.md). Native cancellation
+kills a still-running child and returns once it is reaped, without waiting for
+pipes a descendant may hold; status or kill failures return I/O errors to the
+provider.
 
 ## Shared fuzzy ranking
 
