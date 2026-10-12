@@ -2,7 +2,7 @@
 
 `maestro-session::session_manager` parses supplied JSONL text and projects a
 selected ancestry into context without session-file reads or writes.
-Stored timestamp conversion delegates to [message formatting](messages.md).
+Stored timestamp conversion delegates to [message formatting](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/messages.md).
 
 ## Raw entries and explicit views
 
@@ -53,7 +53,7 @@ custom state, labels, session names and unknown entry kinds do not. Branch
 summaries contribute when their raw summary is truthy.
 
 Generated messages convert timestamps during projection through the existing
-[message formatting](messages.md) owner. Explicit typed message decoding and
+[message formatting](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/messages.md) owner. Explicit typed message decoding and
 model conversion remain separate operations. Reached null entry or message
 receivers return native errors identifying the field, not an eager schema error.
 
