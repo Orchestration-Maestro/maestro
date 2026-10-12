@@ -207,7 +207,6 @@ impl Component for Markdown {
         lines
     }
     fn invalidate(&self) {
-        self.generation.set(self.generation.get().wrapping_add(1));
-        self.cache.take();
+        super::invalidate_cache(&self.generation, &self.cache);
     }
 }

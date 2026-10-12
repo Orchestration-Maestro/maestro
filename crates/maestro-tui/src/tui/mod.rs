@@ -245,12 +245,8 @@ impl TUI {
 
     /// The terminal callback that requests a frame when the terminal is resized.
     fn resize_callback(&self) -> Box<dyn FnMut()> {
-        let weak = Rc::downgrade(&self.shared);
-        Box::new(move || {
-            if let Some(shared) = weak.upgrade() {
-                TUI { shared }.request_render(false);
-            }
-        })
+        let request = self.weak_render_request();
+        Box::new(move || request())
     }
 }
 

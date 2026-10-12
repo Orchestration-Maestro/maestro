@@ -188,6 +188,9 @@ request is kept and queued after the current frame. `stop` cancels the pending f
 including the immediate one a forced request queued, and forgets any request, so
 `start` after a `stop` draws again, and requests made while stopped are dropped.
 
+The terminal's resize callback makes this same ordinary request and holds the writer only
+weakly, so it never keeps a dropped writer alive.
+
 ## Input
 
 `start` installs the terminal's input callback. Each chunk goes through, in order:
