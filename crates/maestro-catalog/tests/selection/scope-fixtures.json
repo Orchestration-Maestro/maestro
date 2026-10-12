@@ -8796,7 +8796,6 @@
           "maxTokens": 8192
         }
       ],
-      "auth": [],
       "patterns": [
         "*"
       ],
@@ -14954,7 +14953,6 @@
           "maxTokens": 8192
         }
       ],
-      "auth": [],
       "savedProvider": "p",
       "savedModelId": "alpha",
       "print": true,

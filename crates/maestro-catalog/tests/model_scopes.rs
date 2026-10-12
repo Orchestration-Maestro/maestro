@@ -4,9 +4,11 @@
 mod descriptors;
 #[path = "selection/scopes.rs"]
 mod scopes;
+use maestro_catalog::ModelRegistry;
 use maestro_catalog::{ModelResolverOutput, model_id_comparator, resolve_model_scope};
+use maestro_credentials::{AuthStorage, AuthStorageData};
 use scopes::replay;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn scope_uses_available_models_and_empty_inputs() {
@@ -136,4 +138,33 @@ fn scope_diagnostics_are_best_effort() {
     assert_eq!(stderr.0, 1);
     assert_eq!(scoped.len(), 1);
     assert!(Arc::ptr_eq(&scoped[0].model, &handles[0]));
+}
+
+#[test]
+fn scope_empty_patterns_still_consult_authentication() {
+    let handles = [scopes::model("p", "alpha")];
+    let storage = Arc::new(AuthStorage::in_memory(AuthStorageData::new()));
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let observer = Arc::clone(&asked);
+    storage.set_fallback_resolver(move |provider| {
+        observer.lock().unwrap().push(provider.to_owned());
+        None
+    });
+    let registry = ModelRegistry::in_memory(storage).unwrap();
+    *registry.get_all().write().unwrap() = handles.to_vec();
+    let compare = model_id_comparator(&|_| None).unwrap();
+    let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+    let scoped = resolve_model_scope(
+        &[],
+        &registry,
+        &compare,
+        &mut ModelResolverOutput {
+            stdout: &mut stdout,
+            stderr: &mut stderr,
+            color: false,
+        },
+    )
+    .unwrap();
+    assert!(scoped.is_empty());
+    assert_eq!(*asked.lock().unwrap(), ["p"]);
 }

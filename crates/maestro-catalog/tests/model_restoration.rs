@@ -114,3 +114,61 @@ fn restore_diagnostics_are_best_effort() {
     }
     assert_eq!((quiet_out.0, quiet_err.0), (0, 0));
 }
+
+/// Stdout that renames a model as soon as the first notice is written.
+struct Renamer {
+    model: scopes::Handle,
+    text: Vec<u8>,
+}
+
+impl std::io::Write for Renamer {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.model.write().unwrap().id = "renamed".into();
+        self.text.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[test]
+fn restore_message_reads_fallback_identity_after_the_notice() {
+    let (saved, current) = (scopes::model("p", "saved"), scopes::model("c", "current"));
+    let registry = scopes::registry(std::slice::from_ref(&saved), &["p".into()]);
+    for (use_current, expected) in [(true, "c/renamed"), (false, "p/renamed")] {
+        let target = if use_current { &current } else { &saved };
+        let mut stdout = Renamer {
+            model: Arc::clone(target),
+            text: Vec::new(),
+        };
+        let mut stderr = Vec::new();
+        let restored = restore_model_from_session(
+            RestoreModelFromSessionOptions {
+                saved_provider: "p",
+                saved_model_id: "missing",
+                current_model: use_current.then_some(&current),
+                should_print_messages: true,
+                model_registry: &registry,
+            },
+            &mut ModelResolverOutput {
+                stdout: &mut stdout,
+                stderr: &mut stderr,
+                color: false,
+            },
+        );
+        let noted = if use_current { "c/current" } else { "p/saved" };
+        assert_eq!(
+            String::from_utf8(stdout.text).unwrap(),
+            format!("Falling back to: {noted}\n")
+        );
+        assert!(Arc::ptr_eq(restored.model.as_ref().unwrap(), target));
+        assert_eq!(
+            restored.fallback_message.unwrap(),
+            format!(
+                "Could not restore model p/missing (model no longer exists). Using {expected}."
+            )
+        );
+        target.write().unwrap().id = if use_current { "current" } else { "saved" }.into();
+    }
+}

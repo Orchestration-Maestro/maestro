@@ -128,7 +128,7 @@ pub struct ModelResolverOutput<'a> {
     pub color: bool,
 }
 impl ModelResolverOutput<'_> {
-    /// Write a yellow `Warning: ` line to stderr.
+    /// Write a `Warning: ` line to stderr, yellow when `color` is set.
     fn warn(&mut self, message: &str) {
         let line = format!("Warning: {message}");
         // A broken diagnostic stream must never change which model is selected.
@@ -138,7 +138,7 @@ impl ModelResolverOutput<'_> {
             writeln!(self.stderr, "{line}")
         };
     }
-    /// Write a dim progress line to stdout, ending only the intensity (`owo-colors` resets all).
+    /// Write a progress line to stdout, dim when `color` is set, ending only the intensity (`owo-colors` resets all).
     fn note(&mut self, message: &str) {
         // A broken diagnostic stream must never change which model is selected.
         let _ = if self.color {
@@ -158,8 +158,8 @@ fn diagnostic(message: String) -> CatalogError {
     }
     .into()
 }
-/// Copy a descriptor's provider and ID.
-fn identity(handle: &Arc<RwLock<Model>>) -> (String, String) {
+/// Format a descriptor's `provider/id`, holding its read guard only while formatting.
+fn label(handle: &Arc<RwLock<Model>>) -> String {
     let model = handle.read().unwrap_or_else(PoisonError::into_inner);
-    (model.provider.clone(), model.id.clone())
+    format!("{}/{}", model.provider, model.id)
 }

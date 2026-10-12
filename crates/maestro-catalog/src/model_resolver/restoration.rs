@@ -1,5 +1,5 @@
 //! Saved model restoration with current and available fallbacks.
-use super::{ModelResolverOutput, identity, selection::default_or_first};
+use super::{ModelResolverOutput, label, selection::default_or_first};
 use crate::ModelRegistry;
 use maestro_models::Model;
 use std::sync::{Arc, RwLock};
@@ -72,14 +72,15 @@ pub fn restore_model_from_session(
             fallback_message: None,
         };
     };
-    let (provider, id) = identity(&fallback);
     if print {
-        output.note(&format!("Falling back to: {provider}/{id}"));
+        output.note(&format!("Falling back to: {}", label(&fallback)));
     }
+    let fallback_message = format!(
+        "Could not restore model {saved_label} ({reason}). Using {}.",
+        label(&fallback)
+    );
     RestoreModelFromSessionResult {
         model: Some(fallback),
-        fallback_message: Some(format!(
-            "Could not restore model {saved_label} ({reason}). Using {provider}/{id}."
-        )),
+        fallback_message: Some(fallback_message),
     }
 }

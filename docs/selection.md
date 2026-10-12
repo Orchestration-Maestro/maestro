@@ -43,27 +43,30 @@ present warnings/errors and how to apply explicit thinking choices.
 
 ## Scopes
 
-`resolve_model_scope` resolves ordered patterns against `get_available`, so only
-models with configured authentication can enter a scope; presence is checked
-without running configured key commands. A pattern containing `*`, `?` or `[` is a
-glob: a last-colon suffix is removed only when it is a valid thinking level, and
-`provider/id` is tried before the bare ID through the shared case-insensitive
-[file-pattern matcher](package-patterns.md), whose failures are returned. Other patterns
-follow `parse_model_pattern` with its default invalid-suffix fallback.
-Matches keep catalog order. A model repeats only by provider and ID; the first
-occurrence keeps its thinking level. A pattern warning, then a no-match warning,
-is written to stderr, yellow when color is requested, without stopping later patterns.
+`resolve_model_scope` resolves ordered patterns against `get_available`; which
+models count as authenticated is decided by the [catalog](catalog.md). A pattern
+containing `*`, `?` or `[` is a glob: a last-colon suffix is removed only when it is
+a valid thinking level, and `provider/id` is tried before the bare ID through the
+shared [file-pattern matcher](package-patterns.md); its failure is returned, stopping
+resolution after any warnings already written. Other patterns follow
+`parse_model_pattern` with its default invalid-suffix fallback.
+Patterns are processed in the order supplied; within one glob, matches keep catalog
+order. A model repeats only by provider and ID; the first occurrence keeps its
+thinking level. A warning from `parse_model_pattern`, when it returns one, and a
+`No models match pattern` warning, when a pattern selects nothing, go to stderr,
+yellow when color is requested, without stopping later patterns.
 
 ## Initial choice and restoration
 
 `find_initial_model` considers the command line only when provider and model are
-both nonempty, returning `resolve_cli_model`'s error as a `CatalogError` and the
-default thinking level `DEFAULT_THINKING_LEVEL` (medium). Otherwise it takes the
+both nonempty. If `resolve_cli_model` reports an error, that error is returned as a
+`CatalogError` with no result; if it selects a model, the result carries medium
+thinking (`DEFAULT_THINKING_LEVEL`). Otherwise it takes the
 first scoped model unless continuing, with scoped, supplied default, then medium
 thinking; then the saved default if it exists, without checking authentication;
 then the first available model matching `DEFAULT_MODEL_PER_PROVIDER` in table
-order, then the first available model, then none. Fallbacks return medium and no
-message. It neither restores sessions nor clamps thinking.
+order, then the first available model, then none. Every successful result carries
+no fallback message. It neither restores sessions nor clamps thinking.
 
 `restore_model_from_session` returns the saved model when it exists and has
 configured authentication. Otherwise the supplied current model is used without
@@ -74,7 +77,8 @@ reason is `model no longer exists` or `no auth configured`.
 With printing requested, restoration writes success and fallback notices to stdout
 (dim with color) and the failure warning to stderr (yellow with color). `ModelResolverOutput` borrows
 both writers and the color choice; writes are best-effort and never change the
-selection. Returned models are the catalog's shared handles.
+selection. A returned model is a shared handle: the catalog's own when it came from
+the catalog, otherwise the caller's current model or a detached command-line descriptor.
 
 ## Locale reader
 

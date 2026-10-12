@@ -24,6 +24,7 @@ struct Input {
     op: String,
     #[serde(deserialize_with = "descriptors")]
     models: Vec<Model>,
+    #[serde(default)]
     auth: Vec<String>,
     #[serde(default)]
     patterns: Vec<String>,

@@ -66,13 +66,11 @@ fn glob_matches(pattern: &str, available: &[Arc<RwLock<Model>>]) -> Result<Match
     };
     let mut matches = Vec::new();
     for handle in available {
-        let (full, id) = {
-            let model = handle.read().unwrap_or_else(PoisonError::into_inner);
-            (format!("{}/{}", model.provider, model.id), model.id.clone())
-        };
-        let hit = minimatch_with_nocase(&full, glob, true)
-            .and_then(|by_full| Ok(by_full || minimatch_with_nocase(&id, glob, true)?))
+        let model = handle.read().unwrap_or_else(PoisonError::into_inner);
+        let hit = minimatch_with_nocase(&format!("{}/{}", model.provider, model.id), glob, true)
+            .and_then(|by_full| Ok(by_full || minimatch_with_nocase(&model.id, glob, true)?))
             .map_err(|error| diagnostic(error.to_string()))?;
+        drop(model);
         if hit {
             matches.push(Arc::clone(handle));
         }
