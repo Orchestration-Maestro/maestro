@@ -1932,15 +1932,22 @@ name = "maestro-tools"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "futures-util",
  "getrandom 0.4.3",
+ "icu_normalizer",
  "image",
  "kamadak-exif",
+ "maestro-agent",
  "maestro-models",
  "maestro-path",
+ "maestro-theme",
+ "maestro-tui",
  "num-traits",
+ "rustix",
  "ryu-js",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
