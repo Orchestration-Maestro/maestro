@@ -183,6 +183,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
 | `maestro-lock` | acquire file-write locks | — | below 0 |
+| `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
@@ -190,16 +191,16 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
-| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text` | 0 |
+| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text` | 1 |
-| `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json` | 1 |
+| `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json` | 2 |
-| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool` | 2 |
+| `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
 | `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text` | 4 |
@@ -272,6 +273,21 @@ and [file-lock acquisition ownership](https://github.com/Orchestration-Maestro/m
 Size each relocation by net added production lines, showing matching moved and
 deleted lines; moving lines is not a code saving.
 
+`maestro-process` is a core leaf below layer 0 with no workspace dependencies,
+including the path and cancellation leaves. It owns native child-process lifecycles:
+captured-child creation, raw pipe transfer and collection, child-exit and
+pipe-completion observation, termination and reaping. Only tools, packages and the
+terminal toolkit may depend on it, and only on native targets; callers keep their
+cancellation, termination and settlement policies. Shell discovery, environment
+construction, command prefixes, tool definitions, output decoding, sanitization and
+truncation, artifact files, presentation, result mapping and user-facing errors stay
+with their feature owners. It adds no general background runtime or deadline. The
+conventions test checks dependency ownership across declaration forms, not target
+predicates; native-only manifests and the existing wasm and browser builds are
+qualified when the crate is extracted through
+[native process ownership](https://github.com/Orchestration-Maestro/maestro/issues/695).
+This declaration creates no crate and moves no code.
+
 `maestro-path` is the foundation utility for lexical path strings. It sits below
 layer 0, has no internal dependencies, and exposes platform-independent path
 operations. Native crates may depend on it without changing their delivery layer.
@@ -282,7 +298,7 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
-(`maestro-lock`), file-pattern owner (`maestro-pattern`), text leaf (`maestro-text`),
+(`maestro-lock`), process leaf (`maestro-process`), file-pattern owner (`maestro-pattern`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers

@@ -70,6 +70,13 @@ unlocking and asynchronous credential acquisition policy. This changes ownership
 not public capabilities or feature-specific timing, process, subscription and
 teardown semantics; it introduces no generic executor or scheduling policy.
 
+The process leaf `maestro-process` is declared core below layer 0 with no workspace
+dependencies, including path and cancellation. Only tools, packages and the toolkit
+may consume it, on native targets. It owns child-process lifecycles; callers keep
+cancellation, termination, settlement and output policy. The checker verifies
+dependency ownership, not target predicates; see the
+[contract](specs/maestro-port.md#crates-and-delivery-order).
+
 ## Authored paths and the foundation utility
 
 An authored path, the text a user, setting or file wrote, stays a `String` and
@@ -93,7 +100,7 @@ working directory with no drive entries yields `D:b`, not `..\b`.
 leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
-adapter, shared request owner, cancellation leaf, watch leaf, lock leaf,
+adapter, shared request owner, cancellation leaf, watch leaf, lock leaf, process leaf,
 file-pattern crate, text leaf, JSON leaf, entry and tool record crates, brand crate and the
 terminal scenario harness. Shared path helpers take supplied directory observations and
 add no global environment, filesystem service, directory cache, scheduler or workspace
