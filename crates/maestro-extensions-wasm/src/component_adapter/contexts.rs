@@ -53,70 +53,111 @@ struct Ordinary<I: Imports> {
     context: I::Context,
 }
 
-impl<I: Imports> ContextPort for Ordinary<I> {
-    fn compact(&self, options: Option<crate::CompactOptions>) -> ExtensionResult<()> {
-        super::compaction::compact(&self.imports, options, |instructions, complete, error| {
-            self.imports
-                .compact(&self.context, instructions, complete, error)
-        })
-    }
-    fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
-        Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
-            _resource: self.imports.ui(&self.context)?,
-        })))
-    }
-    fn has_ui(&self) -> ExtensionResult<bool> {
-        self.imports.has_ui(&self.context)
-    }
-    fn model_registry(&self) -> ExtensionResult<ModelRegistry> {
-        Ok(registry(
-            self.imports.clone(),
-            self.imports.model_registry(&self.context)?,
-        ))
-    }
-    fn model(&self) -> ExtensionResult<Option<Model>> {
-        self.imports
-            .model(&self.context)?
-            .as_deref()
-            .map(decode)
-            .transpose()
-    }
-    fn is_idle(&self) -> ExtensionResult<bool> {
-        self.imports.is_idle(&self.context)
-    }
-    fn signal(&self) -> ExtensionResult<Option<AbortSignal>> {
-        Ok(self
-            .imports
-            .signal(&self.context)?
-            .map(|handle| signal(&self.imports, handle)))
-    }
-    fn abort(&self) -> ExtensionResult<()> {
-        self.imports.abort(&self.context)
-    }
-    fn has_pending_messages(&self) -> ExtensionResult<bool> {
-        self.imports.has_pending_messages(&self.context)
-    }
-    fn shutdown(&self) -> ExtensionResult<()> {
-        self.imports.shutdown(&self.context)
-    }
-    fn get_context_usage(&self) -> ExtensionResult<Option<ContextUsage>> {
-        self.imports.get_context_usage(&self.context)
-    }
-    fn get_system_prompt(&self) -> ExtensionResult<String> {
-        self.imports.get_system_prompt(&self.context)
-    }
+/// Implements shared context capabilities using the selected resource imports.
+macro_rules! context_port {
+    ($context:ident {
+        $compact:ident,
+        $ui:ident,
+        $has_ui:ident,
+        $model_registry:ident,
+        $model:ident,
+        $is_idle:ident,
+        $signal:ident,
+        $abort:ident,
+        $has_pending_messages:ident,
+        $shutdown:ident,
+        $get_context_usage:ident,
+        $get_system_prompt:ident,
+        $session_manager:ident,
+        $cwd:ident,
+    }) => {
+        impl<I: Imports> ContextPort for $context<I> {
+            fn compact(&self, options: Option<crate::CompactOptions>) -> ExtensionResult<()> {
+                super::compaction::compact(
+                    &self.imports,
+                    options,
+                    |instructions, complete, error| {
+                        self.imports
+                            .$compact(&self.context, instructions, complete, error)
+                    },
+                )
+            }
+            fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
+                Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
+                    _resource: self.imports.$ui(&self.context)?,
+                })))
+            }
+            fn has_ui(&self) -> ExtensionResult<bool> {
+                self.imports.$has_ui(&self.context)
+            }
+            fn model_registry(&self) -> ExtensionResult<ModelRegistry> {
+                Ok(registry(
+                    self.imports.clone(),
+                    self.imports.$model_registry(&self.context)?,
+                ))
+            }
+            fn model(&self) -> ExtensionResult<Option<Model>> {
+                self.imports
+                    .$model(&self.context)?
+                    .as_deref()
+                    .map(decode)
+                    .transpose()
+            }
+            fn is_idle(&self) -> ExtensionResult<bool> {
+                self.imports.$is_idle(&self.context)
+            }
+            fn signal(&self) -> ExtensionResult<Option<AbortSignal>> {
+                Ok(self
+                    .imports
+                    .$signal(&self.context)?
+                    .map(|handle| signal(&self.imports, handle)))
+            }
+            fn abort(&self) -> ExtensionResult<()> {
+                self.imports.$abort(&self.context)
+            }
+            fn has_pending_messages(&self) -> ExtensionResult<bool> {
+                self.imports.$has_pending_messages(&self.context)
+            }
+            fn shutdown(&self) -> ExtensionResult<()> {
+                self.imports.$shutdown(&self.context)
+            }
+            fn get_context_usage(&self) -> ExtensionResult<Option<ContextUsage>> {
+                self.imports.$get_context_usage(&self.context)
+            }
+            fn get_system_prompt(&self) -> ExtensionResult<String> {
+                self.imports.$get_system_prompt(&self.context)
+            }
 
-    fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
-        Ok(reader(
-            self.imports.clone(),
-            self.imports.session_manager(&self.context)?,
-        ))
-    }
+            fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
+                Ok(reader(
+                    self.imports.clone(),
+                    self.imports.$session_manager(&self.context)?,
+                ))
+            }
 
-    fn cwd(&self) -> ExtensionResult<String> {
-        self.imports.cwd(&self.context)
-    }
+            fn cwd(&self) -> ExtensionResult<String> {
+                self.imports.$cwd(&self.context)
+            }
+        }
+    };
 }
+
+context_port! { Ordinary {
+    compact,
+    ui,
+    has_ui,
+    model_registry,
+    model,
+    is_idle,
+    signal,
+    abort,
+    has_pending_messages,
+    shutdown,
+    get_context_usage,
+    get_system_prompt,
+    session_manager,
+    cwd,
+} }
 
 /// Wraps a host ordinary context.
 pub(super) fn context<I: Imports>(imports: &I, context: I::Context) -> ExtensionContext {
@@ -134,70 +175,22 @@ struct Command<I: Imports> {
     context: I::CommandContext,
 }
 
-impl<I: Imports> ContextPort for Command<I> {
-    fn compact(&self, options: Option<crate::CompactOptions>) -> ExtensionResult<()> {
-        super::compaction::compact(&self.imports, options, |instructions, complete, error| {
-            self.imports
-                .command_compact(&self.context, instructions, complete, error)
-        })
-    }
-    fn ui(&self) -> ExtensionResult<ExtensionUIContext> {
-        Ok(ExtensionUIContext::new(Rc::new(Ui::<I> {
-            _resource: self.imports.command_ui(&self.context)?,
-        })))
-    }
-    fn has_ui(&self) -> ExtensionResult<bool> {
-        self.imports.command_has_ui(&self.context)
-    }
-    fn model_registry(&self) -> ExtensionResult<ModelRegistry> {
-        Ok(registry(
-            self.imports.clone(),
-            self.imports.command_model_registry(&self.context)?,
-        ))
-    }
-    fn model(&self) -> ExtensionResult<Option<Model>> {
-        self.imports
-            .command_model(&self.context)?
-            .as_deref()
-            .map(decode)
-            .transpose()
-    }
-    fn is_idle(&self) -> ExtensionResult<bool> {
-        self.imports.command_is_idle(&self.context)
-    }
-    fn signal(&self) -> ExtensionResult<Option<AbortSignal>> {
-        Ok(self
-            .imports
-            .command_signal(&self.context)?
-            .map(|handle| signal(&self.imports, handle)))
-    }
-    fn abort(&self) -> ExtensionResult<()> {
-        self.imports.command_abort(&self.context)
-    }
-    fn has_pending_messages(&self) -> ExtensionResult<bool> {
-        self.imports.command_has_pending_messages(&self.context)
-    }
-    fn shutdown(&self) -> ExtensionResult<()> {
-        self.imports.command_shutdown(&self.context)
-    }
-    fn get_context_usage(&self) -> ExtensionResult<Option<ContextUsage>> {
-        self.imports.command_get_context_usage(&self.context)
-    }
-    fn get_system_prompt(&self) -> ExtensionResult<String> {
-        self.imports.command_get_system_prompt(&self.context)
-    }
-
-    fn session_manager(&self) -> ExtensionResult<ReadonlySessionManager> {
-        Ok(reader(
-            self.imports.clone(),
-            self.imports.command_session_manager(&self.context)?,
-        ))
-    }
-
-    fn cwd(&self) -> ExtensionResult<String> {
-        self.imports.command_cwd(&self.context)
-    }
-}
+context_port! { Command {
+    command_compact,
+    command_ui,
+    command_has_ui,
+    command_model_registry,
+    command_model,
+    command_is_idle,
+    command_signal,
+    command_abort,
+    command_has_pending_messages,
+    command_shutdown,
+    command_get_context_usage,
+    command_get_system_prompt,
+    command_session_manager,
+    command_cwd,
+} }
 
 impl<I: Imports> CommandContextPort for Command<I> {
     fn fork<'a>(

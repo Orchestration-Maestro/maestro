@@ -146,7 +146,4 @@ impl<I: Imports> Exports<I> {
     }
 }
 
-/// Encodes authored data after rejecting nonfinite typed numbers.
-pub(super) fn encode_value<T: Serialize>(value: &T) -> Result<String, String> {
-    crate::types::finite::encode_value(value)
-}
+pub(super) use crate::types::finite::encode_value;

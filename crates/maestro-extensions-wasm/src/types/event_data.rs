@@ -178,8 +178,8 @@ impl EventData {
     pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
         let Tag { kind } = object::from_str(text)?;
         Ok(match kind {
-            Kind::ToolCall => Self::ToolCall(ToolCallEvent::decode(text)?),
-            Kind::ToolResult => Self::ToolResult(ToolResultEvent::decode(text)?),
+            Kind::ToolCall => Self::ToolCall(object::from_str(text)?),
+            Kind::ToolResult => Self::ToolResult(object::from_str(text)?),
             Kind::UserBash => Self::UserBash(object::from_str(text)?),
             Kind::ModelSelect => Self::ModelSelect(object::from_str(text)?),
             Kind::ThinkingLevelSelect => Self::ThinkingLevelSelect(object::from_str(text)?),
