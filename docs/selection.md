@@ -38,8 +38,47 @@ model, changing only ID/name. `DEFAULT_MODEL_PER_PROVIDER` is an ordered mutable
 table. Custom results are detached handles, not new registry entries.
 
 The result keeps model, thinking, warning and error independently optional.
-Selection emits no output and owns no process exit. Callers decide how to present
-warnings/errors and how to apply explicit thinking choices.
+`resolve_cli_model` emits no output and owns no process exit. Callers decide how to
+present warnings/errors and how to apply explicit thinking choices.
+
+## Scopes
+
+`resolve_model_scope` resolves ordered patterns against `get_available`; which
+models count as authenticated is decided by the [catalog](catalog.md). A pattern
+containing `*`, `?` or `[` is a glob: a last-colon suffix is removed only when it is
+a valid thinking level, and `provider/id` is tried before the bare ID through the
+shared [file-pattern matcher](package-patterns.md); its failure is returned, stopping
+resolution after any warnings already written. Other patterns follow
+`parse_model_pattern` with its default invalid-suffix fallback.
+Patterns are processed in the order supplied; within one glob, matches keep catalog
+order. A model repeats only by provider and ID; the first occurrence keeps its
+thinking level. A warning from `parse_model_pattern`, when it returns one, and a
+`No models match pattern` warning, when a pattern selects nothing, go to stderr,
+yellow when color is requested, without stopping later patterns.
+
+## Initial choice and restoration
+
+`find_initial_model` considers the command line only when provider and model are
+both nonempty. If `resolve_cli_model` reports an error, that error is returned as a
+`CatalogError` with no result; if it selects a model, the result carries medium
+thinking (`DEFAULT_THINKING_LEVEL`). Otherwise it takes the
+first scoped model unless continuing, with scoped, supplied default, then medium
+thinking; then the saved default if it exists, without checking authentication;
+then the first available model matching `DEFAULT_MODEL_PER_PROVIDER` in table
+order, then the first available model, then none. Every successful result carries
+no fallback message. It neither restores sessions nor clamps thinking.
+
+`restore_model_from_session` returns the saved model when it exists and has
+configured authentication. Otherwise the supplied current model is used without
+checks, then the same default-or-first available choice, then none. A fallback
+carries `Could not restore model <saved> (<reason>). Using <fallback>.`, where the
+reason is `model no longer exists` or `no auth configured`.
+
+With printing requested, restoration writes success and fallback notices to stdout
+(dim with color) and the failure warning to stderr (yellow with color). `ModelResolverOutput` borrows
+both writers and the color choice; writes are best-effort and never change the
+selection. A returned model is a shared handle: the catalog's own when it came from
+the catalog, otherwise the caller's current model or a detached command-line descriptor.
 
 ## Locale reader
 

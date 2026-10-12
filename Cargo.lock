@@ -1697,6 +1697,8 @@ dependencies = [
  "indexmap",
  "maestro-credentials",
  "maestro-models",
+ "maestro-pattern",
+ "owo-colors",
  "serde",
  "serde_json",
  "tokio",
