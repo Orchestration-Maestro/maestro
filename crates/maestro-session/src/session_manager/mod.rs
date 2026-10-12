@@ -1,4 +1,12 @@
 #![doc = include_str!("../../../../docs/sessions/session_manager.md")]
+mod conversions;
+#[cfg(not(target_arch = "wasm32"))]
+mod files;
+#[cfg(not(target_arch = "wasm32"))]
+mod persistence;
+pub use conversions::migrate_session_entries;
+#[cfg(not(target_arch = "wasm32"))]
+pub use files::{find_most_recent_session, get_default_session_dir, load_entries_from_file};
 /// Context projection operations.
 pub mod context;
 /// Session record views.
@@ -12,12 +20,18 @@ use serde_json::{Value, json};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-/// In-memory history with indexed entries and a selected branch.
+/// Retained history with indexed entries and a selected branch.
 pub struct SessionManager {
     /// Authored working directory captured at construction.
     cwd: String,
     /// Session-directory spelling; empty in memory mode.
     session_dir: String,
+    /// Whether native publication is enabled.
+    persist: bool,
+    /// Whether the active history has already been published.
+    flushed: bool,
+    /// Selected native filename, including before publication.
+    session_file: Option<String>,
     /// Current session identity.
     session_id: String,
     /// Header followed by retained entries.
@@ -39,24 +53,37 @@ impl SessionManager {
             Some(cwd) => cwd.to_owned(),
             None => std::env::current_dir()?.to_string_lossy().into_owned(),
         };
-        let mut manager = Self {
-            cwd,
-            session_dir: String::new(),
-            session_id: String::new(),
-            file_entries: Vec::new(),
-            by_id: HashMap::new(),
-            leaf_id: None,
-        };
+        let mut manager = Self::base(cwd, String::new(), false)?;
         manager.new_session(NewSessionOptions::default());
         Ok(manager)
     }
 
-    /// Replace active history with a new header; a memory session has no file.
+    /// Initialize empty retained state, creating a native directory when configured.
+    fn base(cwd: String, session_dir: String, persist: bool) -> std::io::Result<Self> {
+        #[cfg(not(target_arch = "wasm32"))]
+        if persist && !session_dir.is_empty() && !std::path::Path::new(&session_dir).exists() {
+            std::fs::create_dir_all(&session_dir)?;
+        }
+        Ok(Self {
+            cwd,
+            session_dir,
+            persist,
+            flushed: false,
+            session_file: None,
+            session_id: String::new(),
+            file_entries: Vec::new(),
+            by_id: HashMap::new(),
+            leaf_id: None,
+        })
+    }
+
+    /// Replace history without writing; native mode selects a fresh filename.
     pub fn new_session(&mut self, options: NewSessionOptions) -> Option<&str> {
         self.session_id = options.id.unwrap_or_else(|| Uuid::now_v7().to_string());
+        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
         let mut header = json!({
             "type": "session", "version": CURRENT_SESSION_VERSION,
-            "id": self.session_id, "timestamp": Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
+            "id": self.session_id, "timestamp": timestamp,
             "cwd": self.cwd,
         });
         match options.parent_session {
@@ -64,14 +91,26 @@ impl SessionManager {
             Presence::Null => header["parentSession"] = Value::Null,
             Presence::Present(parent) => header["parentSession"] = parent.into(),
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.persist {
+            let timestamp = timestamp.replace([':', '.'], "-");
+            self.session_file = Some(maestro_path::join(&[
+                &self.session_dir,
+                &format!("{timestamp}_{}.jsonl", self.session_id),
+            ]));
+        }
+        self.flushed = false;
         self.file_entries = vec![header];
         self.by_id.clear();
         self.leaf_id = None;
-        None
+        self.session_file.as_deref()
     }
 
     /// Append the raw message as a child of the selected entry and select it.
-    pub fn append_message(&mut self, message: Value) -> String {
+    ///
+    /// # Errors
+    /// Publication errors leave the accepted memory and any written bytes in place.
+    pub fn append_message(&mut self, message: Value) -> std::io::Result<String> {
         let id = generate_id(|id| self.by_id.contains_key(id), Uuid::new_v4);
         let mut entry = json!({
             "type": "message", "id": id, "parentId": self.leaf_id,
@@ -81,7 +120,9 @@ impl SessionManager {
         self.by_id.insert(id.clone(), self.file_entries.len());
         self.file_entries.push(entry);
         self.leaf_id = Some(id.clone());
-        id
+        #[cfg(not(target_arch = "wasm32"))]
+        self.persist_entry()?;
+        Ok(id)
     }
     /// Borrow the selected entry identity, if any.
     #[must_use]
@@ -100,10 +141,13 @@ impl SessionManager {
             .get(id)
             .and_then(|position| self.file_entries.get(*position))
     }
-    /// Borrow the retained entries after the generated header.
+    /// Borrow nonheader records in retained order.
     #[must_use]
-    pub fn get_entries(&self) -> &[SessionEntry] {
-        &self.file_entries[1..]
+    pub fn get_entries(&self) -> Vec<&SessionEntry> {
+        self.file_entries
+            .iter()
+            .filter(|entry| entry["type"] != "session")
+            .collect()
     }
 
     /// Borrow root-first ancestry from an explicit identity or the selected leaf.
@@ -128,7 +172,9 @@ impl SessionManager {
     /// Propagates reached property errors from context projection.
     pub fn build_session_context(&self) -> Result<SessionContext, serde_json::Error> {
         let leaf = self.get_leaf_id().map_or(Presence::Null, Presence::Present);
-        context::indexed_context(self.get_entries().last(), leaf, |id| self.get_entry(id))
+        context::indexed_context(self.get_entries().last().copied(), leaf, |id| {
+            self.get_entry(id)
+        })
     }
     /// Select an existing entry without changing retained history.
     ///
@@ -145,17 +191,17 @@ impl SessionManager {
         Ok(())
     }
 
-    /// Whether history is persisted; memory history is not.
+    /// Whether native publication is enabled.
     #[must_use]
     pub fn is_persisted(&self) -> bool {
-        false
+        self.persist
     }
     /// Borrow the captured working-directory spelling.
     #[must_use]
     pub fn get_cwd(&self) -> &str {
         &self.cwd
     }
-    /// Memory history has no session directory.
+    /// Borrow the configured session-directory spelling.
     #[must_use]
     pub fn get_session_dir(&self) -> &str {
         &self.session_dir
@@ -165,10 +211,10 @@ impl SessionManager {
     pub fn get_session_id(&self) -> &str {
         &self.session_id
     }
-    /// Memory history has no session file.
+    /// Borrow the selected filename, including before publication.
     #[must_use]
     pub fn get_session_file(&self) -> Option<&str> {
-        None
+        self.session_file.as_deref()
     }
     /// Borrow the retained current header.
     #[must_use]

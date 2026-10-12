@@ -1,0 +1,3845 @@
+{
+  "cases": [
+    {
+      "id": "version-absent",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored",
+              "version": 3
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-null",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": null,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-zero",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 0,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-negative",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": -1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-one",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-fraction",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 1.5,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-two",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "old-a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "old-b",
+              "parentId": "old-a",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-between",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 2.5,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "old-a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "old-b",
+              "parentId": "old-a",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "custom",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-current",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 3,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "old-a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "hookMessage",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "old-b",
+              "parentId": "old-a",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "hookMessage",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "version-future",
+      "test": "historical_versions_select_only_required_conversions",
+      "input": [
+        {
+          "type": "session",
+          "version": 9,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": "old-a",
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          },
+          "extra": {
+            "z": [
+              1,
+              2,
+              1
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 9,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "old-a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "hookMessage",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "old-b",
+              "parentId": "old-a",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              },
+              "extra": {
+                "z": [
+                  1,
+                  2,
+                  1
+                ]
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "hookMessage",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "wrong-version-\"2\"",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": "2",
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "wrong-version-\"3\"",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": "3",
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "wrong-version-\"bad\"",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": "bad",
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "wrong-version-false",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": false,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "wrong-version-[]",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": [],
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "wrong-version-{}",
+      "test": "conversion_rejects_nonnumeric_versions_at_the_consuming_read",
+      "input": [
+        {
+          "type": "session",
+          "version": {},
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "cut-before",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 1
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "00000001",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-forward",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 3
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "00000003",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-self",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 2
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "00000002",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-header",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 0
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-past",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 9
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-negative",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": -1
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-fraction",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": 1.2
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-null",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": null
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "firstKeptEntryIndex": null,
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-string",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged",
+          "firstKeptEntryIndex": "1"
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "firstKeptEntryIndex": "1",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cut-absent",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "old-a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "old-cut",
+          "summary": "retained",
+          "tokensBefore": 9,
+          "timestamp": "2025-01-01T01:00:00",
+          "firstKeptEntryId": "unchanged"
+        },
+        {
+          "type": "message",
+          "id": "old-b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "old-b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "id": "00000002",
+              "summary": "retained",
+              "tokensBefore": 9,
+              "timestamp": "2025-01-01T01:00:00",
+              "firstKeptEntryId": "unchanged",
+              "parentId": "00000001"
+            },
+            {
+              "type": "message",
+              "id": "00000003",
+              "parentId": "00000002",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "retained",
+                "tokensBefore": 9,
+                "timestamp": 1735693200000
+              },
+              {
+                "role": "user",
+                "content": "old-b",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "conversion-wire-cut-1.0",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": {
+        "jsonl": "{\"type\":\"session\",\"version\":1,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"type\":\"message\",\"id\":\"kept\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":1}}\n{\"type\":\"compaction\",\"summary\":\"wire-cut\",\"tokensBefore\":4,\"timestamp\":\"2025-01-01\",\"firstKeptEntryIndex\":1.0}"
+      },
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "kept",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "summary": "wire-cut",
+              "tokensBefore": 4,
+              "timestamp": "2025-01-01",
+              "id": "00000002",
+              "parentId": "00000001",
+              "firstKeptEntryId": "00000001"
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "wire-cut",
+                "tokensBefore": 4,
+                "timestamp": 1735689600000
+              },
+              {
+                "role": "user",
+                "content": "kept",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "conversion-wire-cut-1e0",
+      "test": "conversion_cut_indices_use_final_header_inclusive_ids",
+      "input": {
+        "jsonl": "{\"type\":\"session\",\"version\":1,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"type\":\"message\",\"id\":\"kept\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":1}}\n{\"type\":\"compaction\",\"summary\":\"wire-cut\",\"tokensBefore\":4,\"timestamp\":\"2025-01-01\",\"firstKeptEntryIndex\":1e0}"
+      },
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "kept",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "compaction",
+              "summary": "wire-cut",
+              "tokensBefore": 4,
+              "timestamp": "2025-01-01",
+              "id": "00000002",
+              "parentId": "00000001",
+              "firstKeptEntryId": "00000001"
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "compactionSummary",
+                "summary": "wire-cut",
+                "tokensBefore": 4,
+                "timestamp": 1735689600000
+              },
+              {
+                "role": "user",
+                "content": "kept",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "collision",
+      "test": "conversion_ids_track_prior_allocations",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "one",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "one",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "two",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "two",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "aaaaaaaa",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "one",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "bbbbbbbb",
+              "parentId": "aaaaaaaa",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "two",
+                "timestamp": 1
+              }
+            }
+          ],
+          "context": {
+            "messages": [
+              {
+                "role": "user",
+                "content": "one",
+                "timestamp": 1
+              },
+              {
+                "role": "user",
+                "content": "two",
+                "timestamp": 1
+              }
+            ],
+            "thinkingLevel": "off",
+            "model": null
+          }
+        }
+      }
+    },
+    {
+      "id": "conversion-empty",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [],
+      "expected": {
+        "ok": {
+          "entries": []
+        }
+      }
+    },
+    {
+      "id": "conversion-header-only",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-headerless",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "a",
+                "timestamp": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-multiple-headers",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 1,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "a",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "session",
+          "version": 2,
+          "id": "second",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "b",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "b",
+            "timestamp": 1
+          }
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "a",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "session",
+              "version": 3,
+              "id": "second",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000002",
+              "parentId": "00000001",
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "b",
+                "timestamp": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-roles",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "0",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "hookMessage",
+            "content": "0",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "1",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "custom",
+            "content": "1",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "2",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "user",
+            "content": "2",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "3",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "toolResult",
+            "content": "3",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "4",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": {
+            "role": "future",
+            "content": "4",
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "custom_message",
+          "id": "c",
+          "role": "hookMessage"
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "0",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "0",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "1",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "1",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "2",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "user",
+                "content": "2",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "3",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "toolResult",
+                "content": "3",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "message",
+              "id": "4",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "future",
+                "content": "4",
+                "timestamp": 1
+              }
+            },
+            {
+              "type": "custom_message",
+              "id": "c",
+              "role": "hookMessage"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-null-message",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": null
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-missing-message",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a"
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "a"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "conversion-null-entry",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        null
+      ],
+      "expected": {
+        "native_error": "InvalidData"
+      }
+    },
+    {
+      "id": "conversion-wrong-message",
+      "test": "conversions_preserve_unselected_fields_and_roles",
+      "input": [
+        {
+          "type": "session",
+          "version": 2,
+          "id": "history",
+          "timestamp": "2025-01-01T00:00:00Z",
+          "cwd": "stored"
+        },
+        {
+          "type": "message",
+          "id": "a",
+          "parentId": null,
+          "timestamp": "2025-01-01T00:00:01Z",
+          "message": 7
+        }
+      ],
+      "expected": {
+        "ok": {
+          "entries": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": 7
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "load-missing",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": null
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-empty",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": ""
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-garbage",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "garbage\n"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-wrong-header",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"message\",\"id\":\"a\"}\n"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-number-first",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "1\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-null-first",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "null\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-id-number",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":2}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-id-null",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":null}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-id-absent",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\"}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-id-empty",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":\"\"}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "id": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-valid",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"type\":\"message\",\"id\":\"a\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1}}\n"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "timestamp": "2025-01-01T00:00:01Z",
+            "message": {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-malformed-before",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "garbage\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-mixed",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\nnot json\n{\"type\":\"message\",\"id\":\"a\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1}}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "timestamp": "2025-01-01T00:00:01Z",
+            "message": {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-blank-bom",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "﻿ \n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\r\n\t"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-nel",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": []
+      }
+    },
+    {
+      "id": "load-interior-bom",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n﻿{\"type\":\"message\",\"id\":\"a\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1}}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-raw",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\nnull\n7\n[]\n{\"type\":\"future\",\"id\":\"a\",\"x\":1,\"x\":2,\"nested\":{\"z\":1,\"a\":2,\"z\":3}}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          null,
+          7,
+          [],
+          {
+            "type": "future",
+            "id": "a",
+            "x": 2,
+            "nested": {
+              "z": 3,
+              "a": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-duplicate-admission",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"wrong\",\"id\":0,\"type\":\"session\",\"id\":\"last\"}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "id": "last"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-malformed-tail",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"partial\":"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-header-only",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-double-header",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"type\":\"session\",\"version\":3,\"id\":\"other\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\n{\"type\":\"message\",\"id\":\"a\",\"parentId\":null,\"timestamp\":\"2025-01-01T00:00:01Z\",\"message\":{\"role\":\"user\",\"content\":\"a\",\"timestamp\":1}}"
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          {
+            "type": "session",
+            "version": 3,
+            "id": "other",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "timestamp": "2025-01-01T00:00:01Z",
+            "message": {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "load-damaged-utf8",
+      "test": "file_loading_keeps_raw_lines_after_header_admission",
+      "input": {
+        "bytes": [
+          123,
+          34,
+          116,
+          121,
+          112,
+          101,
+          34,
+          58,
+          34,
+          115,
+          101,
+          115,
+          115,
+          105,
+          111,
+          110,
+          34,
+          44,
+          34,
+          118,
+          101,
+          114,
+          115,
+          105,
+          111,
+          110,
+          34,
+          58,
+          51,
+          44,
+          34,
+          105,
+          100,
+          34,
+          58,
+          34,
+          104,
+          105,
+          115,
+          116,
+          111,
+          114,
+          121,
+          34,
+          44,
+          34,
+          116,
+          105,
+          109,
+          101,
+          115,
+          116,
+          97,
+          109,
+          112,
+          34,
+          58,
+          34,
+          50,
+          48,
+          50,
+          53,
+          45,
+          48,
+          49,
+          45,
+          48,
+          49,
+          84,
+          48,
+          48,
+          58,
+          48,
+          48,
+          58,
+          48,
+          48,
+          90,
+          34,
+          44,
+          34,
+          99,
+          119,
+          100,
+          34,
+          58,
+          34,
+          115,
+          116,
+          111,
+          114,
+          101,
+          100,
+          34,
+          125,
+          10,
+          123,
+          34,
+          116,
+          121,
+          112,
+          101,
+          34,
+          58,
+          34,
+          102,
+          117,
+          116,
+          117,
+          114,
+          101,
+          34,
+          44,
+          34,
+          105,
+          100,
+          34,
+          58,
+          34,
+          98,
+          114,
+          111,
+          107,
+          101,
+          110,
+          45,
+          116,
+          101,
+          120,
+          116,
+          34,
+          44,
+          34,
+          116,
+          101,
+          120,
+          116,
+          34,
+          58,
+          34,
+          255,
+          34,
+          125,
+          10,
+          123,
+          34,
+          112,
+          97,
+          114,
+          116,
+          105,
+          97,
+          108,
+          34,
+          58,
+          34,
+          226,
+          130
+        ]
+      },
+      "expected": {
+        "ok": [
+          {
+            "type": "session",
+            "version": 3,
+            "id": "history",
+            "timestamp": "2025-01-01T00:00:00Z",
+            "cwd": "stored"
+          },
+          {
+            "type": "future",
+            "id": "broken-text",
+            "text": "�"
+          }
+        ]
+      }
+    },
+    {
+      "id": "probe-empty",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": ""
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-valid",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-blank",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-bom",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "﻿{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-leading-space",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": " {\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-invalid",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "broken\n{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-crlf",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\r\n"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-nul",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\u0000"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-bad-tail",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"version\":3,\"id\":\"history\",\"timestamp\":\"2025-01-01T00:00:00Z\",\"cwd\":\"stored\"}\nbroken"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-wrong-id",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":3}"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "probe-bytes-511",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":\"x\",\"pad\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-bytes-512",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":\"x\",\"pad\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "id": "probe-bytes-513",
+      "test": "continuation_probe_is_raw_first_line_with_a_512_byte_bound",
+      "input": {
+        "content": "{\"type\":\"session\",\"id\":\"x\",\"pad\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+      },
+      "expected": {
+        "ok": false
+      }
+    },
+    {
+      "id": "default-posix-",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/----"
+      }
+    },
+    {
+      "id": "default-win32-",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\----"
+      }
+    },
+    {
+      "id": "default-posix-/",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "/",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/----"
+      }
+    },
+    {
+      "id": "default-win32-/",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "/",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\----"
+      }
+    },
+    {
+      "id": "default-posix-//root/work",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "//root/work",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/---root-work--"
+      }
+    },
+    {
+      "id": "default-win32-//root/work",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "//root/work",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\---root-work--"
+      }
+    },
+    {
+      "id": "default-posix-/a:b/c\\d",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "/a:b/c\\d",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/--a-b-c-d--"
+      }
+    },
+    {
+      "id": "default-win32-/a:b/c\\d",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "/a:b/c\\d",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\--a-b-c-d--"
+      }
+    },
+    {
+      "id": "default-posix-C:\\Users\\A",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "C:\\Users\\A",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/--C--Users-A--"
+      }
+    },
+    {
+      "id": "default-win32-C:\\Users\\A",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "C:\\Users\\A",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\--C--Users-A--"
+      }
+    },
+    {
+      "id": "default-posix-\\\\host\\share",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "\\\\host\\share",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/---host-share--"
+      }
+    },
+    {
+      "id": "default-win32-\\\\host\\share",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "\\\\host\\share",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\---host-share--"
+      }
+    },
+    {
+      "id": "default-posix-relative/../authored",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "relative/../authored",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/--relative-..-authored--"
+      }
+    },
+    {
+      "id": "default-win32-relative/../authored",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "relative/../authored",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\--relative-..-authored--"
+      }
+    },
+    {
+      "id": "default-posix-界/名",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "界/名",
+        "policy": "posix",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent/sessions/--界-名--"
+      }
+    },
+    {
+      "id": "default-win32-界/名",
+      "test": "default_directory_encodes_authored_cwd_before_joining",
+      "input": {
+        "cwd": "界/名",
+        "policy": "win32",
+        "agentDir": "root/../agent"
+      },
+      "expected": {
+        "ok": "agent\\sessions\\--界-名--"
+      }
+    },
+    {
+      "id": "conversion-time-2025-01-01",
+      "test": "converted_context_uses_existing_local_timestamp_policy",
+      "input": {
+        "timestamp": "2025-01-01"
+      },
+      "expected": {
+        "ok": {
+          "messages": [
+            {
+              "role": "compactionSummary",
+              "summary": "time",
+              "tokensBefore": 1,
+              "timestamp": 1735689600000
+            },
+            {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          ],
+          "thinkingLevel": "off",
+          "model": null
+        }
+      }
+    },
+    {
+      "id": "conversion-time-2025-01-01T01:00:00",
+      "test": "converted_context_uses_existing_local_timestamp_policy",
+      "input": {
+        "timestamp": "2025-01-01T01:00:00"
+      },
+      "expected": {
+        "ok": {
+          "messages": [
+            {
+              "role": "compactionSummary",
+              "summary": "time",
+              "tokensBefore": 1,
+              "timestamp": 1735693200000
+            },
+            {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          ],
+          "thinkingLevel": "off",
+          "model": null
+        }
+      }
+    },
+    {
+      "id": "conversion-time-2025-01-01T01:00:00+02:00",
+      "test": "converted_context_uses_existing_local_timestamp_policy",
+      "input": {
+        "timestamp": "2025-01-01T01:00:00+02:00"
+      },
+      "expected": {
+        "ok": {
+          "messages": [
+            {
+              "role": "compactionSummary",
+              "summary": "time",
+              "tokensBefore": 1,
+              "timestamp": 1735686000000
+            },
+            {
+              "role": "user",
+              "content": "a",
+              "timestamp": 1
+            }
+          ],
+          "thinkingLevel": "off",
+          "model": null
+        }
+      }
+    },
+    {
+      "id": "conversion-repeat",
+      "test": "repeated_conversion_is_inert_after_current_version",
+      "input": {},
+      "expected": {
+        "ok": {
+          "once": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old",
+                "timestamp": 1
+              }
+            }
+          ],
+          "twice": [
+            {
+              "type": "session",
+              "version": 3,
+              "id": "history",
+              "timestamp": "2025-01-01T00:00:00Z",
+              "cwd": "stored"
+            },
+            {
+              "type": "message",
+              "id": "00000001",
+              "parentId": null,
+              "timestamp": "2025-01-01T00:00:01Z",
+              "message": {
+                "role": "custom",
+                "content": "old",
+                "timestamp": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "numbers",
+      "test": "jsonl_uses_compact_finite_number_spelling",
+      "input": {
+        "values": [
+          1,
+          0,
+          1e-07,
+          1e-06,
+          100000000000000000000,
+          1e+21,
+          0.125
+        ]
+      },
+      "expected": {
+        "ok": "{\"values\":[1,0,1e-7,0.000001,100000000000000000000,1e+21,0.125]}\n"
+      }
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 # Session history and stored-entry context
 
 `maestro-session::session_manager` parses supplied JSONL text and projects a
-selected ancestry into context without session-file reads or writes.
+selected ancestry into context. Native operations create, reopen, switch and
+continue JSONL histories; explicit memory history remains available.
 Stored timestamp conversion delegates to [message formatting](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/messages.md).
 
 ## Raw entries and explicit views
@@ -80,23 +81,70 @@ Context uses the [projection rules](#branch-selection) above.
 
 Reads borrow retained records. To keep a record across mutable operations,
 callers take an explicit owned copy. `new_session` replaces the header and
-clears entries, index and selection while retaining cwd; it returns no file.
+clears entries, index and selection while retaining cwd. It writes no file;
+native history selects a fresh filename, while memory history retains any
+explicitly selected filename.
 `NewSessionOptions.parent_session` preserves missing, null and string metadata.
-Memory history reports false persistence, an empty session directory and no file.
+Memory history reports false persistence and an empty session directory. Ordinary
+memory operations perform no file I/O; explicit native `set_session_file` may
+read and convert records without writing them. `get_entries` borrows every
+nonheader record in retained order.
 
 ```rust
 use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::json;
 
 let mut history = SessionManager::in_memory(Some("work"))?;
-let root = history.append_message(json!({"role":"user", "content":"hello", "timestamp":1}));
-history.append_message(json!({"role":"user", "content":"abandoned", "timestamp":2}));
+let root = history.append_message(json!({"role":"user", "content":"hello", "timestamp":1}))?;
+history.append_message(json!({"role":"user", "content":"abandoned", "timestamp":2}))?;
 history.branch(&root)?;
-history.append_message(json!({"role":"user", "content":"selected", "timestamp":3}));
+history.append_message(json!({"role":"user", "content":"selected", "timestamp":3}))?;
 let context = history.build_session_context()?;
 assert_eq!(context.messages[1]["content"], "selected");
 assert_eq!(history.get_entries().len(), 3);
 assert_eq!(history.new_session(NewSessionOptions::default()), None);
 assert!(history.get_entries().is_empty());
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+## Native history
+
+Native `create` and `continue_recent` use the supplied directory or encode the
+stored cwd beneath the caller's resolved agent root. `open` resolves its explicit
+filename lexically and reads it once; cwd override wins over stored cwd, with a
+runtime fallback for missing/null cwd. Explicit directory spellings are retained.
+
+A fresh history publishes at its first assistant message. Loaded and recovered
+histories stay published: subsequent appends write one record. Append errors leave
+accepted memory and any partial bytes in place; failed switches retain the prior
+manager state. Empty or invalid-header files are rewritten immediately at the
+selected path. A missing explicit file waits for first publication at that path.
+
+Continuation enumerates names, probes the `.jsonl` candidates, then reads the
+valid candidates' metadata in a separate pass. It selects by descending
+millisecond mtime, preserving native enumeration ties. A metadata error discards
+the selection; an individual probe failure skips that candidate. The header
+probe reads at most 512 bytes.
+Historical conversion applies only the ID/parent and custom-message passes;
+current and future versions remain unchanged. Removing a numeric legacy compaction
+cut index preserves the remaining object member order. Loading retains raw records, while
+selected identity, version and cwd reads can return native invalid-data errors.
+
+```rust
+# #[cfg(not(target_arch = "wasm32"))] {
+use maestro_session::SessionManager;
+use serde_json::json;
+
+let directory = std::env::temp_dir().join(format!("maestro-example-{}", uuid::Uuid::new_v4()));
+let directory_text = directory.to_string_lossy();
+let mut history = SessionManager::create("work", Some(&directory_text), "unused")?;
+let path = history.get_session_file().unwrap().to_owned();
+history.append_message(json!({"role":"user", "content":"hello"}))?;
+assert!(!std::path::Path::new(&path).exists());
+history.append_message(json!({"role":"assistant", "content":"reply"}))?;
+let reopened = SessionManager::open(&path, None, None)?;
+assert_eq!(reopened.get_entries().len(), 2);
+std::fs::remove_dir_all(directory)?;
+# }
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```

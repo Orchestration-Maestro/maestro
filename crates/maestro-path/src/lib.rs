@@ -24,3 +24,14 @@ pub use path::posix::{
 pub use path::win32::{
     SEP, basename, dirname, is_absolute, join, normalize, relative, resolve, try_resolve,
 };
+
+/// Read each drive's `=X:` variable through `var`, in letter order.
+pub fn env_drive_directories(
+    var: impl Fn(&str) -> Option<std::ffi::OsString>,
+) -> Vec<(char, String)> {
+    ('A'..='Z')
+        .filter_map(|letter| {
+            var(&format!("={letter}:")).map(|dir| (letter, dir.to_string_lossy().into_owned()))
+        })
+        .collect()
+}

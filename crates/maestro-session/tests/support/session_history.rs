@@ -142,7 +142,7 @@ impl Replay {
             "sessionFile": manager.get_session_file().map_or_else(absent, Value::from),
             "header": self.header(manager), "headerKeys": keys(manager.get_header().unwrap()),
             "entries": entries.iter().map(|entry| self.entry(entry)).collect::<Vec<_>>(),
-            "entryKeys": entries.iter().map(keys).collect::<Vec<_>>(),
+            "entryKeys": entries.iter().map(|entry| keys(entry)).collect::<Vec<_>>(),
             "messageKeys": entries.iter().map(|entry| keys(&entry["message"])).collect::<Vec<_>>(),
             "leafId": self.identity(&json!(manager.get_leaf_id())),
             "leafEntry": manager.get_leaf_entry().map_or_else(absent, |entry| self.entry(entry)),
@@ -164,7 +164,7 @@ impl Replay {
     fn step(&mut self, manager: &mut SessionManager, step: &Step) -> (&'static str, Value) {
         match step {
             Step::Append { message } => {
-                let id = manager.append_message(message.clone());
+                let id = manager.append_message(message.clone()).unwrap();
                 assert_eq!(id.len(), 8);
                 assert!(
                     id.bytes()
