@@ -30,8 +30,9 @@ Missing or empty model input returns an empty outcome; otherwise selection reads
 explicit providers return catalog-owned diagnostics.
 
 Known provider prefixes take precedence over raw gateway IDs. Explicit providers
-constrain pattern matching and strip at most one matching prefix. Failed inferred
-selection retries the full raw input before synthesizing a custom descriptor.
+constrain pattern matching and strip at most one matching prefix, including
+provider identities containing slashes. Failed inferred selection retries the
+full raw input before synthesizing a custom descriptor.
 Custom fallback copies the provider's configured default, otherwise its first
 model, changing only ID/name. `DEFAULT_MODEL_PER_PROVIDER` is an ordered mutable
 table. Custom results are detached handles, not new registry entries.

@@ -85,10 +85,10 @@ fn select_input(
         });
     }
     if let Some(provider) = provider.filter(|_| explicit.is_some())
-        && let Some((prefix, rest)) = input.split_once('/')
-        && prefix.to_lowercase() == provider.to_lowercase()
+        && let Some((boundary, _)) = input.match_indices('/').nth(provider.matches('/').count())
+        && input[..boundary].to_lowercase() == provider.to_lowercase()
     {
-        pattern = rest;
+        pattern = &input[boundary + 1..];
     }
     let candidates: Vec<_> = all
         .iter()

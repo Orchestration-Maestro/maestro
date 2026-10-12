@@ -145,3 +145,54 @@ fn cli_prefix_stripping_uses_authored_unicode_boundary() {
         "strip the authored prefix, not the canonical spelling's length"
     );
 }
+#[test]
+fn cli_explicit_slash_provider_strips_prefix_before_partial_selection() {
+    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use std::sync::Arc;
+    let model = selection::descriptor("friendly-model", "team/proxy");
+    let registry = selection::registry(&[Arc::clone(&model)]);
+    let result = resolve_cli_model(
+        ResolveCliModelOptions {
+            cli_provider: Some("TEAM/PROXY"),
+            cli_model: Some("team/proxy/friend"),
+            model_registry: &registry,
+        },
+        &str::cmp,
+    );
+    assert!(Arc::ptr_eq(&result.model.unwrap(), &model));
+    assert_eq!(result.warning, None);
+    assert!(result.error.is_none());
+}
+#[test]
+fn cli_explicit_slash_provider_strips_once_before_custom_fallback() {
+    use maestro_catalog::{ResolveCliModelOptions, resolve_cli_model};
+    use std::sync::Arc;
+    let model = selection::descriptor("friendly-model", "team/proxy");
+    let registry = selection::registry(&[Arc::clone(&model)]);
+    for (input, id) in [
+        ("team/proxy/unknown", "unknown"),
+        ("team/proxy/team/proxy/unknown", "team/proxy/unknown"),
+    ] {
+        let result = resolve_cli_model(
+            ResolveCliModelOptions {
+                cli_provider: Some("team/proxy"),
+                cli_model: Some(input),
+                model_registry: &registry,
+            },
+            &str::cmp,
+        );
+        let custom = result.model.unwrap();
+        assert!(!Arc::ptr_eq(&custom, &model));
+        let mut expected = model.read().unwrap().clone();
+        expected.id = id.into();
+        expected.name = id.into();
+        assert_eq!(*custom.read().unwrap(), expected);
+        assert_eq!(
+            result.warning,
+            Some(format!(
+                "Model \"{id}\" not found for provider \"team/proxy\". Using custom model id."
+            ))
+        );
+        assert!(result.error.is_none());
+    }
+}

@@ -12496,7 +12496,7 @@
       "pattern": "shared-name",
       "models": [
         {
-          "id": "a",
+          "id": "A",
           "name": "shared-name",
           "api": "anthropic-messages",
           "provider": "p",
@@ -12516,7 +12516,7 @@
           "maxTokens": 8192
         },
         {
-          "id": "z",
+          "id": "a",
           "name": "shared-name",
           "api": "anthropic-messages",
           "provider": "q",
@@ -12539,7 +12539,7 @@
     },
     "expected": {
       "model": {
-        "id": "z",
+        "id": "a",
         "name": "shared-name",
         "api": "anthropic-messages",
         "provider": "q",

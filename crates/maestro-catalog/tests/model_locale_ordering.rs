@@ -65,6 +65,19 @@ fn check_order(case: &LocaleCase, reader: &dyn Fn(&str) -> Option<String>) {
 }
 #[test]
 fn controlled_collation_drives_public_selection() {
+    let upper = selection::descriptor("A", "p");
+    let lower = selection::descriptor("a", "q");
+    for handle in [&upper, &lower] {
+        handle.write().unwrap().name = "shared-name".into();
+    }
+    let native = model_id_comparator(&|_| None).unwrap();
+    let result = parse_model_pattern(
+        "shared-name",
+        &[std::sync::Arc::clone(&upper), lower],
+        maestro_catalog::ParseModelPatternOptions::default(),
+        &native,
+    );
+    assert!(std::sync::Arc::ptr_eq(&result.model.unwrap(), &upper));
     selection::replay(&["case_169"]);
 }
 /// Child fixture index, absent in the parent runner.
