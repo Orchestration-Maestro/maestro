@@ -16,7 +16,7 @@ use crate::{
 };
 use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
-use maestro_path::{Cwd, SEP, basename, dirname, relative};
+use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
 use maestro_theme::{Theme, ThemeColor, ThemeError, get_language_from_path, highlight_code};
 use maestro_tui::{Text, tui::ComponentHandle};
 use serde_json::Value;
@@ -107,12 +107,26 @@ fn docs_classification(
     absolute: &str,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<Option<Classification>> {
-    let process_cwd = std::env::current_dir().map_err(|error| diagnostic(&error))?;
-    let cwd = Cwd {
-        current: &process_cwd.to_string_lossy(),
-        drive_directories: &[],
+    let readme_dir = dirname(&context.readme_path);
+    let process_cwd;
+    let anchored =
+        try_resolve(&[&readme_dir], &[]).is_ok() && try_resolve(&[absolute], &[]).is_ok();
+    let cwd = if anchored {
+        Cwd {
+            current: "",
+            drive_directories: &[],
+        }
+    } else {
+        process_cwd = std::env::current_dir()
+            .map_err(|error| diagnostic(&error))?
+            .to_string_lossy()
+            .into_owned();
+        Cwd {
+            current: &process_cwd,
+            drive_directories: &[],
+        }
     };
-    let path = relative(&dirname(&context.readme_path), absolute, &cwd);
+    let path = relative(&readme_dir, absolute, &cwd);
     let separator = SEP.to_string();
     let outside = path.is_empty()
         || path == ".."

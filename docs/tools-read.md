@@ -262,7 +262,7 @@ collapsed row shows a classified call as `[skill] label`, `read docs label` or
 and hides a successful result entirely; an expanded row shows the ordinary title and
 content. An error result shows its content even when classified; the call title does not
 depend on the result. A file counts as documentation when its path, relative to the
-README's directory, is resolved against the process working directory for any part the
+README's directory, is resolved against the process working directory only for a part the
 path leaves open, such as the drive of a Windows path that starts with a separator. The
 application supplies the README path and registers the expand action.
 

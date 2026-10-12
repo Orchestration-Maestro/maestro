@@ -575,3 +575,63 @@ fn documentation_paths_respect_windows_roots_and_separators() {
         }
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
+    const CHILD: &str = "MAESTRO_READ_RENDER_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "classification_reads_the_process_directory_only_for_operands_that_need_it",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let parent = std::env::temp_dir().join(format!("maestro-render-gone-{}", std::process::id()));
+    let gone = parent.join("gone");
+    std::fs::create_dir_all(&gone).unwrap();
+    std::env::set_current_dir(&gone).unwrap();
+    std::fs::remove_dir(&gone).unwrap();
+    std::fs::remove_dir(&parent).unwrap();
+    assert!(std::env::current_dir().is_err());
+    let _bindings = bind(&["ctrl+o".to_owned()]);
+    let env = Env::new(0);
+    let title = |path: &str, readme: &str| {
+        let args = json!({"path": path});
+        let mut setup = setup();
+        setup.expanded = false;
+        setup.readme = readme.to_owned();
+        let ctx = context(&args, &setup, &env, None);
+        (tool().render_call.as_ref().unwrap())(&args, &env.theme, &ctx).map(|row| {
+            strip_ansi(&row.render(WIDTH)[0])
+                .unwrap()
+                .trim_end()
+                .to_owned()
+        })
+    };
+    let readme = "/opt/maestro/README.md";
+    assert_eq!(
+        title("/opt/maestro/docs/guide.md", readme).unwrap(),
+        "read docs docs/guide.md (ctrl+o to expand)"
+    );
+    assert_eq!(
+        title("/opt/maestro/README.md", readme).unwrap(),
+        "read docs README.md (ctrl+o to expand)"
+    );
+    assert_eq!(
+        title("/srv/other/AGENTS.md", readme).unwrap(),
+        "read resource AGENTS.md (ctrl+o to expand)"
+    );
+    assert!(title("/opt/maestro/docs/guide.md", "relative/README.md").is_err());
+}
