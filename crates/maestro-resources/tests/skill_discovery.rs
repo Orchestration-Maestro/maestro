@@ -1115,6 +1115,7 @@ fn maestro_skills_follow_native_links_and_skip_broken_links() {
 }
 
 /// A linked root entry file is the only skill; every other outcome leaves the child.
+#[cfg(unix)]
 #[test]
 fn skill_entry_links_preserve_precedence_and_failure_fallback() {
     use std::os::unix::{fs::symlink, net::UnixListener};
@@ -1169,6 +1170,7 @@ fn skill_entry_links_preserve_precedence_and_failure_fallback() {
 }
 
 /// The shared classifier reads metadata only for links and returns `None` when that read fails.
+#[cfg(unix)]
 #[test]
 fn entry_classification_uses_supplied_observations() {
     use maestro_resources::skills::observed_type;
@@ -1180,18 +1182,16 @@ fn entry_classification_uses_supplied_observations() {
     std::fs::create_dir(&sub).unwrap();
     let socket = dir.0.join("sock");
     let _listener = UnixListener::bind(&socket).unwrap();
-    let denied = dir.0.join("denied");
-    std::fs::create_dir(&denied).unwrap();
-    std::fs::write(denied.join("inner"), "x").unwrap();
     symlink(&file, dir.0.join("link-file")).unwrap();
     symlink(&sub, dir.0.join("link-dir")).unwrap();
     symlink(&socket, dir.0.join("link-sock")).unwrap();
     symlink("absent", dir.0.join("link-dangling")).unwrap();
-    symlink(denied.join("inner"), dir.0.join("link-denied")).unwrap();
+    symlink(&file, dir.0.join("link-denied")).unwrap();
     symlink("link-loop", dir.0.join("link-loop")).unwrap();
-    let permissions = std::fs::metadata(&denied).unwrap().permissions();
-    std::fs::set_permissions(&denied, std::os::unix::fs::PermissionsExt::from_mode(0o000)).unwrap();
-    let controlled = support::Controlled::default();
+    let controlled = support::Controlled {
+        failures: vec![("metadata", dir.0.join("link-denied"))],
+        ..Default::default()
+    };
     let ops: &dyn ResourceOperations = &controlled;
     let entries = NativeResourceOperations.read_dir(&dir.0).unwrap();
     let observed = |name: &str| {
@@ -1219,7 +1219,6 @@ fn entry_classification_uses_supplied_observations() {
         }
         reads = seen.len();
     }
-    std::fs::set_permissions(&denied, permissions).unwrap();
 }
 
 /// Three ignore files share ordered rules and later negations reopen files.

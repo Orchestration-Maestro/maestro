@@ -1,6 +1,7 @@
 //! Explicit resource resolution through the manager boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+mod native_support;
 mod resolution_support;
 mod resource_cases;
 mod resource_output;
@@ -859,17 +860,12 @@ fn resolved_relative(root: &std::path::Path, failing: &[&str]) -> [Vec<String>; 
             .collect()
     })
 }
-/// Writes `text` at `path`, creating parents.
-#[cfg(unix)]
-fn put(path: &std::path::Path, text: &str) {
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::write(path, text).unwrap();
-}
 /// Conventional collectors keep linked files and directories and skip failed link reads.
 #[cfg(unix)]
 #[test]
 fn package_entry_links_preserve_admission_and_failure_fallback() {
     use std::os::unix::fs::symlink;
+    let put = |path: &std::path::Path| native_support::write(path.to_str().unwrap(), "{}");
     let dir = scratch::Scratch::new().unwrap();
     let root = dir.0.join("pkg");
     let outside = dir.0.join("outside");
@@ -879,9 +875,9 @@ fn package_entry_links_preserve_admission_and_failure_fallback() {
         ("prompts", "t.md", "n.md"),
         ("themes", "t.json", "n.json"),
     ] {
-        put(&root.join(kind).join(format!("ok.{}", &file[2..])), "{}");
-        put(&outside.join(kind).join(file), "{}");
-        put(&outside.join(kind).join("dir").join(nested), "{}");
+        put(&root.join(kind).join(format!("ok.{}", &file[2..])));
+        put(&outside.join(kind).join(file));
+        put(&outside.join(kind).join("dir").join(nested));
         let ext = &file[2..];
         let entries = root.join(kind);
         symlink(
@@ -935,12 +931,12 @@ fn package_skill_root_links_follow_the_target_kind() {
     for (name, failing, expected) in cases {
         let dir = scratch::Scratch::new().unwrap();
         let root = dir.0.join("pkg");
-        put(&root.join("skills/child/SKILL.md"), "{}");
+        native_support::write(root.join("skills/child/SKILL.md").to_str().unwrap(), "{}");
         let target = dir.0.join("target");
         let entry = root.join("skills/SKILL.md");
         let _socket;
         match name {
-            "file" | "denied" => put(&target, "{}"),
+            "file" | "denied" => native_support::write(target.to_str().unwrap(), "{}"),
             "directory" => fs::create_dir(&target).unwrap(),
             "socket" => _socket = UnixListener::bind(&target).unwrap(),
             _ => {}
