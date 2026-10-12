@@ -327,16 +327,21 @@ const OWNERS: [(&str, usize); 21] = [
 ];
 
 /// Load the strict corpus and reject duplicate identities and effective inputs.
-fn rows(source: &str, owners: &[(&str, usize)]) -> TestResult<Vec<Row>> {
+///
+/// Only rows the test owns, and the prerequisites they continue from, are expanded.
+fn rows(source: &str, owners: &[(&str, usize)], test: &str) -> TestResult<Vec<Row>> {
     let mut raw: Vec<Value> = serde_json::from_str(source)?;
-    for row in &mut raw {
-        expand_repeated_text(row)?;
-    }
     let mut ids = HashSet::new();
     let mut inputs = HashSet::new();
     for row in &raw {
         assert!(ids.insert(row["id"].to_string()), "duplicate scenario");
-        assert!(inputs.insert(row["input"].to_string()), "duplicate query");
+        let effective = (row["input"].to_string(), row["repeatedText"].to_string());
+        assert!(inputs.insert(effective), "duplicate query");
+    }
+    let selected = selected_ids(&raw, test);
+    for row in &mut raw {
+        let expand = row["id"].as_str().is_some_and(|id| selected.contains(id));
+        expand_repeated_text(row, expand)?;
     }
     for &(owner, count) in owners {
         assert_eq!(
@@ -356,17 +361,51 @@ fn rows(source: &str, owners: &[(&str, usize)]) -> TestResult<Vec<Row>> {
         .collect::<Result<_, _>>()?)
 }
 
+/// Ids of the rows a test owns plus the earlier responses they continue from.
+fn selected_ids(raw: &[Value], test: &str) -> HashSet<String> {
+    let mut selected: HashSet<String> = raw
+        .iter()
+        .filter(|row| {
+            row["test"]
+                .as_str()
+                .is_some_and(|t| t.ends_with(&format!("::{test}")))
+        })
+        .filter_map(|row| row["id"].as_str().map(str::to_owned))
+        .collect();
+    let mut pending: Vec<String> = selected.iter().cloned().collect();
+    while let Some(id) = pending.pop() {
+        let Some(row) = raw.iter().find(|row| row["id"] == id) else {
+            continue;
+        };
+        let sources = row["input"]["context"]["messages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|message| message["responseId"].as_str())
+            .filter_map(|id| id.strip_prefix("response_"));
+        for source_id in sources {
+            if selected.insert(source_id.to_owned()) {
+                pending.push(source_id.to_owned());
+            }
+        }
+    }
+    selected
+}
+
 /// Marker standing for a row's oversized repeated paragraph.
 const REPEATED_MARKER: &str = "$maestro-overflow-content";
 
-/// Replace the marker leaves with the row's repeated paragraph and discard the construction record.
-fn expand_repeated_text(row: &mut Value) -> TestResult {
+/// Discard the construction record and, for selected rows, replace the marker leaves with its repeated paragraph.
+fn expand_repeated_text(row: &mut Value, expand: bool) -> TestResult {
     let Some(record) = row
         .as_object_mut()
         .and_then(|row| row.shift_remove("repeatedText"))
     else {
         return Ok(());
     };
+    if !expand {
+        return Ok(());
+    }
     let text = record["text"].as_str().ok_or("repeated text")?;
     let count = usize::try_from(record["count"].as_u64().ok_or("repeated count")?)?;
     assert!(
@@ -406,7 +445,7 @@ pub fn assert_rows(test: &str) -> TestResult {
 
 /// Select a strict corpus with explicit ownership and run its public observations.
 pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) -> TestResult {
-    let all = rows(source, owners)?;
+    let all = rows(source, owners, test)?;
     let owned: Vec<_> = all
         .iter()
         .filter(|row| row.test.ends_with(&format!("::{test}")))

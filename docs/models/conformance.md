@@ -300,9 +300,9 @@ process with exactly that environment.
   compare the converted image blocks, fallback text and block order of each
   delivered protocol. Google and cloud conversation routes follow their adapters.
 
-The recorded retry of a rejected Codex request is not reproduced: a rejected
-request is sent once. These cases do not establish server cache hits, live
-authentication or image understanding. See [message protocol](messages.md),
+The recorded retry of a context-overflow rejection from the Codex adapter is not
+reproduced: that non-retryable rejection is sent once. These cases do not
+establish server cache hits, live authentication or image understanding. See [message protocol](messages.md),
 [chat completions](chat-completions.md) and [response protocols](responses.md) for
 the adapter rules.
 
