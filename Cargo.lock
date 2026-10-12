@@ -1943,6 +1943,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "num-traits",
+ "regex",
  "rustix",
  "ryu-js",
  "serde",

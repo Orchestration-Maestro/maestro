@@ -1,0 +1,6491 @@
+{
+  "theme_keys": [
+    "toolTitle",
+    "accent",
+    "toolOutput",
+    "warning",
+    "dim",
+    "muted",
+    "customMessageLabel",
+    "customMessageText",
+    "error",
+    "mdCodeBlock",
+    "syntaxKeyword",
+    "syntaxType",
+    "syntaxNumber",
+    "syntaxString",
+    "syntaxComment",
+    "syntaxFunction",
+    "syntaxVariable",
+    "syntaxOperator",
+    "syntaxPunctuation"
+  ],
+  "cases": [
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "missing",
+      "op": "call",
+      "input": {
+        "args": {},
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "null",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": null
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "empty",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": ""
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "number",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": 42
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;9m[invalid arg]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "object",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": {}
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;9m[invalid arg]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "array",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": []
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;9m[invalid arg]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "normal",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "alias",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "ignored.txt",
+          "file_path": "shown.rs"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mshown.rs\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "alias_null",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "fallback.txt",
+          "file_path": null
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mfallback.txt\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "alias_empty",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "ignored.txt",
+          "file_path": ""
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_titles_keep_argument_precedence_and_invalid_styles",
+      "id": "alias_bad",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "ignored.txt",
+          "file_path": 42
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;9m[invalid arg]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "offset",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 3
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:3\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "limit",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "limit": 4
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1-4\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "both",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "zero",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 0,
+          "limit": 1
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:0\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "zero_end",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "limit": 0
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "fraction",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 1.5,
+          "limit": 2.25
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1.5-2.75\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "negative",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": -2,
+          "limit": 1
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:-2--2\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "null_offset",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": null
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "null_limit",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "limit": null
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "large",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 1e+21,
+          "limit": 1
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1e+21-1e+21\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_line_ranges_preserve_numeric_spelling_and_presence",
+      "id": "tiny",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "notes.txt",
+          "offset": 1e-07
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mnotes.txt\u001b[39m\u001b[38;5;4m:1e-7\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "skill",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "root_skill",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/SKILL.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mSKILL.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "root_skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread resource\u001b[22m\u001b[39m \u001b[38;5;2mAGENTS.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "resource_upper",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.MD"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread resource\u001b[22m\u001b[39m \u001b[38;5;2mAGENTS.MD\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "resource_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "claude",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread resource\u001b[22m\u001b[39m \u001b[38;5;2mCLAUDE.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "claude",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "claude_upper",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.MD"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread resource\u001b[22m\u001b[39m \u001b[38;5;2mCLAUDE.MD\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "claude_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "lower_resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/agents.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/agents.md\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "lower_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/agents.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "readme",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "readme",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "docs",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/guide.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mdocs/guide.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "docs",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/guide.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "example",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/examples/demo.rs"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mexamples/demo.rs\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "example",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/examples/demo.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "skill_first",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/attio/SKILL.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "skill_first",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "docs_before_resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/AGENTS.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mdocs/AGENTS.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "docs_before_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "root",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "root",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3msecret\u001b[39m",
+        "\u001b[38;5;3msecond\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "parent",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "parent",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3msecret\u001b[39m",
+        "\u001b[38;5;3msecond\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "outside",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro-other/docs/x.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro-other/docs/x.md\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "outside",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro-other/docs/x.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "other",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/src/read.rs"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/src/read.rs\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "other",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/src/read.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "case",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/readme.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/readme.md\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "case",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/readme.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "dot_segments",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/../README.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "dot_segments",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/../README.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "relative",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "../opt/maestro/docs/guide.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mdocs/guide.md\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "relative",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "../opt/maestro/docs/guide.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "at_prefix",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "@/work/attio/SKILL.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "at_prefix",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "@/work/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_classification_obeys_skill_docs_resource_priority",
+      "id": "empty",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": ""
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+      ]
+    },
+    {
+      "test": "classified_reads_hide_only_successful_compact_results",
+      "id": "empty",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": ""
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3msecret\u001b[39m",
+        "\u001b[38;5;3msecond\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "skill",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/attio/SKILL.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "root_skill",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/SKILL.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/SKILL.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "root_skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "root_skill",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/AGENTS.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "resource_upper",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.MD",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/AGENTS.MD\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "resource_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "resource_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "claude",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/CLAUDE.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "claude",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "claude",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "claude_upper",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.MD",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/CLAUDE.MD\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "claude_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "claude_upper",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/CLAUDE.MD"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "lower_resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/agents.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/work/agents.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "lower_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/agents.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "lower_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/agents.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "readme",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/README.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "readme",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "readme",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "docs",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/guide.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/docs/guide.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "docs",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/guide.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "docs",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/guide.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "example",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/examples/demo.rs",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/examples/demo.rs\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "example",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/examples/demo.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "example",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/examples/demo.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "skill_first",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/attio/SKILL.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/docs/attio/SKILL.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "skill_first",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "skill_first",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/attio/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "expanded_read_titles_return_to_authored_paths",
+      "id": "docs_before_resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/AGENTS.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "expanded": true
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2m/opt/maestro/docs/AGENTS.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m"
+      ]
+    },
+    {
+      "test": "expanded_read_results_reveal_classified_content",
+      "id": "docs_before_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret\nsecond"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "secret",
+        "second"
+      ]
+    },
+    {
+      "test": "read_errors_bypass_compact_hiding",
+      "id": "docs_before_resource",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/docs/AGENTS.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "exact error"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "isError": true
+        }
+      },
+      "expected": [
+        "",
+        "exact error"
+      ]
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "skill",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:120-329\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "docs",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/opt/maestro/README.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "resource",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/AGENTS.md",
+          "offset": 120,
+          "limit": 210
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread resource\u001b[22m\u001b[39m \u001b[38;5;2mAGENTS.md\u001b[39m\u001b[38;5;4m:120-329\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "0-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "0-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "1-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "1-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "9-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "9-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "10-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "10-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "11-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m",
+        "\u001b[38;5;6m... (1 more lines,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "11-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m",
+        "\u001b[38;5;3mline 11\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "12-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m\u001b[38;5;6m",
+        "\u001b[38;5;6m... (2 more lines,\u001b[39m \u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m)"
+      ]
+    },
+    {
+      "test": "read_preview_limits_count_logical_lines_before_wrapping",
+      "id": "12-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mline 1\u001b[39m",
+        "\u001b[38;5;3mline 2\u001b[39m",
+        "\u001b[38;5;3mline 3\u001b[39m",
+        "\u001b[38;5;3mline 4\u001b[39m",
+        "\u001b[38;5;3mline 5\u001b[39m",
+        "\u001b[38;5;3mline 6\u001b[39m",
+        "\u001b[38;5;3mline 7\u001b[39m",
+        "\u001b[38;5;3mline 8\u001b[39m",
+        "\u001b[38;5;3mline 9\u001b[39m",
+        "\u001b[38;5;3mline 10\u001b[39m",
+        "\u001b[38;5;3mline 11\u001b[39m",
+        "\u001b[38;5;3mline 12\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "newlines",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\n\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "trailing",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo\n\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "internal",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\n\ntwo\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3m\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "spaces",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\n \n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3m \u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "tabs",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\tb\n\t\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3ma   b\u001b[39m",
+        "\u001b[38;5;3m   \u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "bom",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "﻿"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m﻿\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_trailing_empty_rows_do_not_trim_visible_whitespace",
+      "id": "nel",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "absent",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "not_cut",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": false,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "maxBytes": 2048
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "lines",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "maxBytes": 2048
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[Truncated: showing 2 of 7 lines (2 line limit)]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "lines_default",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxBytes": 2048
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[Truncated: showing 2 of 7 lines (2000 line limit)]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "bytes",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "maxBytes": 2048
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[Truncated: 2 lines shown (2.0KB limit)]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "bytes_default",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[Truncated: 2 lines shown (50.0KB limit)]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "first",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "maxBytes": 2048,
+              "firstLineExceedsLimit": true
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[First line exceeds 2.0KB limit]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "first_default",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "firstLineExceedsLimit": true
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[First line exceeds 50.0KB limit]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_truncation_notices_follow_reason_and_explicit_limits",
+      "id": "zero",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "one\ntwo"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "truncated": true,
+              "truncatedBy": "lines",
+              "outputLines": 2,
+              "totalLines": 7,
+              "maxLines": 2,
+              "maxBytes": 0,
+              "firstLineExceedsLimit": true
+            }
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mone\u001b[39m",
+        "\u001b[38;5;3mtwo\u001b[39m",
+        "\u001b[38;5;4m[First line exceeds 0B limit]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_highlighting_uses_only_selected_filename_language",
+      "id": "rust",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "code.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {\n\tlet n = 7;\n}\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {",
+        "   let n = 7;",
+        "}"
+      ]
+    },
+    {
+      "test": "read_highlighting_uses_only_selected_filename_language",
+      "id": "unknown",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "code.unknown"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {\n\tlet n = 7;\n}\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {",
+        "   let n = 7;",
+        "}"
+      ]
+    },
+    {
+      "test": "read_highlighting_uses_only_selected_filename_language",
+      "id": "no_ext",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "LICENSE"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {\n\tlet n = 7;\n}\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {",
+        "   let n = 7;",
+        "}"
+      ]
+    },
+    {
+      "test": "read_highlighting_uses_only_selected_filename_language",
+      "id": "uppercase",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "code.RS"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {\n\tlet n = 7;\n}\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {",
+        "   let n = 7;",
+        "}"
+      ]
+    },
+    {
+      "test": "read_highlighting_uses_only_selected_filename_language",
+      "id": "alias",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "other.txt",
+          "file_path": "chosen.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {\n\tlet n = 7;\n}\n"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {",
+        "   let n = 7;",
+        "}"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "null-false-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null,
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "null-false-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null,
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "null-true-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null,
+          "showImages": true
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "null-true-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null,
+          "showImages": true
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "kitty-false-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "kitty",
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "kitty-false-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "kitty",
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "kitty-true-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "kitty",
+          "showImages": true
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "kitty-true-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "kitty",
+          "showImages": true
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "iterm2-false-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "iterm2",
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "iterm2-false-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "iterm2",
+          "showImages": false
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "iterm2-true-false",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "iterm2",
+          "showImages": true
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_image_fallback_obeys_capability_and_visibility",
+      "id": "iterm2-true-true",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "before"
+            },
+            {
+              "type": "text",
+              "text": "after"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": "iterm2",
+          "showImages": true
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mbefore\u001b[39m",
+        "\u001b[38;5;3mafter\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_indicators_keep_order_and_dimension_fallbacks",
+      "id": "malformed",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "invalid",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "middle"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "image",
+              "data": "invalid",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mmiddle\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif]]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif]]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_indicators_keep_order_and_dimension_fallbacks",
+      "id": "empty_data",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "middle"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "image",
+              "data": "",
+              "mimeType": "image/gif"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mmiddle\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif]]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif]]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_indicators_keep_order_and_dimension_fallbacks",
+      "id": "empty_mime",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": ""
+            },
+            {
+              "type": "text",
+              "text": "middle"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": ""
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mmiddle\u001b[39m",
+        "\u001b[38;5;3m[Image: []]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m",
+        "\u001b[38;5;3m[Image: []]\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_image_indicators_keep_order_and_dimension_fallbacks",
+      "id": "unsupported",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/bmp"
+            },
+            {
+              "type": "text",
+              "text": "middle"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/bmp"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ],
+          "images": null
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mmiddle\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/bmp]]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/gif] 1x1]\u001b[39m",
+        "\u001b[38;5;3m[Image: [image/bmp]]\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-A",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Ab"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-P",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Pb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-Q",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Qb"
+      },
+      "expected": "aQb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-R",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Rb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-S",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Sb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-T",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Tb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-U",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Ub"
+      },
+      "expected": "aUb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-Y",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Yb"
+      },
+      "expected": "aYb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-Z",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Zb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-a",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2ab"
+      },
+      "expected": "aab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-b",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2bb"
+      },
+      "expected": "abb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-c",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2cb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-d",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2db"
+      },
+      "expected": "adb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-e",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2eb"
+      },
+      "expected": "aeb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-f",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2fb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-n",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2nb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-o",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2ob"
+      },
+      "expected": "aob"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-p",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2pb"
+      },
+      "expected": "apb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-q",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2qb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-u",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2ub"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-v",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2vb"
+      },
+      "expected": "avb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-x",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2xb"
+      },
+      "expected": "axb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-y",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2yb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-z",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2zb"
+      },
+      "expected": "azb"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-=",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2=b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final->",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2>b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-<",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2<b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-~",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2~b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-0",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[20b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "final-9",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[29b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "plain",
+      "op": "strip",
+      "input": {
+        "text": "plain"
+      },
+      "expected": "plain"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "plain",
+      "op": "sanitize",
+      "input": {
+        "text": "plain"
+      },
+      "expected": "plain"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "plain",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "plain"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mplain\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "sgr",
+      "op": "strip",
+      "input": {
+        "text": "\u001b[31mred\u001b[0m"
+      },
+      "expected": "red"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "sgr",
+      "op": "sanitize",
+      "input": {
+        "text": "\u001b[31mred\u001b[0m"
+      },
+      "expected": "[31mred[0m"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "sgr",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u001b[31mred\u001b[0m"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mred\u001b[39m"
+      ]
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "cursor_up",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b[2Ab"
+      },
+      "expected": "a[2Ab"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "cursor_up",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b[2Ab"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "cursor_down",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[3Bb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "cursor_down",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b[3Bb"
+      },
+      "expected": "a[3Bb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "cursor_down",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b[3Bb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "erase",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[2Jb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "erase",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b[2Jb"
+      },
+      "expected": "a[2Jb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "erase",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b[2Jb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "c1",
+      "op": "strip",
+      "input": {
+        "text": "a31mred0mb"
+      },
+      "expected": "aredb"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "c1",
+      "op": "sanitize",
+      "input": {
+        "text": "a31mred0mb"
+      },
+      "expected": "a31mred0mb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "c1",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a31mred0mb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3maredb\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "colon",
+      "op": "strip",
+      "input": {
+        "text": "\u001b[38:2::255:0:0mred\u001b[0m"
+      },
+      "expected": "red"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "colon",
+      "op": "sanitize",
+      "input": {
+        "text": "\u001b[38:2::255:0:0mred\u001b[0m"
+      },
+      "expected": "[38:2::255:0:0mred[0m"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "colon",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u001b[38:2::255:0:0mred\u001b[0m"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mred\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "osc_bel",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b]8;;https://example.test\u0007link\u001b]8;;\u0007b"
+      },
+      "expected": "alinkb"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "osc_bel",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b]8;;https://example.test\u0007link\u001b]8;;\u0007b"
+      },
+      "expected": "a]8;;https://example.testlink]8;;b"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "osc_bel",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b]8;;https://example.test\u0007link\u001b]8;;\u0007b"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3malinkb\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "osc_st",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b]0;title\u001b\\b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "osc_st",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b]0;title\u001b\\b"
+      },
+      "expected": "a]0;title\\b"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "osc_st",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b]0;title\u001b\\b"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "osc_c1_st",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b]0;titleb"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "osc_c1_st",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b]0;titleb"
+      },
+      "expected": "a]0;titleb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "osc_c1_st",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b]0;titleb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "osc_newline",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b]0;title\nline\u0007b"
+      },
+      "expected": "ab"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "osc_newline",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b]0;title\nline\u0007b"
+      },
+      "expected": "a]0;title\nlineb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "osc_newline",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b]0;title\nline\u0007b"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mab\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "unfinished",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[31"
+      },
+      "expected": "a"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "unfinished",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b[31"
+      },
+      "expected": "a[31"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "unfinished",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b[31"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3ma\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "apc",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b_payload\u0007b"
+      },
+      "expected": "a\u001b_payload\u0007b"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "apc",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b_payload\u0007b"
+      },
+      "expected": "a_payloadb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "apc",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b_payload\u0007b"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3ma_payloadb\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "controls",
+      "op": "strip",
+      "input": {
+        "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+      },
+      "expected": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "controls",
+      "op": "sanitize",
+      "input": {
+        "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+      },
+      "expected": "ABC\tD\nE\rFGHI"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "controls",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "A\u0000B\bC\tD\nE\rF\u001fGHI"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mABC   D\u001b[39m",
+        "\u001b[38;5;3mEFGHI\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "format",
+      "op": "strip",
+      "input": {
+        "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+      },
+      "expected": "A￸B￹C￺D￻E￼F‍G﻿H"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "format",
+      "op": "sanitize",
+      "input": {
+        "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+      },
+      "expected": "A￸BCDE￼F‍G﻿H"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "format",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "A￸B￹C￺D￻E￼F‍G﻿H"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mA￸BCDE￼F‍G﻿H\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "unicode_digit",
+      "op": "strip",
+      "input": {
+        "text": "a\u001b[١mb"
+      },
+      "expected": "a\u001b[١mb"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "unicode_digit",
+      "op": "sanitize",
+      "input": {
+        "text": "a\u001b[١mb"
+      },
+      "expected": "a[١mb"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "unicode_digit",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\u001b[١mb"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3ma[١mb\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "combining",
+      "op": "strip",
+      "input": {
+        "text": "e\u001b[31ḿ\u001b[0m"
+      },
+      "expected": "é"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "combining",
+      "op": "sanitize",
+      "input": {
+        "text": "e\u001b[31ḿ\u001b[0m"
+      },
+      "expected": "e[31ḿ[0m"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "combining",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "e\u001b[31ḿ\u001b[0m"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3mé\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_stripping_matches_complete_escape_sequences",
+      "id": "zwj",
+      "op": "strip",
+      "input": {
+        "text": "👩\u001b[31m‍💻\u001b[0m"
+      },
+      "expected": "👩‍💻"
+    },
+    {
+      "test": "shell_sanitization_keeps_only_allowed_controls",
+      "id": "zwj",
+      "op": "sanitize",
+      "input": {
+        "text": "👩\u001b[31m‍💻\u001b[0m"
+      },
+      "expected": "👩[31m‍💻[0m"
+    },
+    {
+      "test": "read_output_sanitizes_before_tab_expansion_and_layout",
+      "id": "zwj",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "notes.txt"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "👩\u001b[31m‍💻\u001b[0m"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;3m👩‍💻\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "null",
+      "op": "str",
+      "input": {
+        "value": null
+      },
+      "expected": ""
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "empty",
+      "op": "str",
+      "input": {
+        "value": ""
+      },
+      "expected": ""
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "string",
+      "op": "str",
+      "input": {
+        "value": "x"
+      },
+      "expected": "x"
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "number",
+      "op": "str",
+      "input": {
+        "value": 3
+      },
+      "expected": null
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "bool",
+      "op": "str",
+      "input": {
+        "value": false
+      },
+      "expected": null
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "object",
+      "op": "str",
+      "input": {
+        "value": {}
+      },
+      "expected": null
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "array",
+      "op": "str",
+      "input": {
+        "value": []
+      },
+      "expected": null
+    },
+    {
+      "test": "display_string_selection_distinguishes_absent_and_wrong_types",
+      "id": "absent",
+      "op": "str",
+      "input": {},
+      "expected": ""
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "plain",
+      "op": "tabs",
+      "input": {
+        "text": "abc"
+      },
+      "expected": "abc"
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "plain",
+      "op": "cr",
+      "input": {
+        "text": "abc"
+      },
+      "expected": "abc"
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "tabs",
+      "op": "tabs",
+      "input": {
+        "text": "\ta\t\t"
+      },
+      "expected": "   a      "
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "tabs",
+      "op": "cr",
+      "input": {
+        "text": "\ta\t\t"
+      },
+      "expected": "\ta\t\t"
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "cr",
+      "op": "tabs",
+      "input": {
+        "text": "a\r\nb\rc\r"
+      },
+      "expected": "a\r\nb\rc\r"
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "cr",
+      "op": "cr",
+      "input": {
+        "text": "a\r\nb\rc\r"
+      },
+      "expected": "a\nbc"
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "unicode",
+      "op": "tabs",
+      "input": {
+        "text": "﻿ "
+      },
+      "expected": "﻿ "
+    },
+    {
+      "test": "display_literal_transforms_preserve_other_whitespace",
+      "id": "unicode",
+      "op": "cr",
+      "input": {
+        "text": "﻿ "
+      },
+      "expected": "﻿ "
+    },
+    {
+      "test": "display_paths_abbreviate_only_home_and_descendants",
+      "id": "home",
+      "op": "shorten",
+      "input": {
+        "path": "$HOME",
+        "home": "$HOME"
+      },
+      "expected": "~"
+    },
+    {
+      "test": "display_paths_abbreviate_only_home_and_descendants",
+      "id": "child",
+      "op": "shorten",
+      "input": {
+        "path": "$HOME/notes",
+        "home": "$HOME"
+      },
+      "expected": "~/notes"
+    },
+    {
+      "test": "display_paths_abbreviate_only_home_and_descendants",
+      "id": "prefix_collision",
+      "op": "shorten",
+      "input": {
+        "path": "$HOME-other/notes",
+        "home": "$HOME"
+      },
+      "expected": "$HOME-other/notes"
+    },
+    {
+      "test": "display_paths_abbreviate_only_home_and_descendants",
+      "id": "outside",
+      "op": "shorten",
+      "input": {
+        "path": "/elsewhere/notes",
+        "home": "$HOME"
+      },
+      "expected": "/elsewhere/notes"
+    },
+    {
+      "test": "display_paths_abbreviate_only_home_and_descendants",
+      "id": "empty",
+      "op": "shorten",
+      "input": {
+        "path": "",
+        "home": "$HOME"
+      },
+      "expected": ""
+    },
+    {
+      "test": "key_hints_use_current_bindings_order_and_separate_styles",
+      "id": "[]",
+      "op": "keys",
+      "input": {
+        "binding": []
+      },
+      "expected": {
+        "text": "",
+        "hint": "\u001b[38;5;5m\u001b[39m\u001b[38;5;6m to expand\u001b[39m",
+        "raw": "\u001b[38;5;5mf2\u001b[39m\u001b[38;5;6m \u001b[39m",
+        "missing": "\u001b[38;5;5m\u001b[39m\u001b[38;5;6m help\u001b[39m"
+      }
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "[]",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md",
+          "limit": 3
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": []
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:1-3\u001b[39m\u001b[38;5;5m ( to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "key_hints_use_current_bindings_order_and_separate_styles",
+      "id": "[\"ctrl+o\"]",
+      "op": "keys",
+      "input": {
+        "binding": [
+          "ctrl+o"
+        ]
+      },
+      "expected": {
+        "text": "ctrl+o",
+        "hint": "\u001b[38;5;5mctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m",
+        "raw": "\u001b[38;5;5mf2\u001b[39m\u001b[38;5;6m \u001b[39m",
+        "missing": "\u001b[38;5;5m\u001b[39m\u001b[38;5;6m help\u001b[39m"
+      }
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "[\"ctrl+o\"]",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md",
+          "limit": 3
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:1-3\u001b[39m\u001b[38;5;5m (ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "key_hints_use_current_bindings_order_and_separate_styles",
+      "id": "[\"alt+x\",\"ctrl+o\",\"alt+x\"]",
+      "op": "keys",
+      "input": {
+        "binding": [
+          "alt+x",
+          "ctrl+o",
+          "alt+x"
+        ]
+      },
+      "expected": {
+        "text": "alt+x/ctrl+o",
+        "hint": "\u001b[38;5;5malt+x/ctrl+o\u001b[39m\u001b[38;5;6m to expand\u001b[39m",
+        "raw": "\u001b[38;5;5mf2\u001b[39m\u001b[38;5;6m \u001b[39m",
+        "missing": "\u001b[38;5;5m\u001b[39m\u001b[38;5;6m help\u001b[39m"
+      }
+    },
+    {
+      "test": "compact_read_ranges_precede_live_expand_hints",
+      "id": "[\"alt+x\",\"ctrl+o\",\"alt+x\"]",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "/work/attio/SKILL.md",
+          "limit": 3
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ]
+        }
+      },
+      "expected": [
+        "\u001b[38;5;7m\u001b[1m[skill]\u001b[22m \u001b[39m\u001b[38;5;8mattio\u001b[39m\u001b[38;5;4m:1-3\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "checkmark",
+      "op": "width",
+      "input": {
+        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./",
+        "width": 65
+      },
+      "expected": {
+        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./",
+        "width": 65
+      }
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "emoji",
+      "op": "width",
+      "input": {
+        "text": "🎉 Celebration! 🚀 Launch 📦 Package ready for deployment now",
+        "width": 38
+      },
+      "expected": {
+        "text": "🎉 Celebration! 🚀 Launch 📦 Packag\u001b[0m...\u001b[0m",
+        "width": 38
+      }
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "wide",
+      "op": "width",
+      "input": {
+        "text": "Hello 世界 Test 你好 More text here that is long",
+        "width": 28
+      },
+      "expected": {
+        "text": "Hello 世界 Test 你好 More\u001b[0m...\u001b[0m",
+        "width": 28
+      }
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "fits",
+      "op": "width",
+      "input": {
+        "text": "Short message",
+        "width": 48
+      },
+      "expected": {
+        "text": "Short message",
+        "width": 13
+      }
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "ellipsis",
+      "op": "width",
+      "input": {
+        "text": "This is a very long message that needs to be truncated",
+        "width": 28
+      },
+      "expected": {
+        "text": "This is a very long messa\u001b[0m...\u001b[0m",
+        "width": 28
+      }
+    },
+    {
+      "test": "display_width_cases_use_shared_toolkit_boundaries",
+      "id": "regression",
+      "op": "width",
+      "input": {
+        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx ./server.ts\"",
+        "width": 65
+      },
+      "expected": {
+        "text": "✔ script to run › dev $ concurrently \"vite\" \"node --import tsx\u001b[0m...\u001b[0m",
+        "width": 65
+      }
+    },
+    {
+      "test": "read_renderers_reuse_the_supplied_text_slot",
+      "id": "call",
+      "op": "reuse",
+      "input": {
+        "slot": "call"
+      },
+      "expected": {
+        "same": true,
+        "lines": [
+          "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mafter.txt\u001b[39m"
+        ]
+      }
+    },
+    {
+      "test": "read_renderers_reuse_the_supplied_text_slot",
+      "id": "result",
+      "op": "reuse",
+      "input": {
+        "slot": "result"
+      },
+      "expected": {
+        "same": true,
+        "lines": [
+          "",
+          "\u001b[38;5;3mafter\u001b[39m"
+        ]
+      }
+    },
+    {
+      "test": "display_output_handles_absence_and_orders_content_by_kind",
+      "id": "absent",
+      "op": "output",
+      "input": {
+        "result": null
+      },
+      "expected": ""
+    },
+    {
+      "test": "display_output_handles_absence_and_orders_content_by_kind",
+      "id": "empty",
+      "op": "output",
+      "input": {
+        "result": {
+          "content": []
+        }
+      },
+      "expected": ""
+    },
+    {
+      "test": "display_output_handles_absence_and_orders_content_by_kind",
+      "id": "ordered",
+      "op": "output",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "image",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+              "mimeType": "image/gif"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ]
+        }
+      },
+      "expected": "z\na\nz\n[Image: [image/gif] 1x1]\n[Image: [image/gif] 1x1]"
+    },
+    {
+      "test": "read_context_uses_current_cwd_and_documentation_path",
+      "id": "docs",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "README.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "cwd": "/opt/maestro"
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_context_uses_current_cwd_and_documentation_path",
+      "id": "ordinary",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "README.md"
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "cwd": "/elsewhere"
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_context_uses_current_cwd_and_documentation_path",
+      "id": "repoint",
+      "op": "call",
+      "input": {
+        "args": {
+          "path": "README.md"
+        },
+        "context": {
+          "readme": "/elsewhere/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "cwd": "/elsewhere"
+        }
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1mread docs\u001b[22m\u001b[39m \u001b[38;5;2mREADME.md\u001b[39m\u001b[38;5;5m (alt+x/ctrl+o to expand)\u001b[39m"
+      ]
+    },
+    {
+      "test": "read_renderer_errors_leave_previous_text_unchanged",
+      "id": "theme",
+      "op": "error",
+      "input": {},
+      "expected": {
+        "error": "Unknown theme color: error",
+        "lines": [
+          "before"
+        ]
+      }
+    },
+    {
+      "test": "classified_results_avoid_unused_display_dependencies",
+      "id": "hidden",
+      "op": "early_return",
+      "input": {},
+      "expected": []
+    },
+    {
+      "test": "read_highlighting_reads_the_current_published_theme",
+      "id": "0",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "main.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {}"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "themeShift": 0
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {}"
+      ]
+    },
+    {
+      "test": "read_highlighting_reads_the_current_published_theme",
+      "id": "40",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "main.rs"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fn main() {}"
+            }
+          ]
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "themeShift": 40
+        }
+      },
+      "expected": [
+        "",
+        "fn main() {}"
+      ]
+    },
+    {
+      "test": "read_result_uses_options_expansion_not_unrelated_flags",
+      "id": "is_partial",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": true
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "expanded": false,
+          "executionStarted": false,
+          "argsComplete": false
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_result_uses_options_expansion_not_unrelated_flags",
+      "id": "phase",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "expanded": false,
+          "executionStarted": true,
+          "argsComplete": true
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "read_result_uses_options_expansion_not_unrelated_flags",
+      "id": "context_expanded",
+      "op": "result",
+      "input": {
+        "args": {
+          "path": "/work/SKILL.md"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "secret"
+            }
+          ]
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "readme": "/opt/maestro/README.md",
+          "bindings": [
+            "alt+x",
+            "ctrl+o"
+          ],
+          "expanded": true,
+          "executionStarted": false,
+          "argsComplete": false
+        }
+      },
+      "expected": []
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "same",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "C:\\pkg\\README.md",
+        "readme": "C:\\pkg\\README.md"
+      },
+      "expected": {
+        "kind": "docs",
+        "label": "README.md"
+      }
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "docs",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "C:\\pkg\\docs\\guide.md",
+        "readme": "C:\\pkg\\README.md"
+      },
+      "expected": {
+        "kind": "docs",
+        "label": "docs/guide.md"
+      }
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "outside",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "C:\\pkg-other\\docs\\guide.md",
+        "readme": "C:\\pkg\\README.md"
+      },
+      "expected": null
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "drive",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "D:\\pkg\\docs\\guide.md",
+        "readme": "C:\\pkg\\README.md"
+      },
+      "expected": null
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "unc",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "\\\\server\\share\\pkg\\examples\\demo.rs",
+        "readme": "\\\\server\\share\\pkg\\README.md"
+      },
+      "expected": {
+        "kind": "docs",
+        "label": "examples/demo.rs"
+      }
+    },
+    {
+      "test": "documentation_paths_respect_windows_roots_and_separators",
+      "id": "device_case",
+      "op": "classification_windows",
+      "input": {
+        "absolutePath": "c:\\pkg\\README.md",
+        "readme": "C:\\pkg\\README.md"
+      },
+      "expected": {
+        "kind": "docs",
+        "label": "README.md"
+      }
+    }
+  ]
+}

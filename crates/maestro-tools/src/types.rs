@@ -4,8 +4,8 @@ use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
 };
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool};
-use maestro_theme::Theme;
-use maestro_tui::tui::ComponentHandle;
+use maestro_theme::{LiveTheme, SyntaxHighlighter, Theme};
+use maestro_tui::{TerminalImage, tui::ComponentHandle};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -39,9 +39,9 @@ pub struct ToolRenderPhase {
 }
 
 /// Shared state a row hands to both of a tool's renderers.
-pub struct ToolRenderContext<S = Value, P = Value> {
-    /// Arguments as the model supplied them so far.
-    pub args: Rc<RefCell<P>>,
+pub struct ToolRenderContext<'a, S = Value> {
+    /// Arguments as the model supplied them so far, borrowed for this call only.
+    pub args: &'a Value,
     /// Stable id of the tool call.
     pub tool_call_id: String,
     /// Requests a redraw of the row.
@@ -60,20 +60,33 @@ pub struct ToolRenderContext<S = Value, P = Value> {
     pub show_images: bool,
     /// Whether the result is an error.
     pub is_error: bool,
+    /// Absolute path of the documentation README, supplied by the application.
+    pub readme_path: String,
+    /// The published theme, read when a renderer styles text outside its `Theme` argument.
+    pub live_theme: LiveTheme,
+    /// Classifies code for explicit highlighting.
+    pub highlighter: Rc<dyn SyntaxHighlighter>,
+    /// Image support of the terminal showing the row.
+    pub terminal_image: TerminalImage,
 }
 
-/// Draws a tool call from its arguments.
-pub type ToolRenderCall<P, S> =
-    Rc<dyn Fn(Rc<RefCell<P>>, &Theme, &ToolRenderContext<S, P>) -> ComponentHandle>;
+/// Draws a tool call from its borrowed arguments, or reports why it cannot.
+pub type ToolRenderCall<S> = Rc<
+    dyn Fn(
+        &Value,
+        &Theme,
+        &ToolRenderContext<'_, S>,
+    ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
+>;
 
-/// Draws a tool result.
-pub type ToolRenderResult<P, D, S> = Rc<
+/// Draws a tool result, or reports why it cannot.
+pub type ToolRenderResult<D, S> = Rc<
     dyn Fn(
         &AgentToolResult<D>,
         ToolRenderResultOptions,
         &Theme,
-        &ToolRenderContext<S, P>,
-    ) -> ComponentHandle,
+        &ToolRenderContext<'_, S>,
+    ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
 >;
 
 /// Executes a tool with its call id, arguments, signal, progress observer and caller context.
@@ -132,9 +145,9 @@ pub struct ToolDefinition<C = (), P = Value, D = Value, S = Value> {
     /// Execution callback.
     pub execute: ExecuteToolDefinition<C, P, D>,
     /// Call renderer.
-    pub render_call: Option<ToolRenderCall<P, S>>,
+    pub render_call: Option<ToolRenderCall<S>>,
     /// Result renderer.
-    pub render_result: Option<ToolRenderResult<P, D, S>>,
+    pub render_result: Option<ToolRenderResult<D, S>>,
 }
 
 /// Return the definition unchanged, fixing its type parameters for the caller.

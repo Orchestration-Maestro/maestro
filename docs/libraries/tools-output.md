@@ -35,6 +35,14 @@ On Unix a present `HOME` is used verbatim, including an empty value, and
 [`std::env::home_dir`](https://doc.rust-lang.org/std/env/fn.home_dir.html)
 runs only when `HOME` is absent; Windows always uses that platform lookup. A missing entry is a lookup error returned only for `~` paths.
 
+## Display strings
+
+`maestro-tools` uses `regex =1.13.1` with default features (MIT or Apache-2.0), already
+in the lockfile through `maestro-models`, to run one cached expression that removes complete
+terminal escape sequences from [display text](../tools-read.md#display-helpers). Its existing
+closure is `regex-automata 0.4.18`, `regex-syntax 0.8.11`, `aho-corasick 1.1.5` and
+`memchr 2.8.3`; the last two are Unlicense OR MIT, used under MIT. No other package is added.
+
 ## Image libraries
 
 Image operations use `image =0.24.9` (MIT or Apache-2.0) directly, with

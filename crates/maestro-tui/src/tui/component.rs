@@ -47,7 +47,7 @@ pub trait Focusable {
 /// takes effect at once. A component keeps the state it changes in `Cell`s and `RefCell`s,
 /// borrows it only inside one method and never across a call into the writer, a callback
 /// or another component, so a call that re-enters the component never finds it borrowed.
-pub trait Component {
+pub trait Component: std::any::Any {
     /// Renders the component for the supplied viewport width.
     fn render(&self, width: usize) -> Vec<String>;
 

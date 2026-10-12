@@ -26,6 +26,7 @@
 //! assert!(!result.was_resized);
 //! ```
 
+pub mod keybinding_hints;
 pub mod output;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod path_utils;
@@ -35,6 +36,7 @@ pub mod tool_definition_wrapper;
 pub mod types;
 pub mod utils;
 
+pub use keybinding_hints::{key_hint, key_text, raw_key_hint};
 pub use output::truncate::{
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, TruncateLineResult, TruncationBy, TruncationOptions,
     TruncationResult, format_size, truncate_head, truncate_line, truncate_tail,

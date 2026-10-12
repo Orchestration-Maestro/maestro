@@ -8,13 +8,19 @@ use maestro_agent::{
     ToolExecutionMode,
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
-use maestro_theme::{ColorMode, Theme, ThemeOptions};
+use maestro_theme::{
+    ColorMode, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories,
+    ThemeOptions, ThemeState,
+};
 use maestro_tools::{
     ToolContextFactory, ToolDefinition, ToolRenderContext, ToolRenderPhase,
     ToolRenderResultOptions, ToolRenderShell, create_tool_definition_from_agent_tool, define_tool,
     wrap_tool_definition, wrap_tool_definitions,
 };
-use maestro_tui::tui::{Component, ComponentHandle};
+use maestro_tui::{
+    TerminalImage,
+    tui::{Component, ComponentHandle},
+};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
@@ -314,25 +320,40 @@ impl Component for Row {
     }
 }
 
-/// Typed call arguments of the render tests.
-struct CallArgs {
-    /// Edited by the call renderer.
-    path: String,
-}
+/// Typed call arguments of the execution; renderers never see this type.
+struct CallArgs;
 
 /// What the result renderer saw.
 #[derive(Debug, PartialEq)]
 struct Observed {
-    path: String,
+    args: Value,
     calls: u32,
     id: String,
     options: (bool, bool),
     flags: [bool; 6],
     cwd: String,
+    readme: String,
 }
 
 /// The six row flags in the order execution started, args complete, partial, expanded, images, error.
 type Flags = [bool; 6];
+
+/// A highlighter that supports no language.
+struct NoLanguages;
+
+impl SyntaxHighlighter for NoLanguages {
+    fn supports_language(&self, _: &str) -> bool {
+        false
+    }
+
+    fn highlight(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<Vec<SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
+        Ok(Vec::new())
+    }
+}
 
 /// A definition whose renderers share row state and log what the result renderer saw.
 fn render_definition(
@@ -353,15 +374,17 @@ fn render_definition(
         execution_mode: None,
         execute: Arc::new(|_, _, _, _, _| Box::pin(async { Err(failure("unused")) })),
         render_call: Some(Rc::new(|args, _, context| {
-            args.borrow_mut().path = "after".into();
+            if args["fail"] == json!(true) {
+                return Err(failure("call failed"));
+            }
             *context.state.borrow_mut() += 1;
             (context.invalidate)();
-            Rc::new(Row)
+            Ok(Rc::new(Row))
         })),
         render_result: Some(Rc::new(move |_, options, _, context| {
             *context.state.borrow_mut() += 1;
             seen.borrow_mut().push(Observed {
-                path: context.args.borrow().path.clone(),
+                args: context.args.clone(),
                 calls: *context.state.borrow(),
                 id: context.tool_call_id.clone(),
                 options: (options.expanded, options.is_partial),
@@ -374,22 +397,30 @@ fn render_definition(
                     context.is_error,
                 ],
                 cwd: context.cwd.clone(),
+                readme: context.readme_path.clone(),
             });
-            context.last_component.clone().unwrap()
+            Ok(context.last_component.clone().unwrap())
         })),
     }
 }
 
-/// A row context with the given flags over shared arguments and state.
-fn row_context(
+/// A row context with the given flags over borrowed arguments and shared state.
+fn row_context<'a>(
     flags: Flags,
-    args: &Rc<RefCell<CallArgs>>,
+    args: &'a Value,
     state: &Rc<RefCell<u32>>,
     invalidations: &Rc<RefCell<u32>>,
-) -> ToolRenderContext<u32, CallArgs> {
+) -> ToolRenderContext<'a, u32> {
     let counter = Rc::clone(invalidations);
+    let themes = ThemeState::new(
+        ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        },
+        Rc::new(NativeThemeOperations),
+    );
     ToolRenderContext {
-        args: Rc::clone(args),
+        args,
         tool_call_id: "stable".into(),
         invalidate: Rc::new(move || *counter.borrow_mut() += 1),
         last_component: None,
@@ -403,11 +434,38 @@ fn row_context(
         expanded: flags[3],
         show_images: flags[4],
         is_error: flags[5],
+        readme_path: "/opt/maestro/README.md".into(),
+        live_theme: themes.theme(),
+        highlighter: Rc::new(NoLanguages),
+        terminal_image: TerminalImage::default(),
     }
 }
 
+/// A failing call reports its error, and typed execution takes its own parameter type.
+fn assert_failure_and_typed_execution(
+    tool: &ToolDefinition<(), CallArgs, Value, u32>,
+    theme: &Theme,
+    invalidations: &Rc<RefCell<u32>>,
+) {
+    let failing = json!({"fail": true});
+    let context = row_context(
+        [false; 6],
+        &failing,
+        &Rc::new(RefCell::new(0)),
+        invalidations,
+    );
+    let error = (tool.render_call.as_ref().unwrap())(&failing, theme, &context)
+        .err()
+        .unwrap();
+    assert_eq!(error.message, "call failed");
+    let outcome = (tool.execute)("id".into(), CallArgs, None, None, None)
+        .now_or_never()
+        .unwrap();
+    assert_eq!(outcome.err().unwrap().message, "unused");
+}
+
 #[test]
-fn tool_definition_retains_render_context_identity_and_flags() {
+fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
     let observed = Rc::new(RefCell::new(Vec::new()));
     let tool = define_tool(render_definition(&observed));
     let theme = Theme::new(
@@ -425,31 +483,37 @@ fn tool_definition_retains_render_context_identity_and_flags() {
     let invalidations = Rc::new(RefCell::new(0));
     for flipped in 0..6 {
         let flags: Flags = std::array::from_fn(|index| index == flipped);
-        let args = Rc::new(RefCell::new(CallArgs {
-            path: "before".into(),
-        }));
+        let (first, second) = (
+            json!({"path": 7, "stage": flipped}),
+            json!({"path": null, "stage": flipped + 10}),
+        );
         let state = Rc::new(RefCell::new(0));
-        let mut context = row_context(flags, &args, &state, &invalidations);
+        let mut context = row_context(flags, &first, &state, &invalidations);
         let row: ComponentHandle =
-            (tool.render_call.as_ref().unwrap())(Rc::clone(&args), &theme, &context);
+            (tool.render_call.as_ref().unwrap())(&first, &theme, &context).unwrap();
         context.last_component = Some(Rc::clone(&row));
         let options = ToolRenderResultOptions {
             expanded: !flags[3],
             is_partial: !flags[2],
         };
-        let again = (tool.render_result.as_ref().unwrap())(&empty, options, &theme, &context);
+        let later = ToolRenderContext {
+            args: &second,
+            ..context
+        };
+        let again =
+            (tool.render_result.as_ref().unwrap())(&empty, options, &theme, &later).unwrap();
         assert!(Rc::ptr_eq(&row, &again));
-        assert_eq!(args.borrow().path, "after");
         assert_eq!(*state.borrow(), 2);
         let last = observed
             .borrow()
             .last()
-            .map(|seen| (seen.flags, seen.options));
-        assert_eq!(last, Some((flags, (!flags[3], !flags[2]))));
+            .map(|seen| (seen.flags, seen.options, seen.args.clone()));
+        assert_eq!(last, Some((flags, (!flags[3], !flags[2]), second)));
     }
     assert_eq!(*invalidations.borrow(), 6);
     assert!(observed.borrow().iter().all(|seen| seen.id == "stable"
         && seen.cwd == "/work"
-        && seen.path == "after"
+        && seen.readme == "/opt/maestro/README.md"
         && seen.calls == 2));
+    assert_failure_and_typed_execution(&tool, &theme, &invalidations);
 }

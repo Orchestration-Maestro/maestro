@@ -9,12 +9,12 @@ use maestro_models::DiagnosticErrorInfo;
 use num_traits::ToPrimitive;
 
 /// Format a line number or count the way the model has always seen it.
-fn num(value: f64) -> String {
+pub(super) fn num(value: f64) -> String {
     ryu_js::Buffer::new().format(value).to_owned()
 }
 
 /// Convert a length to a float, which holds every realistic length exactly.
-fn float(len: usize) -> f64 {
+pub(super) fn float(len: usize) -> f64 {
     len.to_f64().unwrap_or(f64::MAX)
 }
 
