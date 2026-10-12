@@ -212,7 +212,7 @@ let tool = AgentTool::typed(
     Arc::new(|_id, params: Echo, _signal, _progress| -> BoxFuture<_> {
         Box::pin(std::future::ready(Ok(AgentToolResult {
             content: vec![UserBlock::Text(TextContent { text: params.text, text_signature: None })],
-            details: (),
+            details: Some(()),
             terminate: Some(true),
         })))
     }),

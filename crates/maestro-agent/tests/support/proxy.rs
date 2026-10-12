@@ -249,7 +249,7 @@ pub fn shape(event: &AssistantMessageEvent) -> Value {
     let object = value.as_object_mut().unwrap();
     for handle in ["partial", "message", "error"] {
         if object.get(handle).is_some_and(Value::is_object) {
-            object.remove(handle);
+            object.shift_remove(handle);
         }
     }
     value
@@ -280,7 +280,7 @@ fn integral(value: Value) -> Value {
 #[must_use]
 pub fn snapshot(message: &SharedAssistantMessage) -> Value {
     let mut value = serde_json::to_value(&*message.read().unwrap()).unwrap();
-    value.as_object_mut().unwrap().remove("timestamp");
+    value.as_object_mut().unwrap().shift_remove("timestamp");
     integral(value)
 }
 /// Expected message: fixture identity and the given content, stop reason and usage.

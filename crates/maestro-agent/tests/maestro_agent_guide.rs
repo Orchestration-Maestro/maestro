@@ -285,13 +285,13 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             if let Some(progress) = progress {
                 progress(AgentToolResult {
                     content: vec![text("working".into())],
-                    details: json!({"stage": 1}),
+                    details: Some(json!({"stage": 1})),
                     terminate: None,
                 });
             }
             ready(Ok(AgentToolResult {
                 content: vec![text(params.text)],
-                details: json!({"audited": false}),
+                details: Some(json!({"audited": false})),
                 terminate: Some(true),
             }))
         }),
@@ -362,7 +362,8 @@ fn record_tool_events(agent: &Arc<Agent>) -> Arc<Mutex<Vec<String>>> {
                 partial_result,
             } => Some(format!(
                 "update {} {}",
-                tool_call.id, partial_result.details
+                tool_call.id,
+                json!(partial_result.details)
             )),
             AgentEvent::ToolExecutionEnd {
                 tool_call,
@@ -370,7 +371,8 @@ fn record_tool_events(agent: &Arc<Agent>) -> Arc<Mutex<Vec<String>>> {
                 is_error,
             } => Some(format!(
                 "end {} {} {is_error}",
-                tool_call.id, result.details
+                tool_call.id,
+                json!(result.details)
             )),
             _ => None,
         };
@@ -446,7 +448,7 @@ fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
             } else {
                 Ok(AgentToolResult {
                     content: vec![],
-                    details: json!({}),
+                    details: Some(json!({})),
                     terminate: None,
                 })
             };
