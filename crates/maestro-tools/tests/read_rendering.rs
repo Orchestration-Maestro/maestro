@@ -264,20 +264,34 @@ fn read_highlighting_reads_the_current_published_theme() {
     let mut native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
     let original = Rc::clone(&native.theme);
     assert_eq!(
-        native_row("main.rs", "fn main() {}", &native, &original),
+        native_row(
+            &json!({"path": "main.rs"}),
+            "fn main() {}",
+            &native,
+            &original
+        ),
         padded(&native_styled(0))
     );
     native.republish(40);
     assert_eq!(
-        native_row("main.rs", "fn main() {}", &native, &original),
+        native_row(
+            &json!({"path": "main.rs"}),
+            "fn main() {}",
+            &native,
+            &original
+        ),
         padded(&native_styled(40))
     );
 }
 
 /// Row 1 of `code` in a settled expanded read of `path`, through the native engine.
-fn native_row(path: &str, code: &str, env: &Env, theme: &Rc<maestro_theme::Theme>) -> String {
-    let args = json!({"path": path});
-    let ctx = context(&args, &setup(), env, None);
+fn native_row(
+    args: &serde_json::Value,
+    code: &str,
+    env: &Env,
+    theme: &Rc<maestro_theme::Theme>,
+) -> String {
+    let ctx = context(args, &setup(), env, None);
     (tool().render_result.unwrap())(&text_result(code), settled(true), theme, &ctx)
         .unwrap()
         .render(WIDTH)[1]
@@ -288,17 +302,20 @@ fn native_row(path: &str, code: &str, env: &Env, theme: &Rc<maestro_theme::Theme
 fn assert_native_language_selection() {
     let env = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
     let plain = format!("\x1b[38;5;{}mfn main() {{}}\x1b[39m", color("toolOutput"));
-    for (path, expected) in [
-        ("code.rs", native_styled(0)),
-        ("CODE.RS", native_styled(0)),
-        ("chosen.rs", native_styled(0)),
-        ("code.unknown", plain.clone()),
-        ("LICENSE", plain),
+    for (args, expected) in [
+        (json!({"path": "code.rs"}), native_styled(0)),
+        (json!({"path": "CODE.RS"}), native_styled(0)),
+        (
+            json!({"path": "other.txt", "file_path": "chosen.rs"}),
+            native_styled(0),
+        ),
+        (json!({"path": "code.unknown"}), plain.clone()),
+        (json!({"path": "LICENSE"}), plain),
     ] {
         assert_eq!(
-            native_row(path, "fn main() {}", &env, &env.theme),
+            native_row(&args, "fn main() {}", &env, &env.theme),
             padded(&expected),
-            "{path}"
+            "{args}"
         );
     }
 }
