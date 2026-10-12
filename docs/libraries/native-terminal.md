@@ -10,3 +10,9 @@ are MIT OR Apache-2.0. The crate does not use crossterm on Unix, because crosste
 controlling terminal over the redirected descriptors. Its tests add Tokio `test-util` and
 `sync` on every non-browser target, plus rustix `pipe`, `pty` and `process` on Unix. No library type appears in a public
 interface except Tokio's `LocalSet`, which the caller supplies to `ProcessTerminal::new`.
+
+The Unix [terminal examples](../terminal/examples.md) add dev-only base64 `=0.23.1`
+(defaults off; `std`) for image bytes, serde `=1.0.229` (`derive`) and inherited
+serde_json `=1.0.151` (`preserve_order`, `float_roundtrip`) for the embedded brand
+projection. These libraries use MIT OR Apache-2.0; they add no runtime library
+interface or new resolved package.
