@@ -5,8 +5,8 @@ use syn::{spanned::Spanned, visit::Visit};
 
 use crate::generated;
 use crate::source::{
-    Member, Source, cfg_test, impl_item_attributes, item_attributes, test_layout,
-    trait_item_attributes,
+    Member, Source, cfg_test, exclude_test_item, impl_item_attributes, item_attributes,
+    read_manifest, test_layout, trait_item_attributes,
 };
 
 /// Verify protected lint settings and production source size for every member.
@@ -119,29 +119,15 @@ struct TestLines {
 
 impl<'ast> Visit<'ast> for TestLines {
     fn visit_item(&mut self, item: &'ast syn::Item) {
-        if cfg_test(item_attributes(item)) {
-            self.spans.push(span_positions(item.span()));
-        } else {
-            syn::visit::visit_item(self, item);
-        }
+        exclude_test_item!(self, item, item_attributes(item), visit_item);
     }
 
     fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        let attributes = impl_item_attributes(item);
-        if cfg_test(attributes) {
-            self.spans.push(span_positions(item.span()));
-        } else {
-            syn::visit::visit_impl_item(self, item);
-        }
+        exclude_test_item!(self, item, impl_item_attributes(item), visit_impl_item);
     }
 
     fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        let attributes = trait_item_attributes(item);
-        if cfg_test(attributes) {
-            self.spans.push(span_positions(item.span()));
-        } else {
-            syn::visit::visit_trait_item(self, item);
-        }
+        exclude_test_item!(self, item, trait_item_attributes(item), visit_trait_item);
     }
 
     fn visit_foreign_item(&mut self, item: &'ast syn::ForeignItem) {
@@ -152,11 +138,7 @@ impl<'ast> Visit<'ast> for TestLines {
             syn::ForeignItem::Macro(item) => &item.attrs,
             _ => return,
         };
-        if cfg_test(attributes) {
-            self.spans.push(span_positions(item.span()));
-        } else {
-            syn::visit::visit_foreign_item(self, item);
-        }
+        exclude_test_item!(self, item, attributes, visit_foreign_item);
     }
 }
 
@@ -219,15 +201,6 @@ const PROTECTED: &[(&str, &str)] = &[
     ("clippy", "expect_used"),
     ("clippy", "panic"),
 ];
-
-/// Read a Cargo manifest through the existing native TOML parser.
-fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {
-    let contents = std::fs::read_to_string(manifest)
-        .map_err(|error| format!("{}: {error}", manifest.display()))?;
-    contents
-        .parse()
-        .map_err(|error| format!("{}: {error}", manifest.display()))
-}
 
 /// Require canonical workspace JSON precision and normal members' inheritance of precise entries.
 /// Dev/build declarations are excluded: their feature union can hide missing normal precision.

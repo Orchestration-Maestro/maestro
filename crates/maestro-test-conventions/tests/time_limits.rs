@@ -420,6 +420,24 @@ fn production_deadlines_are_allowed() {
         )],
         &[],
     );
+    for attribute in [
+        "#[cfg(any(test))]",
+        "#[cfg(all(test))]",
+        "#[cfg_attr(test, allow(dead_code))]",
+        "#[test]",
+        "#[inline]",
+    ] {
+        check(
+            "maestro-tui",
+            &[(
+                "src/lib.rs",
+                &format!(
+                    "struct W;\nimpl W {{\n    {attribute}\n    fn product() {{ std::thread::park_timeout(d); }}\n}}\n{attribute}\nfn free() {{ std::thread::park_timeout(d); }}\n"
+                ),
+            )],
+            &[],
+        );
+    }
 }
 
 #[test]
@@ -430,6 +448,19 @@ fn comments_and_literals_do_not_create_timer_calls() {
             "src/tests.rs",
             "// tokio::time::timeout(d, f)\n/* receiver.recv_timeout(d); /* nested comment */ */\nfn sample() {\n    let a = \"tokio::time::timeout_at(d, f)\";\n    let b = r#\"receiver.recv_deadline(d)\"#;\n    let c = b\"std::thread::park_timeout(d)\";\n    println!(\"tokio::time::timeout(d, f)\");\n}\n",
         )],
+        &[],
+    );
+    check(
+        "maestro-tui",
+        &[(
+            "src/tests.rs",
+            "struct W;\nimpl W {\n    #[cfg(test)]\n    m!(std::thread::park_timeout(d););\n}\ntrait T {\n    #[cfg(test)]\n    m!(std::thread::park_timeout(d););\n}\n",
+        )],
+        &[],
+    );
+    check(
+        "maestro-tui",
+        &[("src/tests.rs", "std::thread::park_timeout(d)\n")],
         &[],
     );
 }
@@ -533,6 +564,52 @@ fn associated_test_bodies_restore_production_ownership() {
             ("src/lib.rs", 14, "std::thread::park_timeout"),
             ("src/lib.rs", 17, "std::thread::park_timeout"),
         ],
+    );
+    check(
+        "maestro-tui",
+        &[(
+            "src/lib.rs",
+            "struct W;\nimpl W {\n    #[cfg(test)]\n    type T = [u8; { std::thread::park_timeout(d); 1 }];\n    type P = [u8; { std::thread::park_timeout(d); 1 }];\n}\ntrait Tr {\n    #[cfg(test)]\n    type T = [u8; { std::thread::park_timeout(d); 1 }];\n    type P = [u8; { std::thread::park_timeout(d); 1 }];\n}\n",
+        )],
+        &[
+            ("src/lib.rs", 4, "std::thread::park_timeout"),
+            ("src/lib.rs", 9, "std::thread::park_timeout"),
+        ],
+    );
+}
+
+#[test]
+fn inherited_test_context_survives_nested_associated_items() {
+    let park = "std::thread::park_timeout(d);";
+    let lines = [
+        "#[cfg(test)]".to_owned(),
+        "mod tests {".to_owned(),
+        "    struct W;".to_owned(),
+        "    impl W {".to_owned(),
+        format!("        fn a() {{ {park} }}"),
+        "        #[cfg(test)]".to_owned(),
+        format!("        fn b() {{ {park} }}"),
+        format!("        fn c() {{ {park} }}"),
+        "    }".to_owned(),
+        "    trait T {".to_owned(),
+        format!("        fn a() {{ {park} }}"),
+        "        #[cfg(test)]".to_owned(),
+        format!("        fn b() {{ {park} }}"),
+        format!("        fn c() {{ {park} }}"),
+        "    }".to_owned(),
+        format!("    fn nested() {{ {park} }}"),
+        "    #[cfg(test)]".to_owned(),
+        format!("    fn gated() {{ {park} }}"),
+        format!("    fn after() {{ {park} }}"),
+        "}".to_owned(),
+        format!("fn production() {{ {park} }}"),
+    ];
+    let expected = [5, 7, 8, 11, 13, 14, 16, 18, 19]
+        .map(|line| ("src/lib.rs", line, "std::thread::park_timeout"));
+    check(
+        "maestro-tui",
+        &[("src/lib.rs", &(lines.join("\n") + "\n"))],
+        &expected,
     );
 }
 

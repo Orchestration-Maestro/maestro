@@ -4,7 +4,7 @@ use std::path::Path;
 use syn::punctuated::Punctuated;
 use syn::visit::Visit;
 
-use crate::source::{Member, Source};
+use crate::source::{Member, Source, read_manifest as read};
 
 /// Crate that generates the extension bindings and holds their only lint exception.
 pub(crate) const GUEST: &str = "maestro-extensions-wasm";
@@ -51,14 +51,6 @@ pub(crate) fn check_manifest(manifest: &Path, root: &Path) -> Result<(), String>
         }
     }
     Ok(())
-}
-
-/// Parse a manifest into a table.
-fn read(path: &Path) -> Result<toml::Table, String> {
-    std::fs::read_to_string(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?
-        .parse()
-        .map_err(|error| format!("{}: {error}", path.display()))
 }
 
 /// Normalize the entries of one lint group to levels and priorities.

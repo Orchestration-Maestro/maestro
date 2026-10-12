@@ -2,9 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use syn::{ext::IdentExt, spanned::Spanned, visit::Visit};
 
-use crate::source::{
-    Member, cfg_test, impl_item_attributes, item_attributes, test_layout, trait_item_attributes,
-};
+use crate::source::{Member, cfg_test, inherit_test_context, test_layout};
 
 /// Reject recognized timer calls in test-owned parsed sources.
 pub(crate) fn check(members: &[Member]) -> Result<(), String> {
@@ -152,24 +150,9 @@ impl Calls {
 }
 
 impl<'ast> Visit<'ast> for Calls {
-    fn visit_item(&mut self, item: &'ast syn::Item) {
-        let testing = self.testing;
-        self.testing |= cfg_test(item_attributes(item));
-        syn::visit::visit_item(self, item);
-        self.testing = testing;
-    }
-    fn visit_impl_item(&mut self, item: &'ast syn::ImplItem) {
-        let testing = self.testing;
-        self.testing |= cfg_test(impl_item_attributes(item));
-        syn::visit::visit_impl_item(self, item);
-        self.testing = testing;
-    }
-    fn visit_trait_item(&mut self, item: &'ast syn::TraitItem) {
-        let testing = self.testing;
-        self.testing |= cfg_test(trait_item_attributes(item));
-        syn::visit::visit_trait_item(self, item);
-        self.testing = testing;
-    }
+    inherit_test_context!(visit_item, Item, item_attributes);
+    inherit_test_context!(visit_impl_item, ImplItem, impl_item_attributes);
+    inherit_test_context!(visit_trait_item, TraitItem, trait_item_attributes);
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
         let name = call.method.unraw().to_string();
         if self.testing && timed_wait(&name) {
