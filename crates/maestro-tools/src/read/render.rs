@@ -67,7 +67,8 @@ fn selected_path(args: &Value) -> Option<&Value> {
         .or_else(|| args.get("path"))
 }
 
-/// `:start-end` for the offset and limit arguments, empty when neither is present.
+/// `:start-end` for the offset and limit arguments, empty when neither is present; a
+/// non-numeric offset counts as 1 and a non-numeric limit as 0, and an end of 0 is omitted.
 fn line_range(args: &Value, theme: &Theme) -> Rendered<String> {
     let (offset, limit) = (args.get("offset"), args.get("limit"));
     if offset.is_none() && limit.is_none() {
@@ -102,9 +103,13 @@ fn format_read_call(args: &Value, theme: &Theme) -> Rendered<String> {
 }
 
 /// Documentation under the README's directory, labelled by its relative path.
-fn docs_classification(absolute: &str, context: &ToolRenderContext<'_>) -> Option<Classification> {
+fn docs_classification(
+    absolute: &str,
+    context: &ToolRenderContext<'_>,
+) -> Rendered<Option<Classification>> {
+    let process_cwd = std::env::current_dir().map_err(|error| diagnostic(&error))?;
     let cwd = Cwd {
-        current: &context.cwd,
+        current: &process_cwd.to_string_lossy(),
         drive_directories: &[],
     };
     let path = relative(&dirname(&context.readme_path), absolute, &cwd);
@@ -115,10 +120,10 @@ fn docs_classification(absolute: &str, context: &ToolRenderContext<'_>) -> Optio
         || maestro_path::is_absolute(&path);
     let label = path.replace(&separator, "/");
     let docs = label == "README.md" || label.starts_with("docs/") || label.starts_with("examples/");
-    (!outside && docs).then_some(Classification {
+    Ok((!outside && docs).then_some(Classification {
         kind: Kind::Docs,
         label,
-    })
+    }))
 }
 
 /// Skill, documentation or resource files are shown compactly.
@@ -136,7 +141,7 @@ fn classify(args: &Value, context: &ToolRenderContext<'_>) -> Rendered<Option<Cl
             label,
         }));
     }
-    Ok(docs_classification(&absolute, context).or_else(|| {
+    Ok(docs_classification(&absolute, context)?.or_else(|| {
         RESOURCE_FILE_NAMES
             .contains(&name.as_str())
             .then_some(Classification {

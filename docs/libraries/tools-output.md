@@ -38,8 +38,8 @@ runs only when `HOME` is absent; Windows always uses that platform lookup. A mis
 ## Display strings
 
 `maestro-tools` uses `regex =1.13.1` with default features (MIT or Apache-2.0), already
-in the lockfile through `maestro-models`, to run one cached expression that removes complete
-terminal escape sequences from [display text](../tools-read.md#display-helpers). Its existing
+in the lockfile through `maestro-models`, to run one cached expression that removes the terminal
+escape sequences it matches from [display text](../tools-read.md#display-helpers). Its existing
 closure is `regex-automata 0.4.18`, `regex-syntax 0.8.11`, `aho-corasick 1.1.5` and
 `memchr 2.8.3`; the last two are Unlicense OR MIT, used under MIT. No other package is added.
 

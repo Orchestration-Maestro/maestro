@@ -5853,8 +5853,7 @@
       "id": "home",
       "op": "shorten",
       "input": {
-        "path": "$HOME",
-        "home": "$HOME"
+        "path": "$HOME"
       },
       "expected": "~"
     },
@@ -5863,8 +5862,7 @@
       "id": "child",
       "op": "shorten",
       "input": {
-        "path": "$HOME/notes",
-        "home": "$HOME"
+        "path": "$HOME/notes"
       },
       "expected": "~/notes"
     },
@@ -5873,8 +5871,7 @@
       "id": "prefix_collision",
       "op": "shorten",
       "input": {
-        "path": "$HOME-other/notes",
-        "home": "$HOME"
+        "path": "$HOME-other/notes"
       },
       "expected": "$HOME-other/notes"
     },
@@ -5883,8 +5880,7 @@
       "id": "outside",
       "op": "shorten",
       "input": {
-        "path": "/elsewhere/notes",
-        "home": "$HOME"
+        "path": "/elsewhere/notes"
       },
       "expected": "/elsewhere/notes"
     },
@@ -5893,8 +5889,7 @@
       "id": "empty",
       "op": "shorten",
       "input": {
-        "path": "",
-        "home": "$HOME"
+        "path": ""
       },
       "expected": ""
     },
@@ -6424,7 +6419,6 @@
         "readme": "C:\\pkg\\README.md"
       },
       "expected": {
-        "kind": "docs",
         "label": "README.md"
       }
     },
@@ -6437,7 +6431,6 @@
         "readme": "C:\\pkg\\README.md"
       },
       "expected": {
-        "kind": "docs",
         "label": "docs/guide.md"
       }
     },
@@ -6470,7 +6463,6 @@
         "readme": "\\\\server\\share\\pkg\\README.md"
       },
       "expected": {
-        "kind": "docs",
         "label": "examples/demo.rs"
       }
     },
@@ -6483,7 +6475,6 @@
         "readme": "C:\\pkg\\README.md"
       },
       "expected": {
-        "kind": "docs",
         "label": "README.md"
       }
     }

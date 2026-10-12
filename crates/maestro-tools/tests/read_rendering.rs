@@ -10,15 +10,15 @@ use display_support::{
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
-use maestro_models::{TextContent, UserBlock};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, TextContent, UserBlock};
 use maestro_theme::{SyntaxHighlighter, SyntaxSpan, ThemeColor};
 use maestro_tools::{
-    ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions, create_read_tool,
-    create_read_tool_definition, output::render_utils::strip_ansi,
+    ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, ToolRenderResultOptions,
+    create_read_tool_definition, output::render_utils::strip_ansi, wrap_tool_definition,
 };
 use maestro_tui::{Component, Text, tui::ComponentHandle};
 use serde_json::{Value, json};
-use std::{cell::RefCell, error::Error, rc::Rc};
+use std::{cell::RefCell, error::Error, rc::Rc, sync::Arc};
 
 /// Records every highlight request and classifies the whole text as a keyword.
 struct Probe {
@@ -212,21 +212,33 @@ fn read_highlighting_uses_only_selected_filename_language() {
     );
     let keyword = color("syntaxKeyword");
     let code_block = color("mdCodeBlock");
-    for (path, supported, calls, row) in [
+    for (args, supported, calls, row) in [
         (
-            "code.rs",
+            json!({"path": "code.rs"}),
             true,
             vec![("a   b".to_owned(), "rust".to_owned())],
             format!("\x1b[38;5;{keyword}ma   b\x1b[39m"),
         ),
         (
-            "code.unknown",
+            json!({"path": "CODE.RS"}),
+            true,
+            vec![("a   b".to_owned(), "rust".to_owned())],
+            format!("\x1b[38;5;{keyword}ma   b\x1b[39m"),
+        ),
+        (
+            json!({"path": "other.txt", "file_path": "chosen.rs"}),
+            true,
+            vec![("a   b".to_owned(), "rust".to_owned())],
+            format!("\x1b[38;5;{keyword}ma   b\x1b[39m"),
+        ),
+        (
+            json!({"path": "code.unknown"}),
             true,
             vec![],
             format!("\x1b[38;5;{}ma   b\x1b[39m", color("toolOutput")),
         ),
         (
-            "code.rs",
+            json!({"path": "code.rs"}),
             false,
             vec![],
             format!("\x1b[38;5;{code_block}ma   b\x1b[39m"),
@@ -237,16 +249,15 @@ fn read_highlighting_uses_only_selected_filename_language() {
             Rc::new(display_support::palette(0)),
             Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
         );
-        let args = json!({"path": path});
         let ctx = context(&args, &setup(), &env, None);
         let row_component =
             (tool().render_result.unwrap())(&text_result("a\tb"), settled(true), &env.theme, &ctx)
                 .unwrap();
-        assert_eq!(*probe.calls.borrow(), calls, "{path} supported={supported}");
+        assert_eq!(*probe.calls.borrow(), calls, "{args} supported={supported}");
         assert_eq!(
             row_component.render(WIDTH)[1],
             padded(&row),
-            "{path} supported={supported}"
+            "{args} supported={supported}"
         );
     }
 }
@@ -327,12 +338,16 @@ fn read_renderers_reuse_the_supplied_text_slot() {
         let handle: ComponentHandle = Rc::clone(&prior) as ComponentHandle;
         let (args, ctx_args) = (json!({"path": "notes.txt"}), json!({"path": "after.txt"}));
         let ctx = context(
-            if case.id == "call" { &ctx_args } else { &args },
+            if case.input["slot"] == "call" {
+                &ctx_args
+            } else {
+                &args
+            },
             &setup(),
             &env,
             Some(Rc::clone(&handle)),
         );
-        let returned = if case.id == "call" {
+        let returned = if case.input["slot"] == "call" {
             (tool().render_call.unwrap())(&ctx_args, &env.theme, &ctx).unwrap()
         } else {
             (tool().render_result.unwrap())(&text_result("after"), settled(true), &env.theme, &ctx)
@@ -432,23 +447,110 @@ fn classified_results_avoid_unused_display_dependencies() {
     assert_eq!(error.message, "Unknown theme color: muted");
 }
 
+/// File access that serves one fixed file.
+struct Fixed;
+
+impl ReadOperations for Fixed {
+    fn read_file(&self, _: String) -> BoxFuture<Result<Vec<u8>, DiagnosticErrorInfo>> {
+        Box::pin(std::future::ready(Ok(b"served".to_vec())))
+    }
+
+    fn access(&self, _: String) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
+        Box::pin(std::future::ready(Ok(())))
+    }
+}
+
 #[test]
 fn read_definition_keeps_render_alias_separate_from_execution_input() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
     let env = Env::new(0);
+    let options = ReadToolOptions {
+        operations: Some(Arc::new(Fixed)),
+        ..ReadToolOptions::default()
+    };
+    let mut definition = create_read_tool_definition::<()>("/work".into(), options);
+    let render_call = definition.render_call.take().unwrap();
+    let executable = wrap_tool_definition(definition, None);
     let args = json!({"file_path": "alias.txt", "offset": 2});
     let ctx = context(&args, &setup(), &env, None);
-    let row = (tool().render_call.unwrap())(&args, &env.theme, &ctx).unwrap();
+    let row = render_call(&args, &env.theme, &ctx).unwrap();
     assert_eq!(
         strip_ansi(&row.render(WIDTH)[0]).unwrap().trim_end(),
         "read alias.txt:2"
     );
-    assert!(serde_json::from_value::<ReadToolInput>(args.clone()).is_err());
-    let executable = create_read_tool("/work".into(), ReadToolOptions::default());
-    let outcome = (executable.execute)("call".into(), args, None, None)
+    let rejected = (executable.execute)("call".into(), args, None, None)
         .now_or_never()
+        .unwrap()
+        .err()
         .unwrap();
-    assert!(outcome.is_err());
+    assert!(rejected.message.contains("path"), "{}", rejected.message);
+    let served = (executable.execute)("call".into(), json!({"path": "alias.txt"}), None, None)
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    let UserBlock::Text(text) = &served.content[0] else {
+        panic!("expected text content");
+    };
+    assert_eq!(text.text, "served");
+}
+
+#[test]
+fn one_read_definition_follows_each_render_context() {
+    let _bindings = bind(&["ctrl+o".to_owned()]);
+    let env = Env::new(0);
+    let definition = tool();
+    let args = json!({"path": "docs/guide.md"});
+    let title = |cwd: &str, readme: &str| {
+        let mut setup = setup();
+        setup.expanded = false;
+        setup.cwd = cwd.to_owned();
+        setup.readme = readme.to_owned();
+        let ctx = context(&args, &setup, &env, None);
+        let row = (definition.render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+        strip_ansi(&row.render(WIDTH)[0])
+            .unwrap()
+            .trim_end()
+            .to_owned()
+    };
+    assert_eq!(
+        title("/opt/maestro", "/opt/maestro/README.md"),
+        "read docs docs/guide.md (ctrl+o to expand)"
+    );
+    assert_eq!(
+        title("/work", "/opt/maestro/README.md"),
+        "read docs/guide.md"
+    );
+    assert_eq!(
+        title("/opt/maestro", "/srv/other/README.md"),
+        "read docs/guide.md"
+    );
+    assert_eq!(
+        title("/opt/maestro", "/opt/maestro/README.md"),
+        "read docs docs/guide.md (ctrl+o to expand)"
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn rooted_windows_documentation_paths_take_the_process_drive() {
+    let _bindings = bind(&["ctrl+o".to_owned()]);
+    let env = Env::new(0);
+    let process = std::env::current_dir().unwrap();
+    let drive = process.to_string_lossy()[..2].to_owned();
+    let other = if drive.eq_ignore_ascii_case("D:") {
+        "E:"
+    } else {
+        "D:"
+    };
+    let mut setup = setup();
+    setup.expanded = false;
+    setup.readme = format!("{drive}\\pkg\\README.md");
+    setup.cwd = format!("{other}\\project");
+    let args = json!({"path": "\\pkg\\docs\\guide.md"});
+    let ctx = context(&args, &setup, &env, None);
+    let row = (tool().render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+    let text = strip_ansi(&row.render(WIDTH)[0]).unwrap();
+    assert!(text.starts_with("read docs docs/guide.md"), "{text}");
 }
 
 #[cfg(windows)]

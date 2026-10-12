@@ -184,8 +184,9 @@ the home directory as `~` for a path equal to it or below it and leaves a siblin
 name merely starts with the home path unchanged; it reads the home directory through
 [`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
-carriage return. `strip_ansi` removes complete escape sequences with one cached expression,
-and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
+carriage return. `strip_ansi` removes what one cached expression matches (OSC strings up to
+their first terminator, and CSI-style introducers with parameters and a final byte; a CSI
+whose final byte is `Q` is left in place), and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
 drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
 cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,
 appends one fallback line per image in order. `invalid_arg_text` styles `[invalid arg]`
@@ -246,10 +247,11 @@ uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
 ## Read rendering
 
 The read definition draws its call and its result into the row's previous `Text`
-component, or a new one, returning the same handle. Both read the call's raw arguments:
-`file_path` unless it is absent or null, then `path`, and the optional `offset` and
-`limit` (the range is `:start-end` with end `start + limit - 1`, omitted when zero). A
-non-string path shows `[invalid arg]` and an empty one `...`.
+component, or a new one, returning the same handle. Both read the call's raw arguments to
+select the path: `file_path` unless it is absent or null, then `path`. The call renderer
+also draws the range from the optional `offset` and `limit` (`:start-end` with end
+`start + limit - 1`, omitted when zero), shows `[invalid arg]` for a non-string path and
+`...` for an empty, absent or null one.
 
 A read of a `SKILL.md`, of a file inside the README's directory whose relative path is
 `README.md` or below `docs/` or `examples/`, or of an `AGENTS.md`/`CLAUDE.md` file (either
@@ -257,16 +259,21 @@ extension case) is classified; the path is resolved against the context's workin
 with [`resolve_read_path`](../crates/maestro-tools/src/path_utils.rs), in that priority. A
 collapsed row shows a classified call as `[skill] label`, `read docs label` or
 `read resource label` with its range and a hint naming the keys bound to `app.tools.expand`,
-and hides a successful result entirely; an expanded row, or an error, shows the ordinary
-title and content. The application supplies the README path and registers the expand
-action.
+and hides a successful result entirely; an expanded row shows the ordinary title and
+content. An error result shows its content even when classified; the call title does not
+depend on the result. A file counts as documentation when its path, relative to the
+README's directory, is resolved against the process working directory for any part the
+path leaves open, such as the drive of a Windows path that starts with a separator. The
+application supplies the README path and registers the expand action.
 
 An ordinary result shows the cleaned output (see the [display helpers](#display-helpers)),
-highlighted in the language of the selected path's suffix when it has one, otherwise in the
-tool output color. A collapsed row shows ten logical lines, counted before wrapping and after
-removing trailing empty entries, followed by `... (N more lines, <keys> to expand)`. A
-truncated read adds a warning line: the first-line, line or byte limit notice, using the
-limits recorded in its details. A theme, home, path or escape-expression failure is returned
+highlighted in the language that [`get_language_from_path`](theme.md) names for the
+selected path when it names one (its matching, the engine's unsupported languages and
+failures are described there), otherwise in the tool output color. A collapsed row shows up
+to ten logical lines, counted before wrapping and after removing trailing empty entries,
+followed by `... (N more lines, <keys> to expand)` when more remain. A truncated read adds
+a warning line: the first-line, line or byte limit notice, using the limits recorded in its
+details. A theme, home, path or escape-expression failure is returned
 and leaves the previous component untouched.
 
 ```rust

@@ -12,8 +12,8 @@ use std::sync::LazyLock;
 /// A tool result as renderers see it.
 pub type ToolRenderResultLike<D> = AgentToolResult<D>;
 
-/// Complete terminal escape sequences: OSC strings up to their first terminator, and CSI
-/// and related introducers with their parameters and final byte.
+/// Terminal escape sequences: OSC strings up to their first terminator, and CSI and related
+/// introducers with their parameters and a final byte from the listed set.
 const ANSI_PATTERN: &str = r"(?:\x{001B}\][\s\S]*?(?:\x{0007}|\x{001B}\\|\x{009C}))|[\x{001B}\x{009B}][\[\]()#;?]*(?:[0-9]{1,4}(?:[;:][0-9]{0,4})*)?[0-9A-PR-TZcf-nq-uy=><~]";
 
 /// The compiled escape expression, built once.
@@ -58,7 +58,7 @@ pub fn normalize_display_text(text: &str) -> String {
     text.replace('\r', "")
 }
 
-/// Remove every complete terminal escape sequence.
+/// Remove every match of the escape expression.
 ///
 /// # Errors
 /// Returns the failure to compile the escape expression.
@@ -92,6 +92,7 @@ pub fn get_text_output<D>(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let output = cleaned.join("\n");
+    let images_shown = terminal_image.get_capabilities().images.is_some() && show_images;
     let indicators: Vec<String> = result
         .content
         .iter()
@@ -99,6 +100,7 @@ pub fn get_text_output<D>(
             UserBlock::Image(image) => Some(image),
             UserBlock::Text(_) => None,
         })
+        .filter(|_| !images_shown)
         .map(|image| {
             let dimensions = (!image.data.is_empty() && !image.mime_type.is_empty())
                 .then(|| get_image_dimensions(&image.data, &image.mime_type))
@@ -106,8 +108,7 @@ pub fn get_text_output<D>(
             image_fallback(&image.mime_type, dimensions, None)
         })
         .collect();
-    if indicators.is_empty() || (terminal_image.get_capabilities().images.is_some() && show_images)
-    {
+    if indicators.is_empty() {
         return Ok(output);
     }
     let indicators = indicators.join("\n");
