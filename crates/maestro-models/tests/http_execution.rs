@@ -477,8 +477,7 @@ async fn production_client_failures() -> TestResult {
         "choices": [{"index": 0, "delta": {"content": "so far"}}]});
     let server = loopback::serve(
         "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\ncontent-length: 100000\r\n\r\n",
-        vec![format!("data: {event}\n\n").into_bytes()],
-        Duration::from_millis(5),
+        loopback::Step::writes(vec![format!("data: {event}\n\n").into_bytes()]),
     )?;
     let (labels, message) = call_loopback(&server.url).await?;
     server.finish()?;
@@ -501,8 +500,7 @@ fn maestro_http_reports_fetch_failures() -> TestResult {
 async fn default_fetch_exchange() -> TestResult {
     let server = loopback::serve(
         "HTTP/1.1 201 Created\r\nx-result: fixture\r\ncontent-length: 5\r\nconnection: close\r\n\r\n",
-        vec![b"he".to_vec(), b"llo".to_vec()],
-        Duration::from_millis(2),
+        loopback::Step::writes(vec![b"he".to_vec(), b"llo".to_vec()]),
     )?;
     let request = HttpRequest {
         method: "POST".into(),
@@ -555,7 +553,7 @@ fn request_with(url: String, headers: &[(&str, &str)]) -> HttpRequest {
 /// only, and a response value is read byte by byte as text.
 async fn header_values_are_octets() -> TestResult {
     let reply = b"HTTP/1.1 200 OK\r\nX-Latin: \xE9\x80\xFF\r\nX-Empty: \r\ncontent-length: 0\r\nconnection: close\r\n\r\n";
-    let server = loopback::serve("", vec![reply.to_vec()], Duration::ZERO)?;
+    let server = loopback::serve("", loopback::Step::writes(vec![reply.to_vec()]))?;
     let request = request_with(
         server.url.clone(),
         &[

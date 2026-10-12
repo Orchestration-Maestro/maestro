@@ -127,6 +127,17 @@ pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
         .unwrap()
         .block_on(future)
 }
+/// Execute local futures on a test-owned runtime with its I/O and time drivers enabled.
+///
+/// # Panics
+/// Panics if construction of the test runtime fails.
+pub fn run_io<T>(future: impl std::future::Future<Output = T>) -> T {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
 /// A completed callback future without an extra nested async block.
 #[must_use]
 pub fn ready<T: Send + 'static>(value: T) -> maestro_models::BoxFuture<T> {
@@ -185,6 +196,12 @@ pub mod continuation_corpus;
 pub mod owned;
 /// Recorded owned-run response and reduction evidence.
 pub mod owner_corpus;
+/// Controlled proxy transport and observations.
+pub mod proxy;
+/// Registered scripted-model fixtures.
+pub mod scripted;
+/// Test-only helper tools.
+pub mod utils;
 
 /// Native captured-run binding fixtures.
 pub mod binding_corpus;

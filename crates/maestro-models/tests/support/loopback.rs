@@ -1,12 +1,12 @@
 //! A one-connection HTTP server on the loopback interface.
 
-use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::io::{ErrorKind, Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::{Receiver, channel};
-use std::thread::{JoinHandle, sleep};
-use std::time::Duration;
+use std::thread::JoinHandle;
 
-use crate::chat::TestResult;
+/// Fallible test body result.
+pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 /// What the server read from its client.
 pub struct Received {
@@ -72,62 +72,98 @@ fn header_end(bytes: &[u8]) -> Option<usize> {
 pub const EVENT_STREAM_HEAD: &str =
     "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\nconnection: close\r\n\r\n";
 
-/// Answer one request with `response_head` and then `pieces` written one at a time, pausing between them.
-pub fn serve(
-    response_head: &'static str,
-    pieces: Vec<Vec<u8>>,
-    pause: Duration,
-) -> TestResult<Loopback> {
+/// One action of the server after it has answered the request head.
+pub enum Step {
+    /// Write and flush these bytes.
+    Write(Vec<u8>),
+    /// Hold the response until the test sends on, or drops, the paired sender.
+    Wait(Receiver<()>),
+}
+
+impl Step {
+    /// A write step for each piece, in order.
+    pub fn writes(pieces: Vec<Vec<u8>>) -> Vec<Self> {
+        pieces.into_iter().map(Self::Write).collect()
+    }
+}
+
+/// Whether the client closed the connection, which ends the response early without failing it.
+fn client_closed(error: &std::io::Error) -> bool {
+    matches!(
+        error.kind(),
+        ErrorKind::BrokenPipe | ErrorKind::ConnectionReset | ErrorKind::ConnectionAborted
+    )
+}
+
+/// Read one request, or `None` when the client closes before finishing its head; a body cut
+/// short by the client is returned as received.
+fn read_request(connection: &mut TcpStream) -> std::io::Result<Option<Received>> {
+    let mut bytes = Vec::new();
+    let mut buffer = [0_u8; 4096];
+    let head = loop {
+        let count = connection.read(&mut buffer)?;
+        bytes.extend_from_slice(&buffer[..count]);
+        if let Some(end) = header_end(&bytes) {
+            break end;
+        }
+        if count == 0 {
+            return Ok(None);
+        }
+    };
+    let text = String::from_utf8_lossy(&bytes[..head]).into_owned();
+    let mut lines = text.split("\r\n");
+    let request_line = lines.next().unwrap_or_default().to_owned();
+    let headers: Vec<(String, String)> = lines
+        .filter_map(|line| line.split_once(':'))
+        .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
+        .collect();
+    let length: usize = headers
+        .iter()
+        .find(|(name, _)| name == "content-length")
+        .and_then(|(_, value)| value.parse().ok())
+        .unwrap_or(0);
+    while bytes.len() < head + length {
+        let count = connection.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        bytes.extend_from_slice(&buffer[..count]);
+    }
+    Ok(Some(Received {
+        request_line,
+        headers,
+        body: bytes[head..].to_vec(),
+        head: bytes[..head].to_vec(),
+    }))
+}
+
+/// Answer one request with `response_head` and then carry out `steps` in order.
+pub fn serve(response_head: &str, steps: Vec<Step>) -> TestResult<Loopback> {
+    let response_head = response_head.to_owned();
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let url = format!("http://{}", listener.local_addr()?);
     let (sender, received) = channel();
     let worker = std::thread::spawn(move || {
         let (mut connection, _) = listener.accept()?;
-        let mut bytes = Vec::new();
-        let mut buffer = [0_u8; 4096];
-        let head = loop {
-            let count = connection.read(&mut buffer)?;
-            bytes.extend_from_slice(&buffer[..count]);
-            if let Some(end) = header_end(&bytes) {
-                break end;
-            }
-            if count == 0 {
-                return Ok(());
-            }
+        let Some(request) = read_request(&mut connection)? else {
+            return Ok(());
         };
-        let text = String::from_utf8_lossy(&bytes[..head]).into_owned();
-        let mut lines = text.split("\r\n");
-        let request_line = lines.next().unwrap_or_default().to_owned();
-        let headers: Vec<(String, String)> = lines
-            .filter_map(|line| line.split_once(':'))
-            .map(|(name, value)| (name.to_ascii_lowercase(), value.trim().to_owned()))
-            .collect();
-        let length: usize = headers
-            .iter()
-            .find(|(name, _)| name == "content-length")
-            .and_then(|(_, value)| value.parse().ok())
-            .unwrap_or(0);
-        while bytes.len() < head + length {
-            let count = connection.read(&mut buffer)?;
-            if count == 0 {
-                break;
-            }
-            bytes.extend_from_slice(&buffer[..count]);
-        }
-        let body = bytes[head..].to_vec();
-        sender
-            .send(Received {
-                request_line,
-                headers,
-                body,
-                head: bytes[..head].to_vec(),
-            })
-            .ok();
+        sender.send(request).ok();
         connection.write_all(response_head.as_bytes())?;
-        for piece in pieces {
-            connection.write_all(&piece)?;
-            connection.flush()?;
-            sleep(pause);
+        for step in steps {
+            let written = match step {
+                Step::Write(piece) => connection
+                    .write_all(&piece)
+                    .and_then(|()| connection.flush()),
+                Step::Wait(gate) => {
+                    gate.recv().ok();
+                    Ok(())
+                }
+            };
+            match written {
+                Err(error) if client_closed(&error) => break,
+                other => other?,
+            }
         }
         Ok(())
     });

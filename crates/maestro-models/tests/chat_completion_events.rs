@@ -26,7 +26,6 @@ use std::future::poll_fn;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, Wake, Waker};
-use std::time::Duration;
 
 use cases::assert_rows;
 use chat::{TestResult, block_on};
@@ -1139,7 +1138,7 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
     let mut reply = b"HTTP/1.1 200 OK\r\n".to_vec();
     reply.extend(head_lines);
     reply.extend(b"content-length: 14\r\nconnection: close\r\n\r\ndata: [DONE]\n\n");
-    let server = loopback::serve("", vec![reply], Duration::ZERO)?;
+    let server = loopback::serve("", loopback::Step::writes(vec![reply]))?;
     let mut model = chat::model(&json!({}))?;
     model.base_url = format!("{}/v1", server.url);
     let reported: Arc<Mutex<Vec<maestro_models::ProviderResponse>>> = Arc::default();
@@ -1204,7 +1203,7 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
         // Split inside multi-byte characters so framing must reassemble them.
         let pieces: Vec<Vec<u8>> = body.chunks(7).map(<[u8]>::to_vec).collect();
         let head = "HTTP/1.1 200 OK\r\ncontent-type: text/event-stream\r\nx-multi: a\r\nx-multi: b\r\nconnection: close\r\n\r\n";
-        let server = loopback::serve(head, pieces, Duration::from_millis(2))?;
+        let server = loopback::serve(head, loopback::Step::writes(pieces))?;
         let mut model = chat::model(&json!({}))?;
         model.base_url = format!("{}/v1", server.url);
         let reported: Arc<std::sync::Mutex<Vec<maestro_models::ProviderResponse>>> = Arc::default();

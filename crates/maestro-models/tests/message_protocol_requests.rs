@@ -51,8 +51,7 @@ fn short_answer() -> Vec<u8> {
 async fn default_client_posts_request() -> TestResult {
     let server = loopback::serve(
         loopback::EVENT_STREAM_HEAD,
-        vec![short_answer()],
-        std::time::Duration::ZERO,
+        loopback::Step::writes(vec![short_answer()]),
     )?;
     let patch = json!({"baseUrl": server.url});
     let options = messages::options(&messages::Case::default())?;

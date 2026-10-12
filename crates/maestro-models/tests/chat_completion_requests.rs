@@ -66,8 +66,7 @@ fn maestro_chat_replays_thinking_as_text() -> TestResult {
         }
         let server = loopback::serve(
             loopback::EVENT_STREAM_HEAD,
-            vec![b"data: [DONE]\n\n".to_vec()],
-            std::time::Duration::ZERO,
+            loopback::Step::writes(vec![b"data: [DONE]\n\n".to_vec()]),
         )?;
         let context = json!({"messages": [
         {"role": "user", "content": "question"},
