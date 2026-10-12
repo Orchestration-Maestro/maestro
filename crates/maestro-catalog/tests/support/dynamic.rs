@@ -2,22 +2,9 @@
 use maestro_catalog::{ProviderConfigInput, ProviderModelInput};
 use maestro_models::{ModelCost, ModelInput};
 use std::sync::{Arc, RwLock};
-/// Run each global-registry scenario in a completed, exact-test subprocess.
-/// # Panics
-/// Panics if the child cannot run or fails its assertions.
-#[must_use]
-pub fn isolated(name: &str) -> bool {
-    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_some() {
-        return false;
-    }
-    let status = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", name, "--nocapture"])
-        .env("MAESTRO_DYNAMIC_CHILD", "1")
-        .status()
-        .unwrap();
-    assert!(status.success(), "isolated test failed: {name}");
-    true
-}
+#[path = "isolation.rs"]
+mod isolation;
+pub use isolation::isolated;
 /// Complete definition with distinguishable supplied metadata.
 #[must_use]
 pub fn model(id: &str) -> ProviderModelInput {

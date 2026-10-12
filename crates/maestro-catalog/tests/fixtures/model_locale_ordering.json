@@ -1,0 +1,3042 @@
+[
+  {
+    "environment": {},
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "C"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "POSIX"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "en_US.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "sv_SE.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "de_DE.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "tr_TR.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LC_MESSAGES": "tr_TR.UTF-8",
+      "LANG": "sv_SE.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LC_ALL": "de_DE.UTF-8",
+      "LC_MESSAGES": "tr_TR.UTF-8",
+      "LANG": "sv_SE.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LC_ALL": "",
+      "LANG": "sv_SE.UTF-8"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "de_DE.UTF-8@euro"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "de-DE-u-co-phonebk"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "en-US-u-kn-true"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  },
+  {
+    "environment": {
+      "LANG": "en-US-u-kf-upper"
+    },
+    "input": [
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      }
+    ],
+    "order": [
+      {
+        "id": "Ж",
+        "provider": "15"
+      },
+      {
+        "id": "Ω",
+        "provider": "14"
+      },
+      {
+        "id": "z",
+        "provider": "5"
+      },
+      {
+        "id": "ß",
+        "provider": "16"
+      },
+      {
+        "id": "ss",
+        "provider": "17"
+      },
+      {
+        "id": "oe",
+        "provider": "25"
+      },
+      {
+        "id": "ö",
+        "provider": "6"
+      },
+      {
+        "id": "model.2",
+        "provider": "12"
+      },
+      {
+        "id": "model-2",
+        "provider": "9"
+      },
+      {
+        "id": "Model-2",
+        "provider": "13"
+      },
+      {
+        "id": "model-10",
+        "provider": "10"
+      },
+      {
+        "id": "model_2",
+        "provider": "11"
+      },
+      {
+        "id": "ı",
+        "provider": "23"
+      },
+      {
+        "id": "İ",
+        "provider": "18"
+      },
+      {
+        "id": "i",
+        "provider": "19"
+      },
+      {
+        "id": "I",
+        "provider": "22"
+      },
+      {
+        "id": "é",
+        "provider": "7"
+      },
+      {
+        "id": "é",
+        "provider": "8"
+      },
+      {
+        "id": "ae",
+        "provider": "24"
+      },
+      {
+        "id": "ä",
+        "provider": "3"
+      },
+      {
+        "id": "å",
+        "provider": "4"
+      },
+      {
+        "id": "á",
+        "provider": "2"
+      },
+      {
+        "id": "a",
+        "provider": "0"
+      },
+      {
+        "id": "A",
+        "provider": "1"
+      },
+      {
+        "id": "!bang",
+        "provider": "20"
+      },
+      {
+        "id": "_underscore",
+        "provider": "21"
+      }
+    ]
+  }
+]

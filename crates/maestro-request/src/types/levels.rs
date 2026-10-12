@@ -43,3 +43,19 @@ impl From<ThinkingLevel> for ModelThinkingLevel {
         }
     }
 }
+/// An unrecognized user-facing model thinking level.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ParseModelThinkingLevelError;
+impl std::fmt::Display for ParseModelThinkingLevelError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("invalid model thinking level")
+    }
+}
+impl std::error::Error for ParseModelThinkingLevelError {}
+impl std::str::FromStr for ModelThinkingLevel {
+    type Err = ParseModelThinkingLevelError;
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Self::deserialize(serde::de::value::StrDeserializer::<serde::de::value::Error>::new(value))
+            .map_err(|_| ParseModelThinkingLevelError)
+    }
+}

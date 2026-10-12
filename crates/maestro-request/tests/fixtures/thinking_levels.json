@@ -1,0 +1,122 @@
+[
+  {
+    "id": "case_127",
+    "input": {
+      "op": "level",
+      "value": "off"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_128",
+    "input": {
+      "op": "level",
+      "value": "minimal"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_129",
+    "input": {
+      "op": "level",
+      "value": "low"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_130",
+    "input": {
+      "op": "level",
+      "value": "medium"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_131",
+    "input": {
+      "op": "level",
+      "value": "high"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_132",
+    "input": {
+      "op": "level",
+      "value": "xhigh"
+    },
+    "expected": true
+  },
+  {
+    "id": "case_133",
+    "input": {
+      "op": "level",
+      "value": ""
+    },
+    "expected": false
+  },
+  {
+    "id": "case_134",
+    "input": {
+      "op": "level",
+      "value": "HIGH"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_135",
+    "input": {
+      "op": "level",
+      "value": "High"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_136",
+    "input": {
+      "op": "level",
+      "value": " medium"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_137",
+    "input": {
+      "op": "level",
+      "value": "medium "
+    },
+    "expected": false
+  },
+  {
+    "id": "case_138",
+    "input": {
+      "op": "level",
+      "value": "﻿medium"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_139",
+    "input": {
+      "op": "level",
+      "value": "medium"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_140",
+    "input": {
+      "op": "level",
+      "value": "max"
+    },
+    "expected": false
+  },
+  {
+    "id": "case_141",
+    "input": {
+      "op": "level",
+      "value": "none"
+    },
+    "expected": false
+  }
+]
