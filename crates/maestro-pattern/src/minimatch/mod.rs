@@ -16,15 +16,34 @@ pub use assert_valid_pattern::PatternError;
 /// See the [file-pattern guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/package-patterns.md)
 /// for group cardinality, exclusion context and named-class definitions.
 ///
+/// Matching is case-sensitive; [`minimatch_with_nocase`] selects the other mode.
+///
 /// # Errors
 /// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
 pub fn minimatch(path: &str, pattern: &str) -> Result<bool, PatternError> {
+    minimatch_with_nocase(path, pattern, false)
+}
+
+/// Matches like [`minimatch`], comparing case-insensitively when `nocase` is true.
+///
+/// Case-insensitivity applies to literal and magic components alike through the same
+/// scalar and class predicates; pattern syntax, including named class names, is never
+/// rewritten. Under Windows framing a nonmagic UNC server/share or drive prefix keeps
+/// its authored case.
+///
+/// # Errors
+/// Returns [`PatternError::TooLong`] for patterns longer than 65,536 scalars.
+pub fn minimatch_with_nocase(
+    path: &str,
+    pattern: &str,
+    nocase: bool,
+) -> Result<bool, PatternError> {
     let platform = if cfg!(windows) {
         Platform::Windows
     } else {
         Platform::Posix
     };
-    match_platform(path, pattern, platform)
+    match_platform(path, pattern, platform, nocase)
 }
 
 /// Native path framing policy.
@@ -39,7 +58,12 @@ pub enum Platform {
 }
 
 /// Runs the same operation with explicit native framing.
-fn match_platform(path: &str, pattern: &str, platform: Platform) -> Result<bool, PatternError> {
+fn match_platform(
+    path: &str,
+    pattern: &str,
+    platform: Platform,
+    nocase: bool,
+) -> Result<bool, PatternError> {
     assert_valid_pattern::assert_valid_pattern(pattern)?;
     if pattern.starts_with('#') {
         return Ok(false);
@@ -60,6 +84,9 @@ fn match_platform(path: &str, pattern: &str, platform: Platform) -> Result<bool,
     let hit = brace_expand(pattern, None).iter().any(|alternative| {
         let pattern = optimize_pattern(slash_split(alternative, platform));
         let mut parts = compile_parts(&pattern, platform);
+        if nocase {
+            fold_parts(&mut parts, &pattern, platform);
+        }
         let (file_start, pattern_start) = align_roots(&file, &mut parts, platform);
         match_one(&file[file_start..], &parts[pattern_start..], false)
     });
@@ -141,6 +168,8 @@ enum Part {
     Globstar,
     /// A scalar component matcher.
     Segment(ast::Ast),
+    /// A component compared case-insensitively.
+    Folded(MmRegExp),
 }
 
 impl Part {
@@ -148,7 +177,7 @@ impl Part {
     fn literal(&self) -> Option<&str> {
         match self {
             Self::Segment(segment) => segment.literal(),
-            Self::Globstar => None,
+            Self::Globstar | Self::Folded(_) => None,
         }
     }
 }
@@ -194,6 +223,47 @@ fn compile_parts(pattern: &[&str], platform: Platform) -> Vec<Part> {
         parts[2] = Part::Segment(ast::Ast::Literal("?".into()));
     }
     parts
+}
+
+/// Count of leading components kept as authored under case-insensitive Windows matching.
+fn protected_root(pattern: &[&str]) -> usize {
+    static MAGIC: std::sync::LazyLock<Option<regress::Regex>> =
+        std::sync::LazyLock::new(|| regress::Regex::new(r"[?*]|[+@!]\(.*?\)|\[|\]").ok());
+    let magic = |part: Option<&&str>| {
+        part.is_some_and(|p| MAGIC.as_ref().is_some_and(|re| re.find(p).is_some()))
+    };
+    if pattern.starts_with(&["", ""])
+        && (pattern.get(2) == Some(&"?") || !magic(pattern.get(2)))
+        && !magic(pattern.get(3))
+    {
+        4
+    } else {
+        usize::from(pattern.first().is_some_and(|first| {
+            first
+                .as_bytes()
+                .first()
+                .is_some_and(u8::is_ascii_alphabetic)
+                && first.as_bytes().get(1) == Some(&b':')
+        }))
+    }
+}
+
+/// Switches components to case-insensitive evaluation, sparing protected Windows roots.
+fn fold_parts(parts: &mut [Part], pattern: &[&str], platform: Platform) {
+    let protected = if platform == Platform::Windows {
+        protected_root(pattern)
+    } else {
+        0
+    };
+    for (index, part) in parts.iter_mut().enumerate() {
+        if index < protected {
+            *part = Part::Segment(ast::Ast::Literal(pattern[index].into()));
+        } else if let Part::Segment(ast) = std::mem::replace(part, Part::Globstar) {
+            *part = Part::Folded(MmRegExp::new(ast, pattern[index], true));
+        } else {
+            *part = Part::Globstar;
+        }
+    }
 }
 
 /// Advances globstars that have a following component.
@@ -272,6 +342,9 @@ fn advance_part(
             }
         }
         Some(Part::Segment(segment)) if segment.matches(text) => {
+            next.insert(position + 1);
+        }
+        Some(Part::Folded(segment)) if segment.test(text) => {
             next.insert(position + 1);
         }
         _ => {}
@@ -360,11 +433,9 @@ pub struct MmRegExp {
 }
 impl MmRegExp {
     /// Selects case predicates or the existing literal-suffix evaluation branch.
-    fn new(mut ast: ast::Ast, authored: &str, platform: Platform) -> Self {
-        let suffix = (platform != Platform::Posix)
-            .then(|| fast_suffix(authored))
-            .flatten();
-        if platform != Platform::Posix && suffix.is_none() {
+    fn new(mut ast: ast::Ast, authored: &str, nocase: bool) -> Self {
+        let suffix = nocase.then(|| fast_suffix(authored)).flatten();
+        if nocase && suffix.is_none() {
             ast.fold_case();
         }
         Self { ast, suffix }
@@ -413,8 +484,9 @@ impl Minimatch {
                         Part::Segment(ast) => ParseReturnFiltered::Pattern(MmRegExp::new(
                             ast,
                             &parts[index],
-                            platform,
+                            platform != Platform::Posix,
                         )),
+                        Part::Folded(regexp) => ParseReturnFiltered::Pattern(regexp),
                     })
                     .collect()
             })

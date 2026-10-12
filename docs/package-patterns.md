@@ -5,6 +5,14 @@
 `maestro_pattern::minimatch(path, pattern)` evaluates a file pattern without
 filesystem access.
 
+`maestro_pattern::minimatch_with_nocase(path, pattern, nocase)` is the same
+operation with an explicit case mode; `minimatch` is `nocase = false`. With
+`nocase = true`, literal and magic components compare case-insensitively through
+the predicates described under filesystem preparation below, while pattern syntax
+(escapes, named class names, brackets) is never rewritten. Under Windows framing a
+nonmagic UNC server/share or drive prefix keeps its authored case.
+Filesystem preparation does not use this mode: its literal components stay exact.
+
 Matching is case-sensitive outside native Windows drive identity. `*` matches
 zero or more scalars within a nonempty component; `?` matches one Unicode scalar.
 Basic wildcard components exclude leading dots unless the pattern explicitly

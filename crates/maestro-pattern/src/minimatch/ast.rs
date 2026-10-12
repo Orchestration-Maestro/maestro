@@ -119,6 +119,11 @@ impl Ast {
 
     /// Compiles case predicates once without changing authored syntax.
     pub(super) fn fold_case(&mut self) {
+        if let Self::Literal(text) = self
+            && text.to_uppercase() != text.to_lowercase()
+        {
+            *self = Self::Pattern(text.chars().map(Token::Literal).collect());
+        }
         let unicode = match self {
             Self::Pattern(tokens) => tokens.iter().any(Token::unicode),
             Self::Groups(groups) => groups.sequences.iter().flatten().any(Token::unicode),

@@ -5,6 +5,7 @@ pub mod ignore;
 mod minimatch;
 pub use minimatch::{
     Minimatch, MinimatchOptions, MmRegExp, ParseReturnFiltered, PatternError, Platform, minimatch,
+    minimatch_with_nocase,
 };
 
 /// Recognizes authored whitespace, including BOM but not the next-line control.

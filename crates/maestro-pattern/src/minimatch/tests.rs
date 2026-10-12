@@ -30,7 +30,7 @@ fn windows_roots_keep_drive_and_unc_identity() {
     ];
     for (index, (path, pattern, expected)) in cases.into_iter().enumerate() {
         assert_eq!(
-            match_platform(path, pattern, Platform::Windows),
+            match_platform(path, pattern, Platform::Windows, false),
             Ok(expected),
             "case {index}"
         );
@@ -55,7 +55,7 @@ fn posix_roots_do_not_adopt_windows_identity() {
     ];
     for (index, (path, pattern, expected)) in cases.into_iter().enumerate() {
         assert_eq!(
-            match_platform(path, pattern, Platform::Posix),
+            match_platform(path, pattern, Platform::Posix, false),
             Ok(expected),
             "case {index}"
         );
@@ -98,12 +98,12 @@ fn class_platform_framing_precedes_scalar_matching() {
         let (pattern, input, posix, windows): (String, String, bool, bool) =
             serde_json::from_value(row.clone()).unwrap();
         assert_eq!(
-            match_platform(&input, &pattern, Platform::Posix),
+            match_platform(&input, &pattern, Platform::Posix, false),
             Ok(posix),
             "posix case {index}"
         );
         assert_eq!(
-            match_platform(&input, &pattern, Platform::Windows),
+            match_platform(&input, &pattern, Platform::Windows, false),
             Ok(windows),
             "windows case {index}"
         );
@@ -127,12 +127,12 @@ fn group_platform_framing_precedes_matching() {
         let (pattern, input, posix, windows): (String, String, bool, bool) =
             serde_json::from_value(row.clone()).unwrap();
         assert_eq!(
-            match_platform(&input, &pattern, Platform::Posix),
+            match_platform(&input, &pattern, Platform::Posix, false),
             Ok(posix),
             "posix case {index}"
         );
         assert_eq!(
-            match_platform(&input, &pattern, Platform::Windows),
+            match_platform(&input, &pattern, Platform::Windows, false),
             Ok(windows),
             "windows case {index}"
         );
@@ -143,4 +143,51 @@ fn group_platform_framing_precedes_matching() {
             "native case {index}"
         );
     }
+}
+
+/// One recorded observation of the case-insensitive corpus.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NocaseRow {
+    /// Platform whose framing produced the expectation.
+    platform: String,
+    /// Whether case-insensitive matching was selected.
+    nocase: bool,
+    /// Authored pattern.
+    pattern: String,
+    /// Operand path.
+    input: String,
+    /// Expected match result.
+    expected: bool,
+}
+
+/// Replays every Windows-policy row through the framing the public operation uses.
+#[test]
+fn nocase_policy_keeps_injected_windows_framing() {
+    let groups: std::collections::BTreeMap<String, Vec<NocaseRow>> =
+        serde_json::from_str(include_str!("../../tests/fixtures/nocase_vectors.json")).unwrap();
+    let mut replayed = 0;
+    for (group, rows) in &groups {
+        for (index, row) in rows.iter().enumerate() {
+            let platform = match row.platform.as_str() {
+                "win32" => Platform::Windows,
+                _ => continue,
+            };
+            assert_eq!(
+                match_platform(&row.input, &row.pattern, platform, row.nocase),
+                Ok(row.expected),
+                "{group} row {index}"
+            );
+            replayed += 1;
+        }
+    }
+    assert_eq!(
+        replayed,
+        groups
+            .values()
+            .flatten()
+            .filter(|r| r.platform == "win32")
+            .count()
+    );
+    assert!(replayed > 0);
 }
