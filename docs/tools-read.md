@@ -1,7 +1,7 @@
 # Tool output helpers
 
-`maestro-tools` currently delivers pure output selection. Read execution is not
-part of this interface.
+`maestro-tools` delivers portable output selection and native streamed-output
+accumulation. Read execution is not part of this interface.
 
 ## Limits and selection
 
@@ -44,7 +44,50 @@ separate scalars; this is not terminal-cell or grapheme clipping.
 KB/MB have one decimal: 1280 is `1.3KB`, 1048575 is `1024.0KB`, and 51200 is
 `50.0KB`.
 
-These helpers require no filesystem or runtime and build on native and
-`wasm32-unknown-unknown` targets. Their typed inputs have no separate validation
+The selection, clipping and size helpers require no filesystem or runtime and
+build on native and `wasm32-unknown-unknown` targets. Their typed inputs have no separate validation
 or I/O failure path. See [output libraries](libraries/tools-output.md) for the
 serialization and number-formatting dependencies.
+
+## Native streaming
+
+[`output::output_accumulator`](../crates/maestro-tools/src/output/output_accumulator.rs)
+provides `OutputAccumulator`, `OutputAccumulatorOptions` and `OutputSnapshot` on
+native targets. Construction does not create a file. Append accepts raw bytes;
+finish flushes pending UTF-8 once without closing the artifact. Snapshots observe
+selected decoded text without finishing decoding; selection is owned by
+[`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
+
+Overflow artifacts preserve original bytes, including invalid UTF-8 and an initial
+BOM that the display decoder removes. A snapshot path identifies an artifact;
+completeness requires successful explicit `close_temp_file`. Callers stop after
+any I/O error. Close flushes and releases the artifact writer without finishing
+decoding; snapshots and last-line counts remain readable. Append after artifact
+closure returns an error. Close leaves the artifact on disk and does not request
+filesystem durability.
+
+```rust
+use maestro_tools::output::output_accumulator::{
+    OutputAccumulator, OutputAccumulatorOptions,
+};
+
+fn main() -> std::io::Result<()> {
+    let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
+        max_bytes: Some(3),
+        ..OutputAccumulatorOptions::default()
+    });
+    output.append(b"abcdef")?;
+    output.finish()?;
+    let snapshot = output.snapshot(true)?;
+    assert_eq!(snapshot.content, "def");
+    let path = snapshot.full_output_path;
+    output.close_temp_file()?;
+    assert_eq!(output.get_last_line_bytes(), 6);
+    assert_eq!(output.snapshot(true)?.content, "def");
+    if let Some(path) = path {
+        assert_eq!(std::fs::read(&path)?, b"abcdef");
+        std::fs::remove_file(path)?;
+    }
+    Ok(())
+}
+```

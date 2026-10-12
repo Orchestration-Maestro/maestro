@@ -116,6 +116,7 @@ are later scope, not active foundation concepts.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
 - **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, local future execution, environment queries and log files.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit and, optionally, the foundation utility.
+- **OutputAccumulator:** A native tool-output stream that owns decoded snapshot accounting and an optional raw overflow artifact.
 - **Grapheme:** A user-perceived character cluster, indivisible when terminal text is wrapped, truncated or sliced; escapes inside it never split it. Tool-output line clipping instead counts Unicode scalars.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
 - **Image protocol:** The terminal's Kitty or iTerm2 inline image transport, distinct from image file format.
