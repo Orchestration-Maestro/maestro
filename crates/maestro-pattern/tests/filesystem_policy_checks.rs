@@ -313,3 +313,31 @@ fn filesystem_escaped_suffixes_use_decoded_tokens() {
         }
     }
 }
+
+/// Literal operands stay exact under every filesystem policy, unlike explicit nocase matching.
+#[test]
+fn filesystem_preparation_keeps_literal_operands() {
+    for platform in [Platform::Posix, Platform::Darwin, Platform::Windows] {
+        let compiled = Minimatch::new("Dir/Case", MinimatchOptions::Filesystem(platform)).unwrap();
+        assert_eq!(
+            compiled.glob_parts(),
+            [vec!["Dir".to_owned(), "Case".to_owned()]]
+        );
+        let [parts] = compiled.set() else {
+            panic!("one alternative");
+        };
+        let literals: Vec<_> = parts
+            .iter()
+            .map(|part| match part {
+                ParseReturnFiltered::Literal(text) => Some(text.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(literals, [Some("Dir"), Some("Case")]);
+    }
+    assert_eq!(
+        maestro_pattern::minimatch_with_nocase("dir/case", "Dir/Case", true),
+        Ok(true)
+    );
+    assert_eq!(minimatch("dir/case", "Dir/Case"), Ok(false));
+}
