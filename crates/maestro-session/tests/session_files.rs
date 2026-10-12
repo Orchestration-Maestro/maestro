@@ -551,6 +551,46 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     }
 }
 
+#[test]
+#[cfg(unix)]
+fn continuation_probes_all_candidates_before_reading_metadata() {
+    let directory = Directory::new();
+    for name in ["first.jsonl", "second.jsonl"] {
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(directory.path.join(name))
+                .status()
+                .unwrap()
+                .success()
+        );
+    }
+    let paths: Vec<_> = fs::read_dir(directory.text())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    let producer = std::thread::spawn(move || {
+        use std::io::Write;
+        {
+            let mut earlier = fs::OpenOptions::new().write(true).open(&paths[0]).unwrap();
+            earlier
+                .write_all(b"{\"type\":\"session\",\"id\":\"earlier\"}\n")
+                .unwrap();
+        }
+        // Opening the later writer waits until the earlier probe has completed.
+        let mut later = fs::OpenOptions::new().write(true).open(&paths[1]).unwrap();
+        fs::remove_file(&paths[0]).unwrap();
+        later
+            .write_all(b"{\"type\":\"session\",\"id\":\"later\"}\n")
+            .unwrap();
+    });
+    let selected = find_most_recent_session(directory.text());
+    producer.join().unwrap();
+    assert!(
+        selected.is_none(),
+        "metadata failure after all probes must discard selection: {selected:?}"
+    );
+}
+
 /// Set a fixture's timestamp through a writable native handle.
 fn set_modified(path: impl AsRef<std::path::Path>, time: std::time::SystemTime) {
     fs::OpenOptions::new()

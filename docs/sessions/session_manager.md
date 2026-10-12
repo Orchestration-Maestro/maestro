@@ -120,8 +120,11 @@ accepted memory and any partial bytes in place; failed switches retain the prior
 manager state. Empty or invalid-header files are rewritten immediately at the
 selected path. A missing explicit file waits for first publication at that path.
 
-Continuation filters valid `.jsonl` files using a first-512-byte header probe and
-selects by descending millisecond mtime, preserving native enumeration ties.
+Continuation enumerates names, probes the `.jsonl` candidates, then reads the
+valid candidates' metadata in a separate pass. It selects by descending
+millisecond mtime, preserving native enumeration ties. A metadata error discards
+the selection; an individual probe failure skips that candidate. The header
+probe reads at most 512 bytes.
 Historical conversion applies only the ID/parent and custom-message passes;
 current and future versions remain unchanged. Removing a numeric legacy compaction
 cut index preserves the remaining object member order. Loading retains raw records, while

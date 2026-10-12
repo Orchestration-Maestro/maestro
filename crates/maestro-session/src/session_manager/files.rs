@@ -59,24 +59,28 @@ pub(super) fn probe(mut reader: impl Read) -> io::Result<bool> {
 /// Directory/stat errors discard selection; individual probe failures skip a file.
 #[must_use]
 pub fn find_most_recent_session(session_dir: &str) -> Option<String> {
-    let mut files = Vec::new();
-    for entry in fs::read_dir(session_dir).ok()? {
-        let entry = entry.ok()?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if name.strip_suffix(".jsonl").is_none() {
-            continue;
-        }
-        let path = maestro_path::join(&[session_dir, &name]);
-        if !fs::File::open(&path).and_then(probe).unwrap_or(false) {
-            continue;
-        }
-        let modified = fs::metadata(&path).ok()?.modified().ok()?;
-        let millis = match modified.duration_since(UNIX_EPOCH) {
-            Ok(duration) => i128::try_from(duration.as_millis()).ok()?,
-            Err(error) => -i128::try_from(error.duration().as_millis()).ok()?,
-        };
-        files.push((path, millis));
-    }
+    let entries = fs::read_dir(session_dir)
+        .ok()?
+        .collect::<io::Result<Vec<_>>>()
+        .ok()?;
+    let paths: Vec<_> = entries
+        .into_iter()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|name| name.strip_suffix(".jsonl").is_some())
+        .map(|name| maestro_path::join(&[session_dir, &name]))
+        .filter(|path| fs::File::open(path).and_then(probe).unwrap_or(false))
+        .collect();
+    let mut files = paths
+        .into_iter()
+        .map(|path| {
+            let modified = fs::metadata(&path).ok()?.modified().ok()?;
+            let millis = match modified.duration_since(UNIX_EPOCH) {
+                Ok(duration) => i128::try_from(duration.as_millis()).ok()?,
+                Err(error) => -i128::try_from(error.duration().as_millis()).ok()?,
+            };
+            Some((path, millis))
+        })
+        .collect::<Option<Vec<_>>>()?;
     files.sort_by_key(|file| std::cmp::Reverse(file.1));
     files.into_iter().next().map(|(path, _)| path)
 }
