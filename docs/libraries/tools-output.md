@@ -33,15 +33,20 @@ integer quarter-turns from `image::imageops`; `DynamicImage::write_to` encodes
 PNG or JPEG at the requested quality. The same features build on native and
 browser targets, without a browser-specific codec wrapper.
 
-`kamadak-exif =0.6.1` (BSD-2-Clause) owns TIFF/JPEG metadata decoding. Ordered
+`kamadak-exif =0.6.1` (BSD-2-Clause), declared as `exif`, owns TIFF/JPEG metadata decoding. Ordered
 `fields()` selection uses the first retained primary orientation, with
 partial-result recovery for metadata errors. The utility owns only the WebP chunk
 envelope and optional prefix.
 `base64 =0.23.1` uses defaults off plus `std` here (MIT or Apache-2.0); shared
-workspace features also enable its defaults. `jpeg-decoder =0.3.2` (MIT or
-Apache-2.0), defaults off plus `platform_independent`, enables deterministic color
-conversion in the existing image decoder; the direct declaration adds no second
-codec. The corresponding cargo-machete exception is feature-only.
+workspace features also enable its defaults. The image library uses
+`jpeg-decoder =0.3.2` (MIT or Apache-2.0) with defaults off and no extra features;
+there is no direct decoder declaration or cargo-machete exception.
+
+Native JPEG decoding uses runtime-selected SIMD IDCT and colour conversion,
+which can differ from the scalar decoding path. The measured maximum absolute
+per-channel difference across the archived eighteen-image corpus is 3. The three
+reencoded JPEG-input observations compare format, dimensions and pixels within
+that bound; deterministic paths retain exact encoded-byte comparisons.
 Workspace `num-traits =0.2.19` supplies checked rounded geometry conversion;
 its existing image-library dependency is reused, with no new package or version.
 
@@ -68,7 +73,7 @@ extra capability.
 | flate2 | 1.1.10 | any_impl, default, miniz_oxide, runtime_detection, rust_backend | MIT OR Apache-2.0 |
 | gif | 0.13.3 | color_quant, default, raii_no_panic, std | MIT OR Apache-2.0 |
 | image | 0.24.9 | bmp, dds, dxt, farbfeld, gif, hdr, ico, jpeg, png, pnm, tiff, webp | MIT OR Apache-2.0 |
-| jpeg-decoder | 0.3.2 | platform_independent | MIT OR Apache-2.0 |
+| jpeg-decoder | 0.3.2 | none | MIT OR Apache-2.0 |
 | kamadak-exif | 0.6.1 | none | BSD-2-Clause |
 | miniz_oxide | 0.8.9 | default, simd, simd-adler32, with-alloc | MIT OR Zlib OR Apache-2.0 |
 | miniz_oxide | 0.9.1 | default, simd, simd-adler32, with-alloc | MIT OR Zlib OR Apache-2.0 |
