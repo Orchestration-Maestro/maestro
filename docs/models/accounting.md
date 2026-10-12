@@ -18,20 +18,20 @@ it into costs through [`calculate_cost`](catalog.md#controlled-catalog-example).
 - Conversation streams keep a nonzero supplied total and otherwise use input
   plus output.
 - Message streams sum their four categories. The start event sets all four; a
-  later update replaces only the categories it carries, an explicit zero
-  included.
+  later update replaces only the categories it reports with a non-null count,
+  an explicit zero included; a null count keeps the earlier value.
 
 ## Cancellation
 
 A cancelled invocation keeps the usage reported before cancellation and
 reports zero for everything else. No count is estimated from the prompt or the
 partial text. A provider that reports usage only in its final update therefore
-leaves a cancelled invocation at zero.
+leaves an invocation cancelled before that update is consumed at zero.
 
 ## Qualification
 
-The `usage_totals` and `usage_after_abort` tests drive the public `stream`
-operation with controlled server bytes and compare the complete result,
-including all five costs, for every delivered provider and account route. They
+The `usage_totals` and `usage_after_abort` tests drive the public
+invocation with controlled server bytes and compare the complete result,
+including all five costs, for the recorded source-matrix routes. They
 prove how reported counts are interpreted; they do not measure a remote
 service's reporting schedule, cache hit rate or billing.

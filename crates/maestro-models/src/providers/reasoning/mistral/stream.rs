@@ -84,6 +84,11 @@ fn start(
     stream
 }
 
+/// The failure a cancelled invocation reports.
+pub(super) fn aborted() -> RequestFailure {
+    RequestFailure::new("Request was aborted")
+}
+
 /// Admit the response before publishing its first update.
 async fn produce(
     stream: &AssistantMessageEventStream,
@@ -95,16 +100,15 @@ async fn produce(
     stream.push(AssistantMessageEvent::Start {
         partial: Arc::clone(output),
     });
-    let read = super::sse::read(body, model, stream, output).await;
+    super::sse::read(body, model, stream, output).await?;
     if options
         .common
         .signal
         .as_ref()
         .is_some_and(crate::Cancellation::is_aborted)
     {
-        return Err(RequestFailure::new("Request was aborted"));
+        return Err(aborted());
     }
-    read?;
     let reason = match output
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
