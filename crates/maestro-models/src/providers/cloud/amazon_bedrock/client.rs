@@ -258,8 +258,8 @@ fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) ->
 /// The credential sources tried when a profile is selected: that profile through the native
 /// profile provider, then web identity, container and instance metadata credentials. The
 /// standalone environment-keys step is skipped; the profile itself may still name the
-/// environment as its credential source. This function does not decide which profile failures end
-/// the chain; the profile provider's own errors surface as it returns them.
+/// environment as its credential source. Failure handling belongs to [`CredentialsProviderChain`]
+/// and [`ProfileFileCredentialsProvider`].
 fn profile_chain(profile: &str, region: Option<&Region>) -> CredentialsProviderChain {
     let conf = ProviderConfig::default().with_region(region.cloned());
     CredentialsProviderChain::first_try(
