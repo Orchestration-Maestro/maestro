@@ -6,8 +6,6 @@ use std::fmt;
 use std::rc::Rc;
 mod brand;
 mod code;
-#[cfg(not(target_arch = "wasm32"))]
-mod collation;
 mod colors;
 mod components;
 mod export;
@@ -24,8 +22,6 @@ pub use brand::{
     load_brand_pack,
 };
 pub use code::{highlight_code, highlight_html};
-#[cfg(not(target_arch = "wasm32"))]
-pub use collation::Collator;
 pub use components::{
     get_editor_theme, get_markdown_theme, get_select_list_theme, get_settings_list_theme,
 };
@@ -41,6 +37,8 @@ pub use lifecycle::{LiveTheme, ThemeChangeResult};
 #[cfg(not(target_arch = "wasm32"))]
 pub use loading::NativeThemeOperations;
 pub use loading::{ThemeOperations, load_theme_from_path};
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_text::collation::Collator;
 pub use registry::{ThemeDirectories, ThemeInfo, ThemeState};
 
 /// Terminal color conversion mode.

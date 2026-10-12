@@ -188,4 +188,25 @@ mod tests {
             }
         }
     }
+
+    /// One recorded classification of an error message.
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Recorded {
+        input: String,
+        expected: bool,
+    }
+
+    #[test]
+    fn maestro_overflow_keeps_recorded_whitespace_decisions() {
+        let rows: Vec<Recorded> =
+            serde_json::from_str(include_str!("fixtures/overflow_whitespace.json")).unwrap();
+        for (index, row) in rows.iter().enumerate() {
+            assert_eq!(
+                is_context_overflow(&message(Some(&row.input)), None),
+                row.expected,
+                "row {index}"
+            );
+        }
+    }
 }

@@ -1,0 +1,414 @@
+[
+  {
+    "input": "400\t(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\tstatus code\t(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\n(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\nstatus code\n(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u000b(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u000bstatus code\u000b(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\f(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\fstatus code\f(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\r(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\rstatus code\r(no body)",
+    "expected": true
+  },
+  {
+    "input": "400 (no body)",
+    "expected": true
+  },
+  {
+    "input": "413 status code (no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u00a0(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u00a0status code\u00a0(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u1680(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u1680status code\u1680(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2000(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2000status code\u2000(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2001(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2001status code\u2001(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2002(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2002status code\u2002(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2003(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2003status code\u2003(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2004(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2004status code\u2004(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2005(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2005status code\u2005(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2006(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2006status code\u2006(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2007(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2007status code\u2007(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2008(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2008status code\u2008(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2009(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2009status code\u2009(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u200a(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u200astatus code\u200a(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2028(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2028status code\u2028(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u2029(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u2029status code\u2029(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u202f(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u202fstatus code\u202f(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u205f(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u205fstatus code\u205f(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\u3000(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\u3000status code\u3000(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\ufeff(no body)",
+    "expected": true
+  },
+  {
+    "input": "413\ufeffstatus code\ufeff(no body)",
+    "expected": true
+  },
+  {
+    "input": "400\b(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\bstatus code\b(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u000e(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u000estatus code\u000e(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u001f(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u001fstatus code\u001f(no body)",
+    "expected": false
+  },
+  {
+    "input": "400!(no body)",
+    "expected": false
+  },
+  {
+    "input": "413!status code!(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u0085(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u0085status code\u0085(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u009f(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u009fstatus code\u009f(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u00a1(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u00a1status code\u00a1(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u167f(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u167fstatus code\u167f(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u1681(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u1681status code\u1681(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u180e(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u180estatus code\u180e(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u1fff(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u1fffstatus code\u1fff(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u200b(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u200bstatus code\u200b(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u2027(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u2027status code\u2027(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u202a(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u202astatus code\u202a(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u202e(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u202estatus code\u202e(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u2030(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u2030status code\u2030(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u205e(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u205estatus code\u205e(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u2060(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u2060status code\u2060(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u2fff(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u2fffstatus code\u2fff(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\u3001(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\u3001status code\u3001(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\ufefe(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\ufefestatus code\ufefe(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\uff00(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\uff00status code\uff00(no body)",
+    "expected": false
+  },
+  {
+    "input": "400\ud83d\ude00(no body)",
+    "expected": false
+  },
+  {
+    "input": "413\ud83d\ude00status code\ud83d\ude00(no body)",
+    "expected": false
+  },
+  {
+    "input": "400(no body)",
+    "expected": true
+  },
+  {
+    "input": "413STATUS CODE(no body)",
+    "expected": true
+  },
+  {
+    "input": "400 status code(no body) extra",
+    "expected": true
+  },
+  {
+    "input": "x400(no body)",
+    "expected": false
+  },
+  {
+    "input": "401(no body)",
+    "expected": false
+  },
+  {
+    "input": "400status  code(no body)",
+    "expected": false
+  },
+  {
+    "input": "400(no body) rate limit",
+    "expected": false
+  }
+]

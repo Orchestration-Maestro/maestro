@@ -151,8 +151,7 @@ impl Reducer {
         let Some(payload) = line.strip_prefix("data: ") else {
             return Ok(());
         };
-        let payload =
-            payload.trim_matches(|c: char| c == '\u{feff}' || (c.is_whitespace() && c != '\u{85}'));
+        let payload = payload.trim_matches(maestro_text::is_whitespace_scalar);
         if payload.is_empty() {
             return Ok(());
         }

@@ -6,15 +6,13 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-models = { path = "../maestro-models" }
 maestro-credentials = { path = "../maestro-credentials" }
 maestro-pattern = { path = "../maestro-pattern" }
 owo-colors = "=4.2.1"
 serde.workspace = true
 serde_json.workspace = true
-
-icu_collator = "=2.3.1"
-icu_locale_core = { version = "=2.3.0", default-features = false, features = ["alloc"] }
 
 indexmap = { version = "=2.14.2", features = ["serde"] }
 

@@ -87,16 +87,7 @@ pub fn highlight_code(
 
 /// Escape `text` for HTML content and attribute values.
 fn escape(text: &str, out: &mut String) {
-    for c in text.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&#x27;"),
-            c => out.push(c),
-        }
-    }
+    maestro_text::markup::escape_into(text, out, maestro_text::markup::EscapeMode::HtmlHex);
 }
 
 /// Highlight `code` as an escaped HTML fragment of `hljs-*` token spans.

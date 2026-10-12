@@ -1,9 +1,9 @@
 //! Exact reference stages and model pattern selection.
 use maestro_models::Model;
 use std::sync::{Arc, PoisonError, RwLock};
-/// Trim authored reference whitespace without admitting NEXT LINE.
+/// Trim authored reference whitespace.
 pub(super) fn trim_reference(value: &str) -> &str {
-    value.trim_matches(|c: char| (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}')
+    value.trim_matches(maestro_text::is_whitespace_scalar)
 }
 /// Ordered reference identity checks.
 enum ReferenceStage {

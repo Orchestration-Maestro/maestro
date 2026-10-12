@@ -222,8 +222,8 @@ semantics: object acceptance, canonical keys, truth, and compact and pretty text
 only on `maestro-request`: entry defines session interchange records and tool defines
 tool interchange records. `maestro-brand` is a core domain library below layer 0 that
 depends on text and JSON and projects a brand pack. These five owners are declared by
-policy only; the code they will own moves in later extraction issues, and the crates
-exist only when those issues create them. No `common`, `utils`, `shared-types` or
+policy; `maestro-text` exists, and the code the other four will own moves in later
+extraction issues, which create those crates. No `common`, `utils`, `shared-types` or
 background-runtime crate is added.
 
 `maestro-request` defines shared message and model-request records: model
@@ -305,11 +305,9 @@ permission, so being a text consumer does not authorize the utility. Shared path
 take supplied directory observations and add no global environment, filesystem service,
 directory cache, scheduler or workspace dependency.
 
-The terminal adapter (`maestro-tui-crossterm`) may depend on the toolkit and on
-`maestro-text`, but its required direct set remains the toolkit alone until
-`maestro-text` is created; the same change then requires both. An absent required
-toolkit still fails. The conventions test reads the required set from one helper,
-not from the whole allowed set.
+The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
+`maestro-text` as direct dependencies; an absent required dependency fails, and the
+terminal scenario harness remains forbidden from importing text.
 
 The graph consists of the table entries plus the foundation utility. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)

@@ -74,14 +74,5 @@ fn reference(
 
 /// Append `text` with the five XML special characters escaped.
 fn escape_text(out: &mut String, text: &str) {
-    for c in text.chars() {
-        match c {
-            '&' => out.push_str("&amp;"),
-            '<' => out.push_str("&lt;"),
-            '>' => out.push_str("&gt;"),
-            '"' => out.push_str("&quot;"),
-            '\'' => out.push_str("&apos;"),
-            _ => out.push(c),
-        }
-    }
+    maestro_text::markup::escape_into(text, out, maestro_text::markup::EscapeMode::Xml);
 }

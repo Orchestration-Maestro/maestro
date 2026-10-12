@@ -95,10 +95,7 @@ fn projection_error(error: &serde_json::Error) -> bool {
     .any(|prefix| message.starts_with(prefix))
 }
 
-/// Recognize the whitespace accepted around streamed JSON.
-pub(crate) fn whitespace(ch: char) -> bool {
-    matches!(ch, '\u{09}'..='\u{0d}' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'..='\u{200a}' | '\u{2028}' | '\u{2029}' | '\u{202f}' | '\u{205f}' | '\u{3000}' | '\u{feff}')
-}
+pub(crate) use maestro_text::is_whitespace_scalar as whitespace;
 
 /// Parse complete or useful incomplete JSON, falling back to an empty object.
 /// Strictly parsed scalar values, including null, are preserved. Numbers round to

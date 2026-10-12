@@ -8,7 +8,4 @@ pub use minimatch::{
     minimatch_with_nocase,
 };
 
-/// Recognizes authored whitespace, including BOM but not the next-line control.
-fn whitespace(c: char) -> bool {
-    c == '\u{feff}' || (c.is_whitespace() && c != '\u{85}')
-}
+use maestro_text::is_whitespace_scalar as whitespace;

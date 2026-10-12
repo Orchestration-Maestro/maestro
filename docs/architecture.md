@@ -12,8 +12,8 @@ message and model-request records, and it has no workspace dependencies.
 No reverse dependency or internal dev edge is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
-owners by policy only; no crate directory exists until its extraction issue:
-`maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
+owners; `maestro-text` exists, and the other four are policy only with no crate directory
+until their extraction issues: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
 only on text, so it is no longer a leaf. The guest authoring crate may depend on request,
 entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
@@ -37,9 +37,8 @@ of their specification row, except these complete direct sets:
 - CLI and chat: application, toolkit, terminal adapter and theme.
 - RPC and web: application and theme.
 - Terminal adapter and terminal scenario harness: the toolkit. The adapter may also
-  depend on `maestro-text`, but until that crate exists only the toolkit is required;
-  the checker reads the required set from one helper, not from the allowed row, and an
-  absent required toolkit still fails.
+  depend on `maestro-text`; the adapter requires both, and an absent required toolkit or
+  text owner fails. The scenario harness may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do

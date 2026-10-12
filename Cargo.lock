@@ -2147,6 +2147,7 @@ version = "0.1.0"
 dependencies = [
  "futures-util",
  "maestro-models",
+ "maestro-text",
  "serde",
  "serde_json",
  "tokio",
@@ -2157,6 +2158,7 @@ name = "maestro-app"
 version = "0.1.0"
 dependencies = [
  "maestro-path",
+ "maestro-text",
  "maestro-watch",
  "num-traits",
  "serde",
@@ -2175,12 +2177,11 @@ dependencies = [
 name = "maestro-catalog"
 version = "0.1.0"
 dependencies = [
- "icu_collator",
- "icu_locale_core",
  "indexmap",
  "maestro-credentials",
  "maestro-models",
  "maestro-pattern",
+ "maestro-text",
  "owo-colors",
  "serde",
  "serde_json",
@@ -2195,6 +2196,7 @@ dependencies = [
  "maestro-lock",
  "maestro-models",
  "maestro-path",
+ "maestro-text",
  "serde",
  "serde_json",
  "tokio",
@@ -2250,6 +2252,7 @@ dependencies = [
  "js-sys",
  "maestro-cancellation",
  "maestro-request",
+ "maestro-text",
  "num-bigint",
  "num-traits",
  "percent-encoding",
@@ -2282,6 +2285,7 @@ dependencies = [
  "maestro-process",
  "maestro-resources",
  "maestro-settings",
+ "maestro-text",
  "percent-encoding",
  "rustix",
  "serde",
@@ -2303,6 +2307,7 @@ name = "maestro-pattern"
 version = "0.1.0"
 dependencies = [
  "brace-expansion",
+ "maestro-text",
  "regress",
  "serde",
  "serde_json",
@@ -2332,6 +2337,7 @@ dependencies = [
  "maestro-path",
  "maestro-pattern",
  "maestro-request",
+ "maestro-text",
  "num-bigint",
  "num-traits",
  "ryu-js",
@@ -2350,6 +2356,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-request",
+ "maestro-text",
  "ryu-js",
  "serde",
  "serde_json",
@@ -2395,15 +2402,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "maestro-theme"
+name = "maestro-text"
 version = "0.1.0"
 dependencies = [
  "icu_collator",
  "icu_locale_core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "maestro-theme"
+version = "0.1.0"
+dependencies = [
  "indexmap",
  "jsonschema",
  "maestro-path",
  "maestro-request",
+ "maestro-text",
  "maestro-tui",
  "maestro-watch",
  "num-traits",
@@ -2454,11 +2470,10 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "getrandom 0.4.3",
- "icu_collator",
- "icu_locale_core",
  "maestro-cancellation",
  "maestro-path",
  "maestro-process",
+ "maestro-text",
  "pulldown-cmark",
  "rand",
  "regress",
@@ -2475,6 +2490,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "chrono",
+ "maestro-text",
  "maestro-tui",
  "rand",
  "rustix",

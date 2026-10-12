@@ -16,10 +16,9 @@ pub(super) struct GitPaths {
     pub(super) common_git_dir: String,
 }
 
-/// Trim as `String.prototype.trim` of the JavaScript specification does:
-/// Unicode white space, except U+0085, plus U+FEFF.
+/// Trim the shared whitespace set.
 fn trim(text: &str) -> &str {
-    text.trim_matches(|c: char| (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}')
+    text.trim_matches(maestro_text::is_whitespace_scalar)
 }
 
 /// Resolve `paths` right to left; the working directory is read only when the

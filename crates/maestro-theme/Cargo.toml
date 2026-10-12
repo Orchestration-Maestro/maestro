@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-text = { path = "../maestro-text" }
 maestro-watch = { path = "../maestro-watch" }
 maestro-path = { path = "../maestro-path" }
 maestro-request = { path = "../maestro-request" }
@@ -20,8 +21,7 @@ two-face = { version = "=0.5.2", default-features = false, features = ["syntect-
 owo-colors = "=4.2.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-icu_collator = "=2.3.1"
-icu_locale_core = { version = "=2.3.0", default-features = false, features = ["alloc"] }
+maestro-text = { path = "../maestro-text", features = ["collation"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "sync"] }

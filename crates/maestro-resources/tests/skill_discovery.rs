@@ -1828,3 +1828,46 @@ fn native_skill_discovery_uses_ordered_directory_entries() {
     assert_eq!(collision.winner_path, winner);
     assert_eq!(collision.loser_path, loser);
 }
+
+/// Recorded complete prompt for one skill with special characters.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecordedPrompt {
+    input: RecordedSkill,
+    expected: String,
+}
+
+/// The skill fields the prompt reads.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RecordedSkill {
+    name: String,
+    description: String,
+    #[serde(rename = "filePath")]
+    file_path: String,
+}
+
+/// The whole prompt escapes every field once.
+#[test]
+fn maestro_skills_render_the_recorded_escaped_prompt() {
+    let recorded: RecordedPrompt =
+        serde_json::from_str(include_str!("fixtures/skill_prompt.json")).unwrap();
+    let dir = Directory::new();
+    let file = dir.file("parent/SKILL.md", "---\ndescription: Useful\n---");
+    let mut result = load_skills_from_dir(
+        LoadSkillsFromDirOptions {
+            cwd: support::text(&std::env::temp_dir()),
+            dir: support::text(file.parent().unwrap()),
+            source: "path",
+        },
+        &NativeResourceOperations,
+    );
+    let skill = &mut result.skills[0];
+    skill.name = recorded.input.name;
+    skill.description = recorded.input.description;
+    skill.file_path = recorded.input.file_path;
+    assert_eq!(
+        maestro_resources::format_skills_for_prompt(&result.skills),
+        recorded.expected
+    );
+}

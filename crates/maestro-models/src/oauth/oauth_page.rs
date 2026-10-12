@@ -256,18 +256,7 @@ fn font_stack(font: &Font<'_>) -> String {
 
 /// Escape literal caller text without rescanning inserted entities.
 fn escape_html(value: &str) -> String {
-    let mut escaped = String::new();
-    for character in value.chars() {
-        match character {
-            '&' => escaped.push_str("&amp;"),
-            '<' => escaped.push_str("&lt;"),
-            '>' => escaped.push_str("&gt;"),
-            '"' => escaped.push_str("&quot;"),
-            '\'' => escaped.push_str("&#39;"),
-            other => escaped.push(other),
-        }
-    }
-    escaped
+    maestro_text::markup::escape(value, maestro_text::markup::EscapeMode::HtmlDecimal)
 }
 
 /// Retain the native parse or resolution message without supplied diagnostic fields.

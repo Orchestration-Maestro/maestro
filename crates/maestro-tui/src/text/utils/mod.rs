@@ -76,20 +76,7 @@ pub fn is_punctuation_char(text: &str) -> bool {
         .any(|scalar| "(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`".contains(scalar))
 }
 
-/// Whether one scalar is whitespace in the sense of ECMAScript regular expressions.
-pub(crate) const fn is_whitespace_scalar(scalar: char) -> bool {
-    matches!(
-        scalar,
-        '\t' | '\n' | '\u{b}' | '\u{c}' | '\r' | ' ' | '\u{a0}' | '\u{1680}' | '\u{2000}'
-            ..='\u{200a}'
-                | '\u{2028}'
-                | '\u{2029}'
-                | '\u{202f}'
-                | '\u{205f}'
-                | '\u{3000}'
-                | '\u{feff}'
-    )
-}
+pub(crate) use maestro_text::is_whitespace_scalar;
 
 /// Pads `line` with spaces to `width` columns and passes it through `bg_fn` once.
 pub fn apply_background_to_line(

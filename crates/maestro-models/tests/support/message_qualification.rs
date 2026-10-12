@@ -474,10 +474,7 @@ fn assert_tool_handles(
     Ok(())
 }
 
-/// The assertion's whitespace excludes NEL and includes the byte-order mark.
-fn source_whitespace(character: char) -> bool {
-    character == '\u{feff}' || (character.is_whitespace() && character != '\u{85}')
-}
+use maestro_text::is_whitespace_scalar as source_whitespace;
 
 /// Compare the native adapter's complete retained request fields.
 fn request_record(request: &bundled::Seen) -> Value {

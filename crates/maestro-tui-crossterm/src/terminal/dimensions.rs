@@ -75,16 +75,10 @@ fn extent(observed: usize, variable: &str, default: usize) -> usize {
         .unwrap_or(default)
 }
 
-/// Whether numeric text may be surrounded by `character`: Unicode white space, line
-/// terminators included, except U+0085, and U+FEFF.
-fn is_numeric_whitespace(character: char) -> bool {
-    character == '\u{feff}' || (character != '\u{85}' && character.is_whitespace())
-}
-
 /// The extent `text` reads as when it is a number that is whole and from 1 to `usize::MAX`;
 /// empty, zero, negative, fractional, nonnumeric, non-finite and larger values give `None`.
 fn numeric_extent(text: &str) -> Option<usize> {
-    let value = numeric_value(text.trim_matches(is_numeric_whitespace))?;
+    let value = numeric_value(text.trim_matches(maestro_text::is_whitespace_scalar))?;
     (value >= 1.0 && value.fract() == 0.0)
         .then(|| format!("{value:.0}").parse().ok())
         .flatten()
