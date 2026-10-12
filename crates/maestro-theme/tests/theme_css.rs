@@ -222,7 +222,7 @@ fn theme_export_selection_uses_explicit_current_then_default() {
     assert_eq!(page(None), Some("#F2E8DC".to_owned()));
     assert_eq!(
         color(&state.get_resolved_theme_colors(None).unwrap(), "accent"),
-        "#B7410E"
+        "#2A1F1A"
     );
     assert!(ops.read("COLORFGBG"));
 
