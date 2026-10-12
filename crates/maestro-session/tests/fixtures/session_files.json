@@ -1188,7 +1188,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 1
         },
@@ -1230,7 +1230,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "00000001",
               "parentId": "00000001"
             },
@@ -1298,7 +1298,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 3
         },
@@ -1340,7 +1340,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "00000003",
               "parentId": "00000001"
             },
@@ -1403,7 +1403,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 2
         },
@@ -1445,7 +1445,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "00000002",
               "parentId": "00000001"
             },
@@ -1508,7 +1508,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 0
         },
@@ -1550,7 +1550,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "parentId": "00000001"
             },
@@ -1613,7 +1613,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 9
         },
@@ -1655,7 +1655,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "parentId": "00000001"
             },
@@ -1718,7 +1718,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": -1
         },
@@ -1760,7 +1760,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "parentId": "00000001"
             },
@@ -1823,7 +1823,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": 1.2
         },
@@ -1865,7 +1865,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "parentId": "00000001"
             },
@@ -1928,7 +1928,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": null
         },
@@ -1970,7 +1970,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "firstKeptEntryIndex": null,
               "parentId": "00000001"
@@ -2034,7 +2034,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged",
           "firstKeptEntryIndex": "1"
         },
@@ -2076,7 +2076,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "firstKeptEntryIndex": "1",
               "parentId": "00000001"
@@ -2140,7 +2140,7 @@
           "id": "old-cut",
           "summary": "retained",
           "tokensBefore": 9,
-          "timestamp": "2025-01-01T01:00:00",
+          "timestamp": "2025-01-01T01:00:00Z",
           "firstKeptEntryId": "unchanged"
         },
         {
@@ -2181,7 +2181,7 @@
               "id": "00000002",
               "summary": "retained",
               "tokensBefore": 9,
-              "timestamp": "2025-01-01T01:00:00",
+              "timestamp": "2025-01-01T01:00:00Z",
               "firstKeptEntryId": "unchanged",
               "parentId": "00000001"
             },
