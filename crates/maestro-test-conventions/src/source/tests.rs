@@ -1,14 +1,10 @@
 //! Tests for the private manifest reader and associated-item attribute accessors.
 
-use super::{impl_item_attributes, read_manifest, trait_item_attributes};
+#[path = "../../tests/support/scratch.rs"]
+mod scratch;
 
-/// Create a fresh directory unique to this process and `name`.
-fn directory(name: &str) -> std::path::PathBuf {
-    let directory =
-        std::env::temp_dir().join(format!("maestro-manifest-{}-{name}", std::process::id()));
-    std::fs::create_dir(&directory).unwrap();
-    directory
-}
+use self::scratch::Scratch;
+use super::{impl_item_attributes, read_manifest, trait_item_attributes};
 
 /// Reduce attributes to their `(path, argument)` identifiers in order.
 fn names(attributes: &[syn::Attribute]) -> Vec<(String, String)> {
@@ -32,7 +28,8 @@ fn repeated() -> Vec<(String, String)> {
 
 #[test]
 fn manifest_tables_keep_native_types() {
-    let path = directory("types").join("manifest.toml");
+    let scratch = Scratch::new();
+    let path = scratch.root.join("manifest.toml");
     std::fs::write(&path, "").unwrap();
     assert_eq!(read_manifest(&path).unwrap(), toml::Table::new());
     std::fs::write(
@@ -55,7 +52,8 @@ fn manifest_tables_keep_native_types() {
 
 #[test]
 fn manifest_failures_keep_the_requested_path() {
-    let path = directory("with space").join("Cargo.toml");
+    let scratch = Scratch::new();
+    let path = scratch.root.join("Cargo.toml");
     let prefix = format!("{}: ", path.display());
     let read = std::fs::read_to_string(&path).unwrap_err();
     assert_eq!(read_manifest(&path).unwrap_err(), format!("{prefix}{read}"));

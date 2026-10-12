@@ -154,7 +154,7 @@ pub(crate) fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
 /// Emit an accessor that borrows the attributes of the supported associated item variants.
 macro_rules! associated_item_attributes {
     ($name:ident, $kind:ident) => {
-        #[doc = concat!("Access attributes on supported `", stringify!($kind), "` variants.")]
+        /// Borrow the attributes of a supported associated item variant, or none for others.
         pub(crate) fn $name(item: &syn::$kind) -> &[syn::Attribute] {
             match item {
                 syn::$kind::Const(item) => &item.attrs,
@@ -181,7 +181,7 @@ macro_rules! exclude_test_item {
     };
 }
 
-/// Emit a visitor method that treats the item as test-owned while visiting its descendants.
+/// Emit a visitor method that keeps inherited test ownership and also enables it when the item is gated by `cfg_test`.
 macro_rules! inherit_test_context {
     ($visit:ident, $kind:ident, $attributes:ident) => {
         fn $visit(&mut self, item: &'ast syn::$kind) {

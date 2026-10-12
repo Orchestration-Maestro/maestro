@@ -2,40 +2,38 @@
 
 use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
 
 /// The guest crate's own lint table: the fixture workspace table with the three lints its
 /// generated bindings need at `deny`.
 pub const GUEST_LINTS: &str = "[lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[lints.clippy]\npedantic = { level = \"deny\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"deny\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"deny\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
 
+mod scratch;
+pub use scratch::Scratch;
+
 pub struct Workspace {
-    pub root: PathBuf,
+    scratch: Scratch,
+}
+
+impl std::ops::Deref for Workspace {
+    type Target = Scratch;
+
+    fn deref(&self) -> &Scratch {
+        &self.scratch
+    }
 }
 
 impl Workspace {
     pub fn new() -> Self {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        loop {
-            let root = std::env::temp_dir().join(format!(
-                "maestro-conventions-{}-{}",
-                std::process::id(),
-                NEXT.fetch_add(1, Ordering::Relaxed)
-            ));
-            match fs::create_dir(&root) {
-                Ok(()) => {
-                    let workspace = Self { root };
-                    fs::write(
-                        workspace.root.join("Cargo.toml"),
-                        "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = { version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = { level = \"forbid\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n",
-                    )
-                    .unwrap();
-                    workspace.list(&[]);
-                    return workspace;
-                }
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(error) => panic!("create fixture: {error}"),
-            }
-        }
+        let workspace = Self {
+            scratch: Scratch::new(),
+        };
+        fs::write(
+            workspace.root.join("Cargo.toml"),
+            "[workspace]\nmembers = [\"crates/*\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = { version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = { level = \"forbid\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n",
+        )
+        .unwrap();
+        workspace.list(&[]);
+        workspace
     }
 
     pub fn member(&self, directory: &str, name: &str, dependencies: &str) {
@@ -84,15 +82,6 @@ impl Workspace {
             serde_json::to_vec_pretty(&entries).unwrap(),
         )
         .unwrap();
-    }
-}
-
-impl Drop for Workspace {
-    fn drop(&mut self) {
-        let result = fs::remove_dir_all(&self.root);
-        if !std::thread::panicking() {
-            result.expect("remove fixture workspace");
-        }
     }
 }
 
