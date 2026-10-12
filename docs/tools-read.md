@@ -154,10 +154,15 @@ native-only.
 executable declaration plus prompt text, a render-shell choice and optional call
 and result renderers. The caller context `C`, parameters `P`, details `D` and
 renderer state `S` are generic, so the type names no application context. The
-renderer records (`ToolRenderContext`, `ToolRenderResultOptions`) carry the row's
-shared arguments and state, stable call id, invalidation, previous component,
-working directory and the execution, argument, partial, expanded, image and error
-flags; building a context or calling a renderer is the caller's job.
+renderer records carry one call's state. `ToolRenderContext` borrows that call's raw
+argument value (rendering runs before schema validation, so it is independent of the typed
+execution parameters `P`) and holds the stable call id, invalidation, previous component,
+shared row state, working directory, the execution, partial, expanded, image and error flags,
+and the display inputs the application supplies: the absolute README path, the published
+theme, the syntax highlighter and the terminal's image support. `ToolRenderResultOptions`
+carries the result's own expanded and partial flags. Both renderers return the drawn
+component or the failure that kept them from drawing; building a context or calling a
+renderer is the caller's job.
 
 [`wrap_tool_definition`](../crates/maestro-tools/src/tool_definition_wrapper.rs)
 turns a definition into an `AgentTool`. Once the arguments decode (rejected
@@ -169,6 +174,28 @@ keep the three states of `AgentToolResult` (absent, explicit null, value).
 `create_tool_definition_from_agent_tool` is the reverse and leaves prompt text and
 renderers absent. Native and browser builds differ only in whether the stored
 callbacks must be `Send + Sync`.
+
+## Display helpers
+
+[`output::render_utils`](../crates/maestro-tools/src/output/render_utils.rs) holds the
+display strings tool renderers share. `str` returns a borrowed string, an empty string for
+an absent or null value and nothing for any other type. `shorten_path` (native only) shows
+the home directory as `~` for a path equal to it or below it and leaves a sibling whose
+name merely starts with the home path unchanged; it reads the home directory through
+[`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
+`replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
+carriage return. `strip_ansi` removes what one cached expression matches (OSC strings up to
+their first terminator, and CSI-style introducers with parameters and a final byte; a CSI
+whose final byte is `Q` is left in place), and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
+drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
+cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,
+appends one fallback line per image in order. `invalid_arg_text` styles `[invalid arg]`
+with the error color.
+
+[`keybinding_hints`](../crates/maestro-tools/src/keybinding_hints.rs) reads the current
+keybinding registry: `key_text` joins an action's keys with `/` in registry order,
+`key_hint` and `raw_key_hint` follow them with a space and the description, styling the
+keys dim and the description muted with the published theme.
 
 ## Read tool
 
@@ -216,6 +243,38 @@ detection) lacks image input, and an image block. Fitting uses the image helpers
 above; `auto_resize_images: false` sends the original bytes, and an image that
 cannot be fitted yields only the text with the omission line. Native detection
 uses the [MIME sniff](#inline-image-preparation) and ignores extensions.
+
+## Read rendering
+
+The read definition draws its call and its result into the row's previous `Text`
+component, or a new one, returning the same handle. Both read the call's raw arguments to
+select the path: `file_path` unless it is absent or null, then `path`. The call renderer
+also draws the range from the optional `offset` and `limit` (`:start-end` with end
+`start + limit - 1`, omitted when zero), shows `[invalid arg]` for a non-string path and
+`...` for an empty, absent or null one.
+
+A read of a `SKILL.md`, of a file inside the README's directory whose relative path is
+`README.md` or below `docs/` or `examples/`, or of an `AGENTS.md`/`CLAUDE.md` file (either
+extension case) is classified; the path is resolved against the context's working directory
+with [`resolve_read_path`](../crates/maestro-tools/src/path_utils.rs), in that priority. A
+collapsed row shows a classified call as `[skill] label`, `read docs label` or
+`read resource label` with its range and a hint naming the keys bound to `app.tools.expand`,
+and hides a successful result entirely; an expanded row shows the ordinary title and
+content. An error result shows its content even when classified; the call title does not
+depend on the result. A file counts as documentation when its path, relative to the
+README's directory, is resolved against the process working directory only for a part the
+path leaves open, such as the drive of a Windows path that starts with a separator. The
+application supplies the README path and registers the expand action.
+
+An ordinary result shows the cleaned output (see the [display helpers](#display-helpers)),
+highlighted in the language that [`get_language_from_path`](theme.md) names for the
+selected path when it names one (its matching, the engine's unsupported languages and
+failures are described there), otherwise in the tool output color. A collapsed row shows up
+to ten logical lines, counted before wrapping and after removing trailing empty entries,
+followed by `... (N more lines, <keys> to expand)` when more remain. A truncated read adds
+a warning line: the first-line, line or byte limit notice, using the limits recorded in its
+details. A theme, home, path or escape-expression failure is returned
+and leaves the previous component untouched.
 
 ```rust
 use maestro_tools::{ReadToolOptions, create_read_tool};

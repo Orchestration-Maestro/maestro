@@ -1,0 +1,128 @@
+//! Display strings shared by tool renderers.
+
+use crate::utils::shell::sanitize_binary_output;
+use maestro_agent::AgentToolResult;
+use maestro_models::{DiagnosticErrorInfo, DiagnosticInput, UserBlock, extract_diagnostic_error};
+use maestro_theme::{Theme, ThemeColor, ThemeError};
+use maestro_tui::{TerminalImage, get_image_dimensions, image_fallback};
+use regex::Regex;
+use serde_json::Value;
+use std::sync::LazyLock;
+
+/// A tool result as renderers see it.
+pub type ToolRenderResultLike<D> = AgentToolResult<D>;
+
+/// Terminal escape sequences: OSC strings up to their first terminator, and CSI and related
+/// introducers with their parameters and a final byte from the listed set.
+const ANSI_PATTERN: &str = r"(?:\x{001B}\][\s\S]*?(?:\x{0007}|\x{001B}\\|\x{009C}))|[\x{001B}\x{009B}][\[\]()#;?]*(?:[0-9]{1,4}(?:[;:][0-9]{0,4})*)?[0-9A-PR-TZcf-nq-uy=><~]";
+
+/// The compiled escape expression, built once.
+static ANSI: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(ANSI_PATTERN));
+
+/// The string at `value`, `Some("")` when it is absent or null, `None` for any other type.
+#[must_use]
+pub fn str(value: Option<&Value>) -> Option<&str> {
+    match value {
+        None | Some(Value::Null) => Some(""),
+        Some(value) => value.as_str(),
+    }
+}
+
+/// Show the home directory as `~`, for `path` equal to it or below it; absent text is empty.
+///
+/// # Errors
+/// Returns the home lookup failure when `path` is present.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn shorten_path(path: Option<&str>) -> std::io::Result<String> {
+    let Some(path) = path else {
+        return Ok(String::new());
+    };
+    let home = crate::path_utils::expand_path("~")?;
+    let below = path.strip_prefix(&home).filter(|rest| {
+        rest.is_empty()
+            || rest.starts_with(std::path::is_separator)
+            || home.ends_with(std::path::is_separator)
+    });
+    Ok(below.map_or_else(|| path.to_owned(), |rest| format!("~{rest}")))
+}
+
+/// Replace every TAB with three spaces.
+#[must_use]
+pub fn replace_tabs(text: &str) -> String {
+    text.replace('\t', "   ")
+}
+
+/// Remove every carriage return.
+#[must_use]
+pub fn normalize_display_text(text: &str) -> String {
+    text.replace('\r', "")
+}
+
+/// Remove every match of the escape expression.
+///
+/// # Errors
+/// Returns the failure to compile the escape expression.
+pub fn strip_ansi(text: &str) -> Result<String, DiagnosticErrorInfo> {
+    let ansi = ANSI
+        .as_ref()
+        .map_err(|error| extract_diagnostic_error(DiagnosticInput::Text(&error.to_string())))?;
+    Ok(ansi.replace_all(text, "").into_owned())
+}
+
+/// The text blocks of `result` cleaned for display and joined by LF, then, when the
+/// terminal cannot show images or `show_images` is false, one fallback line per image.
+///
+/// # Errors
+/// Returns the failure to compile the escape expression.
+pub fn get_text_output<D>(
+    result: Option<&ToolRenderResultLike<D>>,
+    show_images: bool,
+    terminal_image: &TerminalImage,
+) -> Result<String, DiagnosticErrorInfo> {
+    let Some(result) = result else {
+        return Ok(String::new());
+    };
+    let texts = result.content.iter().filter_map(|block| match block {
+        UserBlock::Text(text) => Some(text.text.as_str()),
+        UserBlock::Image(_) => None,
+    });
+    let cleaned = texts
+        .map(|text| {
+            strip_ansi(text).map(|plain| normalize_display_text(&sanitize_binary_output(&plain)))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let output = cleaned.join("\n");
+    let images_shown = terminal_image.get_capabilities().images.is_some() && show_images;
+    let indicators: Vec<String> = result
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            UserBlock::Image(image) => Some(image),
+            UserBlock::Text(_) => None,
+        })
+        .filter(|_| !images_shown)
+        .map(|image| {
+            let dimensions = (!image.data.is_empty() && !image.mime_type.is_empty())
+                .then(|| get_image_dimensions(&image.data, &image.mime_type))
+                .flatten();
+            image_fallback(&image.mime_type, dimensions, None)
+        })
+        .collect();
+    if indicators.is_empty() {
+        return Ok(output);
+    }
+    let indicators = indicators.join("\n");
+    Ok(if output.is_empty() {
+        indicators
+    } else {
+        format!("{output}\n{indicators}")
+    })
+}
+
+/// `[invalid arg]` in the error style.
+///
+/// # Errors
+/// Returns the theme's failure when it lacks the error color.
+pub fn invalid_arg_text(theme: &Theme) -> Result<String, ThemeError> {
+    theme.fg(&ThemeColor::Error, "[invalid arg]")
+}

@@ -2,6 +2,7 @@
 
 mod execution;
 mod native;
+mod render;
 mod text;
 
 use crate::{
@@ -18,7 +19,7 @@ use maestro_models::{
 use native::NativeReadOperations;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 
 /// A failure whose message is `message`, named `ThrownValue` with no stack or code.
 fn failure(message: &str) -> DiagnosticErrorInfo {
@@ -134,8 +135,8 @@ pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
                 Err(error) => Box::pin(std::future::ready(Err(native::diagnostic(&error)))),
             }
         }),
-        render_call: None,
-        render_result: None,
+        render_call: Some(Rc::new(render::render_call)),
+        render_result: Some(Rc::new(render::render_result)),
     }
 }
 

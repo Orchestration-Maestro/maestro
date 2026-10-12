@@ -40,6 +40,10 @@ change made during that render counts. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 
+`Component` has `std::any::Any` as a supertrait, so whoever holds a component handle can
+downcast the borrowed component to its concrete type, as a tool renderer does to update
+the `Text` it returned for a row last time instead of creating another.
+
 Every method takes `&self`: a component is a shared object that a callback running inside
 one of its methods, such as a render that moves focus or invalidates the writer, reaches
 at once. A component keeps the state it changes in `Cell`s and `RefCell`s, borrows it only

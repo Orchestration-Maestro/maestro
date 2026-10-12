@@ -17,6 +17,7 @@ serde_json.workspace = true
 futures-util.workspace = true
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 image = { version = "=0.24.9", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp", "farbfeld", "dds", "hdr", "tiff", "pnm", "ico"] }
+regex = "=1.13.1"
 exif = { package = "kamadak-exif", version = "=0.6.1" }
 
 [lints]
