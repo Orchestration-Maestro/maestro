@@ -223,7 +223,7 @@ pub fn is_thinking_part(part: &ThoughtMetadata) -> bool {
     part.thought == Some(true)
 }
 
-/// Keep the last nonempty signature seen for a streamed block.
+/// Take a nonempty incoming signature; otherwise keep the existing one, even when empty.
 #[must_use]
 pub fn retain_thought_signature<'a>(
     existing: Option<&'a str>,
@@ -305,7 +305,8 @@ fn model_content(assistant: AssistantMessage, with_ids: bool) -> Option<Content>
 }
 
 /// Convert one assistant block, dropping blank text and thinking. The projection has already
-/// turned thinking from other models into text and removed their signatures.
+/// turned retained thinking from other models into text, removed their signatures and
+/// dropped their redacted thinking.
 fn model_part(block: AssistantContent, with_ids: bool) -> Option<Part> {
     match block {
         AssistantContent::Text(text) if !is_blank(&text.text) => Some(Part {
@@ -436,7 +437,7 @@ fn accepts_nested_images(model_id: &str) -> bool {
 }
 
 /// Declare `tools`, or return `None` for an empty list. `use_parameters` selects the
-/// restricted schema field, with schema metadata removed at every depth.
+/// restricted schema field, with schema metadata removed from every schema node.
 #[must_use]
 pub fn convert_tools(tools: &[Tool], use_parameters: bool) -> Option<Vec<FunctionDeclarations>> {
     if tools.is_empty() {
@@ -459,18 +460,54 @@ pub fn convert_tools(tools: &[Tool], use_parameters: bool) -> Option<Vec<Functio
     }])
 }
 
-/// Copy a schema value without schema metadata members, inside arrays as well as objects.
+/// Copy a schema node without schema metadata members. Only keywords that hold schemas are
+/// walked; names in property maps and literal values (`default`, `const`, `enum`, ...) are kept.
 fn without_metadata(value: &Value) -> Value {
     match value {
         Value::Object(members) => Value::Object(
             members
                 .iter()
                 .filter(|(key, _)| !SCHEMA_METADATA_KEYS.contains(&key.as_str()))
-                .map(|(key, member)| (key.clone(), without_metadata(member)))
+                .map(|(key, member)| (key.clone(), keyword_value(key, member)))
                 .collect(),
         ),
         Value::Array(items) => Value::Array(items.iter().map(without_metadata).collect()),
         other => other.clone(),
+    }
+}
+
+/// Copy the value of one schema keyword, walking it only when it holds schemas.
+fn keyword_value(keyword: &str, value: &Value) -> Value {
+    match (keyword, value) {
+        (
+            "properties" | "patternProperties" | "dependentSchemas" | "dependencies",
+            Value::Object(named),
+        ) => Value::Object(
+            named
+                .iter()
+                .map(|(name, schema)| (name.clone(), without_metadata(schema)))
+                .collect(),
+        ),
+        (
+            "items"
+            | "prefixItems"
+            | "additionalItems"
+            | "additionalProperties"
+            | "anyOf"
+            | "oneOf"
+            | "allOf"
+            | "not"
+            | "if"
+            | "then"
+            | "else"
+            | "contains"
+            | "propertyNames"
+            | "unevaluatedItems"
+            | "unevaluatedProperties"
+            | "contentSchema",
+            _,
+        ) => without_metadata(value),
+        _ => value.clone(),
     }
 }
 

@@ -11012,5 +11012,98 @@
         }
       ]
     }
+  },
+  {
+    "test": "schema_array_metadata_is_removed_without_changing_leaf_data",
+    "operation": "convertTools",
+    "input": {
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Use inspect",
+          "parameters": {
+            "type": "object",
+            "$comment": "remove",
+            "properties": {
+              "definitions": {
+                "type": "string",
+                "$id": "remove"
+              },
+              "records": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "$anchor": "remove"
+                },
+                "default": [
+                  {
+                    "$id": "literal"
+                  }
+                ],
+                "examples": [
+                  {
+                    "definitions": 1
+                  }
+                ]
+              },
+              "fixed": {
+                "const": {
+                  "$schema": "literal"
+                }
+              }
+            },
+            "required": [
+              "definitions"
+            ]
+          }
+        }
+      ],
+      "useParameters": true
+    },
+    "id": "C166",
+    "expected": {
+      "value": [
+        {
+          "functionDeclarations": [
+            {
+              "name": "inspect",
+              "description": "Use inspect",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "definitions": {
+                    "type": "string"
+                  },
+                  "records": {
+                    "type": "array",
+                    "items": {
+                      "type": "object"
+                    },
+                    "default": [
+                      {
+                        "$id": "literal"
+                      }
+                    ],
+                    "examples": [
+                      {
+                        "definitions": 1
+                      }
+                    ]
+                  },
+                  "fixed": {
+                    "const": {
+                      "$schema": "literal"
+                    }
+                  }
+                },
+                "required": [
+                  "definitions"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

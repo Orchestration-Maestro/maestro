@@ -159,14 +159,17 @@ fn run(row: &Row) -> TestResult<Expected> {
         "thinkingLevel" => value(thinking_level(&input::<String>(row)?)?),
         "convertMessages" => {
             let given: MessagesInput = input(row)?;
-            value(google_shared::convert_messages(
-                &given.model,
-                &given.context,
-            ))
+            let before = given.context.clone();
+            let converted = google_shared::convert_messages(&given.model, &given.context);
+            assert_eq!(given.context, before, "input of case {}", row.id);
+            value(converted)
         }
         "convertTools" => {
             let given: ToolsInput = input(row)?;
-            match google_shared::convert_tools(&given.tools, given.use_parameters) {
+            let before = given.tools.clone();
+            let converted = google_shared::convert_tools(&given.tools, given.use_parameters);
+            assert_eq!(given.tools, before, "input of case {}", row.id);
+            match converted {
                 Some(declarations) => value(declarations),
                 None => Ok(Expected::Absent(true)),
             }
@@ -218,7 +221,7 @@ fn check(name: &str, ordered: bool) -> TestResult {
 #[test]
 fn every_recorded_case_belongs_to_a_named_test() -> TestResult {
     let owners: Vec<String> = rows()?.into_iter().map(|row| row.test).collect();
-    assert_eq!(owners.len(), 165);
+    assert_eq!(owners.len(), 166);
     for owner in &owners {
         assert!(
             TEST_NAMES.contains(&owner.as_str()),
@@ -272,8 +275,7 @@ fn unknown_typed_finish_is_an_exact_error() -> TestResult {
 #[test]
 fn thinking_level_serialization_retains_wire_names() -> TestResult {
     check("thinking_level_serialization_retains_wire_names", false)?;
-    let exported: ModuleThinkingLevel = GoogleThinkingLevel::Low;
-    assert_eq!(exported, ModuleThinkingLevel::Low);
+    let _: ModuleThinkingLevel = GoogleThinkingLevel::Low;
     Ok(())
 }
 
