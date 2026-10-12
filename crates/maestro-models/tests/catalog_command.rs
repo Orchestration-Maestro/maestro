@@ -280,7 +280,12 @@ fn catalog_command_returns_write_and_output_errors() {
 
 /// Produce one additional router descriptor with externally supplied identity text.
 fn custom_fetch(id: &str) -> Fetch {
-    let router = serde_json::to_vec(&serde_json::json!({"data": [{"id": id, "name": "Name \"\\\n\u{0}😀", "supported_parameters": ["tools"], "architecture": {"modality": "text+image->text"}, "pricing": {"prompt": "0.000001", "completion": "0.000002"}}]})).unwrap();
+    custom_fetch_ids(&[id])
+}
+/// Produce router descriptors with externally supplied identity texts, in feed order.
+fn custom_fetch_ids(ids: &[&str]) -> Fetch {
+    let descriptors: Vec<_> = ids.iter().map(|id| serde_json::json!({"id": id, "name": "Name \"\\\n\u{0}😀", "supported_parameters": ["tools"], "architecture": {"modality": "text+image->text"}, "pricing": {"prompt": "0.000001", "completion": "0.000002"}})).collect();
+    let router = serde_json::to_vec(&serde_json::json!({ "data": descriptors })).unwrap();
     let dev = br#"{"cerebras":{"models":{"removable":{"tool_call":true}}}}"#.to_vec();
     Arc::new(move |request| {
         let bytes = if request.url.contains("openrouter") {
@@ -343,6 +348,26 @@ fn catalog_files_have_one_owner_and_repeat_deterministically() {
     );
     assert!(!destination.join("provider_cerebras.rs").exists());
     assert_eq!(snapshot(&destination).len(), 13); // eleven providers, registry and sentinel
+}
+
+#[test]
+fn emitted_model_sequence_follows_utf16_order() {
+    let scratch = Scratch::new();
+    let destination = scratch.0.join("generated");
+    let ids = ["\u{e000}", "10", "😀", "2", "01"];
+    run(
+        &custom_fetch_ids(&ids),
+        &destination,
+        &mut Vec::new(),
+        &mut Vec::new(),
+    )
+    .unwrap();
+    let source = fs::read_to_string(destination.join("provider_openrouter.rs")).unwrap();
+    let positions: Vec<usize> = ["01", "10", "2", "😀", "\u{e000}"]
+        .iter()
+        .map(|id| source.find(&format!("({id:?},")).unwrap())
+        .collect();
+    assert!(positions.is_sorted(), "{positions:?}");
 }
 
 #[test]

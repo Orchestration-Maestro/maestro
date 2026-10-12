@@ -62,7 +62,7 @@ fn terminal_directory_globstars_select_base_and_readmission() {
     assert_eq!(rules.test("a/sub", true), TestResult::Ignored);
 }
 
-/// One recorded single-rule decision over whitespace framing.
+/// One recorded rule-text and path decision over whitespace framing.
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Framing {

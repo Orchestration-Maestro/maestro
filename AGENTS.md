@@ -107,8 +107,8 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   boundary semantics (object acceptance, canonical keys, truth, compact and
   pretty text). `maestro-entry` and `maestro-tool` define session and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`
-  projects a brand pack and depends on text and JSON. They are policy rows until
-  later extraction issues create them; add no `common`, `utils` or
+  projects a brand pack and depends on text and JSON. Text exists; the other
+  four are policy rows until later extraction issues create them; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
@@ -157,7 +157,7 @@ conventions checker, terminal scenario harness and repository tooling are dedica
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility. Sparse workspaces need
 no placeholder crates. Frontends require their full direct sets; the terminal
-adapter and scenario harness require toolkit only. The utility edge never counts
+adapter requires toolkit and text, and the scenario harness requires toolkit only. The utility edge never counts
 toward an exact set. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic; the internal dev-target
 allowlist is empty. The scenario harness is not a general dev-dependency target.

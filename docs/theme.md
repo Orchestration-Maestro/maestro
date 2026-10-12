@@ -84,9 +84,8 @@ directory listing and name sorting. `NativeThemeOperations` (not built for brows
 reads bytes, decodes them as UTF-8 with replacement characters, reads process
 variables and lists directory entries by name, in byte order of the names, without
 filtering by entry kind.
-It sorts with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::theme::Collator` outside browser targets) built once per call from the first present of
-`LC_ALL`, `LC_MESSAGES` and `LANG` (default `en_US`); encoding and modifier suffixes are
-dropped, `C` and `POSIX` mean `en-US`, and an unusable locale selects the library default.
+It sorts with a stable locale collator (`maestro_theme::Collator`, a pure re-export of the text crate's comparator, also at `maestro_theme::theme::Collator` outside browser targets) built once per call; locale selection and fallback are
+decided by the [text collator](text.md).
 Tests and browser callers supply their own.
 
 `Collator` (not built for browsers) is that comparison on its own: `Collator::new` takes an
