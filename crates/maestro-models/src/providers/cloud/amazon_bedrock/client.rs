@@ -207,9 +207,9 @@ impl HttpConnector for Bridge {
                 .map_err(|error| ConnectorError::other(error.into(), None))?;
             *observed.lock().unwrap_or_else(PoisonError::into_inner) = Some(Observed {
                 status: response.status,
-                request_id: response
-                    .headers
-                    .get("x-amzn-requestid")
+                request_id: ["x-amzn-requestid", "x-amzn-request-id", "x-amz-request-id"]
+                    .iter()
+                    .find_map(|name| response.headers.get(*name))
                     .filter(|id| !id.is_empty())
                     .cloned(),
             });

@@ -49,27 +49,33 @@ async fn send(
 
 /// Chooses the proxy for a destination URL, or none.
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) type ProxySelector = Arc<dyn Fn(&url::Url) -> Option<url::Url> + Send + Sync>;
+pub(crate) type ProxySelector =
+    Arc<dyn Fn(&url::Url) -> Result<Option<url::Url>, String> + Send + Sync>;
 
 /// Client choices a provider makes for its own requests.
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Default)]
 pub(crate) struct Route {
-    /// Proxy chosen per destination; without one the client uses none, whatever the environment.
+    /// Proxy chosen per destination, checked before each request is sent so that an unusable
+    /// choice fails it; without one the client uses none, whatever the environment.
     pub(crate) proxy: Option<ProxySelector>,
     /// Whether the connection speaks HTTP/1 only.
     pub(crate) http1_only: bool,
 }
 
-/// Build a sender over a private client that follows `route`, for requests that do not
-/// use the process-wide client.
+/// Build a sender over a private client that follows `route` and returns redirects unchanged,
+/// for requests that do not use the process-wide client.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
     let mut builder = reqwest::Client::builder()
         .retry(reqwest::retry::never())
+        .redirect(reqwest::redirect::Policy::none())
         .no_proxy();
+    let check = route.proxy.clone();
     if let Some(select) = route.proxy {
-        builder = builder.proxy(reqwest::Proxy::custom(move |url| select(url)));
+        builder = builder.proxy(reqwest::Proxy::custom(move |url| {
+            select(url).ok().flatten()
+        }));
     }
     if route.http1_only {
         builder = builder.http1_only();
@@ -77,7 +83,14 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
     let client = builder.build().map_err(|error| connection(chain(&error)));
     Arc::new(move |request| {
         let client = client.clone();
-        Box::pin(async move { send(client?, request).await })
+        let check = check.clone();
+        Box::pin(async move {
+            if let Some(select) = check {
+                let destination = url::Url::parse(&request.url).map_err(failed)?;
+                select(&destination).map_err(connection)?;
+            }
+            send(client?, request).await
+        })
     })
 }
 

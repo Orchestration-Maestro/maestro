@@ -53,7 +53,7 @@ mod wasm_example;
 
 use cases::{Case, Expect, run_cases};
 use chat::{TestResult, block_on};
-use routes::{Route, run_routes};
+use routes::{Refusal, Route, run_refusals, run_routes};
 
 const EU: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
@@ -442,6 +442,37 @@ fn proxy_variables_and_bypass_reach_selected_route() -> TestResult {
                 proxied: false,
             },
         ],
+    )
+}
+
+#[test]
+fn unusable_selected_proxy_fails_before_any_connection() -> TestResult {
+    run_refusals(
+        "unusable_selected_proxy_fails_before_any_connection",
+        &[
+            Refusal {
+                id: "malformed",
+                env: &[("HTTP_PROXY", "http://")],
+                redirects: false,
+            },
+            Refusal {
+                id: "unsupported scheme",
+                env: &[("HTTP_PROXY", "ftp://proxy.example")],
+                redirects: false,
+            },
+        ],
+    )
+}
+
+#[test]
+fn redirects_are_returned_without_being_followed() -> TestResult {
+    run_refusals(
+        "redirects_are_returned_without_being_followed",
+        &[Refusal {
+            id: "redirect",
+            env: &[],
+            redirects: true,
+        }],
     )
 }
 

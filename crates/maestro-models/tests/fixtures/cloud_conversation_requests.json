@@ -20,7 +20,6 @@
       },
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -71,7 +70,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -125,7 +123,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -175,8 +172,7 @@
     },
     "expected": {
       "sequence": [
-        "hook",
-        "send"
+        "hook"
       ],
       "stop_reason": "error"
     }
@@ -191,8 +187,7 @@
     },
     "expected": {
       "sequence": [
-        "hook",
-        "send"
+        "hook"
       ],
       "stop_reason": "error"
     }
@@ -208,7 +203,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -239,7 +233,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -260,7 +253,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -296,7 +288,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -333,7 +324,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -368,7 +358,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -404,7 +393,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -434,7 +422,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -473,7 +460,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -513,7 +499,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -547,7 +532,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -582,7 +566,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -623,7 +606,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -665,7 +647,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -697,7 +678,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -732,7 +712,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -768,7 +747,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -803,7 +781,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -839,7 +816,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -872,7 +848,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -906,7 +881,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -939,7 +913,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -973,7 +946,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1009,7 +981,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1046,7 +1017,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1088,7 +1058,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1210,7 +1179,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1389,7 +1357,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1557,7 +1524,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1716,7 +1682,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -1883,7 +1848,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2061,7 +2025,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2237,7 +2200,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2415,7 +2377,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2592,7 +2553,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2771,7 +2731,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -2949,7 +2908,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -3128,7 +3086,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -3306,7 +3263,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -3485,7 +3441,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -3659,7 +3614,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -3830,7 +3784,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4003,7 +3956,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4181,7 +4133,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4357,7 +4308,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4535,7 +4485,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4711,7 +4660,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -4889,7 +4837,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5066,7 +5013,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5245,7 +5191,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5423,7 +5368,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5602,7 +5546,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5780,7 +5723,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -5959,7 +5901,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6137,7 +6078,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6316,7 +6256,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6484,7 +6423,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6644,7 +6582,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6812,7 +6749,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -6991,7 +6927,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -7163,7 +7098,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -7330,7 +7264,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -7497,7 +7430,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -7667,7 +7599,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -7840,7 +7771,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8019,7 +7949,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8197,7 +8126,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8376,7 +8304,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8554,7 +8481,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8733,7 +8659,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8852,7 +8777,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8890,7 +8814,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8925,7 +8848,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8960,7 +8882,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -8995,7 +8916,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9030,7 +8950,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9072,7 +8991,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9112,7 +9030,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9152,7 +9069,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9192,7 +9108,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9232,7 +9147,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9343,7 +9257,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9446,7 +9359,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9512,7 +9424,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9564,7 +9475,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9602,7 +9512,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9645,7 +9554,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9688,7 +9596,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9725,7 +9632,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9776,7 +9682,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9807,7 +9712,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9840,7 +9744,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],
@@ -9874,7 +9777,6 @@
     "expected": {
       "sequence": [
         "hook",
-        "send",
         "transport",
         "response"
       ],

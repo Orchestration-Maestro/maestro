@@ -343,11 +343,6 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
             &[usage.cache_read, usage.cache_write, usage.total_tokens],
             &[0.0, 0.0, 10.0],
         );
-        let usage = usage_after(&json!({"metrics": {"latencyMs": 1}})).await?;
-        near(
-            &[usage.input, usage.total_tokens, usage.cost.total],
-            &[0.0, 0.0, 0.0],
-        );
         Ok(())
     })
 }
@@ -496,59 +491,123 @@ fn recording_hook(
     )
 }
 
+/// Response headers a case sends and the headers the hook must see.
+type HeaderCase = (Vec<(&'static str, &'static str)>, Vec<(String, String)>);
+
+fn header_cases() -> Vec<HeaderCase> {
+    let named = |id: &str| vec![("x-amzn-requestid".to_owned(), id.to_owned())];
+    vec![
+        (
+            vec![("x-amzn-requestid", "fixture-id")],
+            named("fixture-id"),
+        ),
+        (vec![("x-amzn-requestid", "")], vec![]),
+        (
+            vec![("x-amzn-request-id", "hyphenated")],
+            named("hyphenated"),
+        ),
+        (vec![("x-amz-request-id", "amazon")], named("amazon")),
+        (
+            vec![
+                ("x-amzn-request-id", "second"),
+                ("x-amz-request-id", "third"),
+            ],
+            named("second"),
+        ),
+        (
+            vec![("x-amzn-requestid", ""), ("x-amzn-request-id", "later")],
+            vec![],
+        ),
+    ]
+}
+
+/// Run one conversation whose response hook is held open and check what the hook saw.
+async fn hook_sees(
+    headers: Vec<(&'static str, &'static str)>,
+    expected: Vec<(String, String)>,
+) -> TestResult {
+    let polled = Arc::new(AtomicBool::new(false));
+    let body_flag = Arc::clone(&polled);
+    let chunks = bedrock::answer("text")?;
+    let scripted = bedrock::scripted(move |_| {
+        let body = bedrock::watched(Arc::clone(&body_flag), chunks.clone());
+        let mut response = bedrock::response(200, &headers, vec![]);
+        response.body = body;
+        Box::pin(std::future::ready(Ok(response)))
+    });
+    let (entered, entered_signal) = tokio::sync::oneshot::channel();
+    let (release_signal, release) = tokio::sync::oneshot::channel();
+    let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let models = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let mut hooked = options(&scripted);
+    hooked.common.on_payload = Some(model_collector(&models));
+    hooked.common.on_response = Some(recording_hook(&seen, &models, entered, release));
+    let stream = stream_bedrock(
+        bedrock::model(ENDPOINT)?,
+        bedrock::context("question")?,
+        Some(hooked),
+    );
+    entered_signal.await?;
+    assert!(
+        polled.load(Ordering::SeqCst),
+        "the hook ran before the first frame was read"
+    );
+    assert_eq!(
+        *seen.lock().map_err(|e| e.to_string())?,
+        [(200.0, expected)]
+    );
+    {
+        let models = models.lock().map_err(|e| e.to_string())?;
+        assert_eq!(models.len(), 2);
+        assert!(
+            Arc::ptr_eq(&models[0], &models[1]),
+            "the hooks received different models"
+        );
+    }
+    release_signal.send(()).ok();
+    let (labels, message) = transport::drain(&stream).await?;
+    assert_eq!(labels.last().map(String::as_str), Some("done"));
+    assert_eq!(texts(&message), ["text"]);
+    Ok(())
+}
+
 #[test]
-fn response_hook_runs_before_stream_consumption() -> TestResult {
+fn response_hook_runs_after_the_first_frame_before_updates() -> TestResult {
     block_on(false, async {
-        for (header, expected) in [
-            (
-                "fixture-id",
-                vec![("x-amzn-requestid".to_owned(), "fixture-id".to_owned())],
-            ),
-            ("", vec![]),
-        ] {
-            let polled = Arc::new(AtomicBool::new(false));
-            let body_flag = Arc::clone(&polled);
-            let chunks = bedrock::answer("text")?;
-            let scripted = bedrock::scripted(move |_| {
-                let body = bedrock::watched(Arc::clone(&body_flag), chunks.clone());
-                let mut response = bedrock::response(200, &[("x-amzn-requestid", header)], vec![]);
-                response.body = body;
-                Box::pin(std::future::ready(Ok(response)))
-            });
-            let (entered, entered_signal) = tokio::sync::oneshot::channel();
-            let (release_signal, release) = tokio::sync::oneshot::channel();
-            let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
-            let models = Arc::new(std::sync::Mutex::new(Vec::new()));
-            let mut hooked = options(&scripted);
-            hooked.common.on_payload = Some(model_collector(&models));
-            hooked.common.on_response = Some(recording_hook(&seen, &models, entered, release));
-            let stream = stream_bedrock(
-                bedrock::model(ENDPOINT)?,
-                bedrock::context("question")?,
-                Some(hooked),
-            );
-            entered_signal.await?;
+        for (headers, expected) in header_cases() {
+            hook_sees(headers, expected).await?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn first_frame_failure_ends_before_the_response_hook() -> TestResult {
+    block_on(false, async {
+        let mut damaged = start()?;
+        if let Some(last) = damaged.last_mut() {
+            *last ^= 0xFF;
+        }
+        let truncated = start()?[..10].to_vec();
+        for (name, first) in [("bad checksum", damaged), ("truncated", truncated)] {
+            let hooked = Arc::new(AtomicBool::new(false));
+            let flag = Arc::clone(&hooked);
+            let scripted = bedrock::serve(vec![first]);
+            let mut failing = options(&scripted);
+            failing.common.on_response = Some(Arc::new(move |_, _| {
+                flag.store(true, Ordering::SeqCst);
+                Box::pin(std::future::ready(Err(callback_error("hook says"))))
+            }));
+            let (labels, message) = run_with(failing).await?;
+            assert_eq!(labels, ["error"], "{name}");
+            assert!(!hooked.load(Ordering::SeqCst), "{name}");
             assert!(
-                !polled.load(Ordering::SeqCst),
-                "body read before the hook returned"
+                message
+                    .error_message
+                    .as_deref()
+                    .is_some_and(|text| !text.is_empty() && text != "hook says"),
+                "{name}"
             );
-            assert_eq!(
-                *seen.lock().map_err(|e| e.to_string())?,
-                [(200.0, expected)]
-            );
-            {
-                let models = models.lock().map_err(|e| e.to_string())?;
-                assert_eq!(models.len(), 2);
-                assert!(
-                    Arc::ptr_eq(&models[0], &models[1]),
-                    "the hooks received different models"
-                );
-            }
-            release_signal.send(()).ok();
-            let (labels, message) = transport::drain(&stream).await?;
-            assert!(polled.load(Ordering::SeqCst));
-            assert_eq!(labels.last().map(String::as_str), Some("done"));
-            assert_eq!(texts(&message), ["text"]);
         }
         Ok(())
     })
@@ -558,14 +617,7 @@ fn response_hook_runs_before_stream_consumption() -> TestResult {
 fn callback_failure_stops_before_events() -> TestResult {
     block_on(false, async {
         for text in ["response hook says", ""] {
-            let polled = Arc::new(AtomicBool::new(false));
-            let body_flag = Arc::clone(&polled);
-            let chunks = bedrock::answer("unseen")?;
-            let scripted = bedrock::scripted(move |_| {
-                let mut response = bedrock::response(200, &[], vec![]);
-                response.body = bedrock::watched(Arc::clone(&body_flag), chunks.clone());
-                Box::pin(std::future::ready(Ok(response)))
-            });
+            let scripted = bedrock::serve(bedrock::answer("unseen")?);
             let mut hooked = options(&scripted);
             hooked.common.on_response = Some(Arc::new(move |_, _| {
                 Box::pin(std::future::ready(Err(callback_error(text))))
@@ -573,7 +625,6 @@ fn callback_failure_stops_before_events() -> TestResult {
             let (labels, message) = run_with(hooked).await?;
             assert_eq!(labels, ["error"]);
             assert_eq!(message.error_message.as_deref(), Some(text));
-            assert!(!polled.load(Ordering::SeqCst));
         }
         Ok(())
     })

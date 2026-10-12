@@ -44,11 +44,16 @@ impl Environment {
 
     /// The proxy for `destination`, or none when the destination is excluded or no variable
     /// names one. A proxy written without a scheme takes the destination's.
-    pub(super) fn proxy_for(&self, destination: &Url) -> Option<Url> {
-        let host = destination.host_str()?;
+    ///
+    /// # Errors
+    /// Fails when the selected proxy is not a URL or its scheme is not `http` or `https`.
+    pub(super) fn proxy_for(&self, destination: &Url) -> Result<Option<Url>, String> {
+        let Some(host) = destination.host_str() else {
+            return Ok(None);
+        };
         let port = destination.port_or_known_default().map_or(0, u64::from);
         if self.bypasses(host, port) {
-            return None;
+            return Ok(None);
         }
         let scheme = destination.scheme();
         let proxy = [
@@ -58,13 +63,20 @@ impl Environment {
             "all_proxy".to_owned(),
         ]
         .iter()
-        .find_map(|name| self.variable(name))?;
-        if proxy.contains("://") {
+        .find_map(|name| self.variable(name));
+        let Some(proxy) = proxy else {
+            return Ok(None);
+        };
+        let parsed = if proxy.contains("://") {
             Url::parse(proxy)
         } else {
             Url::parse(&format!("{scheme}://{proxy}"))
         }
-        .ok()
+        .map_err(|error| format!("Invalid proxy URL {proxy}: {error}"))?;
+        match parsed.scheme() {
+            "http" | "https" => Ok(Some(parsed)),
+            _ => Err(format!("Unsupported protocol for proxy URL: {proxy}")),
+        }
     }
 
     /// Whether the exclusion list leaves out a destination: `*` leaves out all, `host` only

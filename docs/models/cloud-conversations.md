@@ -49,7 +49,11 @@ way, excludes destinations from proxying: `*` excludes all, `host` that host onl
 `*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
 JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
 or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
-are supported; SOCKS and proxy auto-configuration are not yet.
+are supported; SOCKS and proxy auto-configuration are not yet. A selected proxy that is not a
+URL, or whose scheme is not `http` or `https`, ends the stream with an error before the
+destination is contacted; a destination the exclusion list leaves out never reads its proxy. The
+default sender returns a redirect response as it is, without following it, so it ends the call as
+a response that is not accepted.
 
 ## Hooks and results
 
@@ -62,12 +66,15 @@ input records: members the records do not declare are dropped, `null` members an
 entries are left out, `additionalModelRequestFields` keeps any JSON, and numbers are written
 as doubles. The hook runs before the SDK looks up an endpoint, region or credentials, so its
 failure ends the stream with its message as it is, before any of those can fail.
-`on_response` receives the status and the `x-amzn-requestid` header when it is nonempty, after
-the request is accepted and before any event is read. A response that is not accepted ends the
+`on_response` receives the status and, under `x-amzn-requestid`, the first present of the
+response headers `x-amzn-requestid`, `x-amzn-request-id` and `x-amz-request-id` when that value
+is nonempty. It runs after the first event of the response has been decoded (or the response has
+ended) and before any update is sent, so a response whose first frame fails to decode never
+reaches it. A response that is not accepted, or whose first frame fails, ends the
 stream with `<prefix>: <message>`; the prefixes are `Internal server error`, `Model stream
 error`, `Validation error`, `Throttling error` and `Service unavailable` for those service
-errors, and any other service error uses its own class name. Other SDK failures keep the SDK's
-own text with its causes.
+errors, and any other service error uses its own class name; an exception frame later in the
+stream uses the same prefixes. Other SDK failures keep the SDK's own text with its causes.
 
 Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
 block for its block number when none is open and appends, `contentBlockStop` closes the block
@@ -76,7 +83,9 @@ of that number, `messageStop` sets the stop reason (`end_turn` and `stop_sequenc
 error, which ends the call with `An unknown error occurred`), and `metadata` sets the usage counts, with
 the reported total unless it is zero. A message that starts with a user turn ends with
 `Unexpected assistant message start but got user message start instead`. An aborted signal ends
-the call with `Request was aborted`, keeping the text received so far.
+the call with `Request was aborted` while the call waits for the response or an event, keeping
+the text received so far; a callback failure that happened first keeps its own message and only
+takes the aborted stop reason.
 
 ```rust
 use std::sync::{Arc, Mutex};

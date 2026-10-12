@@ -23,8 +23,6 @@ const ENDPOINT: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 pub enum Phase {
     /// The payload hook ran.
     Hook,
-    /// The SDK started sending; it begins as soon as the hook returned without failing.
-    Send,
     /// The sender received a request.
     Transport,
     /// The response hook ran.
@@ -211,13 +209,7 @@ pub async fn check(row: &Row) -> TestResult {
     let observed = observe(row).await?;
     let id = &row.id;
     let expected = &row.expected;
-    let sequence: Vec<Phase> = expected
-        .sequence
-        .iter()
-        .copied()
-        .filter(|phase| *phase != Phase::Send)
-        .collect();
-    assert_eq!(observed.phases, sequence, "{id}: steps");
+    assert_eq!(observed.phases, expected.sequence, "{id}: steps");
     if let Some(hook) = &expected.hook {
         assert_eq!(observed.hook.as_ref(), Some(hook), "{id}: hook input");
     }

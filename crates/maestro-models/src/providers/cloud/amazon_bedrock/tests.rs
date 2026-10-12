@@ -289,12 +289,24 @@ const PROXY_ROWS: &[ProxyRow] = &[
 fn proxy_choice_follows_the_variables_and_exclusions() -> Result<(), Box<dyn std::error::Error>> {
     for (id, destination, pairs, expected) in PROXY_ROWS {
         let destination = Url::parse(destination)?;
-        let chosen = environment(pairs).proxy_for(&destination);
+        let chosen = environment(pairs).proxy_for(&destination)?;
         let expected = (!expected.is_empty())
             .then(|| Url::parse(expected))
             .transpose()?;
         assert_eq!(chosen, expected, "{id}");
     }
+    Ok(())
+}
+
+#[test]
+fn selected_proxy_that_is_not_usable_is_an_error() -> Result<(), Box<dyn std::error::Error>> {
+    let destination = Url::parse("http://origin.example/")?;
+    for (id, proxy) in [("malformed", "http://"), ("unsupported", "ftp://p.example")] {
+        let chosen = environment(&[("HTTP_PROXY", proxy)]).proxy_for(&destination);
+        assert!(chosen.is_err(), "{id}");
+    }
+    let bypassed = environment(&[("HTTP_PROXY", "http://"), ("NO_PROXY", "origin.example")]);
+    assert_eq!(bypassed.proxy_for(&destination), Ok(None));
     Ok(())
 }
 

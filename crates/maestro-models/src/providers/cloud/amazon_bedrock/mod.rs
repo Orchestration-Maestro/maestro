@@ -106,9 +106,12 @@ mod native {
     use crate::providers::http::{Raced, RequestFailure, race};
     use crate::providers::responses::openai_responses::conclude;
     use crate::{
-        AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ProviderResponse,
-        SharedAssistantMessage,
+        AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Model,
+        ProviderResponse, SharedAssistantMessage,
     };
+    use aws_sdk_bedrockruntime::primitives::event_stream::EventReceiver;
+    use aws_sdk_bedrockruntime::types::ConverseStreamOutput;
+    use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
 
     /// Text of the failure that ends a cancelled request.
     const ABORTED_TEXT: &str = "Request was aborted";
@@ -142,6 +145,19 @@ mod native {
         RequestFailure::new(error.message)
     }
 
+    /// The next event of the stream, or none at its end. The response hook waits for the first
+    /// one, so a stream that fails before it never reaches the hook.
+    async fn next_event(
+        events: &mut EventReceiver<ConverseStreamOutput, ConverseStreamOutputError>,
+        signal: Option<&Cancellation>,
+    ) -> Result<Option<ConverseStreamOutput>, RequestFailure> {
+        match race(events.recv(), None, signal).await {
+            Raced::Done(Ok(event)) => Ok(event),
+            Raced::Done(Err(error)) => Err(describe(&error, streamed_class)),
+            Raced::Cancelled | Raced::TimedOut => Err(RequestFailure::new(ABORTED_TEXT)),
+        }
+    }
+
     /// Send the request and reduce the stream into the shared message; a normal end concludes
     /// with a done update.
     async fn invoke(
@@ -170,6 +186,8 @@ mod native {
             Raced::Done(sent) => sent?,
             Raced::Cancelled | Raced::TimedOut => return Err(RequestFailure::new(ABORTED_TEXT)),
         };
+        let mut events = sent.stream;
+        let mut next = next_event(&mut events, signal).await?;
         if let (Some(observed), Some(hook)) = (service.observed(), &options.common.on_response) {
             let seen = ProviderResponse {
                 status: f64::from(observed.status),
@@ -179,19 +197,10 @@ mod native {
                 .await
                 .map_err(callback_failure)?;
         }
-        let mut events = sent.stream;
         let mut reducer = Reducer::new(model, output, stream);
-        loop {
-            match race(events.recv(), None, signal).await {
-                Raced::Done(Ok(Some(event))) => reducer.event(&event)?,
-                Raced::Done(Ok(None)) => break,
-                Raced::Done(Err(error)) => {
-                    return Err(describe(&error, streamed_class));
-                }
-                Raced::Cancelled | Raced::TimedOut => {
-                    return Err(RequestFailure::new(ABORTED_TEXT));
-                }
-            }
+        while let Some(event) = next {
+            reducer.event(&event)?;
+            next = next_event(&mut events, signal).await?;
         }
         conclude(stream, output, signal)
     }
