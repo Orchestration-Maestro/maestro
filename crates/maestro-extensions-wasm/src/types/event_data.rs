@@ -12,7 +12,7 @@ use super::events::{
     AfterProviderResponseEvent, BeforeProviderRequestEvent, ExtensionEvent, InputEvent,
     ResourcesDiscoverEvent, SessionBeforeCompactEvent, SessionBeforeCompactEventData,
     SessionBeforeForkEvent, SessionBeforeSwitchEvent, SessionEvent, SessionShutdownEvent,
-    SessionStartEvent,
+    SessionStartEvent, event_table,
 };
 use super::object;
 use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
@@ -24,72 +24,53 @@ use super::tool_events::{
 };
 use super::{ToolCallEvent, ToolResultEvent, UserBashEvent};
 
-/// The `type` tag of an event document.
-#[derive(Deserialize)]
-#[serde(variant_identifier, rename_all = "snake_case")]
-enum Kind {
-    /// Invocation before execution.
-    ToolCall,
-    /// Completed result.
-    ToolResult,
-    /// User shell command.
-    UserBash,
-    /// Selection notification.
-    ModelSelect,
-    /// Selection notification.
-    ThinkingLevelSelect,
+/// Emits `Kind`, `EventData` and `EventData::decode` from the event table.
+macro_rules! event_data_types {
+    (
+        before { $($(#[$bm:meta])* $bn:ident($bt:ty),)* }
+        session { $($(#[$sm:meta])* $sn:ident / $sd:ident($st:ty, $sdt:ty),)* }
+        after { $($(#[$am:meta])* $an:ident($at:ty),)* }
+    ) => {
+        /// The `type` tag of an event document.
+        #[derive(Deserialize)]
+        #[serde(variant_identifier, rename_all = "snake_case")]
+        enum Kind {
+            $($(#[$bm])* $bn,)*
+            $($(#[$sm])* $sd,)*
+            $($(#[$am])* $an,)*
+        }
 
-    /// Tool execution notification.
-    ToolExecutionStart,
-    /// Tool execution notification.
-    ToolExecutionUpdate,
-    /// Tool execution notification.
-    ToolExecutionEnd,
+        /// The data of one event. Each case holds the single public payload record.
+        #[derive(Debug, Serialize)]
+        #[serde(tag = "type", rename_all = "snake_case")]
+        pub(crate) enum EventData {
+            $($(#[$bm])* $bn($bt),)*
+            $($(#[$sm])* $sd($sdt),)*
+            $($(#[$am])* $an($at),)*
+        }
 
-    /// Context notification.
-    Context,
-    /// `BeforeAgentStart` notification.
-    BeforeAgentStart,
-    /// `AgentStart` notification.
-    AgentStart,
-    /// `AgentEnd` notification.
-    AgentEnd,
-    /// `TurnStart` notification.
-    TurnStart,
-    /// `TurnEnd` notification.
-    TurnEnd,
-    /// `MessageStart` notification.
-    MessageStart,
-    /// Stream update notification.
-    MessageUpdate,
-    /// `MessageEnd` notification.
-    MessageEnd,
-
-    /// Resources are being discovered.
-    ResourcesDiscover,
-    /// A session started.
-    SessionStart,
-    /// The session is about to switch.
-    SessionBeforeSwitch,
-    /// The session is about to fork.
-    SessionBeforeFork,
-    /// A compaction is about to happen.
-    SessionBeforeCompact,
-    /// A compaction entry was persisted.
-    SessionCompact,
-    /// Tree navigation is about to occur.
-    SessionBeforeTree,
-    /// Tree navigation completed.
-    SessionTree,
-    /// A runtime is shutting down.
-    SessionShutdown,
-    /// A provider request is about to be sent.
-    BeforeProviderRequest,
-    /// A provider answered.
-    AfterProviderResponse,
-    /// A user input before agent processing.
-    Input,
+        impl EventData {
+            /// The data a JSON document holds. The tag is read first, with every other
+            /// property skipped; the record the tag selects is then read from the same text
+            /// using its owning record decoder.
+            ///
+            /// # Errors
+            /// Returns an error when the text is not a JSON object with a recognized string
+            /// tag, or when the selected payload's decoder fails. Shared records use their
+            /// Serde derives without additional input-shape validation.
+            pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
+                let Tag { kind } = object::from_str(text)?;
+                Ok(match kind {
+                    $(Kind::$bn => Self::$bn(object::from_str(text)?),)*
+                    $(Kind::$sd => Self::$sd(object::from_str(text)?),)*
+                    $(Kind::$an => Self::$an(object::from_str(text)?),)*
+                })
+            }
+        }
+    };
 }
+
+event_table!(event_data_types);
 
 /// The only property read before the record of the event is.
 #[derive(Deserialize)]
@@ -99,120 +80,7 @@ struct Tag {
     kind: Kind,
 }
 
-/// The data of one event. Each case holds the single public payload record.
-#[derive(Debug, Serialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub(crate) enum EventData {
-    /// Invocation before execution.
-    ToolCall(ToolCallEvent),
-    /// Completed result.
-    ToolResult(ToolResultEvent),
-    /// User shell command.
-    UserBash(UserBashEvent),
-    /// Selection notification.
-    ModelSelect(Box<ModelSelectEvent>),
-    /// Selection notification.
-    ThinkingLevelSelect(ThinkingLevelSelectEvent),
-
-    /// Tool execution notification.
-    ToolExecutionStart(ToolExecutionStartEvent),
-    /// Tool execution notification.
-    ToolExecutionUpdate(ToolExecutionUpdateEvent),
-    /// Tool execution notification.
-    ToolExecutionEnd(ToolExecutionEndEvent),
-
-    /// Context notification.
-    Context(Box<ContextEvent>),
-    /// `BeforeAgentStart` notification.
-    BeforeAgentStart(Box<BeforeAgentStartEvent>),
-    /// `AgentStart` notification.
-    AgentStart(AgentStartEvent),
-    /// `AgentEnd` notification.
-    AgentEnd(Box<AgentEndEvent>),
-    /// `TurnStart` notification.
-    TurnStart(TurnStartEvent),
-    /// `TurnEnd` notification.
-    TurnEnd(Box<TurnEndEvent>),
-    /// `MessageStart` notification.
-    MessageStart(Box<MessageStartEvent>),
-    /// Stream update notification.
-    MessageUpdate(Box<MessageUpdateEvent>),
-    /// `MessageEnd` notification.
-    MessageEnd(Box<MessageEndEvent>),
-
-    /// Resources are being discovered.
-    ResourcesDiscover(ResourcesDiscoverEvent),
-    /// A session started.
-    SessionStart(SessionStartEvent),
-    /// The session is about to switch.
-    SessionBeforeSwitch(SessionBeforeSwitchEvent),
-    /// The session is about to fork.
-    SessionBeforeFork(SessionBeforeForkEvent),
-    /// A compaction is about to happen.
-    SessionBeforeCompact(Box<SessionBeforeCompactEventData>),
-    /// A compaction entry was persisted.
-    SessionCompact(SessionCompactEvent),
-    /// Resource-free tree navigation preparation.
-    SessionBeforeTree(SessionBeforeTreeEventData),
-    /// Tree navigation completed.
-    SessionTree(SessionTreeEvent),
-    /// A runtime is shutting down.
-    SessionShutdown(SessionShutdownEvent),
-    /// A provider request is about to be sent.
-    BeforeProviderRequest(BeforeProviderRequestEvent),
-    /// A provider answered.
-    AfterProviderResponse(AfterProviderResponseEvent),
-    /// A user input before agent processing.
-    Input(InputEvent),
-}
-
 impl EventData {
-    /// The data a JSON document holds. The tag is read first, with every other property
-    /// skipped; the record the tag selects is then read from the same text using its
-    /// owning record decoder.
-    ///
-    /// # Errors
-    /// Returns an error when the text is not a JSON object with a recognized string tag,
-    /// or when the selected payload's decoder fails. Shared records use their Serde derives
-    /// without additional input-shape validation.
-    pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
-        let Tag { kind } = object::from_str(text)?;
-        Ok(match kind {
-            Kind::ToolCall => Self::ToolCall(object::from_str(text)?),
-            Kind::ToolResult => Self::ToolResult(object::from_str(text)?),
-            Kind::UserBash => Self::UserBash(object::from_str(text)?),
-            Kind::ModelSelect => Self::ModelSelect(object::from_str(text)?),
-            Kind::ThinkingLevelSelect => Self::ThinkingLevelSelect(object::from_str(text)?),
-
-            Kind::ToolExecutionStart => Self::ToolExecutionStart(object::from_str(text)?),
-            Kind::ToolExecutionUpdate => Self::ToolExecutionUpdate(object::from_str(text)?),
-            Kind::ToolExecutionEnd => Self::ToolExecutionEnd(object::from_str(text)?),
-
-            Kind::Context => Self::Context(object::from_str(text)?),
-            Kind::BeforeAgentStart => Self::BeforeAgentStart(object::from_str(text)?),
-            Kind::AgentStart => Self::AgentStart(object::from_str(text)?),
-            Kind::AgentEnd => Self::AgentEnd(object::from_str(text)?),
-            Kind::TurnStart => Self::TurnStart(object::from_str(text)?),
-            Kind::TurnEnd => Self::TurnEnd(object::from_str(text)?),
-            Kind::MessageStart => Self::MessageStart(object::from_str(text)?),
-            Kind::MessageUpdate => Self::MessageUpdate(object::from_str(text)?),
-            Kind::MessageEnd => Self::MessageEnd(object::from_str(text)?),
-
-            Kind::ResourcesDiscover => Self::ResourcesDiscover(object::from_str(text)?),
-            Kind::SessionStart => Self::SessionStart(object::from_str(text)?),
-            Kind::SessionBeforeSwitch => Self::SessionBeforeSwitch(object::from_str(text)?),
-            Kind::SessionBeforeFork => Self::SessionBeforeFork(object::from_str(text)?),
-            Kind::SessionBeforeCompact => Self::SessionBeforeCompact(object::from_str(text)?),
-            Kind::SessionCompact => Self::SessionCompact(object::from_str(text)?),
-            Kind::SessionBeforeTree => Self::SessionBeforeTree(object::from_str(text)?),
-            Kind::SessionTree => Self::SessionTree(object::from_str(text)?),
-            Kind::SessionShutdown => Self::SessionShutdown(object::from_str(text)?),
-            Kind::BeforeProviderRequest => Self::BeforeProviderRequest(object::from_str(text)?),
-            Kind::AfterProviderResponse => Self::AfterProviderResponse(object::from_str(text)?),
-            Kind::Input => Self::Input(object::from_str(text)?),
-        })
-    }
-
     /// The author's event for this data. The signal joins a before-compaction or
     /// before-tree event; every other kind drops it.
     ///
