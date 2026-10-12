@@ -1,6 +1,7 @@
 //! Cancellable dispatch of one read to its text or image route.
 
 use super::{ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, text::read_text};
+use crate::output::text_block;
 use crate::utils::{
     diagnostics::{aborted, guarded},
     image_resize::{ImageResizeOptions, format_dimension_note, resize_image},
@@ -8,7 +9,7 @@ use crate::utils::{
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use maestro_agent::AgentToolResult;
 use maestro_models::{
-    Cancellation, DiagnosticErrorInfo, ImageContent, Model, ModelInput, TextContent, UserBlock,
+    Cancellation, DiagnosticErrorInfo, ImageContent, Model, ModelInput, UserBlock,
 };
 use std::sync::Arc;
 
@@ -17,14 +18,6 @@ const OMITTED: &str = "[Image omitted: could not be resized below the inline ima
 /// Sent beside an image when the active model cannot accept images.
 const NON_VISION: &str =
     "[Current model does not support images. The image will be omitted from this request.]";
-
-/// Wrap text in a result block.
-fn text_block(text: String) -> UserBlock {
-    UserBlock::Text(TextContent {
-        text,
-        text_signature: None,
-    })
-}
 
 /// Build the result for an image: header, optional notes and the attachment.
 fn image_result(

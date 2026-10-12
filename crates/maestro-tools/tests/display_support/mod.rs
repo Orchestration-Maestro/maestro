@@ -5,8 +5,8 @@
 use maestro_agent::AgentToolResult;
 use maestro_models::UserBlock;
 use maestro_theme::{
-    ColorMode, ColorValue, LiveTheme, NativeThemeOperations, SyntaxHighlighter, SyntectHighlighter,
-    Theme, ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
+    ColorMode, ColorValue, LiveTheme, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan,
+    SyntectHighlighter, Theme, ThemeColor, ThemeDirectories, ThemeOptions, ThemeState,
 };
 use maestro_tools::output::render_utils::strip_ansi;
 use maestro_tools::output::truncate::{
@@ -25,6 +25,7 @@ use serde_json::Value;
 use std::{
     cell::RefCell,
     collections::HashSet,
+    error::Error,
     rc::Rc,
     sync::{Mutex, MutexGuard, PoisonError},
 };
@@ -239,7 +240,7 @@ pub fn cases(test: &str) -> Vec<Case> {
     selected
 }
 
-/// A theme whose key `i` of the corpus has palette color `i + 1 + shift`.
+/// A theme whose key `i` of the read corpus has palette color `i + 1 + shift`.
 pub fn palette(shift: u8) -> Theme {
     palette_of(&theme_keys(), shift)
 }
@@ -259,6 +260,53 @@ pub fn palette_of(keys: &[String], shift: u8) -> Theme {
 /// A theme with no colors.
 pub fn bare_theme() -> Theme {
     Theme::new([], [], ColorMode::Color256, ThemeOptions::default()).unwrap()
+}
+
+/// The native highlighter, whose grammars load once per test thread.
+pub fn native_highlighter() -> Rc<SyntectHighlighter> {
+    thread_local! {
+        /// Grammars load once per test thread.
+        static NATIVE: Rc<SyntectHighlighter> = Rc::new(SyntectHighlighter::new().unwrap());
+    }
+    NATIVE.with(Rc::clone)
+}
+
+/// Records every highlight request and classifies the whole text as a keyword.
+pub struct Probe {
+    /// Requests as (code, language).
+    pub calls: RefCell<Vec<(String, String)>>,
+    /// Whether the engine claims every language.
+    supported: bool,
+}
+
+impl Probe {
+    /// A probe that claims every language when `supported`.
+    pub fn new(supported: bool) -> Rc<Self> {
+        Rc::new(Self {
+            calls: RefCell::default(),
+            supported,
+        })
+    }
+}
+
+impl SyntaxHighlighter for Probe {
+    fn supports_language(&self, _: &str) -> bool {
+        self.supported
+    }
+
+    fn highlight(
+        &self,
+        code: &str,
+        language: &str,
+    ) -> Result<Vec<SyntaxSpan>, Box<dyn Error + Send + Sync>> {
+        self.calls
+            .borrow_mut()
+            .push((code.to_owned(), language.to_owned()));
+        Ok(vec![SyntaxSpan {
+            range: 0..code.len(),
+            color: Some(ThemeColor::SyntaxKeyword),
+        }])
+    }
 }
 
 /// Serializes the process-wide keybinding registry and restores it afterwards.
@@ -313,11 +361,12 @@ pub struct Env {
 impl Env {
     /// A published palette theme shifted by `shift`, the native highlighter and no image support.
     pub fn new(shift: u8) -> Self {
-        thread_local! {
-            /// Grammars load once per test thread.
-            static NATIVE: Rc<SyntectHighlighter> = Rc::new(SyntectHighlighter::new().unwrap());
-        }
-        Self::with(Rc::new(palette(shift)), NATIVE.with(Rc::clone))
+        Self::with(Rc::new(palette(shift)), native_highlighter())
+    }
+
+    /// Like [`Env::new`] with the palette built from `keys`.
+    pub fn for_keys(keys: &[String], shift: u8) -> Self {
+        Self::with(Rc::new(palette_of(keys, shift)), native_highlighter())
     }
 
     /// An environment publishing `theme` and highlighting with `highlighter`.

@@ -2,7 +2,8 @@
 
 `maestro-tools` delivers output selection, native streamed-output accumulation,
 callable image preparation, generic tool definitions, the native `read` tool and, in
-[its own page](tools-search.md), the native `ls` tool.
+[its own page](tools-search.md), the native `ls` tool. The `write` tool and the file
+mutation queue are described in [file-changing tools](tools-edit.md).
 
 ## Limits and selection
 

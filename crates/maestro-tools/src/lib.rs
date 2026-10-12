@@ -1,4 +1,5 @@
-//! Tool definitions, the `read` tool, and output and inline-image helpers for Maestro tools.
+//! Tool definitions, the `read` and `write` tools, the file mutation queue, and output and
+//! inline-image helpers for Maestro tools.
 //!
 //! ```
 //! use maestro_tools::{TruncationOptions, truncate_head};
@@ -26,6 +27,8 @@
 //! assert!(!result.was_resized);
 //! ```
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod file_mutation_queue;
 pub mod keybinding_hints;
 pub mod output;
 #[cfg(not(target_arch = "wasm32"))]
@@ -37,7 +40,11 @@ pub mod search;
 pub mod tool_definition_wrapper;
 pub mod types;
 pub mod utils;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod write;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use file_mutation_queue::with_file_mutation_queue;
 pub use keybinding_hints::{key_hint, key_text, raw_key_hint};
 pub use output::truncate::{
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, TruncateLineResult, TruncationBy, TruncationOptions,
@@ -61,4 +68,9 @@ pub use tool_definition_wrapper::{
 pub use types::{
     ExecuteToolDefinition, ToolContextFactory, ToolDefinition, ToolRenderCall, ToolRenderContext,
     ToolRenderPhase, ToolRenderResult, ToolRenderResultOptions, ToolRenderShell, define_tool,
+};
+#[cfg(not(target_arch = "wasm32"))]
+pub use write::{
+    WriteOperations, WriteToolInput, WriteToolOptions, create_write_tool,
+    create_write_tool_definition,
 };

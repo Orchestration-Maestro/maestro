@@ -45,17 +45,13 @@ pub(crate) fn into_text(previous: Option<&ComponentHandle>, text: String) -> Com
     Rc::new(Text::new(text, 0, 0, None))
 }
 
-/// The muted count of rows left out of a preview, followed by the expand key hint.
+/// The muted `counts` of rows left out of a preview, followed by the expand key hint.
 pub(crate) fn expand_hint(
-    remaining: usize,
+    counts: &str,
     theme: &Theme,
     live_theme: &LiveTheme,
 ) -> Result<String, DiagnosticErrorInfo> {
-    let more = paint(
-        theme,
-        &ThemeColor::Muted,
-        &format!("\n... ({remaining} more lines,"),
-    )?;
+    let more = paint(theme, &ThemeColor::Muted, &format!("\n... ({counts},"))?;
     let hint = themed(key_hint(EXPAND, "to expand", live_theme))?;
     Ok(format!("{more} {hint})"))
 }
