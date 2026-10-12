@@ -10,5 +10,6 @@ pub mod messages;
 pub(crate) mod nullable;
 pub mod reasoning;
 pub mod responses;
+pub(crate) mod selected_fields;
 
 pub mod response_sessions;

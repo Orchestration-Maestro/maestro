@@ -11,6 +11,7 @@ use super::{
     Context, Phase, Route, Row, TestResult, Wire, bundled, canonical, descriptor, messages,
     transport,
 };
+use crate::json::event_record;
 use maestro_models::{
     AssistantMessageEvent, Cancellation, OnPayload, ProviderStreamOptions, SharedAssistantMessage,
     SimpleStreamOptions, StreamOptions, complete, complete_simple, stream, stream_simple,
@@ -497,18 +498,6 @@ fn request_record(request: &maestro_models::HttpRequest, wire: &Wire) -> TestRes
     Ok(
         json!({"url":request.url,"headers":headers,"body":serde_json::from_slice::<Value>(&request.body)?}),
     )
-}
-
-/// Ordered event fields exclude only shared message objects.
-fn event_record(event: &AssistantMessageEvent) -> TestResult<Value> {
-    let mut record = serde_json::to_value(event)?;
-    for field in ["partial", "message", "error"] {
-        record
-            .as_object_mut()
-            .ok_or("event object")?
-            .shift_remove(field);
-    }
-    Ok(record)
 }
 
 /// Each public event carries the same invocation object.

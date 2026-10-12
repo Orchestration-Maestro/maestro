@@ -1,6 +1,9 @@
 //! Recorded controlled requests exercised through public model dispatch.
 
-use crate::{bundled, chat, child_process, json::canonical};
+use crate::{
+    bundled, chat, child_process,
+    json::{canonical, event_record},
+};
 use chat::TestResult;
 use maestro_models::{
     AssistantMessageEvent, Context, Model, OnPayload, ProviderStreamOptions,
@@ -501,16 +504,6 @@ fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
         AssistantMessageEvent::Done { message, .. } => message,
         AssistantMessageEvent::Error { error, .. } => error,
     }
-}
-
-/// Serialize ordered event data without live message handles.
-fn event_record(event: &AssistantMessageEvent) -> TestResult<Value> {
-    let mut record = serde_json::to_value(event)?;
-    let object = record.as_object_mut().ok_or("event object")?;
-    for field in ["partial", "message", "error"] {
-        object.shift_remove(field);
-    }
-    Ok(record)
 }
 
 /// Transport request fields owned by the corpus, excluding SDK/runtime headers.

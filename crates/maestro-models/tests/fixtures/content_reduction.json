@@ -1,0 +1,5152 @@
+[
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": []
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":null}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[null]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":null}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":null}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_and_metadata_only_streams_leave_the_message_unchanged",
+    "input": {
+      "chunks": [
+        "{\"modelVersion\":\"not-the-requested-model\",\"promptFeedback\":{\"blockReason\":\"SAFETY\"}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "first_nonempty_response_identity_survives_later_chunks",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"\"}",
+        "{\"responseId\":null}",
+        "{\"responseId\":\"first\"}",
+        "{\"responseId\":\"second\"}",
+        "{}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "responseId": "first"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_response_identity_can_be_replaced_by_absence",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"\"}",
+        "{}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "first_candidate_wins_without_reading_later_content",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"first\"}]}},{\"content\":{\"parts\":[{\"text\":\"ignored\"}]},\"finishReason\":\"FUTURE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "first"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "first"
+        }
+      ]
+    }
+  },
+  {
+    "test": "first_candidate_wins_without_reading_later_content",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{},{\"content\":{\"parts\":[{\"text\":\"ignored\"}]},\"finishReason\":\"STOP\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "text_deltas_join_without_trimming_or_deduplication",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\" z\\n\"},{\"text\":\"\"},{\"text\":\"a\"},{\"text\":\" z\\n\"}]}}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"😀﻿\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": " z\na z\n😀﻿"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": " z\n"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": ""
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "a"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": " z\n"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "😀﻿"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": " z\na z\n😀﻿"
+        }
+      ]
+    }
+  },
+  {
+    "test": "thinking_switches_close_the_previous_block_in_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"answer\"},{\"text\":\"reason\",\"thought\":true},{\"text\":\"ing\",\"thought\":true},{\"text\":\"tail\",\"thought\":false},{\"text\":\"hidden\",\"thought\":true}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "answer"
+          },
+          {
+            "type": "thinking",
+            "thinking": "reasoning"
+          },
+          {
+            "type": "text",
+            "text": "tail"
+          },
+          {
+            "type": "thinking",
+            "thinking": "hidden"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "answer"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "answer"
+        },
+        {
+          "type": "thinking_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 1,
+          "delta": "reason"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 1,
+          "delta": "ing"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 1,
+          "content": "reasoning"
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 2,
+          "delta": "tail"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 2,
+          "content": "tail"
+        },
+        {
+          "type": "thinking_start",
+          "contentIndex": 3
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 3,
+          "delta": "hidden"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 3,
+          "content": "hidden"
+        }
+      ]
+    }
+  },
+  {
+    "test": "signature_alone_never_makes_a_thinking_block",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"t\",\"thoughtSignature\":\"AAAA\"},{\"text\":\"u\",\"thought\":false,\"thoughtSignature\":\"BBBB\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "tu",
+            "textSignature": "BBBB"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "t"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "u"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "tu"
+        }
+      ]
+    }
+  },
+  {
+    "test": "last_nonempty_signature_survives_missing_and_empty_deltas",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":false,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":false},{\"text\":\"3\",\"thought\":false,\"thoughtSignature\":\"\"},{\"text\":\"4\",\"thought\":false,\"thoughtSignature\":\"new\"},{\"text\":\"5\",\"thought\":false,\"thoughtSignature\":null}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12345",
+            "textSignature": "new"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "1"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "2"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "3"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "4"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "5"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "12345"
+        }
+      ]
+    }
+  },
+  {
+    "test": "last_nonempty_signature_survives_missing_and_empty_deltas",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":true,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":true},{\"text\":\"3\",\"thought\":true,\"thoughtSignature\":\"\"},{\"text\":\"4\",\"thought\":true,\"thoughtSignature\":\"new\"},{\"text\":\"5\",\"thought\":true,\"thoughtSignature\":null}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "12345",
+            "thinkingSignature": "new"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "thinking_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "1"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "2"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "3"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "4"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "5"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 0,
+          "content": "12345"
+        }
+      ]
+    }
+  },
+  {
+    "test": "nontext_parts_do_not_change_the_current_block",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"a\"},{\"inlineData\":{\"data\":\"eA==\",\"mimeType\":\"image/png\"}},{\"thoughtSignature\":\"signature-only\"},{\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"ignored\"}},{\"text\":\"b\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ab"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "a"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "b"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "ab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "one_part_can_emit_text_before_its_function_call",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"lead\",\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"x\":2}}},{\"text\":\"tail\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "lead"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          },
+          {
+            "type": "text",
+            "text": "tail"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "lead"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "lead"
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"x\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          }
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 2,
+          "delta": "tail"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 2,
+          "content": "tail"
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_calls_close_text_or_thinking_before_three_tool_events",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"open\",\"thought\":false},{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"x\":2}}},{\"text\":\"after\",\"thought\":false}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "open"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          },
+          {
+            "type": "text",
+            "text": "after"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "open"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "open"
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"x\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          }
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 2,
+          "delta": "after"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 2,
+          "content": "after"
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_calls_close_text_or_thinking_before_three_tool_events",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"open\",\"thought\":true},{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"x\":2}}},{\"text\":\"after\",\"thought\":true}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "open"
+          },
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          },
+          {
+            "type": "thinking",
+            "thinking": "after"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "thinking_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "open"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 0,
+          "content": "open"
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"x\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "x": 2
+            }
+          }
+        },
+        {
+          "type": "thinking_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 2,
+          "delta": "after"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 2,
+          "content": "after"
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_calls_keep_server_ids_and_distinct_arguments",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"z\",\"name\":\"inspect\",\"args\":{\"z\":[2,1,2]}}},{\"functionCall\":{\"id\":\"a\",\"name\":\"other\",\"args\":{\"x\":\"second\"}}},{\"functionCall\":{\"id\":\"z\",\"name\":\"inspect\",\"args\":{\"x\":\"third\"}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "z",
+            "name": "inspect",
+            "arguments": {
+              "z": [
+                2,
+                1,
+                2
+              ]
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "a",
+            "name": "other",
+            "arguments": {
+              "x": "second"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "x": "third"
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":[2,1,2]}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "z",
+            "name": "inspect",
+            "arguments": {
+              "z": [
+                2,
+                1,
+                2
+              ]
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"x\":\"second\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "a",
+            "name": "other",
+            "arguments": {
+              "x": "second"
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 2,
+          "delta": "{\"x\":\"third\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 2,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "x": "third"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "missing_empty_and_duplicate_ids_get_unique_generated_ids",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"inspect\",\"args\":{\"x\":1}}},{\"functionCall\":{\"id\":\"\",\"name\":\"inspect\",\"args\":{}}},{\"functionCall\":{\"id\":\"given\",\"name\":\"inspect\",\"args\":{}}},{\"functionCall\":{\"id\":\"given\",\"name\":\"inspect\",\"args\":{}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "x": 1
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated-2",
+            "name": "inspect",
+            "arguments": {}
+          },
+          {
+            "type": "toolCall",
+            "id": "given",
+            "name": "inspect",
+            "arguments": {}
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated-3",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"x\":1}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "x": 1
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-2",
+            "name": "inspect",
+            "arguments": {}
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 2
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 2,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 2,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "given",
+            "name": "inspect",
+            "arguments": {}
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 3
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 3,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 3,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-3",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_calls_keep_server_ids_and_distinct_arguments",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"\\u0061\",\"name\":\"inspect\",\"args\":{\"which\":1}}},{\"functionCall\":{\"id\":\"a\",\"name\":\"inspect\",\"args\":{\"which\":2}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a",
+            "name": "inspect",
+            "arguments": {
+              "which": 1
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "which": 2
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"which\":1}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "a",
+            "name": "inspect",
+            "arguments": {
+              "which": 1
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"which\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "inspect",
+            "arguments": {
+              "which": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_calls_keep_server_ids_and_distinct_arguments",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"é\",\"name\":\"inspect\",\"args\":{\"which\":1}}},{\"functionCall\":{\"id\":\"é\",\"name\":\"inspect\",\"args\":{\"which\":2}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "é",
+            "name": "inspect",
+            "arguments": {
+              "which": 1
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "é",
+            "name": "inspect",
+            "arguments": {
+              "which": 2
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"which\":1}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "é",
+            "name": "inspect",
+            "arguments": {
+              "which": 1
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"which\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "é",
+            "name": "inspect",
+            "arguments": {
+              "which": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "generated_call_names_preserve_missing_and_empty_distinctions",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{}},{\"functionCall\":{\"name\":\"\",\"args\":null}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "",
+            "arguments": {}
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated-2",
+            "name": "",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-1",
+            "name": "",
+            "arguments": {}
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated-2",
+            "name": "",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_signatures_are_retained_only_when_nonempty",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"one\",\"name\":\"inspect\",\"args\":{}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_signatures_are_retained_only_when_nonempty",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"one\",\"name\":\"inspect\",\"args\":{}},\"thoughtSignature\":\"\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_signatures_are_retained_only_when_nonempty",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"one\",\"name\":\"inspect\",\"args\":{}},\"thoughtSignature\":\"sig\"}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {},
+            "thoughtSignature": "sig"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\"}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":null}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {}
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"deep\":[{\"x\":\"😀\"},false,0,null]}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "deep": [
+                {
+                  "x": "😀"
+                },
+                false,
+                0,
+                null
+              ]
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"deep\":[{\"x\":\"😀\"},false,0,null]}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "deep": [
+                {
+                  "x": "😀"
+                },
+                false,
+                0,
+                null
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":0,\"large\":9007199254740992}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "2": "two",
+              "10": "ten",
+              "z": 1e-7,
+              "a": 0,
+              "large": 9007199254740992
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":0,\"large\":9007199254740992}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "2": "two",
+              "10": "ten",
+              "z": 1e-7,
+              "a": 0,
+              "large": 9007199254740992
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "duplicate_argument_keys_keep_the_last_value_and_first_position",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"one\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2,\"z\":3,\"\\u0061\":4}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {
+              "z": 3,
+              "a": 4
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":3,\"a\":4}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "one",
+            "name": "inspect",
+            "arguments": {
+              "z": 3,
+              "a": 4
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"FINISH_REASON_UNSPECIFIED\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"FINISH_REASON_UNSPECIFIED\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"STOP\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"STOP\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"MAX_TOKENS\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "length",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"MAX_TOKENS\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"SAFETY\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"SAFETY\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"RECITATION\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"RECITATION\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"LANGUAGE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"LANGUAGE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"OTHER\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"OTHER\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"BLOCKLIST\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"BLOCKLIST\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"PROHIBITED_CONTENT\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"PROHIBITED_CONTENT\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"SPII\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"SPII\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"MALFORMED_FUNCTION_CALL\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"MALFORMED_FUNCTION_CALL\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"IMAGE_SAFETY\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_SAFETY\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"UNEXPECTED_TOOL_CALL\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"UNEXPECTED_TOOL_CALL\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"IMAGE_PROHIBITED_CONTENT\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_PROHIBITED_CONTENT\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"NO_IMAGE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"NO_IMAGE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"IMAGE_RECITATION\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_RECITATION\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "finish_reason_maps_every_declared_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\"}]},\"finishReason\":\"IMAGE_OTHER\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "error",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"IMAGE_OTHER\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_without_finish_reason_keeps_the_previous_stop_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_without_finish_reason_keeps_the_previous_stop_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"MAX_TOKENS\"}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "length",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "later_finish_reason_replaces_the_previous_one",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"MAX_TOKENS\"}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"STOP\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_finish_reason_does_not_change_the_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"MAX_TOKENS\"}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "length",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "empty_finish_reason_does_not_change_the_outcome",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"MAX_TOKENS\"}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":null}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "length",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "unknown_finish_preserves_content_but_skips_usage_and_eof_close",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"retained\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"prefix\"}]},\"finishReason\":\"FUTURE\"}],\"usageMetadata\":{\"promptTokenCount\":999}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "prefix"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "responseId": "retained"
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "prefix"
+        }
+      ],
+      "error": "Unhandled stop reason: FUTURE"
+    }
+  },
+  {
+    "test": "unknown_finish_still_fails_after_a_tool_call",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"z\":1,\"a\":2}}}]},\"finishReason\":\"FUTURE\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"z\":1,\"a\":2}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "call",
+            "name": "inspect",
+            "arguments": {
+              "z": 1,
+              "a": 2
+            }
+          }
+        }
+      ],
+      "error": "Unhandled stop reason: FUTURE"
+    }
+  },
+  {
+    "test": "usage_replaces_reports_and_keeps_the_reported_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":100,\"cachedContentTokenCount\":20,\"candidatesTokenCount\":4,\"thoughtsTokenCount\":3,\"totalTokenCount\":123}}",
+        "{\"usageMetadata\":{\"promptTokenCount\":12,\"cachedContentTokenCount\":2,\"candidatesTokenCount\":1,\"thoughtsTokenCount\":2,\"totalTokenCount\":90}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 10,
+          "output": 3,
+          "cacheRead": 2,
+          "cacheWrite": 0,
+          "totalTokens": 90,
+          "cost": {
+            "input": 0.000009999999999999999,
+            "output": 0.000006,
+            "cacheRead": 0.000006,
+            "cacheWrite": 0,
+            "total": 0.000022
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":0,\"cachedContentTokenCount\":0,\"candidatesTokenCount\":0,\"thoughtsTokenCount\":0,\"totalTokenCount\":0}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":null,\"candidatesTokenCount\":null}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"cachedContentTokenCount\":4,\"thoughtsTokenCount\":5}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": -4,
+          "output": 5,
+          "cacheRead": 4,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": -0.000004,
+            "output": 0.000009999999999999999,
+            "cacheRead": 0.000012,
+            "cacheWrite": 0,
+            "total": 0.000018
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":2,\"cachedContentTokenCount\":5,\"candidatesTokenCount\":1,\"thoughtsTokenCount\":2}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": -3,
+          "output": 3,
+          "cacheRead": 5,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": -0.000003,
+            "output": 0.000006,
+            "cacheRead": 0.000015,
+            "cacheWrite": 0,
+            "total": 0.000018
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "absent_or_null_usage_keeps_the_previous_report",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":5,\"totalTokenCount\":7}}",
+        "{\"usageMetadata\":null}",
+        "{}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 5,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7,
+          "cost": {
+            "input": 0.0000049999999999999996,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.0000049999999999999996
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "pricing_uses_each_model_rate_with_source_expression_order",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":17,\"cachedContentTokenCount\":3,\"candidatesTokenCount\":7,\"thoughtsTokenCount\":2,\"totalTokenCount\":41}}"
+      ],
+      "cost": {
+        "input": 0.13,
+        "output": 0.27,
+        "cacheRead": 0.031,
+        "cacheWrite": 9
+      }
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 14,
+          "output": 9,
+          "cacheRead": 3,
+          "cacheWrite": 0,
+          "totalTokens": 41,
+          "cost": {
+            "input": 0.00000182,
+            "output": 0.00000243,
+            "cacheRead": 9.3e-8,
+            "cacheWrite": 0,
+            "total": 0.000004343
+          }
+        }
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "usage_updates_without_candidates_and_after_selected_parts",
+    "input": {
+      "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":4}}",
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"cost\"}]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":9,\"totalTokenCount\":8}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cost"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 9,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 8,
+          "cost": {
+            "input": 0.000009,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.000009
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "cost"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "cost"
+        }
+      ]
+    }
+  },
+  {
+    "test": "clean_eof_closes_only_the_active_text_or_thinking_block",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"last\",\"thought\":false}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "last"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "last"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "last"
+        }
+      ]
+    }
+  },
+  {
+    "test": "clean_eof_closes_only_the_active_text_or_thinking_block",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"last\",\"thought\":true}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "last"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "thinking_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "last"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 0,
+          "content": "last"
+        }
+      ]
+    }
+  },
+  {
+    "test": "source_failure_keeps_partial_content_without_closing_it",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial\",\"thought\":false}]}}]}"
+      ],
+      "sourceError": "controlled stream failure"
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "partial"
+        }
+      ],
+      "error": "controlled stream failure"
+    }
+  },
+  {
+    "test": "source_failure_keeps_partial_content_without_closing_it",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial\",\"thought\":true}]}}]}"
+      ],
+      "sourceError": "controlled stream failure"
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "partial"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "thinking_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "partial"
+        }
+      ],
+      "error": "controlled stream failure"
+    }
+  },
+  {
+    "test": "malformed_json_fails_after_prior_chunks_without_eof_close",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"partial\"}]}}]}",
+        "{broken"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "partial"
+        }
+      ],
+      "error": "@native-error"
+    }
+  },
+  {
+    "test": "later_invalid_part_keeps_earlier_updates_and_response_id",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"id-before-error\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"visible\"},null]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "visible"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "responseId": "id-before-error"
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "visible"
+        }
+      ],
+      "error": "@native-error"
+    }
+  },
+  {
+    "test": "unknown_finish_wins_over_later_invalid_usage",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"finishReason\":\"FUTURE\"}],\"usageMetadata\":{\"promptTokenCount\":{\"bad\":true}}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [],
+      "error": "Unhandled stop reason: FUTURE"
+    }
+  },
+  {
+    "test": "unknown_members_and_unselected_deep_content_are_not_decoded",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"known\",\"unknown\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]],\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"kept\",\"unknown\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}]}},{\"content\":{\"parts\":[{\"functionCall\":{\"args\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "responseId": "known"
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "kept"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "duplicate_selected_fields_keep_the_last_member",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"old\",\"responseId\":\"new\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"old\",\"text\":\"new\",\"thought\":true,\"thought\":false}]},\"finishReason\":\"MAX_TOKENS\",\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":3,\"promptTokenCount\":7,\"totalTokenCount\":9}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "new"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 7,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 9,
+          "cost": {
+            "input": 0.000007,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0.000007
+          }
+        },
+        "responseId": "new"
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "new"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "new"
+        }
+      ]
+    }
+  }
+]
