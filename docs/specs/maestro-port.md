@@ -224,7 +224,7 @@ tool interchange records. `maestro-brand` is a core domain library below layer 0
 depends on text and JSON and projects a brand pack. These five owners are declared by
 policy; `maestro-text` exists, and the code the other four will own moves in later
 extraction issues, which create those crates. No `common`, `utils`, `shared-types` or
-background-runtime crate is added. `maestro-tools` depends on `maestro-text`, the
+background-runtime crate is added. `maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 
 `maestro-request` defines shared message and model-request records: model

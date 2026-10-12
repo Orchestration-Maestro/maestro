@@ -872,6 +872,9 @@ fn sparse_inventory_does_not_create_product_crates() {
     }
     assert!(!workspace.root.join("crates/maestro-process").exists());
     assert!(!workspace.root.join("crates/maestro-tools").exists());
+    workspace.member("tools", "maestro-tools", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert!(!workspace.root.join("crates/maestro-text").exists());
     assert!(!workspace.root.join("crates/maestro-chat").exists());
     assert!(!workspace.root.join("crates/maestro-watch").exists());
     assert!(!workspace.root.join("crates/maestro-lock").exists());

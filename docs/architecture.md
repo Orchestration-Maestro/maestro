@@ -15,7 +15,7 @@ The [specification](specs/maestro-port.md#crates-and-delivery-order) declares fi
 owners; `maestro-text` exists, and the other four are policy only with no crate directory
 until their extraction issues: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
-only on text, so it is no longer a leaf. Tools also depend on text for shared newline
+only on text, so it is no longer a leaf. Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
 entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
 repeated here.
