@@ -96,8 +96,20 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness, cancellation leaf, watch leaf, lock leaf and
-  file-pattern leaf may not.
+  terminal scenario harness, cancellation leaf, watch leaf, lock leaf,
+  file-pattern crate, text leaf, JSON leaf, entry and tool record crates and
+  brand crate may not. Shared path helpers take supplied directory observations
+  and add no global environment, filesystem service, directory cache, scheduler
+  or workspace dependency.
+- `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
+  no workspace dependencies. Text owns common text operations (whitespace,
+  lexical comparison, markup escaping, locale construction); JSON owns JSON
+  boundary semantics (object acceptance, canonical keys, truth, compact and
+  pretty text). `maestro-entry` and `maestro-tool` define session and tool
+  interchange records and depend only on `maestro-request`; `maestro-brand`
+  projects a brand pack and depends on text and JSON. They are policy rows until
+  later extraction issues create them; add no `common`, `utils` or
+  `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
   no workspace dependencies, including the path utility. Only theme/application
@@ -118,13 +130,20 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   and `Skill`.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper.
-  Only models, resources, theme, session and guest authoring may depend on it;
-  it has no internal dependencies. Keep existing models/resources public paths as re-exports.
+  It also owns the resolved request-auth record, default zero usage and the
+  shared optional-field helper. Only the crates that list it in the spec table
+  (models, resources, theme, catalog, session, entry, tool and guest authoring)
+  may depend on it; it has no internal dependencies. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
   table, inventory, graph policy and architecture tests together with the code.
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
+
+The guest authoring crate may depend on the request, entry, tool and JSON
+owners and never imports native session, tool or catalog runtimes. The terminal
+adapter may use text, but requires only the toolkit until `maestro-text` exists;
+the same change then requires both.
 
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and

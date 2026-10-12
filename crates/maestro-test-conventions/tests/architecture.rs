@@ -487,7 +487,7 @@ fn catalog_pattern_edge_is_scoped() {
         );
         assert_eq!(
             check_workspace(&workspace.root),
-            Err("maestro-pattern must not depend on workspace crate maestro-catalog".into())
+            Err("forbidden production dependency: maestro-pattern -> maestro-catalog".into())
         );
     }
 }
@@ -566,13 +566,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 31);
+    assert_eq!(support::policy::POLICY.len(), 36);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        74
+        105
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -607,18 +607,16 @@ const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-extensions-wasm",
     "maestro-extensions-wasmtime",
     "maestro-test-terminal",
+    "maestro-text",
+    "maestro-json",
+    "maestro-entry",
+    "maestro-tool",
+    "maestro-brand",
 ];
 
 /// Direct dependencies a crate must declare, empty unless it has an exact set.
 fn exact_targets(name: &str) -> &'static [&'static str] {
-    if !support::exact(name) {
-        return &[];
-    }
-    support::policy::POLICY
-        .iter()
-        .find(|row| row.0 == name)
-        .unwrap()
-        .1
+    support::required(name)
 }
 
 /// Manifest declaring the required targets and the foundation utility.
@@ -651,9 +649,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 31);
+    assert_eq!(rows.len(), 36);
     assert_eq!(consumers.len(), 22);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 8);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }
@@ -837,7 +835,7 @@ fn frontends_require_complete_direct_dependencies() {
 }
 
 #[test]
-fn terminal_adapter_and_harness_require_toolkit_only() {
+fn terminal_adapter_and_harness_require_toolkit() {
     for owner in ["maestro-tui-crossterm", "maestro-test-terminal"] {
         let workspace = Workspace::new();
         workspace.foundation(&[owner, "maestro-models"]);
@@ -1397,5 +1395,105 @@ fn compiler_host_failures(workspace: &Workspace, cargo: &std::path::Path) {
             &workspace.command("valid-rustc", "printf 'host: x86_64-unknown-linux-gnu\\n'"),
             "ok",
         );
+    }
+}
+
+#[test]
+fn terminal_adapter_text_edge_is_scoped() {
+    const ADAPTER: &str = "maestro-tui-crossterm";
+    let toolkit = "maestro-tui = { path = \"../maestro-tui\" }\n";
+    let toolkit_only = Workspace::new();
+    toolkit_only.member("maestro-tui", "maestro-tui", "");
+    toolkit_only.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
+    toolkit_only.list(&[(ADAPTER, "core"), ("maestro-tui", "core")]);
+    assert_eq!(check_workspace(&toolkit_only.root), Ok(()));
+    let workspace = Workspace::new();
+    workspace.foundation(&[ADAPTER, "maestro-text", "maestro-path"]);
+    workspace.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            ADAPTER,
+            ADAPTER,
+            &format!("[{kind}]\n{toolkit}renamed = {{ package = \"maestro-text\", path = \"../maestro-text\"{extra} }}"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
+    }
+    let missing = format!("{ADAPTER}: missing required direct dependency maestro-tui");
+    let sparse = Workspace::new();
+    sparse.member("maestro-text", "maestro-text", "");
+    sparse.member("maestro-path", "maestro-path", "");
+    sparse.list(&[
+        (ADAPTER, "core"),
+        ("maestro-text", "core"),
+        ("maestro-path", "core"),
+    ]);
+    for only in [
+        "[dependencies]\nmaestro-text = { path = \"../maestro-text\" }",
+        "[dependencies]\nmaestro-path = { path = \"../maestro-path\" }",
+    ] {
+        sparse.member(ADAPTER, ADAPTER, only);
+        assert_eq!(
+            check_workspace(&sparse.root),
+            Err(missing.clone()),
+            "{only}"
+        );
+        workspace.member(ADAPTER, ADAPTER, only);
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(missing.clone()),
+            "{only}"
+        );
+    }
+    workspace.member(
+        ADAPTER,
+        ADAPTER,
+        &format!("[dependencies]\n{toolkit}[dev-dependencies]\nmaestro-text = {{ path = \"../maestro-text\" }}"),
+    );
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "internal dev dependency requires declared dependency-free test support: {ADAPTER} -> maestro-text"
+        ))
+    );
+    harness_may_not_declare_text(toolkit);
+}
+
+/// Reject the text owner from the terminal scenario harness.
+fn harness_may_not_declare_text(toolkit: &str) {
+    let harness = Workspace::new();
+    harness.foundation(&["maestro-test-terminal", "maestro-text"]);
+    harness.member(
+        "maestro-test-terminal",
+        "maestro-test-terminal",
+        &format!("[dependencies]\n{toolkit}maestro-text = {{ path = \"../maestro-text\" }}"),
+    );
+    assert_eq!(
+        check_workspace(&harness.root),
+        Err("forbidden production dependency: maestro-test-terminal -> maestro-text".into())
+    );
+}
+
+#[test]
+fn complete_permitted_graph_is_acyclic() {
+    let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
+    let workspace = Workspace::new();
+    workspace.foundation(&names);
+    for (kind, extra) in DECLARATIONS {
+        for &(from, targets) in support::policy::POLICY {
+            let mut declarations = format!("[{kind}]\n");
+            let utility = (from != "maestro-path" && !UTILITY_EXCLUDED.contains(&from))
+                .then_some("maestro-path");
+            for (index, target) in targets.iter().copied().chain(utility).enumerate() {
+                writeln!(
+                    declarations,
+                    "edge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+                )
+                .unwrap();
+            }
+            workspace.member(from, from, &declarations);
+        }
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
     }
 }

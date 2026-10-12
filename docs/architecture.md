@@ -6,10 +6,18 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
-The extension domain may depend directly on resources. Models, resources, themes,
-sessions and guest authoring may depend on `maestro-request`, whose job is to define shared
-message and model-request records. It has no workspace dependencies.
+The extension domain may depend directly on resources. The crates that list
+`maestro-request` in the specification table may depend on it; its job is to define shared
+message and model-request records, and it has no workspace dependencies.
 No reverse dependency or internal dev edge is permitted.
+
+The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
+owners by policy only; no crate directory exists until its extraction issue:
+`maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
+only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
+only on text, so it is no longer a leaf. The guest authoring crate may depend on request,
+entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
+repeated here.
 
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
@@ -28,7 +36,10 @@ of their specification row, except these complete direct sets:
 
 - CLI and chat: application, toolkit, terminal adapter and theme.
 - RPC and web: application and theme.
-- Terminal adapter and terminal scenario harness: toolkit only.
+- Terminal adapter and terminal scenario harness: the toolkit. The adapter may also
+  depend on `maestro-text`, but until that crate exists only the toolkit is required;
+  the checker reads the required set from one helper, not from the allowed row, and an
+  absent required toolkit still fails.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
@@ -83,8 +94,10 @@ leaf and exact-set rules. Any crate in the specification table may declare it as
 a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
 adapter, shared request owner, cancellation leaf, watch leaf, lock leaf,
-file-pattern leaf and the
-terminal scenario harness. The edge is ignored when checking a crate's complete
+file-pattern crate, text leaf, JSON leaf, entry and tool record crates, brand crate and the
+terminal scenario harness. Shared path helpers take supplied directory observations and
+add no global environment, filesystem service, directory cache, scheduler or workspace
+dependency. The edge is ignored when checking a crate's complete
 direct set or leaf
 status. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)

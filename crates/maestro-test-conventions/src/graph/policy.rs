@@ -12,36 +12,91 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-request", &[]),
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
-    ("maestro-pattern", &[]),
-    ("maestro-extensions-wasm", &["maestro-request"]),
+    ("maestro-text", &[]),
+    ("maestro-json", &[]),
+    ("maestro-entry", &["maestro-request"]),
+    ("maestro-tool", &["maestro-request"]),
+    ("maestro-brand", &["maestro-text", "maestro-json"]),
+    ("maestro-pattern", &["maestro-text"]),
+    (
+        "maestro-extensions-wasm",
+        &[
+            "maestro-request",
+            "maestro-entry",
+            "maestro-tool",
+            "maestro-json",
+        ],
+    ),
     (
         "maestro-models",
-        &["maestro-cancellation", "maestro-request"],
+        &[
+            "maestro-cancellation",
+            "maestro-request",
+            "maestro-text",
+            "maestro-json",
+            "maestro-brand",
+        ],
     ),
-    ("maestro-resources", &["maestro-request", "maestro-pattern"]),
-    ("maestro-settings", &["maestro-lock"]),
+    (
+        "maestro-resources",
+        &["maestro-request", "maestro-pattern", "maestro-text"],
+    ),
+    ("maestro-settings", &["maestro-lock", "maestro-json"]),
     ("maestro-test-conventions", &[]),
     ("maestro-tooling", &[]),
-    ("maestro-tui", &["maestro-cancellation"]),
-    ("maestro-agent", &["maestro-models"]),
-    ("maestro-credentials", &["maestro-models", "maestro-lock"]),
+    ("maestro-tui", &["maestro-cancellation", "maestro-text"]),
+    (
+        "maestro-agent",
+        &["maestro-models", "maestro-text", "maestro-tool"],
+    ),
+    (
+        "maestro-credentials",
+        &["maestro-models", "maestro-lock", "maestro-text"],
+    ),
     (
         "maestro-packages",
-        &["maestro-settings", "maestro-resources", "maestro-pattern"],
+        &[
+            "maestro-settings",
+            "maestro-resources",
+            "maestro-pattern",
+            "maestro-text",
+            "maestro-json",
+        ],
     ),
     ("maestro-test-terminal", &["maestro-tui"]),
     (
         "maestro-theme",
-        &["maestro-tui", "maestro-request", "maestro-watch"],
+        &[
+            "maestro-tui",
+            "maestro-request",
+            "maestro-watch",
+            "maestro-text",
+            "maestro-json",
+            "maestro-brand",
+        ],
     ),
-    ("maestro-tui-crossterm", &["maestro-tui"]),
+    ("maestro-tui-crossterm", &["maestro-tui", "maestro-text"]),
     (
         "maestro-catalog",
-        &["maestro-models", "maestro-credentials", "maestro-pattern"],
+        &[
+            "maestro-models",
+            "maestro-credentials",
+            "maestro-pattern",
+            "maestro-request",
+            "maestro-text",
+            "maestro-json",
+        ],
     ),
     (
         "maestro-session",
-        &["maestro-models", "maestro-agent", "maestro-request"],
+        &[
+            "maestro-models",
+            "maestro-agent",
+            "maestro-request",
+            "maestro-entry",
+            "maestro-text",
+            "maestro-json",
+        ],
     ),
     (
         "maestro-tools",
@@ -50,6 +105,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-agent",
             "maestro-tui",
             "maestro-theme",
+            "maestro-tool",
         ],
     ),
     (
@@ -92,6 +148,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
             "maestro-tui",
             "maestro-watch",
+            "maestro-text",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
@@ -144,6 +201,11 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-extensions-wasm"
                 | "maestro-extensions-wasmtime"
                 | "maestro-test-terminal"
+                | "maestro-text"
+                | "maestro-json"
+                | "maestro-entry"
+                | "maestro-tool"
+                | "maestro-brand"
         )
 }
 
@@ -163,7 +225,7 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
     })
 }
 
-/// Identify crates that require their full direct dependency set.
+/// Identify crates that require direct dependencies.
 pub(crate) fn exact(name: &str) -> bool {
     matches!(
         name,
@@ -174,4 +236,16 @@ pub(crate) fn exact(name: &str) -> bool {
             | "maestro-tui-crossterm"
             | "maestro-test-terminal"
     )
+}
+
+/// List the direct dependencies a crate with an exact boundary must declare today.
+///
+/// The terminal adapter may use the text owner but requires only the toolkit
+/// until that owner exists; every other exact crate requires its whole row.
+pub(crate) fn required(name: &str) -> &'static [&'static str] {
+    match name {
+        "maestro-tui-crossterm" => &["maestro-tui"],
+        _ if exact(name) => rule(name).map_or(&[], |rule| rule.dependencies),
+        _ => &[],
+    }
 }
