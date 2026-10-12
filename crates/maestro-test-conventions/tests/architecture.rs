@@ -1411,7 +1411,6 @@ fn terminal_adapter_text_edge_is_scoped() {
     workspace.foundation(&[ADAPTER, "maestro-text", "maestro-path"]);
     workspace.member(ADAPTER, ADAPTER, &format!("[dependencies]\n{toolkit}"));
     assert_eq!(check_workspace(&workspace.root), Ok(()));
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
     for (kind, extra) in DECLARATIONS {
         workspace.member(
             ADAPTER,
