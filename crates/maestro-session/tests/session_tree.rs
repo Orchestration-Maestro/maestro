@@ -5,6 +5,7 @@
 /// Strict fixture replay.
 mod support {
     pub mod native;
+    pub mod scratch;
     pub mod session_tree;
 }
 use chrono::TimeZone;
@@ -12,7 +13,8 @@ use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, SessionTreeNode};
 use serde_json::{Value, json};
-use support::native::{Scratch, broken_history};
+use support::native::broken_history;
+use support::scratch::Scratch;
 
 /// Write a native history file below the scratch directory.
 fn history_file(scratch: &Scratch, name: &str, records: &[Value]) -> String {

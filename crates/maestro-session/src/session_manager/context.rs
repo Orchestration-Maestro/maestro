@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
 
 /// Read a property, failing only when its receiver is null or missing.
-fn property<'a>(
+pub(super) fn property<'a>(
     value: Option<&'a Value>,
     field: &str,
 ) -> Result<Option<&'a Value>, serde_json::Error> {
@@ -104,7 +104,7 @@ pub(crate) fn indexed_context<'a>(
 }
 
 /// Capture omission separately from an explicit null.
-fn observation(entry: &Value, field: &str) -> Presence<Value> {
+pub(super) fn observation(entry: &Value, field: &str) -> Presence<Value> {
     match entry.get(field) {
         None => Presence::Missing,
         Some(Value::Null) => Presence::Null,

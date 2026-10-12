@@ -1,7 +1,7 @@
 # Session history libraries
 
 `maestro-session` uses the existing agent/model interfaces and the shared request
-record owner. Native session files use standard owned files; no execution runtime is added. Stored timestamp conversion
+record owner. Native session files use standard owned files; listing drives them through the caller's Tokio runtime and adds no runtime of its own. Stored timestamp conversion
 uses the existing [message formatting](../sessions/messages.md) owner.
 
 | Dependency | Version/features | Purpose |
@@ -12,7 +12,8 @@ uses the existing [message formatting](../sessions/messages.md) owner.
 | maestro-path | workspace utility, no dependencies | Lexical session filenames and directory joins |
 | serde_json | workspace `=1.0.151`; `preserve_order`, `float_roundtrip` | Ordered raw entries and open custom payload |
 | serde | workspace `=1.0.229`; `derive` | Explicit record views and test case decoding |
-| tokio | native dev only `=1.53.2`, defaults off; `rt` | Controlled agent-constructor witness |
+| tokio | native `=1.53.2`, defaults off; `fs`, `rt` | Asynchronous directory, read and stat calls for session listing; tests also build the caller's runtime |
+| futures-util | workspace `=0.3.34`, defaults off; `std`, `sink` | Drive all candidate reads together in the listing task |
 
 The promoted serde dependency uses already locked serde/serde_core/serde_derive,
 proc-macro2, quote, syn and unicode-ident packages; no package version is added. License choices are MIT or
@@ -31,3 +32,7 @@ macro/support/shared packages at 0.2.129, bumpalo 3.20.3, cfg-if 1.0.5,
 once_cell 1.21.4, proc-macro2 1.0.107, quote 1.0.47, rustversion 1.0.23,
 syn 3.0.6 and unicode-ident 1.0.24. These use MIT or Apache-2.0 license options,
 plus Unicode-3.0 for unicode-ident; no new execution runtime is added.
+
+The native listing closure adds Tokio 1.53.2, futures-util, futures-core, futures-sink
+and futures-task 0.3.34, pin-project-lite 0.2.17 and slab 0.4.12, all already locked
+(MIT, or MIT OR Apache-2.0). See [discovery](../discovery.md).

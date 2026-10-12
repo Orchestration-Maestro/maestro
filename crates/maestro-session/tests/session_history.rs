@@ -6,6 +6,7 @@ mod support {
     /// Memory-history corpus consumer.
     pub mod session_history;
 }
+#[cfg(unix)]
 use maestro_session::session_manager::ReadonlySessionManager;
 
 #[test]
@@ -104,6 +105,7 @@ fn append_keeps_open_message_values_without_decoding() {
 }
 
 /// Native cwd observation from the shared corpus.
+#[cfg(unix)]
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct NativeCase {

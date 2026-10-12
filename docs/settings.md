@@ -1,6 +1,8 @@
 # Settings
 
-`maestro-settings` owns the accepted global and project preferences. A
+`maestro-settings` owns the accepted global and project preferences. The
+[settings guide](sessions/settings.md) explains them by topic; this page is the
+single authority for defaults. A
 `SettingsManager` loads both scopes through a replaceable raw-text storage,
 answers typed reads from memory, publishes every edit immediately and persists
 edits through one ordered queue. Every public item lives in the `settings_manager`
@@ -177,7 +179,7 @@ save:
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `theme` | string | unset | Theme name |
+| `theme` | string | unset | Theme name; the getter reports unset and the consumer chooses its dark fallback |
 | `quietStartup` | boolean | `false` | Hide the startup header |
 | `collapseChangelog` | boolean | `false` | Show a condensed changelog |
 | `enableInstallTelemetry` | boolean | `true` | The preference only; this crate sends nothing |

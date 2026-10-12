@@ -5,13 +5,15 @@
 /// Disposable native histories.
 mod support {
     pub mod native;
+    pub mod scratch;
 }
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, parse_session_entries};
 use serde_json::{Value, json};
 use std::fs;
-use support::native::{Scratch, broken_history};
+use support::native::broken_history;
+use support::scratch::Scratch;
 
 /// Message record with a fixed timestamp.
 fn message(id: &str, parent: Option<&str>, role: &str) -> Value {

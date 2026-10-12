@@ -5,6 +5,7 @@
 /// Strict fixture replay.
 mod support {
     pub mod native;
+    pub mod scratch;
     pub mod session_tree;
 }
 use maestro_models::UserContent;
@@ -13,7 +14,8 @@ use maestro_session::SessionManager;
 use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::io;
-use support::native::{Scratch, broken_history};
+use support::native::broken_history;
+use support::scratch::Scratch;
 
 /// Member names of an object in order.
 fn keys(value: &Value) -> Vec<&str> {
