@@ -196,3 +196,6 @@ raw records; header admission, historical conversion and index construction are
 separate from per-operation payload decoding.
 `NewSessionOptions` carries an optional explicit id and `Presence<String>` parent
 metadata; it is a construction option, not a wire decoder.
+Remaining appends, names, labels and tree reads follow the same raw-record rule:
+see [appends](sessions/session_manager.md#appends-names-and-branch-summaries) and
+the [tree guide](tree.md).

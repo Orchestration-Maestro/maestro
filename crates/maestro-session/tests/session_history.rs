@@ -6,6 +6,7 @@ mod support {
     /// Memory-history corpus consumer.
     pub mod session_history;
 }
+use maestro_session::session_manager::ReadonlySessionManager;
 
 #[test]
 fn memory_session_starts_with_current_header() {

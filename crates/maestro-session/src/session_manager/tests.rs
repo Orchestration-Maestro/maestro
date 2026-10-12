@@ -1,6 +1,6 @@
 //! Deterministic whole-UUID collision witnesses.
 #![cfg(test)]
-use super::generate_id;
+use super::{ReadonlySessionManager, generate_id};
 use serde::Deserialize;
 use serde_json::Value;
 use uuid::Uuid;
@@ -197,4 +197,30 @@ fn append_failure_keeps_memory_and_partial_bytes() {
     assert!(bytes.starts_with("{\"type\"{\"type\":\"session\""));
     assert_eq!(super::parse_session_entries(&bytes).len(), 2);
     std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn new_session_clears_resolved_labels_and_timestamps() {
+    let mut manager = super::SessionManager::in_memory(Some("cwd")).unwrap();
+    let old = manager
+        .append_message(serde_json::json!({"role": "user", "content": "old", "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_label_change(&old, maestro_request::presence::Presence::Present("mark"))
+        .unwrap();
+    manager.new_session(super::NewSessionOptions::default());
+    assert_eq!(manager.get_label(&old), None);
+    // An independent session may legitimately reuse an identity; stage it directly.
+    manager
+        .by_id
+        .insert(old.clone(), manager.file_entries.len());
+    manager.file_entries.push(serde_json::json!({
+        "type": "custom", "customType": "reuse", "id": old,
+        "parentId": null, "timestamp": "2025-01-01T00:00:00.000Z",
+    }));
+    let tree = manager.get_tree();
+    assert_eq!(tree.len(), 1);
+    assert_eq!(tree[0].entry["id"], old);
+    assert_eq!(tree[0].label, None);
+    assert_eq!(tree[0].label_timestamp, None);
 }

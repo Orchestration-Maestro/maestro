@@ -10,6 +10,7 @@ mod support {
     pub mod value;
 }
 use maestro_request::presence::Presence;
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::session_manager::{find_most_recent_session, get_default_session_dir};
 use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::Value;

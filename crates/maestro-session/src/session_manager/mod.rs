@@ -1,4 +1,5 @@
 #![doc = include_str!("../../../../docs/sessions/session_manager.md")]
+mod append;
 mod conversions;
 #[cfg(not(target_arch = "wasm32"))]
 mod files;
@@ -9,6 +10,7 @@ pub use conversions::migrate_session_entries;
 pub use files::{find_most_recent_session, get_default_session_dir, load_entries_from_file};
 /// Context projection operations.
 pub mod context;
+mod tree;
 /// Session record views.
 pub mod types;
 pub use context::{build_session_context, get_latest_compaction_entry, parse_session_entries};
@@ -16,7 +18,7 @@ pub use types::*;
 
 use chrono::{SecondsFormat, Utc};
 use maestro_request::presence::Presence;
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -40,6 +42,10 @@ pub struct SessionManager {
     by_id: HashMap<String, usize>,
     /// Selected entry identity.
     leaf_id: Option<String>,
+    /// Resolved raw label per target identity, in first-set order.
+    labels: Map<String, Value>,
+    /// Resolved raw label timestamp per target identity.
+    label_timestamps: Map<String, Value>,
 }
 
 impl SessionManager {
@@ -74,6 +80,8 @@ impl SessionManager {
             file_entries: Vec::new(),
             by_id: HashMap::new(),
             leaf_id: None,
+            labels: Map::new(),
+            label_timestamps: Map::new(),
         })
     }
 
@@ -102,70 +110,12 @@ impl SessionManager {
         self.flushed = false;
         self.file_entries = vec![header];
         self.by_id.clear();
+        self.labels.clear();
+        self.label_timestamps.clear();
         self.leaf_id = None;
         self.session_file.as_deref()
     }
 
-    /// Append the raw message as a child of the selected entry and select it.
-    ///
-    /// # Errors
-    /// Publication errors leave the accepted memory and any written bytes in place.
-    pub fn append_message(&mut self, message: Value) -> std::io::Result<String> {
-        let id = generate_id(|id| self.by_id.contains_key(id), Uuid::new_v4);
-        let mut entry = json!({
-            "type": "message", "id": id, "parentId": self.leaf_id,
-            "timestamp": Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true),
-        });
-        entry["message"] = message;
-        self.by_id.insert(id.clone(), self.file_entries.len());
-        self.file_entries.push(entry);
-        self.leaf_id = Some(id.clone());
-        #[cfg(not(target_arch = "wasm32"))]
-        self.persist_entry()?;
-        Ok(id)
-    }
-    /// Borrow the selected entry identity, if any.
-    #[must_use]
-    pub fn get_leaf_id(&self) -> Option<&str> {
-        self.leaf_id.as_deref()
-    }
-    /// Borrow the selected indexed entry, if any.
-    #[must_use]
-    pub fn get_leaf_entry(&self) -> Option<&SessionEntry> {
-        self.get_leaf_id().and_then(|id| self.get_entry(id))
-    }
-    /// Borrow an entry by its exact identity.
-    #[must_use]
-    pub fn get_entry(&self, id: &str) -> Option<&SessionEntry> {
-        self.by_id
-            .get(id)
-            .and_then(|position| self.file_entries.get(*position))
-    }
-    /// Borrow nonheader records in retained order.
-    #[must_use]
-    pub fn get_entries(&self) -> Vec<&SessionEntry> {
-        self.file_entries
-            .iter()
-            .filter(|entry| entry["type"] != "session")
-            .collect()
-    }
-
-    /// Borrow root-first ancestry from an explicit identity or the selected leaf.
-    ///
-    /// # Errors
-    /// Propagates reached property errors from the shared ancestry walk.
-    pub fn get_branch(
-        &self,
-        from_id: Option<&str>,
-    ) -> Result<Vec<&SessionEntry>, serde_json::Error> {
-        match from_id
-            .or(self.get_leaf_id())
-            .and_then(|id| self.get_entry(id))
-        {
-            Some(leaf) => context::ancestor_path(leaf, |id| self.get_entry(id)),
-            None => Ok(Vec::new()),
-        }
-    }
     /// Project context from the selected branch using the shared projection.
     ///
     /// # Errors
@@ -181,45 +131,29 @@ impl SessionManager {
     /// # Errors
     /// Returns `Entry {id} not found` when the identity is not indexed.
     pub fn branch(&mut self, id: &str) -> std::io::Result<()> {
-        if !self.by_id.contains_key(id) {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                format!("Entry {id} not found"),
-            ));
-        }
+        self.require_entry(id)?;
         self.leaf_id = Some(id.to_owned());
         Ok(())
+    }
+
+    /// Fail with `Entry {id} not found` unless the identity is indexed.
+    fn require_entry(&self, id: &str) -> std::io::Result<()> {
+        let missing = || {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                format!("Entry {id} not found"),
+            )
+        };
+        self.by_id
+            .contains_key(id)
+            .then_some(())
+            .ok_or_else(missing)
     }
 
     /// Whether native publication is enabled.
     #[must_use]
     pub fn is_persisted(&self) -> bool {
         self.persist
-    }
-    /// Borrow the captured working-directory spelling.
-    #[must_use]
-    pub fn get_cwd(&self) -> &str {
-        &self.cwd
-    }
-    /// Borrow the configured session-directory spelling.
-    #[must_use]
-    pub fn get_session_dir(&self) -> &str {
-        &self.session_dir
-    }
-    /// Borrow the current session identity.
-    #[must_use]
-    pub fn get_session_id(&self) -> &str {
-        &self.session_id
-    }
-    /// Borrow the selected filename, including before publication.
-    #[must_use]
-    pub fn get_session_file(&self) -> Option<&str> {
-        self.session_file.as_deref()
-    }
-    /// Borrow the retained current header.
-    #[must_use]
-    pub fn get_header(&self) -> Option<&FileEntry> {
-        self.file_entries.first()
     }
 }
 

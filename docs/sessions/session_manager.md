@@ -79,9 +79,10 @@ Abandoned branches remain in history. `get_branch(None)` uses the selection;
 an explicit empty or unknown identity returns an empty path without changing it.
 Context uses the [projection rules](#branch-selection) above.
 
-Reads borrow retained records. To keep a record across mutable operations,
-callers take an explicit owned copy. `new_session` replaces the header and
-clears entries, index and selection while retaining cwd. It writes no file;
+Reads borrow retained records and are provided by `ReadonlySessionManager`
+(see [Read-only view](#read-only-view)); import the trait to call them. To keep
+a record across mutable operations, callers take an explicit owned copy.
+`new_session` replaces the header and clears entries, index, labels and selection while retaining cwd. It writes no file;
 native history selects a fresh filename, while memory history retains any
 explicitly selected filename.
 `NewSessionOptions.parent_session` preserves missing, null and string metadata.
@@ -91,6 +92,7 @@ read and convert records without writing them. `get_entries` borrows every
 nonheader record in retained order.
 
 ```rust
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::{NewSessionOptions, SessionManager};
 use serde_json::json;
 
@@ -106,6 +108,45 @@ assert_eq!(history.new_session(NewSessionOptions::default()), None);
 assert!(history.get_entries().is_empty());
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
+
+## Appends, names and branch summaries
+
+Each append operation captures the selected entry as parent, a generated
+identity and a UTC millisecond timestamp, accepts the record into memory, then
+publishes it natively. A publication error leaves the accepted record, its
+selection and any written bytes in place. Operations: `append_message`,
+`append_thinking_level_change`, `append_model_change`, `append_compaction`,
+`append_custom_entry`, `append_session_info`, `append_custom_message_entry`,
+`append_label_change` and `branch_with_summary`.
+
+Optional operands keep omission apart from null: `Presence::Missing` omits the
+member, `Presence::Null` writes null. `append_compaction` records its supplied
+cut identity without checking that it exists; `CompactionOptions::default()`
+omits both optional members. Custom messages join model context whether or not
+they are displayed; custom entries never do. Members are written in a fixed
+order, one compact LF-terminated line per record.
+
+`append_session_info` removes outer ECMAScript whitespace (U+FEFF is removed,
+U+0085 is kept); an empty result clears the name. `get_session_name` reads the
+newest `session_info` record in the whole history, not only the selected
+branch. A newest record whose name is missing, null or blank gives `None` and
+never falls back to an older name. A newest name that is not a string returns
+an invalid-data error; older names are not decoded.
+
+`branch_with_summary(Some(id), ..)` selects an existing entry, `None` selects the
+position before all entries, and the supplied summary is appended there with
+`fromId` set to the entry identity or the literal `root`. An unknown identity
+fails with `Entry {id} not found` before any change. The summary is supplied by
+the caller; nothing is generated.
+
+## Read-only view
+
+`ReadonlySessionManager` is an object-safe trait implemented directly by
+`SessionManager`: `get_cwd`, `get_session_dir`, `get_session_id`,
+`get_session_file`, `get_leaf_id`, `get_leaf_entry`, `get_entry`, `get_label`,
+`get_branch`, `get_header`, `get_entries`, `get_tree` and `get_session_name`.
+It borrows the manager, so a later mutation is seen by the next borrow; it is
+not a snapshot. Labels and trees are described in [the tree guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/tree.md).
 
 ## Native history
 
@@ -132,6 +173,7 @@ selected identity, version and cwd reads can return native invalid-data errors.
 
 ```rust
 # #[cfg(not(target_arch = "wasm32"))] {
+use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::SessionManager;
 use serde_json::json;
 

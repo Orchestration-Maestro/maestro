@@ -1,0 +1,226 @@
+//! Remaining append operations through the public history owner.
+#![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
+
+/// Strict fixture replay.
+mod support {
+    pub mod native;
+    pub mod session_tree;
+}
+use maestro_models::UserContent;
+use maestro_request::presence::Presence;
+use maestro_session::SessionManager;
+use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+use serde_json::{Value, json};
+use std::io;
+use support::native::{Scratch, broken_history};
+
+/// Member names of an object in order.
+fn keys(value: &Value) -> Vec<&str> {
+    value
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(String::as_str)
+        .collect()
+}
+
+/// An append under test, given the manager and an existing entry identity.
+type Append = fn(&mut SessionManager, &str) -> io::Result<String>;
+
+#[test]
+fn remaining_appends_capture_parent_fields_and_leaf() {
+    support::session_tree::run("remaining_appends_capture_parent_fields_and_leaf");
+}
+
+#[test]
+fn optional_append_data_preserves_absence_null_and_open_values() {
+    support::session_tree::run("optional_append_data_preserves_absence_null_and_open_values");
+}
+
+#[test]
+fn summary_origins_keep_omitted_false_true_and_null() {
+    support::session_tree::run("summary_origins_keep_omitted_false_true_and_null");
+}
+
+#[test]
+fn custom_messages_retain_content_display_and_context() {
+    support::session_tree::run("custom_messages_retain_content_display_and_context");
+}
+
+#[test]
+fn remaining_appends_keep_accepted_memory_after_io_failure() {
+    let cases: [(&str, Append); 7] = [
+        ("thinking_level_change", |m, _| {
+            m.append_thinking_level_change("high")
+        }),
+        ("model_change", |m, _| {
+            m.append_model_change("provider", "model")
+        }),
+        ("compaction", |m, _| {
+            m.append_compaction("recap", "cut", 3.0, CompactionOptions::default())
+        }),
+        ("custom", |m, _| {
+            m.append_custom_entry("state", Presence::Null)
+        }),
+        ("session_info", |m, _| m.append_session_info("name")),
+        ("custom_message", |m, _| {
+            m.append_custom_message_entry(
+                "note",
+                UserContent::Text("text".into()),
+                true,
+                Presence::Missing,
+            )
+        }),
+        ("branch_summary", |m, root| {
+            m.branch_with_summary(Some(root), "recap", Presence::Missing, Presence::Missing)
+        }),
+    ];
+    for (kind, append) in cases {
+        let scratch = Scratch::new();
+        let (mut manager, root) = broken_history(&scratch);
+        let before = manager.get_entries().len();
+        append(&mut manager, &root).unwrap_err();
+        let entries = manager.get_entries();
+        assert_eq!(entries.len(), before + 1, "{kind}");
+        let accepted = entries[before];
+        assert_eq!(accepted["type"], kind);
+        assert_eq!(manager.get_leaf_id(), accepted["id"].as_str(), "{kind}");
+        assert!(
+            manager
+                .get_entry(accepted["id"].as_str().unwrap())
+                .is_some()
+        );
+    }
+}
+
+/// Append one record of every remaining kind below a published user/assistant pair.
+fn append_every_kind(manager: &mut SessionManager, root: &str) {
+    let details = Presence::Present(json!({"z": 1, "a": [1, 2, 1]}));
+    manager.append_thinking_level_change("high").unwrap();
+    manager.append_model_change("provider", "model").unwrap();
+    let options = CompactionOptions {
+        details: details.clone(),
+        from_hook: Presence::Present(true),
+    };
+    manager
+        .append_compaction("recap", "absent", 17.0, options)
+        .unwrap();
+    manager
+        .append_custom_entry("state", details.clone())
+        .unwrap();
+    manager.append_session_info(" \u{feff}named\t").unwrap();
+    let content = UserContent::Text("shown".into());
+    manager
+        .append_custom_message_entry("note", content, false, details.clone())
+        .unwrap();
+    manager
+        .append_label_change(root, Presence::Present("mark"))
+        .unwrap();
+    manager
+        .branch_with_summary(None, "abandoned", details, Presence::Null)
+        .unwrap();
+}
+
+/// Member order of the first written record of a kind.
+fn layout<'a>(lines: &'a [Value], kind: &str) -> Vec<&'a str> {
+    keys(lines.iter().find(|line| line["type"] == kind).unwrap())
+}
+
+/// Fixed member order of every remaining record kind.
+fn assert_wire_layouts(lines: &[Value]) {
+    let base = ["id", "parentId", "timestamp"];
+    assert_eq!(
+        layout(lines, "custom"),
+        ["type", "customType", "data", base[0], base[1], base[2]]
+    );
+    assert_eq!(
+        layout(lines, "custom_message"),
+        [
+            "type",
+            "customType",
+            "content",
+            "display",
+            "details",
+            "id",
+            "parentId",
+            "timestamp"
+        ]
+    );
+    assert_eq!(
+        layout(lines, "compaction"),
+        [
+            "type",
+            "id",
+            "parentId",
+            "timestamp",
+            "summary",
+            "firstKeptEntryId",
+            "tokensBefore",
+            "details",
+            "fromHook"
+        ]
+    );
+    assert_eq!(
+        layout(lines, "branch_summary"),
+        [
+            "type",
+            "id",
+            "parentId",
+            "timestamp",
+            "fromId",
+            "summary",
+            "details",
+            "fromHook"
+        ]
+    );
+    assert_eq!(
+        layout(lines, "label"),
+        ["type", "id", "parentId", "timestamp", "targetId", "label"]
+    );
+    assert_eq!(
+        layout(lines, "session_info"),
+        ["type", "id", "parentId", "timestamp", "name"]
+    );
+    assert_eq!(
+        layout(lines, "model_change")[..4],
+        ["type", "id", "parentId", "timestamp"]
+    );
+}
+
+/// A reopened file yields the same ordered records, name, label and selection.
+fn assert_reopened(manager: &SessionManager, path: &str, root: &str) {
+    let reopened = SessionManager::open(path, None, None).unwrap();
+    assert_eq!(reopened.get_session_name().unwrap(), Some("named"));
+    assert_eq!(reopened.get_label(root), Some(&json!("mark")));
+    assert_eq!(reopened.get_leaf_id(), manager.get_leaf_id());
+    let (kept, loaded) = (manager.get_entries(), reopened.get_entries());
+    assert_eq!(kept.len(), loaded.len());
+    for (kept, loaded) in kept.iter().zip(loaded) {
+        assert_eq!(keys(kept), keys(loaded));
+        assert_eq!(kept["id"], loaded["id"]);
+    }
+}
+
+#[test]
+fn all_appends_round_trip_through_native_jsonl() {
+    let scratch = Scratch::new();
+    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    let root = manager
+        .append_message(json!({"role": "user", "content": "root", "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "assistant", "content": "reply", "timestamp": 2}))
+        .unwrap();
+    append_every_kind(&mut manager, &root);
+    let path = manager.get_session_file().unwrap().to_owned();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(text.ends_with('\n') && !text.contains('\r'));
+    assert!(text.contains(r#""tokensBefore":17,"#));
+    let lines: Vec<Value> = text
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_wire_layouts(&lines);
+    assert_reopened(&manager, &path, &root);
+}

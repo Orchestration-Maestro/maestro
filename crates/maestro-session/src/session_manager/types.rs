@@ -163,14 +163,14 @@ pub struct BranchSummaryEntry<T = Value> {
     bound(deserialize = "T: Deserialize<'de>")
 )]
 pub struct CustomEntry<T = Value> {
-    /// Common identity and timestamp fields.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
     /// Recorded custom type.
     pub custom_type: String,
     /// Recorded data.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub data: Presence<T>,
+    /// Common identity and timestamp fields.
+    #[serde(flatten)]
+    pub base: SessionEntryBase,
 }
 
 /// Explicit label record view.
@@ -208,18 +208,18 @@ pub struct SessionInfoEntry {
     bound(deserialize = "T: Deserialize<'de>")
 )]
 pub struct CustomMessageEntry<T = Value> {
-    /// Common identity and timestamp fields.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
     /// Recorded custom type.
     pub custom_type: String,
     /// Recorded content.
     pub content: UserContent,
+    /// Recorded display.
+    pub display: bool,
     /// Recorded details.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<T>,
-    /// Recorded display.
-    pub display: bool,
+    /// Common identity and timestamp fields.
+    #[serde(flatten)]
+    pub base: SessionEntryBase,
 }
 
 /// Identity and parent metadata for a new session.
@@ -229,4 +229,73 @@ pub struct NewSessionOptions {
     pub id: Option<String>,
     /// Optional parent-session metadata.
     pub parent_session: Presence<String>,
+}
+
+/// Supplied optional operands of a compaction record; both are omitted by default.
+#[derive(Debug, Default)]
+pub struct CompactionOptions {
+    /// Extension-specific details.
+    pub details: Presence<Value>,
+    /// Whether an extension generated the summary.
+    pub from_hook: Presence<bool>,
+}
+
+/// One position in the history tree, borrowing retained records and resolved labels.
+///
+/// Child containers are owned by each returned node; dropping a node walks them
+/// with a worklist, so deep histories never grow the call stack.
+pub struct SessionTreeNode<'a> {
+    /// Retained record observed at this position.
+    pub entry: &'a SessionEntry,
+    /// Child positions in chronological order.
+    pub children: Vec<SessionTreeNode<'a>>,
+    /// Resolved label, if any.
+    pub label: Option<&'a Value>,
+    /// Timestamp of the latest label change, if any; an explicit null stays null.
+    pub label_timestamp: Option<&'a Value>,
+}
+
+impl Drop for SessionTreeNode<'_> {
+    fn drop(&mut self) {
+        let mut pending = std::mem::take(&mut self.children);
+        while let Some(mut node) = pending.pop() {
+            pending.append(&mut node.children);
+        }
+    }
+}
+
+/// Read-only view of a session history.
+pub trait ReadonlySessionManager {
+    /// Borrow the captured working-directory spelling.
+    fn get_cwd(&self) -> &str;
+    /// Borrow the configured session-directory spelling.
+    fn get_session_dir(&self) -> &str;
+    /// Borrow the current session identity.
+    fn get_session_id(&self) -> &str;
+    /// Borrow the selected filename, including before publication.
+    fn get_session_file(&self) -> Option<&str>;
+    /// Borrow the selected entry identity, if any.
+    fn get_leaf_id(&self) -> Option<&str>;
+    /// Borrow the selected indexed entry, if any.
+    fn get_leaf_entry(&self) -> Option<&SessionEntry>;
+    /// Borrow an entry by its exact identity.
+    fn get_entry(&self, id: &str) -> Option<&SessionEntry>;
+    /// Borrow the resolved raw label of an entry identity.
+    fn get_label(&self, id: &str) -> Option<&Value>;
+    /// Borrow root-first ancestry from an explicit identity or the selected leaf.
+    ///
+    /// # Errors
+    /// Propagates reached property errors from the shared ancestry walk.
+    fn get_branch(&self, from_id: Option<&str>) -> Result<Vec<&SessionEntry>, serde_json::Error>;
+    /// Borrow the retained current header.
+    fn get_header(&self) -> Option<&FileEntry>;
+    /// Borrow nonheader records in retained order.
+    fn get_entries(&self) -> Vec<&SessionEntry>;
+    /// Build the history tree over the retained records.
+    fn get_tree(&self) -> Vec<SessionTreeNode<'_>>;
+    /// Borrow the name of the newest session-info record, if it holds one.
+    ///
+    /// # Errors
+    /// Returns invalid data when the newest record's name is neither a string nor null.
+    fn get_session_name(&self) -> std::io::Result<Option<&str>>;
 }
