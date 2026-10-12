@@ -819,3 +819,23 @@ fn extraction_reuses_the_cycle_safe_ancestry_walk() {
         manager.append_custom_entry("k", Presence::Missing).unwrap();
     }
 }
+
+#[test]
+fn fork_into_an_empty_session_directory_fails_without_writing() {
+    let scratch = Scratch::new();
+    let source = write(&scratch, "empty-dir.jsonl", &[message("a", None, "user")]);
+    let listing = || {
+        let mut names: Vec<_> = fs::read_dir(".")
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect();
+        names.sort();
+        names
+    };
+    let before = listing();
+    let error = SessionManager::fork_from(&source, "/t", Some(""), "unused")
+        .err()
+        .unwrap();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert_eq!(listing(), before);
+}

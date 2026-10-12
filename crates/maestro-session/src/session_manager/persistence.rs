@@ -61,6 +61,9 @@ impl SessionManager {
             None => files::get_default_session_dir(target_cwd, agent_dir)?,
         };
         if !std::path::Path::new(&dir).exists() {
+            if dir.is_empty() {
+                return Err(io::ErrorKind::NotFound.into());
+            }
             fs::create_dir_all(&dir)?;
         }
         let id = uuid::Uuid::now_v7().to_string();
