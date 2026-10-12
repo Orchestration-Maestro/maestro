@@ -1,14 +1,15 @@
 # Session history libraries
 
 `maestro-session` uses the existing agent/model interfaces and the shared request
-record owner. It adds no execution runtime or session-file operations. Stored timestamp conversion
+record owner. Native session files use standard owned files; no execution runtime is added. Stored timestamp conversion
 uses the existing [message formatting](../sessions/messages.md) owner.
 
 | Dependency | Version/features | Purpose |
 | --- | --- | --- |
 | chrono | `=0.4.45`, defaults off; `std`, `clock`, `wasmbind` | Constructor and context ISO, date and local timestamp conversion |
 | uuid | `=1.27.0`, defaults off; `std`, `v4`, `v7`; browser additionally `js` | Generated session and entry identities |
-| ryu-js | workspace `=1.0.3` | Exit-status number spelling; Apache-2.0 license option |
+| ryu-js | workspace `=1.0.3` | Compact JSONL and exit-status number spelling; Apache-2.0 license option |
+| maestro-path | workspace utility, no dependencies | Lexical session filenames and directory joins |
 | serde_json | workspace `=1.0.151`; `preserve_order`, `float_roundtrip` | Ordered raw entries and open custom payload |
 | serde | workspace `=1.0.229`; `derive` | Explicit record views and test case decoding |
 | tokio | native dev only `=1.53.2`, defaults off; `rt` | Controlled agent-constructor witness |
@@ -21,7 +22,7 @@ retain their existing dependency closure.
 See [message projection](../sessions/messages.md) for the delivered API.
 
 See [stored-entry context](../sessions/session_manager.md) for raw entry parsing
-and branch projection.
+and native history operations.
 
 Memory history uses chrono UTC emission with millisecond precision and a `Z`
 suffix. The UUID native closure uses already locked getrandom 0.4.3, cfg-if 1.0.5,

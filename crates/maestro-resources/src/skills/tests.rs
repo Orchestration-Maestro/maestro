@@ -549,28 +549,6 @@ fn resolution_context_asks_the_adapter_once_and_only_for_an_open_path() {
     );
 }
 
-/// The native adapter reads the `=X:` variable of each drive, in letter order.
-#[cfg(not(target_arch = "wasm32"))]
-#[test]
-fn native_drive_directories_come_from_equals_prefixed_variables() {
-    let variables = [
-        ("=D:", r"D:\skills"),
-        ("=C:", r"C:\work"),
-        ("=1:", "ignored"),
-        ("D", "ignored"),
-    ];
-    let found = super::operations::env_drive_directories(|name| {
-        variables
-            .iter()
-            .find(|(variable, _)| *variable == name)
-            .map(|(_, directory)| (*directory).into())
-    });
-    assert_eq!(
-        found,
-        [('C', r"C:\work".to_owned()), ('D', r"D:\skills".to_owned())]
-    );
-}
-
 /// An explicit drive-relative skill path on the cwd's drive continues from the cwd.
 #[cfg(windows)]
 #[test]

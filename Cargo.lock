@@ -1773,6 +1773,7 @@ dependencies = [
  "chrono",
  "maestro-agent",
  "maestro-models",
+ "maestro-path",
  "maestro-request",
  "ryu-js",
  "serde",

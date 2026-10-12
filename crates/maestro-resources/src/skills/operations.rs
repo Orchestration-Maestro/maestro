@@ -208,18 +208,8 @@ impl ResourceOperations for NativeResourceOperations {
         if !cfg!(windows) {
             return Vec::new();
         }
-        env_drive_directories(|name| std::env::var_os(name))
+        maestro_path::env_drive_directories(|name| std::env::var_os(name))
     }
-}
-
-/// Read each drive's `=X:` variable through `var`, in letter order.
-#[cfg(not(target_arch = "wasm32"))]
-pub(super) fn env_drive_directories(var: impl Fn(&str) -> Option<OsString>) -> Vec<(char, String)> {
-    ('A'..='Z')
-        .filter_map(|letter| {
-            var(&format!("={letter}:")).map(|dir| (letter, dir.to_string_lossy().into_owned()))
-        })
-        .collect()
 }
 
 /// Classify native directory-entry or metadata observations.

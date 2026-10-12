@@ -11,6 +11,8 @@ fn empty_history_has_default_context() {
 mod support {
     /// Context corpus consumer.
     pub mod session_context;
+    /// Shared numeric fixture comparison.
+    pub mod value;
 }
 #[test]
 fn one_user_entry_becomes_context() {

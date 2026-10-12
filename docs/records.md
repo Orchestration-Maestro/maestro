@@ -191,6 +191,8 @@ model input. `Presence<T>` is copyable when its payload is copyable.
 
 `SessionManager` retains raw message values without decoding their payloads;
 borrowed reads and explicit caller-owned copies follow the
-[memory-history interface](sessions/session_manager.md#in-memory-history).
+[history interface](sessions/session_manager.md#native-history). Native files retain
+raw records; header admission, historical conversion and index construction are
+separate from per-operation payload decoding.
 `NewSessionOptions` carries an optional explicit id and `Presence<String>` parent
 metadata; it is a construction option, not a wire decoder.

@@ -532,3 +532,24 @@ fn root_try_resolve_follows_the_native_flavor() {
     );
     assert_eq!(maestro_path::try_resolve(&["b"], &[]), Err(CwdUnavailable));
 }
+
+/// The native adapter reads the `=X:` variable of each drive, in letter order.
+#[test]
+fn native_drive_directories_come_from_equals_prefixed_variables() {
+    let variables = [
+        ("=D:", r"D:\skills"),
+        ("=C:", r"C:\work"),
+        ("=1:", "ignored"),
+        ("D", "ignored"),
+    ];
+    let found = maestro_path::env_drive_directories(|name| {
+        variables
+            .iter()
+            .find(|(variable, _)| *variable == name)
+            .map(|(_, directory)| (*directory).into())
+    });
+    assert_eq!(
+        found,
+        [('C', r"C:\work".to_owned()), ('D', r"D:\skills".to_owned())]
+    );
+}

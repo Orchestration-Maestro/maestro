@@ -78,7 +78,7 @@ are later scope, not active foundation concepts.
 - **SettingsManager:** The owner of accepted preferences, one-level merging, runtime overrides, immediate publication and ordered queued persistence through replaceable raw-text storage. Reload independently retains failed scopes and clears overrides; errors drain separately.
 - **Pending edit:** An unsaved preference edit captured with a revision; a successful save acknowledges only the revisions it wrote, so later or failed edits stay pending.
 - **Configuration root:** The explicitly selected user configuration directory.
-- **Session directory:** The resolved location supplied to the session owner.
+- **Session directory:** A caller-selected or default directory used for native session files.
 - **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
