@@ -95,7 +95,7 @@ async fn produce(
     stream.push(AssistantMessageEvent::Start {
         partial: Arc::clone(output),
     });
-    super::sse::read(body, model, stream, output).await?;
+    let read = super::sse::read(body, model, stream, output).await;
     if options
         .common
         .signal
@@ -104,6 +104,7 @@ async fn produce(
     {
         return Err(RequestFailure::new("Request was aborted"));
     }
+    read?;
     let reason = match output
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
