@@ -6,7 +6,9 @@ mod display_support;
 mod ls_support;
 mod read_support;
 
-use ls_support::{Case, Scripted, cases, check_execute, check_native, execute, execute_input};
+use ls_support::{
+    Case, Scripted, assert_effects, cases, check_execute, check_native, execute, execute_input,
+};
 use maestro_models::Cancellation;
 use maestro_tools::{
     LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool_definition,
@@ -175,6 +177,7 @@ fn native_root() -> TempDir {
     ] {
         root.file(file, b"");
     }
+    root.file(".gitignore", b"ignored\n");
     std::os::unix::fs::symlink(".git", root.0.join("linked-dir")).unwrap();
     std::os::unix::fs::symlink("missing-target", root.0.join("dangling")).unwrap();
     root
@@ -236,7 +239,6 @@ fn ls_resolution_reads_host_cwd_only_when_needed() {
 /// the platform's own message.
 fn require_failure(case: &Case) {
     let outcome = execute(case);
-    assert_ne!(outcome.result.unwrap_err(), "Operation aborted");
-    assert!(outcome.calls.is_empty());
-    assert_eq!(outcome.updates, 0);
+    assert_ne!(outcome.result.as_ref().unwrap_err(), "Operation aborted");
+    assert_effects(case, &outcome);
 }

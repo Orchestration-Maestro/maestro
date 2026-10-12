@@ -15,7 +15,7 @@ use maestro_path::join;
 use maestro_theme::{Collator, NativeThemeOperations, ThemeOperations};
 use std::{path::Path, sync::Arc};
 
-/// The largest integer a double holds exactly, which leaves the line budget unbounded.
+/// The maximum safe-integer sentinel that leaves the line budget unbounded.
 const UNBOUNDED_LINES: u64 = 9_007_199_254_740_991;
 
 /// The settings every listing shares.

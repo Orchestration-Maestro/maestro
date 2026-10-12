@@ -9,10 +9,8 @@ and contents is not delivered here.
 
 `path` is the directory to list. An absent or empty value means the working
 directory the tool was built over. The path is resolved when the tool is called, not
-when it is built, with the lexical rules of [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs):
-an absolute spelling is kept, `~` expands to the home directory and a relative path is
-joined to the working directory; the process working directory is read only when that
-directory is itself relative.
+when it is built, by [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs), which
+owns the rules for absolute spellings, `~` and the working directory.
 
 `limit` is the number of entries to return and defaults to 500. It is a number, not an
 integer: a fractional limit such as 1.5 allows two entries, and zero or a negative limit
@@ -47,13 +45,13 @@ yet still marks the listing as cut, and a listing with no name left is not marke
 ## Result
 
 The result text joins the entries with LF; a directory that yields no entries returns
-`(empty directory)` without details. The text keeps at most 51200 UTF-8 bytes through
+`(empty directory)` without details. The listing body, before any notice, keeps at most 51200 UTF-8 bytes through
 the shared [head selection](tools-read.md#limits-and-selection) and has no line limit.
 When the entry limit stopped the listing, a notice
 `[<limit> entries limit reached. Use limit=<twice the limit> for more]` follows after a
 blank line and `details.entryLimitReached` holds the limit. When the byte limit cut the
-text, the notice `50.0KB limit reached` is added inside the same brackets after `. `
-and `details.truncation` holds the selection record. Details are absent when neither
+text, the notice `50.0KB limit reached` is added inside the same brackets, after `. ` when the
+entry-limit notice is also present, and `details.truncation` holds the selection record. Details are absent when neither
 limit applied.
 
 A signal aborted before the call, or while an operation is pending, makes the call fail
@@ -67,7 +65,8 @@ the home directory or a path below it, `[invalid arg]` when it is not a string) 
 `limit`, ` (limit <value>)`, with a present `null` shown as `null`. The result shows the
 text trimmed of leading and trailing whitespace, the first 20 lines unless the row is
 expanded, the count of hidden lines with the live expand key, and a warning
-`[Truncated: <n> entries limit, 50.0KB limit]` that names the entry limit when the details
-carry a nonzero one and the byte limit when their truncation record says it cut. Only the
+`[Truncated: <n> entries limit, <size> limit]` that names the entry limit when the details
+carry a nonzero one and the byte limit, formatted as `<size>` from the record's byte
+budget (50.0KB for a normal listing), when their truncation record says it cut. Only the
 result options decide expansion. Both renderers reuse the previous `Text` component of
 the row and leave it unchanged when a theme color is missing.

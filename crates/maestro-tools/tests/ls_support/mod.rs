@@ -4,6 +4,7 @@
 #![allow(dead_code)] // each test binary uses a different part of these helpers
 
 use crate::display_support::{Env, Setup, bind, context, padded_to, palette_of};
+use crate::read_support::run;
 use futures_util::future::join;
 use maestro_agent::AgentToolResult;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo, UserBlock};
@@ -32,21 +33,7 @@ use std::{
 /// Viewport width of recorded call rows.
 pub const CALL_WIDTH: usize = 80;
 
-/// One recorded invocation.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Case {
-    /// Owning public test.
-    pub test: String,
-    /// Distinguishable case label.
-    pub id: String,
-    /// Operation selected at the public boundary.
-    pub op: String,
-    /// Operation-specific input.
-    pub input: Value,
-    /// Independently recorded expectation.
-    pub expected: Value,
-}
+pub use crate::display_support::Case;
 
 /// The committed corpus.
 #[derive(Deserialize)]
@@ -432,14 +419,6 @@ impl LsOperations for Scripted {
     }
 }
 
-/// Complete the future on a test-owned runtime.
-pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
 /// A result as the JSON a caller observes, with `details` only when present.
 pub fn result_json(content: &[UserBlock], details: Option<Value>) -> Value {
     let mut result = Map::new();
@@ -536,8 +515,8 @@ pub fn execute_input(case: &Case) -> ExecuteInput {
     serde_json::from_value(case.input.clone()).unwrap()
 }
 
-/// Assert that the observed outcome of `case` is the recorded one.
-pub fn assert_outcome(case: &Case, outcome: &Outcome) {
+/// Assert the recorded progress updates and operation calls of `case`.
+pub fn assert_effects(case: &Case, outcome: &Outcome) {
     let expected: ExecuteExpected = serde_json::from_value(case.expected.clone()).unwrap();
     let id = &case.id;
     assert_eq!(outcome.updates, expected.updates, "updates of {id}");
@@ -545,6 +524,13 @@ pub fn assert_outcome(case: &Case, outcome: &Outcome) {
         let calls = recorded_calls(&with_home(calls));
         assert_eq!(outcome.calls, calls, "calls of {id}");
     }
+}
+
+/// Assert that the observed outcome of `case` is the recorded one.
+pub fn assert_outcome(case: &Case, outcome: &Outcome) {
+    let expected: ExecuteExpected = serde_json::from_value(case.expected.clone()).unwrap();
+    let id = &case.id;
+    assert_effects(case, outcome);
     match (&outcome.result, &expected.result, &expected.error) {
         (Ok(actual), Some(result), None) => {
             let mut result = with_home(result);
@@ -646,32 +632,14 @@ struct CallInput {
     context: ContextInput,
 }
 
-/// Recorded truncation fields.
+/// The truncation fields the result renderer reads.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecordedTruncation {
-    /// Selected text.
-    content: String,
     /// Whether a limit required selection.
     truncated: bool,
-    /// Stopping limit.
-    truncated_by: String,
-    /// Original entries.
-    total_lines: usize,
-    /// Original bytes.
-    total_bytes: usize,
-    /// Selected entries.
-    output_lines: usize,
-    /// Selected bytes.
-    output_bytes: usize,
-    /// Entry budget.
-    max_lines: usize,
     /// Byte budget.
     max_bytes: usize,
-    /// Whether a partial last entry was kept.
-    last_line_partial: bool,
-    /// Whether the first entry exceeded the byte budget.
-    first_line_exceeds_limit: bool,
 }
 
 /// Recorded result details.
@@ -692,20 +660,17 @@ fn ls_result(result: &Value) -> AgentToolResult<LsToolDetails> {
         LsToolDetails {
             entry_limit_reached: recorded.entry_limit_reached,
             truncation: recorded.truncation.map(|cut| TruncationResult {
-                content: cut.content,
                 truncated: cut.truncated,
-                truncated_by: Some(match cut.truncated_by.as_str() {
-                    "lines" => TruncationBy::Lines,
-                    _ => TruncationBy::Bytes,
-                }),
-                total_lines: cut.total_lines,
-                total_bytes: cut.total_bytes,
-                output_lines: cut.output_lines,
-                output_bytes: cut.output_bytes,
-                last_line_partial: cut.last_line_partial,
-                first_line_exceeds_limit: cut.first_line_exceeds_limit,
-                max_lines: cut.max_lines,
                 max_bytes: cut.max_bytes,
+                content: String::new(),
+                truncated_by: Some(TruncationBy::Bytes),
+                total_lines: 0,
+                total_bytes: 0,
+                output_lines: 0,
+                output_bytes: 0,
+                last_line_partial: false,
+                first_line_exceeds_limit: false,
+                max_lines: 0,
             }),
         }
     });

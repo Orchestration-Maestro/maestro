@@ -3177,16 +3177,7 @@
           "details": {
             "truncation": {
               "truncated": true,
-              "truncatedBy": "bytes",
-              "content": "x",
-              "totalLines": 1000,
-              "totalBytes": 90000,
-              "outputLines": 500,
-              "outputBytes": 50000,
-              "maxLines": 9007199254740991,
-              "maxBytes": 51200,
-              "lastLinePartial": false,
-              "firstLineExceedsLimit": false
+              "maxBytes": 51200
             }
           }
         },
@@ -3221,16 +3212,7 @@
             "entryLimitReached": 500,
             "truncation": {
               "truncated": true,
-              "truncatedBy": "bytes",
-              "content": "x",
-              "totalLines": 1000,
-              "totalBytes": 90000,
-              "outputLines": 500,
-              "outputBytes": 50000,
-              "maxLines": 9007199254740991,
-              "maxBytes": 51200,
-              "lastLinePartial": false,
-              "firstLineExceedsLimit": false
+              "maxBytes": 51200
             }
           }
         },
@@ -3264,16 +3246,7 @@
           "details": {
             "truncation": {
               "truncated": false,
-              "truncatedBy": "bytes",
-              "content": "x",
-              "totalLines": 1000,
-              "totalBytes": 90000,
-              "outputLines": 500,
-              "outputBytes": 50000,
-              "maxLines": 9007199254740991,
-              "maxBytes": 51200,
-              "lastLinePartial": false,
-              "firstLineExceedsLimit": false
+              "maxBytes": 51200
             }
           }
         },
@@ -3306,16 +3279,7 @@
           "details": {
             "truncation": {
               "truncated": true,
-              "truncatedBy": "bytes",
-              "content": "x",
-              "totalLines": 1000,
-              "totalBytes": 90000,
-              "outputLines": 500,
-              "outputBytes": 50000,
-              "maxLines": 9007199254740991,
-              "maxBytes": 2048,
-              "lastLinePartial": false,
-              "firstLineExceedsLimit": false
+              "maxBytes": 2048
             }
           }
         },
@@ -4002,7 +3966,6 @@
         "ambientCwd": "removed"
       },
       "expected": {
-        "error": "<native current-directory lookup failure>",
         "calls": [],
         "updates": 0
       }
