@@ -61,8 +61,10 @@ selected decoded text without finishing decoding; selection is owned by
 Overflow artifacts preserve original bytes, including invalid UTF-8 and an initial
 BOM that the display decoder removes. A snapshot path identifies an artifact;
 completeness requires successful explicit `close_temp_file`. Callers stop after
-any I/O error. Close consumes the accumulator, flushes its writer without finishing
-decoding, and leaves the artifact on disk; it does not request filesystem durability.
+any I/O error. Close flushes and releases the artifact writer without finishing
+decoding; snapshots and last-line counts remain readable. Append after artifact
+closure returns an error. Close leaves the artifact on disk and does not request
+filesystem durability.
 
 ```rust
 use maestro_tools::output::output_accumulator::{
@@ -80,6 +82,8 @@ fn main() -> std::io::Result<()> {
     assert_eq!(snapshot.content, "def");
     let path = snapshot.full_output_path;
     output.close_temp_file()?;
+    assert_eq!(output.get_last_line_bytes(), 6);
+    assert_eq!(output.snapshot(true)?.content, "def");
     if let Some(path) = path {
         assert_eq!(std::fs::read(&path)?, b"abcdef");
         std::fs::remove_file(path)?;

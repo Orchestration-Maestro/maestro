@@ -97,12 +97,17 @@ impl OutputAccumulator {
     /// Append raw output bytes.
     ///
     /// # Errors
-    /// Returns an error after finish, or on artifact creation or writing.
+    /// Returns an error after finish or artifact closure, or on artifact creation or writing.
     /// Callers must stop using the accumulator after an I/O error.
     pub fn append(&mut self, data: &[u8]) -> io::Result<()> {
         if self.finished {
             return Err(io::Error::other(
                 "Cannot append to a finished output accumulator",
+            ));
+        }
+        if self.path.is_some() && self.writer.is_none() {
+            return Err(io::Error::other(
+                "Cannot append to a closed output artifact",
             ));
         }
         self.raw_bytes += data.len();
@@ -162,13 +167,13 @@ impl OutputAccumulator {
             full_output_path: self.path.clone(),
         })
     }
-    /// Consume the stream and flush buffered writes without finishing decoding.
+    /// Close the artifact writer without finishing decoding or discarding observations.
     /// Artifacts remain on disk; this does not request filesystem durability.
     ///
     /// # Errors
     /// Returns the writer's flush error; the artifact is not known complete.
-    pub fn close_temp_file(mut self) -> io::Result<()> {
-        if let Some(writer) = &mut self.writer {
+    pub fn close_temp_file(&mut self) -> io::Result<()> {
+        if let Some(mut writer) = self.writer.take() {
             writer.flush()?;
         }
         Ok(())
@@ -240,7 +245,7 @@ impl OutputAccumulator {
         if start > 0 {
             self.line_boundary = self.tail.as_bytes()[start - 1] == b'\n';
         }
-        self.tail.drain(..start);
+        self.tail = self.tail[start..].to_owned();
     }
     /// Exclude a leading fragment only when its terminating newline is retained.
     fn snapshot_text(&self) -> &str {
@@ -260,7 +265,7 @@ impl OutputAccumulator {
     }
     /// Open an exclusive artifact and replay the retained original prefix.
     fn ensure_file(&mut self) -> io::Result<()> {
-        if self.writer.is_some() {
+        if self.path.is_some() || self.writer.is_some() {
             return Ok(());
         }
         let mut random = [0_u8; 8];

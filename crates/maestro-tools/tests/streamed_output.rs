@@ -201,9 +201,9 @@ fn run(name: &str) {
         });
         assert_eq!(error, case.expected.error, "{}", case.rule);
         assert_eq!(actual, case.expected.observations, "{}", case.rule);
-        let close: fn(OutputAccumulator) -> std::io::Result<()> =
+        let close: fn(&mut OutputAccumulator) -> std::io::Result<()> =
             OutputAccumulator::close_temp_file;
-        close(a).unwrap();
+        close(&mut a).unwrap();
         artifact(path, case.expected.artifact, &prefix);
     }
     assert!(selected > 0, "unknown test group");
@@ -386,4 +386,49 @@ fn artifact_creation_failure_is_returned() {
     });
     assert!(snapshot.snapshot(true).is_err());
     std::fs::remove_file(parent).unwrap();
+}
+
+#[test]
+fn closed_artifact_preserves_output_observations() {
+    let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
+        max_bytes: Some(4),
+        ..Default::default()
+    });
+    output.append(b"first\nlast").unwrap();
+    output.finish().unwrap();
+    let before = serde_json::to_value(output.snapshot(true).unwrap()).unwrap();
+    let path = before["fullOutputPath"].as_str().unwrap();
+    output.close_temp_file().unwrap();
+    assert_eq!(output.get_last_line_bytes(), 4);
+    for persist in [false, true] {
+        assert_eq!(
+            serde_json::to_value(output.snapshot(persist).unwrap()).unwrap(),
+            before
+        );
+    }
+    output.close_temp_file().unwrap();
+    assert_eq!(std::fs::read(path).unwrap(), b"first\nlast");
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn append_after_artifact_close_preserves_state_and_bytes() {
+    let mut output = OutputAccumulator::new(OutputAccumulatorOptions {
+        max_bytes: Some(2),
+        ..Default::default()
+    });
+    output.append(b"abc").unwrap();
+    let before = serde_json::to_value(output.snapshot(false).unwrap()).unwrap();
+    let path = before["fullOutputPath"].as_str().unwrap();
+    output.close_temp_file().unwrap();
+    for chunk in [b"def".as_slice(), b""] {
+        assert!(output.append(chunk).is_err());
+        assert_eq!(output.get_last_line_bytes(), 3);
+        assert_eq!(
+            serde_json::to_value(output.snapshot(true).unwrap()).unwrap(),
+            before
+        );
+    }
+    assert_eq!(std::fs::read(path).unwrap(), b"abc");
+    std::fs::remove_file(path).unwrap();
 }
