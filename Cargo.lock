@@ -1792,6 +1792,7 @@ dependencies = [
  "git-url-parse",
  "maestro-path",
  "maestro-pattern",
+ "maestro-process",
  "maestro-resources",
  "maestro-settings",
  "percent-encoding",
@@ -1818,6 +1819,14 @@ dependencies = [
  "regress",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "maestro-process"
+version = "0.1.0"
+dependencies = [
+ "rustix",
+ "tokio",
 ]
 
 [[package]]
@@ -1962,6 +1971,7 @@ dependencies = [
  "icu_locale_core",
  "maestro-cancellation",
  "maestro-path",
+ "maestro-process",
  "pulldown-cmark",
  "rand",
  "regress",

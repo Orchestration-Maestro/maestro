@@ -1,10 +1,9 @@
 //! Native stdout capture through child exit, pipe EOFs and an optional deadline.
 use super::{CommandCaptureOptions, NativePackageOperations};
-use std::{
-    io,
-    process::{ExitStatus, Stdio},
+use maestro_process::child_process::{
+    CapturedChild, StderrMode, Termination, wait_for_child_process,
 };
-use tokio::io::{AsyncRead, AsyncReadExt};
+use std::{cell::Cell, io, process::ExitStatus};
 
 impl NativePackageOperations {
     /// Captures both streams without involving stdout takeover.
@@ -18,46 +17,29 @@ impl NativePackageOperations {
         if let Some(cwd) = options.cwd {
             builder.current_dir(cwd);
         }
-        builder
-            .envs(options.env.iter().copied())
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
-        let mut child = builder.spawn()?;
-        let stdout = read_stream(child.stdout.take());
-        let stderr = read_stream(child.stderr.take());
-        let timeout = options.timeout.map(tokio::time::sleep);
-        let timer = async {
-            if let Some(timeout) = timeout {
-                timeout.await;
+        builder.envs(options.env.iter().copied());
+        let mut child = CapturedChild::spawn(&mut builder)?;
+        let timed_out = Cell::new(false);
+        let deadline = async {
+            if let Some(timeout) = options.timeout {
+                tokio::time::sleep(timeout).await;
             } else {
                 std::future::pending::<()>().await;
             }
+            timed_out.set(true);
+            Termination::Terminate
         };
-        tokio::pin!(stdout, stderr, timer);
-        let (mut out, mut err, mut status) = (None, None, None);
-        let mut timed_out = false;
-        while out.is_none() || err.is_none() || status.is_none() {
-            tokio::select! {
-                value = &mut stdout, if out.is_none() => out = Some(value?),
-                value = &mut stderr, if err.is_none() => err = Some(value?),
-                value = child.wait(), if status.is_none() => status = Some(value?),
-                () = &mut timer, if !timed_out => {
-                    timed_out = true;
-                    terminate(&mut child);
-                }
-            }
-        }
+        let output = wait_for_child_process(&mut child, StderrMode::Capture, deadline).await?;
         let prefix = format!("{command} {}", args.join(" "));
-        if timed_out {
+        if timed_out.get() {
             return Err(io::Error::other(format!(
                 "{prefix} timed out after {}ms",
                 options.timeout.map_or(0, |value| value.as_millis())
             )));
         }
-        let status = status.ok_or_else(|| io::Error::other("child status unavailable"))?;
-        let out = String::from_utf8_lossy(out.as_deref().unwrap_or_default());
-        let err = String::from_utf8_lossy(err.as_deref().unwrap_or_default());
+        let status = output.status;
+        let out = String::from_utf8_lossy(&output.stdout);
+        let err = String::from_utf8_lossy(&output.stderr);
         if status.success() {
             return Ok(crate::trim(&out).to_owned());
         }
@@ -67,26 +49,6 @@ impl NativePackageOperations {
             exit_status(status)
         )))
     }
-}
-/// Accumulates bytes before replacement-character decoding at the result boundary.
-async fn read_stream(stream: Option<impl AsyncRead + Unpin>) -> io::Result<Vec<u8>> {
-    let mut stream = stream.ok_or_else(|| io::Error::other("child pipe unavailable"))?;
-    let mut bytes = Vec::new();
-    stream.read_to_end(&mut bytes).await?;
-    Ok(bytes)
-}
-/// Requests ordinary platform termination once, ignoring an already-exited child.
-fn terminate(child: &mut tokio::process::Child) {
-    #[cfg(unix)]
-    if let Some(pid) = child
-        .id()
-        .and_then(|pid| i32::try_from(pid).ok())
-        .and_then(rustix::process::Pid::from_raw)
-    {
-        let _ = rustix::process::kill_process(pid, rustix::process::Signal::TERM);
-    }
-    #[cfg(not(unix))]
-    let _ = child.start_kill();
 }
 /// Renders an exit code, or the supported native signal name.
 fn exit_status(status: ExitStatus) -> String {
@@ -144,39 +106,4 @@ fn exit_status(status: ExitStatus) -> String {
         }
     }
     "signal unknown".into()
-}
-#[cfg(test)]
-mod tests {
-    use super::read_stream;
-    use std::{
-        io,
-        pin::Pin,
-        task::{Context, Poll},
-    };
-    use tokio::io::{AsyncRead, ReadBuf};
-
-    /// A reader that hands the consumer exactly one chunk per read.
-    struct Chunks(std::vec::IntoIter<&'static [u8]>);
-    impl AsyncRead for Chunks {
-        fn poll_read(
-            mut self: Pin<&mut Self>,
-            _: &mut Context<'_>,
-            buf: &mut ReadBuf<'_>,
-        ) -> Poll<io::Result<()>> {
-            if let Some(chunk) = self.0.next() {
-                buf.put_slice(chunk);
-            }
-            Poll::Ready(Ok(()))
-        }
-    }
-
-    #[test]
-    fn bytes_split_across_consumed_reads_decode_as_one_character() {
-        let chunks = Chunks(vec![&b"\xE2"[..], &b"\x82\xAC"[..]].into_iter());
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap();
-        let bytes = runtime.block_on(read_stream(Some(chunks))).unwrap();
-        assert_eq!(String::from_utf8_lossy(&bytes), "€");
-    }
 }
