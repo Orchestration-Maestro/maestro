@@ -54,6 +54,14 @@ struct Wire {
     events: Option<Vec<Value>>,
     /// Exact native byte chunks instead of event framing.
     chunks: Option<Vec<Vec<u8>>>,
+    /// Catalog fields the recorded source replaces.
+    #[serde(default)]
+    overrides: Vec<Override>,
+    /// Complete HTTP response instead of event framing.
+    http: Option<Http>,
+    /// Context window the returned message is classified against.
+    #[serde(rename = "overflowWindow")]
+    overflow_window: Option<f64>,
     /// Success, failure, or cancellation phase.
     phase: Phase,
     /// Public operation selected by the source.
@@ -61,6 +69,28 @@ struct Wire {
     /// Controlled child environment.
     #[serde(default)]
     env: BTreeMap<String, String>,
+}
+
+/// Descriptor fields a recorded source replaces on its catalog model.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+enum Override {
+    /// Proxy or regional endpoint.
+    BaseUrl,
+    /// Source-authored compatibility record.
+    Compat,
+}
+
+/// A complete controlled HTTP response.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Http {
+    /// Status code.
+    status: u16,
+    /// Response headers.
+    headers: BTreeMap<String, String>,
+    /// Body text.
+    body: String,
 }
 
 /// Typed controls, rejecting unused fixture fields.
@@ -186,6 +216,8 @@ struct Expected {
     result: Option<Value>,
     /// Ordered stream events without their shared handles.
     events: Option<Vec<Value>>,
+    /// Whether the returned message classifies as context overflow.
+    overflow: Option<bool>,
     /// Arguments observed before releasing each subsequent input fragment.
     progress: Option<Vec<Progress>>,
 }
@@ -295,13 +327,21 @@ const OWNERS: [(&str, usize); 21] = [
 ];
 
 /// Load the strict corpus and reject duplicate identities and effective inputs.
-fn rows(source: &str, owners: &[(&str, usize)]) -> TestResult<Vec<Row>> {
-    let raw: Vec<Value> = serde_json::from_str(source)?;
+///
+/// Only rows the test owns, and the prerequisites they continue from, are expanded.
+fn rows(source: &str, owners: &[(&str, usize)], test: &str) -> TestResult<Vec<Row>> {
+    let mut raw: Vec<Value> = serde_json::from_str(source)?;
     let mut ids = HashSet::new();
     let mut inputs = HashSet::new();
     for row in &raw {
         assert!(ids.insert(row["id"].to_string()), "duplicate scenario");
-        assert!(inputs.insert(row["input"].to_string()), "duplicate query");
+        let effective = (row["input"].to_string(), row["repeatedText"].to_string());
+        assert!(inputs.insert(effective), "duplicate query");
+    }
+    let selected = selected_ids(&raw, test);
+    for row in &mut raw {
+        let expand = row["id"].as_str().is_some_and(|id| selected.contains(id));
+        expand_repeated_text(row, expand)?;
     }
     for &(owner, count) in owners {
         assert_eq!(
@@ -315,7 +355,83 @@ fn rows(source: &str, owners: &[(&str, usize)]) -> TestResult<Vec<Row>> {
         owners.iter().map(|(_, count)| count).sum::<usize>(),
         "owned corpus size"
     );
-    Ok(serde_json::from_str(source)?)
+    Ok(raw
+        .into_iter()
+        .map(serde_json::from_value)
+        .collect::<Result<_, _>>()?)
+}
+
+/// Ids of the rows a test owns plus the earlier responses they continue from.
+fn selected_ids(raw: &[Value], test: &str) -> HashSet<String> {
+    let mut selected: HashSet<String> = raw
+        .iter()
+        .filter(|row| {
+            row["test"]
+                .as_str()
+                .is_some_and(|t| t.ends_with(&format!("::{test}")))
+        })
+        .filter_map(|row| row["id"].as_str().map(str::to_owned))
+        .collect();
+    let mut pending: Vec<String> = selected.iter().cloned().collect();
+    while let Some(id) = pending.pop() {
+        let Some(row) = raw.iter().find(|row| row["id"] == id) else {
+            continue;
+        };
+        let sources = row["input"]["context"]["messages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|message| message["responseId"].as_str())
+            .filter_map(|id| id.strip_prefix("response_"));
+        for source_id in sources {
+            if selected.insert(source_id.to_owned()) {
+                pending.push(source_id.to_owned());
+            }
+        }
+    }
+    selected
+}
+
+/// Marker standing for a row's oversized repeated paragraph.
+const REPEATED_MARKER: &str = "$maestro-overflow-content";
+
+/// Discard the construction record and, for selected rows, replace the marker leaves with its repeated paragraph.
+fn expand_repeated_text(row: &mut Value, expand: bool) -> TestResult {
+    let Some(record) = row
+        .as_object_mut()
+        .and_then(|row| row.shift_remove("repeatedText"))
+    else {
+        return Ok(());
+    };
+    if !expand {
+        return Ok(());
+    }
+    let text = record["text"].as_str().ok_or("repeated text")?;
+    let count = usize::try_from(record["count"].as_u64().ok_or("repeated count")?)?;
+    assert!(
+        replace_marker(row, &text.repeat(count)) > 0,
+        "repeated text marker"
+    );
+    Ok(())
+}
+
+/// Replace every marker string leaf, returning how many were replaced.
+fn replace_marker(value: &mut Value, text: &str) -> usize {
+    match value {
+        Value::String(leaf) if leaf == REPEATED_MARKER => {
+            text.clone_into(leaf);
+            1
+        }
+        Value::Array(items) => items
+            .iter_mut()
+            .map(|item| replace_marker(item, text))
+            .sum(),
+        Value::Object(fields) => fields
+            .values_mut()
+            .map(|field| replace_marker(field, text))
+            .sum(),
+        _ => 0,
+    }
 }
 
 /// Run a test's recorded inputs in one isolated child process.
@@ -329,22 +445,37 @@ pub fn assert_rows(test: &str) -> TestResult {
 
 /// Select a strict corpus with explicit ownership and run its public observations.
 pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) -> TestResult {
-    let all = rows(source, owners)?;
+    let all = rows(source, owners, test)?;
     let owned: Vec<_> = all
         .iter()
         .filter(|row| row.test.ends_with(&format!("::{test}")))
         .collect();
     assert!(!owned.is_empty(), "unowned test");
     let _registry = bundled::registry();
-    if child_process::child_case().is_none() {
-        let env = environment(&owned, &all)?;
+    let partitions = partitions(&owned, &all)?;
+    let Some(case) = child_process::child_case() else {
         let full_name = test_path(&owned[0].test, test)?;
-        return child_process::rerun(
-            &full_name,
-            "responses",
-            &env.into_iter().collect::<Vec<_>>(),
-        );
+        for (index, env) in partitions.iter().enumerate() {
+            child_process::rerun(
+                &full_name,
+                &format!("responses:{index}"),
+                &env.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
+            )?;
+        }
+        return Ok(());
+    };
+    let index: usize = case
+        .strip_prefix("responses:")
+        .ok_or("child case")?
+        .parse()?;
+    let partition = partitions.get(index).ok_or("environment partition")?;
+    let mut owned_here = Vec::new();
+    for row in owned {
+        if environment(&[row], &all)? == *partition {
+            owned_here.push(row);
+        }
     }
+    let owned = owned_here;
     maestro_models::reset_api_providers();
     chat::block_on(false, async {
         let mut results = histories::Results::new();
@@ -374,6 +505,8 @@ fn test_path(owner: &str, test: &str) -> TestResult<String> {
         "provider_unicode",
         "empty_content",
         "model_streaming",
+        "provider_overflow",
+        "tool_images",
     ] {
         if let Some((_, module)) = owner.split_once(&format!("{directory}/")) {
             return Ok(format!(
@@ -434,7 +567,14 @@ fn catalog_rows(row: &Row, catalog: &Catalog) {
 /// Accept authored custom descriptors; verify catalog descriptors with source-authored overrides.
 fn descriptor(wire: &Wire) -> TestResult<Model> {
     let expected: Model = serde_json::from_value(wire.model.clone())?;
-    if expected.provider == "ollama" {
+    if [
+        "test-openai-completions",
+        "ollama",
+        "lm-studio",
+        "llama.cpp",
+    ]
+    .contains(&expected.provider.as_str())
+    {
         return Ok(expected);
     }
     let mut model =
@@ -448,6 +588,12 @@ fn descriptor(wire: &Wire) -> TestResult<Model> {
     }
     if wire.model["input"] == json!(["text"]) {
         model.input.clone_from(&expected.input);
+    }
+    for field in &wire.overrides {
+        match field {
+            Override::BaseUrl => model.base_url.clone_from(&expected.base_url),
+            Override::Compat => model.compat.clone_from(&expected.compat),
+        }
     }
     assert!(
         canonical(serde_json::to_value(&model)?) == canonical(wire.model.clone()),
@@ -504,6 +650,21 @@ fn environment<'a>(owned: &[&'a Row], all: &'a [Row]) -> TestResult<BTreeMap<&'a
         }
     }
     Ok(env)
+}
+
+/// The distinct exact environments of the selected rows, in first-seen order.
+fn partitions<'a>(
+    owned: &[&'a Row],
+    all: &'a [Row],
+) -> TestResult<Vec<BTreeMap<&'a str, &'a str>>> {
+    let mut partitions = Vec::new();
+    for row in owned {
+        let env = environment(&[row], all)?;
+        if !partitions.contains(&env) {
+            partitions.push(env);
+        }
+    }
+    Ok(partitions)
 }
 
 /// One public operation publishes an actual result to this test's local history set.
