@@ -279,3 +279,34 @@ These local observations do not establish live account validity or model quality
 cargo test -p maestro-models --locked --test empty_content --test model_streaming
 cargo llvm-cov -p maestro-models --locked --fail-under-lines 80
 ```
+
+## Controlled cache, overflow and tool images
+
+Twelve tests own 439 recorded invocations: 179 cache, 70 overflow and 190 tool
+image invocations. Each injects a finite provider response through `Fetch`, so none
+contacts a live service. Rows that set a cache environment variable run in a child
+process with exactly that environment.
+
+- Cache cases compare the supplied retention, session and capability flags with
+  the emitted wire fields on the message, response and compatible chat routes.
+  Reported cache usage is left as returned.
+- Overflow cases pass the returned assistant record to `is_context_overflow` with
+  the row's context window. Provider errors, successful over-window usage and
+  length stops are covered, as are rate-limit, ordinary-error and no-usage
+  negatives. Three locally served descriptors are used without starting a service;
+  silent truncation below the window is not detected. The raw native throttling
+  correction stays with `context_overflow_classification`.
+- Tool image cases continue a first turn from its actual returned tool call and
+  compare the converted image blocks, fallback text and block order of each
+  delivered protocol. Google and cloud conversation routes follow their adapters.
+
+The recorded retry of a rejected Codex request is not reproduced: a rejected
+request is sent once. These cases do not establish server cache hits, live
+authentication or image understanding. See [message protocol](messages.md),
+[chat completions](chat-completions.md) and [response protocols](responses.md) for
+the adapter rules.
+
+```sh
+cargo test -p maestro-models --locked --test cache_preferences \
+  --test provider_overflow --test tool_images
+```

@@ -162,6 +162,16 @@ fn controlled(
         });
         Ok((transport::transport(vec![attempt]), Some(feed)))
     } else {
+        if let Some(http) = &wire.http {
+            let headers: Vec<_> = http
+                .headers
+                .iter()
+                .map(|(name, value)| (name.as_str(), value.as_str()))
+                .collect();
+            let attempt =
+                transport::Attempt::body(http.status, &headers, http.body.clone().into_bytes());
+            return Ok((transport::transport(vec![attempt]), None));
+        }
         assert_ne!(
             wire.events.is_some(),
             wire.chunks.is_some(),
@@ -214,6 +224,7 @@ pub(super) async fn invoke(
         "actualResult": &*result.read().map_err(|_| "result poisoned")?,
     });
     compare_stream(row, &result, events, &diagnostic)?;
+    compare_overflow(row, wire, &result)?;
     if let Some(peer) = peer {
         let request = peer
             .await?
@@ -240,7 +251,8 @@ fn fetch_for(transport: &transport::Transport, socket: bool) -> maestro_models::
             let mut response = response.await?;
             response
                 .headers
-                .insert("content-type".into(), "text/event-stream".into());
+                .entry("content-type".into())
+                .or_insert_with(|| "text/event-stream".into());
             Ok(response)
         })
     })
@@ -359,6 +371,26 @@ fn compare_stream(
         "{} ordered events: {diagnostic}",
         row.id
     );
+    Ok(())
+}
+
+/// The returned message classifies as the retained observation says against the supplied window.
+fn compare_overflow(row: &Row, wire: &Wire, result: &SharedAssistantMessage) -> TestResult {
+    assert_eq!(
+        row.expected.overflow.is_some(),
+        wire.overflow_window.is_some(),
+        "{} overflow observation and window",
+        row.id
+    );
+    if let Some(expected) = row.expected.overflow {
+        let message = result.read().map_err(|_| "result poisoned")?;
+        assert_eq!(
+            maestro_models::is_context_overflow(&message, wire.overflow_window),
+            expected,
+            "{} context overflow classification",
+            row.id
+        );
+    }
     Ok(())
 }
 
