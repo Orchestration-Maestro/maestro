@@ -54,10 +54,7 @@ fn account_failures_keep_original_diagnostic_and_source_chain() {
         let address = std::ptr::from_ref(original.diagnostic.as_ref());
         let expected = original.diagnostic.as_ref().clone();
         let error = CatalogError::from(original);
-        assert!(matches!(error, CatalogError::OAuth(_)));
         assert_eq!(std::ptr::from_ref(error.diagnostic()), address);
-        assert_eq!(error.diagnostic(), &expected);
-        assert_eq!(error.to_string(), message);
         let account = error
             .source()
             .unwrap()
@@ -67,6 +64,9 @@ fn account_failures_keep_original_diagnostic_and_source_chain() {
         if rich {
             dynamic::assert_account_failure(&error, message);
         } else {
+            assert!(matches!(error, CatalogError::OAuth(_)));
+            assert_eq!(error.diagnostic(), &expected);
+            assert_eq!(error.to_string(), message);
             assert!(account.errno.is_none());
             assert!(account.source().is_none());
         }

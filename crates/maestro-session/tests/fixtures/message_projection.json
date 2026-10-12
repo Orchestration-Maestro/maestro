@@ -362,13 +362,7 @@
       "fromId": "from-9",
       "timestamp": 0
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 0
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-epoch",
@@ -384,13 +378,7 @@
       "tokensBefore": 19.5,
       "timestamp": 0
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 0
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-epoch",
@@ -414,17 +402,7 @@
       },
       "timestamp": 0
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 0
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-generated",
@@ -440,13 +418,7 @@
       "fromId": "from-9",
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-generated",
@@ -462,13 +434,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-generated",
@@ -492,17 +458,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-seconds",
@@ -518,13 +474,7 @@
       "fromId": "from-9",
       "timestamp": 1741064767000
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741064767000
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-seconds",
@@ -540,13 +490,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741064767000
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741064767000
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-seconds",
@@ -570,17 +514,7 @@
       },
       "timestamp": 1741064767000
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741064767000
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-positive_offset",
@@ -596,13 +530,7 @@
       "fromId": "from-9",
       "timestamp": 1741044967008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741044967008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-positive_offset",
@@ -618,13 +546,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741044967008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741044967008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-positive_offset",
@@ -648,17 +570,7 @@
       },
       "timestamp": 1741044967008
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741044967008
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-negative_offset",
@@ -674,13 +586,7 @@
       "fromId": "from-9",
       "timestamp": 1741079167008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741079167008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-negative_offset",
@@ -696,13 +602,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741079167008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741079167008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-negative_offset",
@@ -726,17 +626,7 @@
       },
       "timestamp": 1741079167008
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741079167008
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-date",
@@ -752,13 +642,7 @@
       "fromId": "from-9",
       "timestamp": 1741046400000
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741046400000
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-date",
@@ -774,13 +658,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741046400000
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741046400000
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-date",
@@ -804,17 +682,7 @@
       },
       "timestamp": 1741046400000
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741046400000
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-submillis",
@@ -830,13 +698,7 @@
       "fromId": "from-9",
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-submillis",
@@ -852,13 +714,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-submillis",
@@ -882,17 +738,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-before_epoch",
@@ -908,13 +754,7 @@
       "fromId": "from-9",
       "timestamp": -1
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": -1
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-before_epoch",
@@ -930,13 +770,7 @@
       "tokensBefore": 19.5,
       "timestamp": -1
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": -1
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-before_epoch",
@@ -960,17 +794,7 @@
       },
       "timestamp": -1
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": -1
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-local",
@@ -986,13 +810,7 @@
       "fromId": "from-9",
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-local",
@@ -1008,13 +826,7 @@
       "tokensBefore": 19.5,
       "timestamp": 1741064767008
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": 1741064767008
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-local",
@@ -1038,17 +850,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-invalid",
@@ -1066,13 +868,7 @@
         "$number": "NaN"
       }
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": null
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-invalid",
@@ -1090,13 +886,7 @@
         "$number": "NaN"
       }
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": null
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-invalid",
@@ -1122,17 +912,7 @@
         "$number": "NaN"
       }
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": null
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "branch-date-empty",
@@ -1150,13 +930,7 @@
         "$number": "NaN"
       }
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "branchSummary",
-      "summary": "Σ\nbranch",
-      "fromId": "from-9",
-      "timestamp": null
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "compaction-date-empty",
@@ -1174,13 +948,7 @@
         "$number": "NaN"
       }
     },
-    "test": "summary_constructors_preserve_fields_and_time",
-    "serialized_expected": {
-      "role": "compactionSummary",
-      "summary": "Σ\ncompacted",
-      "tokensBefore": 19.5,
-      "timestamp": null
-    }
+    "test": "summary_constructors_preserve_fields_and_time"
   },
   {
     "id": "custom-date-empty",
@@ -1206,17 +974,7 @@
         "$number": "NaN"
       }
     },
-    "test": "custom_constructor_preserves_time",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "x": null
-      },
-      "timestamp": null
-    }
+    "test": "custom_constructor_preserves_time"
   },
   {
     "id": "custom-empty_text-hidden",
@@ -1240,14 +998,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "",
-      "display": false,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-empty_text-hidden",
@@ -1302,14 +1053,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "",
-      "display": true,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-empty_text-visible",
@@ -1364,14 +1108,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "café\n🦀",
-      "display": false,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-text-hidden",
@@ -1426,14 +1163,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "café\n🦀",
-      "display": true,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-text-visible",
@@ -1488,14 +1218,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": [],
-      "display": false,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-empty_blocks-hidden",
@@ -1545,14 +1268,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": [],
-      "display": true,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-empty_blocks-visible",
@@ -1630,28 +1346,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": [
-        {
-          "type": "text",
-          "text": "repeat"
-        },
-        {
-          "type": "image",
-          "data": "aW1n",
-          "mimeType": "image/png"
-        },
-        {
-          "type": "text",
-          "text": "repeat"
-        }
-      ],
-      "display": false,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-blocks-hidden",
@@ -1757,28 +1452,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": [
-        {
-          "type": "text",
-          "text": "repeat"
-        },
-        {
-          "type": "image",
-          "data": "aW1n",
-          "mimeType": "image/png"
-        },
-        {
-          "type": "text",
-          "text": "repeat"
-        }
-      ],
-      "display": true,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "convert-custom-blocks-visible",
@@ -1856,14 +1530,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "details-null",
@@ -1883,15 +1550,7 @@
       "details": null,
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": null,
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "details-object",
@@ -1923,21 +1582,7 @@
       },
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": {
-        "zero": 0,
-        "list": [
-          true,
-          "v"
-        ]
-      },
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "details-array",
@@ -1963,18 +1608,7 @@
       ],
       "timestamp": 1741064767008
     },
-    "test": "custom_constructor_keeps_content_visibility_and_details",
-    "serialized_expected": {
-      "role": "custom",
-      "customType": "kind",
-      "content": "text",
-      "display": false,
-      "details": [
-        1,
-        null
-      ],
-      "timestamp": 1741064767008
-    }
+    "test": "custom_constructor_keeps_content_visibility_and_details"
   },
   {
     "id": "wrappers-73",
