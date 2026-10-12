@@ -722,6 +722,39 @@ fn maestro_event_literal_escapes_decode_without_rewriting_words() -> Result<(), 
     on_both_adapters!(escaped_literals)
 }
 
+/// An escaped tag and kind select the event; a non-string or repeated tag is refused before
+/// the handler is entered.
+async fn string_tags(driver: &mut impl Driver) -> Result<(), String> {
+    let probe = driver.identity("event probe")?;
+    let body = r#""text":"hi","source":"rpc""#;
+    let escaped = format!(r#"{{"t\u0079pe":"\u0069nput",{body}}}"#);
+    let delivery = driver.deliver(probe, &escaped, "{}", None).await?;
+    let normalized = json!({ "type": "input", "text": "hi", "source": "rpc" });
+    assert_eq!(Answer::of(delivery)?, Answer::returned(&normalized, None));
+    let entries = entered(driver);
+    assert_eq!(entries, 1, "the escaped event entered the handler once");
+    let refused = [
+        format!(r#"{{"type":null,{body}}}"#),
+        format!(r#"{{"type":true,{body}}}"#),
+        format!(r#"{{"type":1,{body}}}"#),
+        format!(r#"{{"type":["input"],{body}}}"#),
+        format!(r#"{{"type":"input","type":"input",{body}}}"#),
+        format!(r#"{{"type":"input","t\u0079pe":"input",{body}}}"#),
+        format!(r#"{{"type":"input","t\u0079pe":"agent_start",{body}}}"#),
+    ];
+    for text in refused {
+        let delivery = driver.deliver(probe, &text, "{}", None).await;
+        assert_eq!(delivery, Err(decoder_error(&text)?), "{text}");
+        assert_eq!(entered(driver), entries, "{text}");
+    }
+    Ok(())
+}
+
+#[test]
+fn maestro_event_tags_keep_string_identity_and_raw_duplicates() -> Result<(), String> {
+    on_both_adapters!(string_tags)
+}
+
 /// One way a delivery can end, and the delivery that takes it.
 struct Exit {
     /// What the delivery does.
