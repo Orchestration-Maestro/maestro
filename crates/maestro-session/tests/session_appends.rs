@@ -197,8 +197,10 @@ fn assert_reopened(manager: &SessionManager, path: &str, root: &str) {
     let (kept, loaded) = (manager.get_entries(), reopened.get_entries());
     assert_eq!(kept.len(), loaded.len());
     for (kept, loaded) in kept.iter().zip(loaded) {
-        assert_eq!(keys(kept), keys(loaded));
-        assert_eq!(kept["id"], loaded["id"]);
+        assert!(
+            support::session_tree::same(kept, loaded),
+            "{kept} != {loaded}"
+        );
     }
 }
 

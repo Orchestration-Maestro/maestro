@@ -33,8 +33,10 @@ identities first appear, using each identity's last record. It is a method of
 entry (not below the target) and selects it. A missing, null or empty label
 clears the target's label; any other string, including whitespace, sets it. An
 unknown target fails with `Entry {id} not found` before any change. The
-resolved label and its timestamp are published only after the record is
-published, so a failed native write leaves the previous labels in place.
+resolved label and its timestamp change only after the publication routine
+(see [native history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md#native-history))
+returns successfully, so a failed native write leaves the previous labels in
+place; a routine that completes without writing still updates them.
 Loading a history replays its label records in order and keeps raw values;
 `new_session` and history switches replace the resolved labels together with
 the entries. Labels never enter model context.
@@ -63,5 +65,6 @@ assert!(history.get_entry(&second_root).is_some());
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-`reset_leaf` selects the position before all entries without writing; the next
-append becomes a new root.
+`reset_leaf` selects the position before all entries without writing. The next
+append then has no parent and becomes a root, except `branch_with_summary(Some(id), ..)`,
+which first selects that existing entry and appends below it.

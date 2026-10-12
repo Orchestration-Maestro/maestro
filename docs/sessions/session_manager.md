@@ -113,8 +113,10 @@ assert!(history.get_entries().is_empty());
 
 Each append operation captures the selected entry as parent, a generated
 identity and a UTC millisecond timestamp, accepts the record into memory, then
-publishes it natively. A publication error leaves the accepted record, its
-selection and any written bytes in place. Operations: `append_message`,
+runs the publication routine described under [Native history](#native-history);
+a memory session or an unpublished fresh history completes it without writing.
+A publication error leaves the accepted record, its selection and any written
+bytes in place. Operations: `append_message`,
 `append_thinking_level_change`, `append_model_change`, `append_compaction`,
 `append_custom_entry`, `append_session_info`, `append_custom_message_entry`,
 `append_label_change` and `branch_with_summary`.
@@ -122,16 +124,17 @@ selection and any written bytes in place. Operations: `append_message`,
 Optional operands keep omission apart from null: `Presence::Missing` omits the
 member, `Presence::Null` writes null. `append_compaction` records its supplied
 cut identity without checking that it exists; `CompactionOptions::default()`
-omits both optional members. Custom messages join model context whether or not
-they are displayed; custom entries never do. Members are written in a fixed
+omits both optional members. Custom messages are projected into model context by the
+rules under [Branch selection](#branch-selection) whether or not they are
+displayed; custom entries never are. Members are written in a fixed
 order, one compact LF-terminated line per record.
 
 `append_session_info` removes outer ECMAScript whitespace (U+FEFF is removed,
 U+0085 is kept); an empty result clears the name. `get_session_name` reads the
 newest `session_info` record in the whole history, not only the selected
 branch. A newest record whose name is missing, null or blank gives `None` and
-never falls back to an older name. A newest name that is not a string returns
-an invalid-data error; older names are not decoded.
+never falls back to an older name. A newest name that is present, not null and not a string
+returns an invalid-data error; older names are not decoded.
 
 `branch_with_summary(Some(id), ..)` selects an existing entry, `None` selects the
 position before all entries, and the supplied summary is appended there with

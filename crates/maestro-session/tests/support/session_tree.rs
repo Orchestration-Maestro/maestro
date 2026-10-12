@@ -129,12 +129,36 @@ fn replay(case: &Case) -> (Value, Value) {
         .iter()
         .map(|query| observe(&manager, query, &named))
         .collect();
-    let symbols = Normalizer::new(&manager, &generated);
-    let normalized = |values: Vec<Value>| symbols.visit(Value::Array(values));
+    assert_label_timestamps(&manager);
+    let symbols = Normalizer::new(
+        &manager,
+        &generated,
+        case.input.entries.is_none() && case.input.jsonl.is_none(),
+    );
+    let normalized = |values: Vec<Value>| symbols.visit(Value::Array(values), "");
     let outcome = (normalized(results), normalized(observations));
     drop(manager);
     let _ = fs::remove_dir_all(directory);
     outcome
+}
+
+/// Every resolved label timestamp equals the timestamp of the newest label entry for its node.
+fn assert_label_timestamps(manager: &SessionManager) {
+    fn walk(manager: &SessionManager, nodes: &[SessionTreeNode<'_>]) {
+        for node in nodes {
+            if let Some(stamp) = node.label_timestamp {
+                let source = manager
+                    .get_entries()
+                    .into_iter()
+                    .rev()
+                    .find(|entry| entry["type"] == "label" && entry["targetId"] == node.entry["id"])
+                    .expect("resolved label timestamp has a label entry");
+                assert_eq!(&source["timestamp"], stamp, "label timestamp source");
+            }
+            walk(manager, &node.children);
+        }
+    }
+    walk(manager, &manager.get_tree());
 }
 
 /// Memory history, or a native history loaded from the case's records.
@@ -310,13 +334,16 @@ struct Normalizer {
 }
 impl Normalizer {
     /// Check every generated identity and instant has its public shape, then collect them.
-    fn new(manager: &SessionManager, generated: &[String]) -> Self {
+    fn new(manager: &SessionManager, generated: &[String], generated_header: bool) -> Self {
         let header = manager.get_header().unwrap();
         let mut ids = HashMap::from([(
             header["id"].as_str().unwrap().to_owned(),
             "@session".to_owned(),
         )]);
-        let mut times = HashSet::from([header["timestamp"].as_str().unwrap().to_owned()]);
+        let mut times = HashSet::new();
+        if generated_header {
+            times.insert(header["timestamp"].as_str().unwrap().to_owned());
+        }
         for (index, id) in generated.iter().enumerate() {
             assert!(
                 id.len() == 36 || (id.len() == 8 && id.bytes().all(|b| b.is_ascii_hexdigit())),
@@ -342,24 +369,33 @@ impl Normalizer {
             .collect();
         Self { ids, times, millis }
     }
-    /// Replace matching leaves, keeping member order.
-    fn visit(&self, value: Value) -> Value {
+    /// Replace identities everywhere and generated instants only under timestamp members.
+    fn visit(&self, value: Value, key: &str) -> Value {
+        let stamped = matches!(key, "timestamp" | "labelTimestamp");
         match value {
-            Value::String(text) => match (self.ids.get(&text), self.times.contains(&text)) {
-                (Some(symbol), _) => Value::String(symbol.clone()),
-                (None, true) => Value::String("@timestamp".into()),
-                (None, false) => Value::String(text),
-            },
+            Value::String(text) => {
+                match (self.ids.get(&text), stamped && self.times.contains(&text)) {
+                    (Some(symbol), _) => Value::String(symbol.clone()),
+                    (None, true) => Value::String("@timestamp".into()),
+                    (None, false) => Value::String(text),
+                }
+            }
             Value::Number(number) => match number.as_f64() {
-                Some(millis) if self.millis.contains(&millis.to_string()) => {
+                Some(millis) if key == "timestamp" && self.millis.contains(&millis.to_string()) => {
                     "@timestamp-millis".into()
                 }
                 _ => Value::Number(number),
             },
-            Value::Array(items) => items.into_iter().map(|item| self.visit(item)).collect(),
+            Value::Array(items) => items
+                .into_iter()
+                .map(|item| self.visit(item, key))
+                .collect(),
             Value::Object(object) => object
                 .into_iter()
-                .map(|(key, item)| (key, self.visit(item)))
+                .map(|(member, item)| {
+                    let item = self.visit(item, &member);
+                    (member, item)
+                })
                 .collect(),
             other => other,
         }
@@ -367,7 +403,7 @@ impl Normalizer {
 }
 
 /// Order-aware structural equality with one numeric domain.
-fn same(actual: &Value, expected: &Value) -> bool {
+pub fn same(actual: &Value, expected: &Value) -> bool {
     match (actual, expected) {
         (Value::Number(a), Value::Number(b)) => a.as_f64() == b.as_f64(),
         (Value::Array(a), Value::Array(b)) => {

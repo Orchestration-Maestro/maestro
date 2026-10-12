@@ -121,14 +121,14 @@ impl SessionManager {
         self.leaf_id = None;
     }
 
-    /// Append a label change below the selected entry, publishing the resolved label maps
-    /// only after the entry is published.
+    /// Append a label change below the selected entry, updating the resolved label maps
+    /// only after the publication routine returns successfully (it may complete without writing).
     ///
     /// A missing, null or empty label clears the target's label.
     ///
     /// # Errors
     /// Returns `Entry {id} not found` before any change when the target is not indexed;
-    /// publication errors leave the accepted entry but the previous resolved labels.
+    /// a publication error leaves the accepted entry but the previous resolved labels.
     pub fn append_label_change(
         &mut self,
         target_id: &str,

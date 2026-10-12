@@ -4353,7 +4353,7 @@
                 "customType": "fixture",
                 "id": "a",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -4362,7 +4362,7 @@
                     "customType": "fixture",
                     "id": "b",
                     "parentId": "a",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": [
                     {
@@ -4429,6 +4429,16 @@
               "content": "prior",
               "timestamp": 1
             }
+          ],
+          "as": "prior"
+        },
+        {
+          "method": "appendLabelChange",
+          "args": [
+            {
+              "$ref": "prior"
+            },
+            "mark"
           ]
         },
         {
@@ -4455,6 +4465,12 @@
         ],
         [
           "getTree"
+        ],
+        [
+          "getLabel",
+          {
+            "$ref": "prior"
+          }
         ]
       ]
     },
@@ -4462,6 +4478,9 @@
       "results": [
         {
           "ok": "@entry-0"
+        },
+        {
+          "ok": "@entry-1"
         },
         {
           "error": {
@@ -4487,11 +4506,19 @@
                 "content": "prior",
                 "timestamp": 1
               }
+            },
+            {
+              "type": "label",
+              "id": "@entry-1",
+              "parentId": "@entry-0",
+              "timestamp": "@timestamp",
+              "targetId": "@entry-0",
+              "label": "mark"
             }
           ]
         },
         {
-          "ok": "@entry-0"
+          "ok": "@entry-1"
         },
         {
           "ok": [
@@ -4507,9 +4534,26 @@
                   "timestamp": 1
                 }
               },
-              "children": []
+              "children": [
+                {
+                  "entry": {
+                    "type": "label",
+                    "id": "@entry-1",
+                    "parentId": "@entry-0",
+                    "timestamp": "@timestamp",
+                    "targetId": "@entry-0",
+                    "label": "mark"
+                  },
+                  "children": []
+                }
+              ],
+              "label": "mark",
+              "labelTimestamp": "@timestamp"
             }
           ]
+        },
+        {
+          "ok": "mark"
         }
       ]
     }
@@ -4917,7 +4961,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -4974,7 +5018,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5032,7 +5076,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5090,7 +5134,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5148,7 +5192,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5208,7 +5252,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5268,7 +5312,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -5328,7 +5372,7 @@
               "customType": "fixture",
               "id": "old",
               "parentId": null,
-              "timestamp": "@timestamp",
+              "timestamp": "2025-01-01T00:00:00.000Z",
               "name": "older"
             },
             {
@@ -6377,21 +6421,21 @@
               "customType": "fixture",
               "id": "",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "a",
               "parentId": "",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "abandoned",
               "parentId": "a",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "branch_summary",
@@ -6524,21 +6568,21 @@
               "customType": "fixture",
               "id": "",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "a",
               "parentId": "",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "abandoned",
               "parentId": "a",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "branch_summary",
@@ -6568,7 +6612,7 @@
               "customType": "fixture",
               "id": "a",
               "parentId": "",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "branch_summary",
@@ -6678,21 +6722,21 @@
               "customType": "fixture",
               "id": "",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "a",
               "parentId": "",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "abandoned",
               "parentId": "a",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "branch_summary",
@@ -6904,28 +6948,28 @@
               "type": "custom",
               "customType": "fixture",
               "id": "missing",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "wrong",
               "parentId": 7,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "empty-parent",
               "parentId": "",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -6966,7 +7010,7 @@
                 "type": "custom",
                 "customType": "fixture",
                 "id": "missing",
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": []
             },
@@ -6976,7 +7020,7 @@
                 "customType": "fixture",
                 "id": "wrong",
                 "parentId": 7,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": []
             },
@@ -6986,7 +7030,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -6995,7 +7039,7 @@
                     "customType": "fixture",
                     "id": "empty-parent",
                     "parentId": "",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": []
                 }
@@ -7075,7 +7119,7 @@
               "customType": "fixture",
               "id": "root",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -7110,7 +7154,7 @@
                 "customType": "fixture",
                 "id": "root",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -7244,14 +7288,14 @@
               "customType": "fixture",
               "id": "r1",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "r2",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -7274,7 +7318,7 @@
               "customType": "fixture",
               "id": "c",
               "parentId": "d",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7286,7 +7330,7 @@
                 "customType": "fixture",
                 "id": "r1",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -7305,7 +7349,7 @@
                         "customType": "fixture",
                         "id": "c",
                         "parentId": "d",
-                        "timestamp": "@timestamp"
+                        "timestamp": "2025-01-01T00:00:00.000Z"
                       },
                       "children": []
                     }
@@ -7319,7 +7363,7 @@
                 "customType": "fixture",
                 "id": "r2",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -7338,7 +7382,7 @@
                         "customType": "fixture",
                         "id": "c",
                         "parentId": "d",
-                        "timestamp": "@timestamp"
+                        "timestamp": "2025-01-01T00:00:00.000Z"
                       },
                       "children": []
                     }
@@ -7436,7 +7480,7 @@
               "customType": "fixture",
               "id": "child",
               "parentId": "d",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -7458,7 +7502,7 @@
                     "customType": "fixture",
                     "id": "child",
                     "parentId": "d",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": []
                 }
@@ -7480,7 +7524,7 @@
                     "customType": "fixture",
                     "id": "child",
                     "parentId": "d",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": []
                 }
@@ -7572,7 +7616,7 @@
               "customType": "fixture",
               "id": "root",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -7612,7 +7656,7 @@
                 "customType": "fixture",
                 "id": "root",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -7758,7 +7802,7 @@
               "customType": "fixture",
               "id": "root",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -7791,7 +7835,7 @@
                 "customType": "fixture",
                 "id": "root",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -7933,7 +7977,7 @@
               "customType": "fixture",
               "id": "root",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -7979,7 +8023,7 @@
                 "customType": "fixture",
                 "id": "root",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8147,7 +8191,7 @@
               "customType": "fixture",
               "id": "root",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
@@ -8187,7 +8231,7 @@
                 "customType": "fixture",
                 "id": "root",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8319,14 +8363,14 @@
               "customType": "fixture",
               "id": "a",
               "parentId": "b",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "b",
               "parentId": "a",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -8403,28 +8447,28 @@
               "customType": "fixture",
               "id": "界/é",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "z",
               "parentId": "界/é",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "a",
               "parentId": "界/e",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             },
             {
               "type": "custom",
               "customType": "fixture",
               "id": "界/e",
               "parentId": null,
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -8436,7 +8480,7 @@
                 "customType": "fixture",
                 "id": "界/é",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8445,7 +8489,7 @@
                     "customType": "fixture",
                     "id": "z",
                     "parentId": "界/é",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": []
                 }
@@ -8457,7 +8501,7 @@
                 "customType": "fixture",
                 "id": "界/e",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8466,7 +8510,7 @@
                     "customType": "fixture",
                     "id": "a",
                     "parentId": "界/e",
-                    "timestamp": "@timestamp"
+                    "timestamp": "2025-01-01T00:00:00.000Z"
                   },
                   "children": []
                 }
@@ -8481,7 +8525,7 @@
               "customType": "fixture",
               "id": "z",
               "parentId": "界/é",
-              "timestamp": "@timestamp"
+              "timestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         },
@@ -8491,7 +8535,7 @@
             "customType": "fixture",
             "id": "界/é",
             "parentId": null,
-            "timestamp": "@timestamp"
+            "timestamp": "2025-01-01T00:00:00.000Z"
           }
         }
       ]
@@ -8551,7 +8595,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8571,7 +8615,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target"
                       },
                       "children": []
@@ -8640,7 +8684,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8660,7 +8704,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": null
                       },
@@ -8730,7 +8774,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8750,7 +8794,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": ""
                       },
@@ -8820,7 +8864,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8840,7 +8884,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": false
                       },
@@ -8910,7 +8954,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -8930,7 +8974,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": 0
                       },
@@ -9000,7 +9044,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9020,7 +9064,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": "mark"
                       },
@@ -9030,7 +9074,7 @@
                 }
               ],
               "label": "mark",
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }
@@ -9092,7 +9136,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9112,7 +9156,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": " "
                       },
@@ -9122,7 +9166,7 @@
                 }
               ],
               "label": " ",
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }
@@ -9184,7 +9228,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9204,7 +9248,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": 7
                       },
@@ -9214,7 +9258,7 @@
                 }
               ],
               "label": 7,
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }
@@ -9276,7 +9320,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9296,7 +9340,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": []
                       },
@@ -9306,7 +9350,7 @@
                 }
               ],
               "label": [],
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }
@@ -9372,7 +9416,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9392,7 +9436,7 @@
                         "customType": "fixture",
                         "id": "label",
                         "parentId": "old-label",
-                        "timestamp": "@timestamp",
+                        "timestamp": "2025-01-01T00:00:00.000Z",
                         "targetId": "target",
                         "label": {
                           "z": 1
@@ -9406,7 +9450,7 @@
               "label": {
                 "z": 1
               },
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }
@@ -9452,7 +9496,7 @@
                 "customType": "fixture",
                 "id": "label",
                 "parentId": null,
-                "timestamp": "@timestamp",
+                "timestamp": "2025-01-01T00:00:00.000Z",
                 "targetId": "future",
                 "label": "retained"
               },
@@ -9510,7 +9554,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9519,7 +9563,7 @@
                     "customType": "fixture",
                     "id": "first",
                     "parentId": "target",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": "target",
                     "label": "old"
                   },
@@ -9584,7 +9628,7 @@
                 "customType": "fixture",
                 "id": "target",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9660,7 +9704,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9669,7 +9713,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "label": "marker"
                   },
                   "children": []
@@ -9734,7 +9778,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9743,7 +9787,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": null,
                     "label": "marker"
                   },
@@ -9809,7 +9853,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9818,7 +9862,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": 7,
                     "label": "marker"
                   },
@@ -9884,7 +9928,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9893,7 +9937,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": false,
                     "label": "marker"
                   },
@@ -9959,7 +10003,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -9968,7 +10012,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": [],
                     "label": "marker"
                   },
@@ -10034,7 +10078,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -10043,7 +10087,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": {},
                     "label": "marker"
                   },
@@ -10109,7 +10153,7 @@
                 "customType": "fixture",
                 "id": "",
                 "parentId": null,
-                "timestamp": "@timestamp"
+                "timestamp": "2025-01-01T00:00:00.000Z"
               },
               "children": [
                 {
@@ -10118,7 +10162,7 @@
                     "customType": "fixture",
                     "id": "label",
                     "parentId": "",
-                    "timestamp": "@timestamp",
+                    "timestamp": "2025-01-01T00:00:00.000Z",
                     "targetId": "",
                     "label": "marker"
                   },
@@ -10126,7 +10170,7 @@
                 }
               ],
               "label": "marker",
-              "labelTimestamp": "@timestamp"
+              "labelTimestamp": "2025-01-01T00:00:00.000Z"
             }
           ]
         }

@@ -110,6 +110,24 @@ fn reset_leaf_selects_before_first_without_writing() {
 }
 
 #[test]
+fn reset_leaf_leaves_native_file_bytes_unchanged() {
+    let scratch = Scratch::new();
+    let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+    manager
+        .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
+        .unwrap();
+    manager
+        .append_message(json!({"role": "assistant", "content": "second", "timestamp": 2}))
+        .unwrap();
+    let file = manager.get_session_file().unwrap().to_owned();
+    let before = std::fs::read(&file).unwrap();
+    manager.reset_leaf();
+    assert_eq!(manager.get_leaf_id(), None);
+    assert_eq!(std::fs::read(&file).unwrap(), before);
+    assert_eq!(manager.get_entries().len(), 2);
+}
+
+#[test]
 fn summary_branch_uses_selected_point_or_literal_root() {
     support::session_tree::run("summary_branch_uses_selected_point_or_literal_root");
 }
@@ -292,33 +310,35 @@ fn tree_local_dates_use_the_native_local_zone() {
 
 #[test]
 fn failed_label_publication_keeps_old_resolved_maps() {
-    for clear in [Presence::Present(""), Presence::Missing, Presence::Null] {
-        for next in [Presence::Present("new"), clear] {
-            let scratch = Scratch::new();
-            let mut manager =
-                SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
-            let first = manager
-                .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
-                .unwrap();
-            manager
-                .append_message(json!({"role": "assistant", "content": "second", "timestamp": 2}))
-                .unwrap();
-            manager
-                .append_label_change(&first, Presence::Present("old"))
-                .unwrap();
-            let stamp = manager.get_tree()[0].label_timestamp.cloned();
-            let file = manager.get_session_file().unwrap().to_owned();
-            std::fs::remove_file(&file).unwrap();
-            std::fs::create_dir(&file).unwrap();
-            let before = manager.get_entries().len();
-            manager.append_label_change(&first, next).unwrap_err();
-            assert_eq!(manager.get_entries().len(), before + 1);
-            assert_eq!(manager.get_leaf_entry().unwrap()["type"], "label");
-            assert_eq!(manager.get_label(&first), Some(&json!("old")));
-            let tree = manager.get_tree();
-            assert_eq!(tree[0].label, Some(&json!("old")));
-            assert_eq!(tree[0].label_timestamp.cloned(), stamp);
-        }
+    for next in [
+        Presence::Present("new"),
+        Presence::Present(""),
+        Presence::Missing,
+        Presence::Null,
+    ] {
+        let scratch = Scratch::new();
+        let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
+        let first = manager
+            .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
+            .unwrap();
+        manager
+            .append_message(json!({"role": "assistant", "content": "second", "timestamp": 2}))
+            .unwrap();
+        manager
+            .append_label_change(&first, Presence::Present("old"))
+            .unwrap();
+        let stamp = manager.get_tree()[0].label_timestamp.cloned();
+        let file = manager.get_session_file().unwrap().to_owned();
+        std::fs::remove_file(&file).unwrap();
+        std::fs::create_dir(&file).unwrap();
+        let before = manager.get_entries().len();
+        manager.append_label_change(&first, next).unwrap_err();
+        assert_eq!(manager.get_entries().len(), before + 1);
+        assert_eq!(manager.get_leaf_entry().unwrap()["type"], "label");
+        assert_eq!(manager.get_label(&first), Some(&json!("old")));
+        let tree = manager.get_tree();
+        assert_eq!(tree[0].label, Some(&json!("old")));
+        assert_eq!(tree[0].label_timestamp.cloned(), stamp);
     }
     let scratch = Scratch::new();
     let (mut manager, first) = broken_history(&scratch);
@@ -383,7 +403,7 @@ fn failed_history_switch_preserves_existing_labels() {
             label("l", "t", "t", "kept"),
         ],
     );
-    let failing = history_file(
+    let index_failure = history_file(
         &scratch,
         "failing.jsonl",
         &[
@@ -391,13 +411,22 @@ fn failed_history_switch_preserves_existing_labels() {
             json!({"type": "message", "id": null}),
         ],
     );
+    let unreadable = scratch.text().to_owned();
+    let rewrite_failure = history_file(&scratch, "headerless.jsonl", &[]);
+    std::fs::write(&rewrite_failure, "not a session header\n").unwrap();
+    let mut permissions = std::fs::metadata(&rewrite_failure).unwrap().permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(&rewrite_failure, permissions).unwrap();
     let mut manager = SessionManager::open(&labeled, None, None).unwrap();
     let stamp = manager.get_tree()[0].label_timestamp.cloned();
-    manager.set_session_file(&failing).unwrap_err();
-    assert_eq!(manager.get_label("t"), Some(&json!("kept")));
-    assert_eq!(manager.get_label("u"), None);
-    assert_eq!(manager.get_tree()[0].label_timestamp.cloned(), stamp);
-    assert_eq!(manager.get_entries().len(), 2);
+    for failing in [&index_failure, &unreadable, &rewrite_failure] {
+        manager.set_session_file(failing).unwrap_err();
+        assert_eq!(manager.get_label("t"), Some(&json!("kept")));
+        assert_eq!(manager.get_label("u"), None);
+        assert_eq!(manager.get_tree()[0].label_timestamp.cloned(), stamp);
+        assert_eq!(manager.get_entries().len(), 2);
+        assert_eq!(manager.get_session_file(), Some(labeled.as_str()));
+    }
 }
 
 #[test]
