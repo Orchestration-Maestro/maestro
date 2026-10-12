@@ -1,7 +1,7 @@
 //! Native search execution with owned child and captured pipes.
 use maestro_cancellation::Cancellation;
 use maestro_process::child_process::{
-    CapturedChild, StderrMode, Termination, wait_for_child_process,
+    CapturedChild, StderrMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::io;
 use tokio::process::Command;
@@ -20,7 +20,11 @@ pub(super) async fn run(
         signal.cancelled().await;
         Termination::Kill
     };
-    let result = wait_for_child_process(&mut child, StderrMode::Discard, kill).await;
+    let options = WaitOptions {
+        stderr: StderrMode::Discard,
+        ..WaitOptions::default()
+    };
+    let result = wait_for_child_process(&mut child, options, kill).await;
     if result.is_err() {
         child.terminate(Termination::Kill).await?;
     }

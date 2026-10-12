@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use maestro_process::child_process::{
-    CapturedChild, StderrMode, Termination, wait_for_child_process,
+    CapturedChild, StderrMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::cell::Cell;
 use std::future::Future;
@@ -11,6 +11,7 @@ use std::pin::Pin;
 use std::process::Output;
 use std::rc::Rc;
 use std::task::{Context, Poll};
+use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
@@ -39,6 +40,9 @@ if mode in ('live', 'exit'):
     os._exit(0)
 elif mode == 'term':
     def stop(*_): os.write(1, b'terminated'); os._exit(0)
+    signal.signal(signal.SIGTERM, stop); hold()
+elif mode == 'flood':
+    def stop(*_): os.write(1, b'x' * 200000 + b'end'); os._exit(0)
     signal.signal(signal.SIGTERM, stop); hold()
 elif mode == 'kill':
     if os.fork() == 0: hold(); os._exit(0)
@@ -129,7 +133,7 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
         inner: Box::pin(async { request.await.unwrap() }),
         dropped: dropped.clone(),
     };
-    let run = wait_for_child_process(&mut child, StderrMode::Capture, observed);
+    let run = wait_for_child_process(&mut child, WaitOptions::default(), observed);
     let observe = async {
         let mut sockets = vec![];
         for _ in 0..holders {
@@ -164,9 +168,16 @@ sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
             .env("PROBE", "set");
         let output = runtime().block_on(async {
             let mut child = CapturedChild::spawn(&mut command).unwrap();
-            wait_for_child_process(&mut child, mode, never())
-                .await
-                .unwrap()
+            wait_for_child_process(
+                &mut child,
+                WaitOptions {
+                    stderr: mode,
+                    ..WaitOptions::default()
+                },
+                never(),
+            )
+            .await
+            .unwrap()
         });
         assert!(output.status.success());
         let mut expected = format!("arg value|{}|set", dir.display()).into_bytes();
@@ -185,7 +196,7 @@ sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
 }
 
 #[test]
-fn captured_process_waits_for_exit_and_both_eofs() {
+fn exit_and_pipe_completion_orders_keep_output() {
     runtime().block_on(async {
         for (mode, closed, stdout, stderr) in [
             ("live", "", &b"earlytail"[..], &b"diagtail"[..]),
@@ -199,7 +210,7 @@ fn captured_process_waits_for_exit_and_both_eofs() {
             let case = format!("{mode} closing {closed:?}");
             let (listener, mut command) = fixture(mode, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
-            let run = wait_for_child_process(&mut child, StderrMode::Capture, never());
+            let run = wait_for_child_process(&mut child, WaitOptions::default(), never());
             tokio::pin!(run);
             let socket = tokio::select! {
                 socket = ready(&listener) => socket,
@@ -217,11 +228,16 @@ fn captured_process_waits_for_exit_and_both_eofs() {
         }
         let mut command = tokio::process::Command::new("true");
         let mut child = CapturedChild::spawn(&mut command).unwrap();
-        let output = wait_for_child_process(&mut child, StderrMode::Capture, never())
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), never())
             .await
             .unwrap();
         assert!(output.status.success());
         assert_eq!((output.stdout, output.stderr), (vec![], vec![]));
+        let again = wait_for_child_process(&mut child, WaitOptions::default(), never())
+            .await
+            .unwrap();
+        assert!(again.status.success());
+        assert_eq!((again.stdout, again.stderr), (vec![], vec![]));
     });
 }
 
@@ -269,7 +285,7 @@ fn process_failures_preserve_native_error() {
 
         let mut command = tokio::process::Command::new("true");
         let mut child = CapturedChild::spawn(&mut command).unwrap();
-        wait_for_child_process(&mut child, StderrMode::Capture, never())
+        wait_for_child_process(&mut child, WaitOptions::default(), never())
             .await
             .unwrap();
         child.terminate(Termination::Terminate).await.unwrap();
@@ -287,7 +303,7 @@ fn capture_driver_releases_completed_stop_future() {
             inner: Box::pin(never()),
             dropped: dropped.clone(),
         };
-        wait_for_child_process(&mut child, StderrMode::Capture, stop)
+        wait_for_child_process(&mut child, WaitOptions::default(), stop)
             .await
             .unwrap();
         assert!(dropped.get(), "normal completion");
@@ -299,5 +315,82 @@ fn capture_driver_releases_completed_stop_future() {
                 release(socket).await;
             }
         }
+    });
+}
+
+/// Runs a held child with `options`, sends `requested` once its holder is ready and
+/// returns the output with the still-held socket.
+async fn run_held(
+    mode: &str,
+    closed: &str,
+    options: WaitOptions,
+    requested: Termination,
+) -> (Output, TcpStream) {
+    let (listener, mut command) = fixture(mode, closed).await;
+    let mut child = CapturedChild::spawn(&mut command).unwrap();
+    let (stop, request) = tokio::sync::oneshot::channel();
+    let run = wait_for_child_process(&mut child, options, async { request.await.unwrap() });
+    let observe = async {
+        let socket = ready(&listener).await;
+        stop.send(requested).unwrap();
+        socket
+    };
+    let (output, socket) = tokio::join!(run, observe);
+    (output.unwrap(), socket)
+}
+
+#[test]
+fn grace_preserves_prefixes_from_unfinished_streams() {
+    runtime().block_on(async {
+        for (closed, grace) in [
+            ("", Duration::from_millis(100)),
+            ("1", Duration::from_millis(100)),
+            ("", Duration::ZERO),
+        ] {
+            let case = format!("closing {closed:?} with grace {grace:?}");
+            let (listener, mut command) = fixture("exit", closed).await;
+            let mut child = CapturedChild::spawn(&mut command).unwrap();
+            let options = WaitOptions {
+                post_exit_grace: Some(grace),
+                ..WaitOptions::default()
+            };
+            let run = wait_for_child_process(&mut child, options, never());
+            let (output, socket) = tokio::join!(run, ready(&listener));
+            let output = output.unwrap();
+            assert!(output.status.success(), "{case}");
+            if !grace.is_zero() {
+                assert_eq!(
+                    (output.stdout, output.stderr),
+                    (b"early".to_vec(), b"diag".to_vec()),
+                    "{case}"
+                );
+            }
+            release(socket).await;
+        }
+    });
+}
+
+#[test]
+fn termination_escalation_keeps_draining_until_exit() {
+    runtime().block_on(async {
+        let escalate = Termination::TerminateThenKill {
+            after: Duration::from_secs(3600),
+        };
+        let (output, socket) = run_held("flood", "", WaitOptions::default(), escalate).await;
+        assert!(output.status.success());
+        assert_eq!(output.stdout.len(), 200_003);
+        assert!(output.stdout.ends_with(b"xxend"));
+        release(socket).await;
+    });
+}
+
+#[test]
+fn forced_kill_retains_only_completed_streams() {
+    runtime().block_on(async {
+        let (output, socket) =
+            run_held("live", "1", WaitOptions::default(), Termination::Kill).await;
+        assert_eq!(output.status.signal(), Some(9));
+        assert_eq!((output.stdout, output.stderr), (b"early".to_vec(), vec![]));
+        release(socket).await;
     });
 }
