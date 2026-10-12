@@ -31,9 +31,9 @@ with `std` and `fs` checks readability without opening the file. Other targets
 open the file. No package or version beyond the existing lockfile is added.
 Read selection spells floating-point line numbers with `ryu-js`.
 
-The home directory comes from `std::env::home_dir`: an unset or empty `HOME`
-falls back to the account's home entry, where the JavaScript runtime would return
-an empty string only for an empty `HOME` (an unset `HOME` also falls back there), and a missing entry is a lookup error returned only for `~` paths.
+On Unix a present `HOME` is used verbatim, including an empty value, and
+`std::env::home_dir` runs only when `HOME` is absent; Windows always uses that
+platform lookup. A missing entry is a lookup error returned only for `~` paths.
 
 ## Image libraries
 

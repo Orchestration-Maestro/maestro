@@ -19,7 +19,8 @@ fn utf8(path: PathBuf, what: &str) -> io::Result<String> {
 
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
 ///
-/// The home directory is read only for those two forms.
+/// The home directory is read only for those two forms: on Unix `HOME` as set, even
+/// empty, otherwise the platform lookup.
 ///
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
@@ -43,8 +44,11 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
         Some(rest) if rest.starts_with('/') => rest,
         _ => return Ok(normalized),
     };
-    let home = std::env::home_dir()
-        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
+    let home = match std::env::var_os("HOME").filter(|_| cfg!(unix)) {
+        Some(home) => home.into(),
+        None => std::env::home_dir()
+            .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?,
+    };
     Ok(utf8(home, "home directory")? + rest)
 }
 

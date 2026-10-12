@@ -165,16 +165,46 @@ fn native_path_host_lookups_are_lazy() {
         assert_eq!(expand_path("~").unwrap(), "/explicit");
         assert_eq!(expand_path("~/x").unwrap(), "/explicit/x");
     }
-    for (mode, value) in [("home-empty", Some("")), ("home-absent", None)] {
-        if isolated(test, mode, &[("HOME", value)]) {
-            assert_eq!(expand_path("plain").unwrap(), "plain");
-            let lookup = std::env::home_dir().map(|home| home.to_str().unwrap().to_owned());
-            assert_eq!(
-                expand_path("~/x").ok(),
-                lookup.map(|home| format!("{home}/x"))
-            );
-            assert_ne!(expand_path("~/x").ok(), Some("/x".to_owned()));
-        }
+    if isolated(test, "home-absent", &[("HOME", None)]) {
+        assert_eq!(expand_path("plain").unwrap(), "plain");
+        let lookup = std::env::home_dir().map(|home| home.to_str().unwrap().to_owned());
+        assert_eq!(
+            expand_path("~/x").ok(),
+            lookup.map(|home| format!("{home}/x"))
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn empty_home_is_used_verbatim() {
+    if isolated(
+        "empty_home_is_used_verbatim",
+        "empty",
+        &[("HOME", Some(""))],
+    ) {
+        assert_eq!(expand_path("plain").unwrap(), "plain");
+        assert_eq!(expand_path("~/x").unwrap(), "/x");
+        assert_eq!(expand_path("~").unwrap(), "");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn read_selects_distinct_files_for_empty_and_absent_home() {
+    let test = "read_selects_distinct_files_for_empty_and_absent_home";
+    let read = || {
+        let dir = TempDir::new();
+        dir.file("note.txt", b"empty home keeps the path root");
+        let tool = create_read_tool_definition::<()>("/".into(), ReadToolOptions::default());
+        let authored = format!("~{}/note.txt", dir.text());
+        call(&tool, input(&authored, None, None), None, None).map(|result| only_text(&result))
+    };
+    if isolated(test, "empty", &[("HOME", Some(""))]) {
+        assert_eq!(read().unwrap(), "empty home keeps the path root");
+    }
+    if isolated(test, "absent", &[("HOME", None)]) {
+        assert!(read().is_err());
     }
 }
 
