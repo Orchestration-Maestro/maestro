@@ -131,8 +131,9 @@ recalculated from the model's rates. Absent and null counts are zero, and an abs
 report keeps the previous one.
 
 A clean end of `chunks` closes the open text or thinking block. A failure from the
-source (returned unchanged and never polled past), malformed JSON, a selected member of
-the wrong type, call arguments beyond the JSON conversion's nesting bound, or an
+source (returned unchanged and never polled past), malformed JSON, a failed typed read of
+a selected member, call arguments beyond the JSON conversion's nesting bound, or an
 undeclared finish reason returns without closing it, leaving earlier updates in `output`.
-Members are decoded where their branch reads them, so unknown members and later
-candidates are never decoded.
+A call closes the open block and takes its identifier before its arguments are converted,
+so an argument failure keeps those earlier effects. A part's text, thought flag and
+signature are read together; unknown members and later candidates are never decoded.

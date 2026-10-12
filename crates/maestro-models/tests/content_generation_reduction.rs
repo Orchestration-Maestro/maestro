@@ -6,7 +6,7 @@ mod chat;
 #[path = "support/json.rs"]
 mod json;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::{Pin, pin};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -234,33 +234,46 @@ async fn reduce(input: &Input, counter: &AtomicU64) -> TestResult<Observed> {
 }
 
 /// Check a generated call identifier and replace it with the placeholder the fixture uses.
-fn normalize_ids(expected: &Value, actual: &mut Value) -> TestResult {
+///
+/// A placeholder reads `@generated:<name part>:<counter>`; `seen` keeps the identifier each
+/// placeholder stood for, so every occurrence must be the same string.
+fn normalize_ids(
+    expected: &Value,
+    actual: &mut Value,
+    seen: &mut HashMap<String, String>,
+) -> TestResult {
     match (expected, actual) {
-        (Value::String(want), Value::String(got)) if want.starts_with("@generated-") => {
-            let mut parts = got.rsplitn(3, '_');
-            let (counter, millis) = (parts.next(), parts.next());
-            assert_eq!(
-                counter,
-                Some(&want["@generated-".len()..]),
-                "counter of {want}"
-            );
-            let millis: u128 = millis.ok_or("millisecond field")?.parse()?;
-            let now = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)?
-                .as_millis();
-            assert!(millis.abs_diff(now) < 600_000, "clock field of {want}");
+        (Value::String(want), Value::String(got)) if want.starts_with("@generated:") => {
+            if let Some(first) = seen.get(want) {
+                assert_eq!(first, got, "identity of {want}");
+            } else {
+                let (prefix, counter) = want["@generated:".len()..]
+                    .rsplit_once(':')
+                    .ok_or("placeholder")?;
+                let rest = got
+                    .strip_prefix(&format!("{prefix}_"))
+                    .ok_or_else(|| format!("name part of {want}: {got}"))?;
+                let (millis, got_counter) = rest.rsplit_once('_').ok_or("counter field")?;
+                assert_eq!(got_counter, counter, "counter of {want}");
+                let millis: u128 = millis.parse()?;
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)?
+                    .as_millis();
+                assert!(millis.abs_diff(now) < 600_000, "clock field of {want}");
+                seen.insert(want.clone(), got.clone());
+            }
             got.clone_from(want);
         }
         (Value::Object(want), Value::Object(got)) => {
             for (key, want) in want {
                 if let Some(got) = got.get_mut(key) {
-                    normalize_ids(want, got)?;
+                    normalize_ids(want, got, seen)?;
                 }
             }
         }
         (Value::Array(want), Value::Array(got)) => {
             for (want, got) in want.iter().zip(got) {
-                normalize_ids(want, got)?;
+                normalize_ids(want, got, seen)?;
             }
         }
         _ => {}
@@ -280,10 +293,11 @@ fn assert_row(row: &Row, observed: Observed) -> TestResult {
     if let Some(id) = &expected.message.response_id {
         want["responseId"] = json!(id);
     }
-    normalize_ids(&want, &mut message)?;
+    let mut seen = HashMap::new();
+    normalize_ids(&want, &mut message, &mut seen)?;
     let want_events = Value::Array(expected.events.clone());
     let mut events = Value::Array(observed.events);
-    normalize_ids(&want_events, &mut events)?;
+    normalize_ids(&want_events, &mut events, &mut seen)?;
     assert_eq!(canonical(message), canonical(want), "{} message", row.test);
     assert_eq!(
         canonical(events),
@@ -569,13 +583,34 @@ fn selected_tool_arguments_enforce_the_existing_json_depth_bound() -> TestResult
         } else {
             let error = observed.error.ok_or("depth failure")?;
             assert!(!error.message.is_empty());
-            assert_eq!(kinds, [json!("text_start"), json!("text_delta")]);
+            assert_eq!(
+                kinds,
+                [json!("text_start"), json!("text_delta"), json!("text_end")]
+            );
             assert_eq!(
                 observed.message["content"].as_array().map(Vec::len),
                 Some(1)
             );
         }
     }
+    Ok(())
+}
+
+#[test]
+fn generated_identifier_counter_advances_before_arguments_fail() -> TestResult {
+    let deep = deep_call(127).replace(r#""id":"c","#, "");
+    let valid = r#"{"candidates":[{"content":{"parts":[{"functionCall":{"name":"n"}}]}}]}"#;
+    let counter = AtomicU64::new(0);
+    for (chunk, fails) in [(deep, true), (valid.to_owned(), false)] {
+        let input = Input {
+            chunks: vec![chunk],
+            source_error: None,
+            cost: None,
+        };
+        let observed = block_on(false, reduce(&input, &counter))?;
+        assert_eq!(observed.error.is_some(), fails);
+    }
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
     Ok(())
 }
 

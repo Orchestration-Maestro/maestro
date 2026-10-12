@@ -695,7 +695,7 @@
     "test": "last_nonempty_signature_survives_missing_and_empty_deltas",
     "input": {
       "chunks": [
-        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":false,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":false},{\"text\":\"3\",\"thought\":false,\"thoughtSignature\":\"\"},{\"text\":\"4\",\"thought\":false,\"thoughtSignature\":\"new\"},{\"text\":\"5\",\"thought\":false,\"thoughtSignature\":null}]}}]}"
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":false,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":false,\"thoughtSignature\":\"new\"},{\"text\":\"3\",\"thought\":false},{\"text\":\"4\",\"thought\":false,\"thoughtSignature\":\"\"},{\"text\":\"5\",\"thought\":false,\"thoughtSignature\":null}]}}]}"
       ]
     },
     "expected": {
@@ -765,7 +765,7 @@
     "test": "last_nonempty_signature_survives_missing_and_empty_deltas",
     "input": {
       "chunks": [
-        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":true,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":true},{\"text\":\"3\",\"thought\":true,\"thoughtSignature\":\"\"},{\"text\":\"4\",\"thought\":true,\"thoughtSignature\":\"new\"},{\"text\":\"5\",\"thought\":true,\"thoughtSignature\":null}]}}]}"
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"1\",\"thought\":true,\"thoughtSignature\":\"opaque-not-base64\"},{\"text\":\"2\",\"thought\":true,\"thoughtSignature\":\"new\"},{\"text\":\"3\",\"thought\":true},{\"text\":\"4\",\"thought\":true,\"thoughtSignature\":\"\"},{\"text\":\"5\",\"thought\":true,\"thoughtSignature\":null}]}}]}"
       ]
     },
     "expected": {
@@ -1205,7 +1205,7 @@
           },
           {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "x": "third"
@@ -1289,7 +1289,7 @@
           "contentIndex": 2,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "x": "third"
@@ -1311,7 +1311,7 @@
         "content": [
           {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "x": 1
@@ -1319,7 +1319,7 @@
           },
           {
             "type": "toolCall",
-            "id": "@generated-2",
+            "id": "@generated:inspect:2",
             "name": "inspect",
             "arguments": {}
           },
@@ -1331,7 +1331,7 @@
           },
           {
             "type": "toolCall",
-            "id": "@generated-3",
+            "id": "@generated:inspect:3",
             "name": "inspect",
             "arguments": {}
           }
@@ -1367,7 +1367,7 @@
           "contentIndex": 0,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "x": 1
@@ -1388,7 +1388,7 @@
           "contentIndex": 1,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-2",
+            "id": "@generated:inspect:2",
             "name": "inspect",
             "arguments": {}
           }
@@ -1426,7 +1426,7 @@
           "contentIndex": 3,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-3",
+            "id": "@generated:inspect:3",
             "name": "inspect",
             "arguments": {}
           }
@@ -1454,7 +1454,7 @@
           },
           {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "which": 2
@@ -1513,7 +1513,7 @@
           "contentIndex": 1,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:inspect:1",
             "name": "inspect",
             "arguments": {
               "which": 2
@@ -1624,13 +1624,13 @@
         "content": [
           {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:undefined:1",
             "name": "",
             "arguments": {}
           },
           {
             "type": "toolCall",
-            "id": "@generated-2",
+            "id": "@generated::2",
             "name": "",
             "arguments": {}
           }
@@ -1666,7 +1666,7 @@
           "contentIndex": 0,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-1",
+            "id": "@generated:undefined:1",
             "name": "",
             "arguments": {}
           }
@@ -1685,7 +1685,7 @@
           "contentIndex": 1,
           "toolCall": {
             "type": "toolCall",
-            "id": "@generated-2",
+            "id": "@generated::2",
             "name": "",
             "arguments": {}
           }
@@ -2109,7 +2109,7 @@
     "test": "tool_arguments_keep_objects_and_compact_numeric_key_order",
     "input": {
       "chunks": [
-        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":0,\"large\":9007199254740992}}}]}}]}"
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"inspect\",\"args\":{\"10\":\"ten\",\"2\":\"two\",\"z\":1e-7,\"a\":-0,\"large\":9007199254740993}}}]}}]}"
       ]
     },
     "expected": {
@@ -2123,7 +2123,7 @@
               "2": "two",
               "10": "ten",
               "z": 1e-7,
-              "a": 0,
+              "a": -0.0,
               "large": 9007199254740992
             }
           }
@@ -2165,7 +2165,7 @@
               "2": "two",
               "10": "ten",
               "z": 1e-7,
-              "a": 0,
+              "a": -0.0,
               "large": 9007199254740992
             }
           }
@@ -4480,6 +4480,7 @@
     "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
     "input": {
       "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":9,\"candidatesTokenCount\":9,\"totalTokenCount\":9}}",
         "{\"usageMetadata\":{}}"
       ]
     },
@@ -4509,6 +4510,7 @@
     "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
     "input": {
       "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":9,\"candidatesTokenCount\":9,\"totalTokenCount\":9}}",
         "{\"usageMetadata\":{\"promptTokenCount\":0,\"cachedContentTokenCount\":0,\"candidatesTokenCount\":0,\"thoughtsTokenCount\":0,\"totalTokenCount\":0}}"
       ]
     },
@@ -4538,6 +4540,7 @@
     "test": "usage_defaults_missing_counts_without_clamping_or_summing_total",
     "input": {
       "chunks": [
+        "{\"usageMetadata\":{\"promptTokenCount\":9,\"candidatesTokenCount\":9,\"totalTokenCount\":9}}",
         "{\"usageMetadata\":{\"promptTokenCount\":null,\"candidatesTokenCount\":null}}"
       ]
     },

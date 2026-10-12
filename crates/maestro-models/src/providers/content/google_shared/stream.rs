@@ -38,10 +38,11 @@ enum Active {
 /// one. A declared finish reason that maps to `error` is recorded in `output`, not returned.
 ///
 /// # Errors
-/// Returns a failure the source yields unchanged, malformed JSON, a selected member of the
-/// wrong type, call arguments nested beyond the shared JSON conversion's bound, or
+/// Returns a failure the source yields unchanged, malformed JSON, a typed read of a selected
+/// member that fails, call arguments nested beyond the shared JSON conversion's bound, or
 /// `Unhandled stop reason: <reason>` for a finish reason the service does not declare. Content
-/// reduced before the failure stays in `output`, and the open block is not closed.
+/// reduced before the failure stays in `output`, and the open block is not closed. A call
+/// closes the open block and takes its identifier before its arguments are converted.
 pub async fn process_google_stream<S>(
     mut chunks: S,
     output: &SharedAssistantMessage,
@@ -255,7 +256,6 @@ impl<'a> Reducer<'a> {
         signature: Option<&str>,
     ) -> Result<(), DiagnosticErrorInfo> {
         let call = wire::call(raw)?;
-        let delta = compact_object(&call.arguments).map_err(|error| native(&error))?;
         self.close();
         let id = match call
             .id
@@ -269,11 +269,13 @@ impl<'a> Reducer<'a> {
                 self.counter.fetch_add(1, Ordering::Relaxed) + 1
             ),
         };
+        let arguments = wire::arguments(call.arguments)?;
+        let delta = compact_object(&arguments).map_err(|error| native(&error))?;
         self.call_ids.insert(id.clone());
         let call = ToolCall {
             id,
             name: call.name.unwrap_or_default(),
-            arguments: call.arguments,
+            arguments,
             thought_signature: signature.map(str::to_owned),
         };
         let content_index = self.change(|message| {

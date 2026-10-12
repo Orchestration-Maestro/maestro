@@ -1,4 +1,4 @@
-//! Members of one response item, read at the branch that consumes them.
+//! Members of one response item, read with typed reads at the branch that consumes them.
 
 use serde::de::{DeserializeOwned, Error};
 use serde_json::Value;
@@ -20,13 +20,13 @@ pub(super) struct Part<'a> {
 }
 
 /// The members of a function call.
-pub(super) struct Call {
+pub(super) struct Call<'a> {
     /// The identifier the service gave the call.
     pub(super) id: Option<String>,
     /// The name of the function.
     pub(super) name: Option<String>,
-    /// The arguments, an empty object when the call has none.
-    pub(super) arguments: JsonObject,
+    /// The raw arguments, absent when the call has none.
+    pub(super) arguments: Option<&'a RawValue>,
 }
 
 /// Decode a member that may be absent or null; both read as absent.
@@ -90,21 +90,25 @@ pub(super) fn part(raw: &RawValue) -> Result<Part<'_>, DiagnosticErrorInfo> {
     })
 }
 
-/// Read a function call; missing or null arguments are an empty object.
-pub(super) fn call(raw: &RawValue) -> Result<Call, DiagnosticErrorInfo> {
+/// Read the identifier and name of a function call; the arguments stay raw.
+pub(super) fn call(raw: &RawValue) -> Result<Call<'_>, DiagnosticErrorInfo> {
     let raw = object(raw)?;
-    let arguments = match member(raw, "args").filter(|args| args.get() != "null") {
-        None => JsonObject::new(),
-        Some(args) => match json_value(object(args)?).map_err(|error| native(&error))? {
-            Value::Object(members) => members,
-            _ => JsonObject::new(),
-        },
-    };
     Ok(Call {
         id: nullable(raw, "id")?,
         name: nullable(raw, "name")?,
-        arguments,
+        arguments: member(raw, "args").filter(|args| args.get() != "null"),
     })
+}
+
+/// Materialize call arguments; missing or null arguments are an empty object.
+pub(super) fn arguments(raw: Option<&RawValue>) -> Result<JsonObject, DiagnosticErrorInfo> {
+    let Some(raw) = raw else {
+        return Ok(JsonObject::new());
+    };
+    match json_value(object(raw)?).map_err(|error| native(&error))? {
+        Value::Object(members) => Ok(members),
+        _ => Ok(JsonObject::new()),
+    }
 }
 
 /// Read a usage report; the cost is left for the model's rates to fill.
