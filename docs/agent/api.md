@@ -126,6 +126,7 @@ faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(move |context, _, _, 
     ready(Ok(faux_assistant_message("ok", FauxAssistantMessageOptions::default())))
 }))]);
 
+let earlier_reply = AgentMessage::Assistant(Arc::new(RwLock::new(faux_assistant_message("earlier", FauxAssistantMessageOptions::default()))));
 let notice = AgentMessage::Custom(Arc::new(RwLock::new(Notification { text: "Info".into() })));
 let agent: Arc<Agent<Notification>> = Arc::new(Agent::new(AgentOptions {
     spawn: Some(Arc::new(|task| {
@@ -139,10 +140,11 @@ let agent: Arc<Agent<Notification>> = Arc::new(Agent::new(AgentOptions {
             .iter()
             .filter_map(|entry| match entry {
                 AgentMessage::User(user) => Some(Message::User(user.read().unwrap().clone())),
+                AgentMessage::Assistant(reply) => Some(Message::Assistant(reply.read().unwrap().clone())),
+                AgentMessage::ToolResult(result) => Some(Message::ToolResult(result.read().unwrap().clone())),
                 AgentMessage::Custom(notice) => {
                     Some(Message::User(plain(&format!("Notice: {}", notice.read().unwrap().text))))
                 }
-                _ => None,
             })
             .collect();
         ready(Ok(messages))
@@ -154,16 +156,16 @@ let agent: Arc<Agent<Notification>> = Arc::new(Agent::new(AgentOptions {
     })),
     initial_state: AgentInitialState {
         model: faux.get_model(None).map(|model| Arc::new(RwLock::new(model.clone()))),
-        messages: vec![entry("old question"), entry("old answer"), notice, entry("recent")],
+        messages: vec![entry("old question"), entry("old answer"), notice, entry("recent"), earlier_reply],
         ..Default::default()
     },
     ..Default::default()
 }));
 
 agent.prompt(PromptInput::Text { text: "now".into(), images: vec![] }).await.unwrap();
-assert_eq!(*requests.lock().unwrap(), [["Notice: Info", "recent", "now"]]);
+assert_eq!(*requests.lock().unwrap(), [["Notice: Info", "recent", "other", "now"]]);
 // Pruning shaped the request only; the retained history keeps everything.
-assert_eq!(agent.state().read().unwrap().messages().read().unwrap().len(), 6);
+assert_eq!(agent.state().read().unwrap().messages().read().unwrap().len(), 7);
 # faux.unregister();
 # });
 ```
@@ -174,7 +176,7 @@ Subscribers receive an `AgentEvent`; the ten kinds are `AgentStart`, `AgentEnd`,
 `TurnStart`, `TurnEnd`, `MessageStart`, `MessageUpdate`, `MessageEnd`,
 `ToolExecutionStart`, `ToolExecutionUpdate` and `ToolExecutionEnd`.
 
-A successful prompt of one text message that calls no tools emits, in order: `AgentStart`,
+With no queued steering or follow-up input, a successful prompt of one text message that calls no tools emits, in order: `AgentStart`,
 `TurnStart`, the prompt's `MessageStart` and `MessageEnd`, the assistant's `MessageStart`,
 a `MessageUpdate` for each model event between the start and terminal events, `MessageEnd`,
 `TurnEnd` and `AgentEnd`. An empty prompt emits no prompt message pair and a batched
@@ -738,9 +740,9 @@ assert_eq!(stream.result().await.len(), 1);
 
 ## Stopping after a turn
 
-`AgentLoopConfig::should_stop_after_turn` runs after each completed turn, once its
-`TurnEnd` has been delivered. Returning `true` ends the run before any follow-up poll or
-second request, and the assistant's stop reason is unchanged. The steering poll at entry
+`AgentLoopConfig::should_stop_after_turn` runs after each normally completed turn, once its
+`TurnEnd` has been delivered; a turn that ends in an error or abort skips it. Returning
+`true` ends the run before any follow-up poll or next request, and the assistant's stop reason is unchanged. The steering poll at entry
 still happens. The example records the order:
 
 ```rust
