@@ -302,7 +302,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
                         text: "partial".into(),
                         text_signature: None,
                     })],
-                    details: json!({"partial":true}),
+                    details: Some(json!({"partial":true})),
                     terminate: None,
                 });
             }
@@ -311,7 +311,7 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
                     text: "result".into(),
                     text_signature: None,
                 })],
-                details: json!({"result":true}),
+                details: Some(json!({"result":true})),
                 terminate: Some(true),
             }))
         }),

@@ -401,7 +401,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
                 .terminations
                 .as_ref()
                 .map_or(Some(true), |values| values[index].as_bool());
-            ready(Ok(AgentToolResult { content: serde_json::from_value(json!([{"type":"text","text":format!("result:{id}")},{"type":"image","data":"AA==","mimeType":"image/png"}])).unwrap(), details: input.details.clone().unwrap_or_else(|| json!({"z":2,"a":1})), terminate }))
+            ready(Ok(AgentToolResult { content: serde_json::from_value(json!([{"type":"text","text":format!("result:{id}")},{"type":"image","data":"AA==","mimeType":"image/png"}])).unwrap(), details: Some(input.details.clone().unwrap_or_else(|| json!({"z":2,"a":1}))), terminate }))
         }),
     }))
 }

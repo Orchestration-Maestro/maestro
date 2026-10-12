@@ -271,7 +271,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             tool_call_id: call.id.clone(),
             tool_name: call.name.clone(),
             content: result.content.clone(),
-            details: Some(result.details.clone()),
+            details: result.details.clone(),
             is_error,
             timestamp: 0.0,
         };
@@ -308,7 +308,7 @@ fn error_result(error: DiagnosticErrorInfo) -> AgentToolResult {
             text: error.message,
             text_signature: None,
         })],
-        details: serde_json::json!({}),
+        details: Some(serde_json::json!({})),
         terminate: None,
     }
 }
@@ -323,7 +323,7 @@ fn apply_overrides(
         result.content = content;
     }
     if let Some(details) = overrides.details.filter(|value| !value.is_null()) {
-        result.details = details;
+        result.details = Some(details);
     }
     if let Some(terminate) = overrides.terminate {
         result.terminate = Some(terminate);

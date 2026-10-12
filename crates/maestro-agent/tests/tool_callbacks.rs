@@ -54,9 +54,9 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
                     text: "partial".into(),
                     text_signature: None,
                 })],
-                details: Details {
+                details: Some(Details {
                     doubled: args.count + 1,
-                },
+                }),
                 terminate: Some(false),
             });
             Ok(AgentToolResult {
@@ -64,9 +64,9 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
                     text: "complete".into(),
                     text_signature: None,
                 })],
-                details: Details {
+                details: Some(Details {
                     doubled: args.count * 2,
-                },
+                }),
                 terminate: Some(true),
             })
         })
@@ -90,7 +90,7 @@ fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
     ))
     .unwrap();
     assert_eq!(
-        serde_json::from_value::<Details>(result.details).unwrap(),
+        serde_json::from_value::<Details>(result.details.unwrap()).unwrap(),
         Details { doubled: 14 }
     );
     assert_eq!(
@@ -100,7 +100,7 @@ fn maestro_typed_tool_round_trips_arguments_results_and_progress() {
     assert_eq!(result.terminate, Some(true));
     let partial = partials.lock().unwrap().pop().unwrap();
     assert_eq!(
-        serde_json::from_value::<Details>(partial.details).unwrap(),
+        serde_json::from_value::<Details>(partial.details.unwrap()).unwrap(),
         Details { doubled: 8 }
     );
     assert_eq!(
@@ -133,14 +133,14 @@ fn maestro_typed_tool_uses_host_json_number_semantics() {
             Box::pin(async {
                 Ok(AgentToolResult {
                     content: Vec::new(),
-                    details: f64::INFINITY,
+                    details: Some(f64::INFINITY),
                     terminate: None,
                 })
             })
         }),
     );
     let result = completed((tool.execute)("numbers".into(), json!(1), None, None)).unwrap();
-    assert_eq!(result.details, serde_json::Value::Null);
+    assert_eq!(result.details, Some(serde_json::Value::Null));
     assert_eq!(result.terminate, None);
 }
 /// A details type whose serializer fails rather than producing JSON.
@@ -164,13 +164,13 @@ fn encoding_failure_tool(progress: bool) -> AgentTool {
                 if progress {
                     update.unwrap()(AgentToolResult {
                         content: Vec::new(),
-                        details: Unencodable(true),
+                        details: Some(Unencodable(true)),
                         terminate: None,
                     });
                 }
                 Ok(AgentToolResult {
                     content: Vec::new(),
-                    details: Unencodable(!progress),
+                    details: Some(Unencodable(!progress)),
                     terminate: None,
                 })
             })
@@ -192,6 +192,21 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
         .unwrap();
         assert_eq!(error.message, "details cannot encode");
     }
+    let absent = AgentTool::typed::<u32, Unencodable>(
+        definition(),
+        "Absent".into(),
+        Arc::new(|_, _, _, _| {
+            Box::pin(async {
+                Ok(AgentToolResult {
+                    content: Vec::new(),
+                    details: None,
+                    terminate: None,
+                })
+            })
+        }),
+    );
+    let result = completed((absent.execute)("absent".into(), json!(1), None, None)).unwrap();
+    assert!(result.details.is_none());
     let tool = AgentTool::typed::<u32, ()>(
         definition(),
         "Failure".into(),

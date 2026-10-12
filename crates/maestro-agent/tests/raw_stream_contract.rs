@@ -848,7 +848,7 @@ fn check_update_payloads(events: &[AgentEvent], response: &maestro_models::Share
                 assert_eq!(tool_call.id, "id");
                 assert_eq!(
                     partial_result.details,
-                    serde_json::json!({"output":"progress"})
+                    Some(serde_json::json!({"output":"progress"}))
                 );
                 Some("progress")
             }

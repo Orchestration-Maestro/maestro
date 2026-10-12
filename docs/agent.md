@@ -52,6 +52,11 @@ Arguments are decoded with [`serde_json::from_value`](https://docs.rs/serde_json
 [`serde_json::to_value`](https://docs.rs/serde_json/latest/serde_json/fn.to_value.html); their documentation owns the conversion rules.
 Serialization failures return through the tool error channel.
 
+A result's `details` is `None` when absent, `Some` of JSON null for an explicit
+null, and `Some` of the value otherwise. Typed results encode only a present
+detail, so `None` stays absent and `Some(None)` of an optional detail type stays
+null. The tool-result message omits absent details.
+
 State collection replacement retains the supplied entry handles in new outer
 storage. A retained history handle keeps its collection after the state slot is
 replaced. Callers release their state and collection guards before invoking

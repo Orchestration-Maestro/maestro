@@ -50,7 +50,9 @@ is absent or empty. Preparation, validation and before-hook failures skip execut
 and the after hook. Execution failures reach the after hook as tool-error
 results once admitted progress has settled; a progress failure rejects the
 operation first.
-After hooks replace supplied content and nonnull details wholesale and may replace
+After hooks replace supplied content and nonnull details wholesale; absent or
+null override details keep the result's own details, whether absent, null or a
+value. They may replace
 error and termination flags, including false. An after-hook failure becomes a
 tool-error result; request callback, observation, steering, follow-up and
 stop-callback failures reject the operation. In a parallel batch, sibling calls

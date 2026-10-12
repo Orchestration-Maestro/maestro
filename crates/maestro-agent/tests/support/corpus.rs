@@ -574,7 +574,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
                         text: format!("partial-{index}"),
                         text_signature: None,
                     })],
-                    details: json!({"index":index}),
+                    details: Some(json!({"index":index})),
                     terminate: None,
                 });
             }
@@ -594,7 +594,7 @@ fn output(input: &Input, id: &str) -> AgentToolResult {
         .map_or(input.terminate, |values| {
             values[usize::from(id != "one")].as_bool()
         });
-    AgentToolResult { content:serde_json::from_value(json!([{ "type":"text","text":"result" },{"type":"image","data":"AA==","mimeType":"image/png"}])).unwrap(),details:input.details.clone().unwrap_or_else(|| json!({"b":2,"a":1})),terminate }
+    AgentToolResult { content:serde_json::from_value(json!([{ "type":"text","text":"result" },{"type":"image","data":"AA==","mimeType":"image/png"}])).unwrap(),details:Some(input.details.clone().unwrap_or_else(|| json!({"b":2,"a":1}))),terminate }
 }
 /// Construct a replacement stream and capture the request settings.
 fn options(

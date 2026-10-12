@@ -801,7 +801,7 @@ async fn native_tool_progress(continuation: bool) {
                         text_signature: None,
                     },
                 )],
-                details: serde_json::json!({"phase":"progress"}),
+                details: Some(serde_json::json!({"phase":"progress"})),
                 terminate: None,
             });
             support::ready(Ok(maestro_agent::AgentToolResult {
@@ -811,7 +811,7 @@ async fn native_tool_progress(continuation: bool) {
                         text_signature: None,
                     },
                 )],
-                details: serde_json::json!({"phase":"final"}),
+                details: Some(serde_json::json!({"phase":"final"})),
                 terminate: Some(true),
             }))
         }));
@@ -878,13 +878,16 @@ fn assert_native_artifacts(events: &Mutex<Vec<AgentEvent>>, messages: &[AgentMes
     assert_eq!(artifacts[0].0, "update");
     assert_eq!(
         artifacts[0].1.details,
-        serde_json::json!({"phase":"progress"})
+        Some(serde_json::json!({"phase":"progress"}))
     );
     assert!(
         matches!(&artifacts[0].1.content[0], maestro_models::UserBlock::Text(text) if text.text == "native partial")
     );
     assert_eq!(artifacts[1].0, "end");
-    assert_eq!(artifacts[1].1.details, serde_json::json!({"phase":"final"}));
+    assert_eq!(
+        artifacts[1].1.details,
+        Some(serde_json::json!({"phase":"final"}))
+    );
     assert!(
         matches!(&artifacts[1].1.content[0], maestro_models::UserBlock::Text(text) if text.text == "native final")
     );

@@ -141,7 +141,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
                         text: format!("result:{id}"),
                         text_signature: None,
                     })],
-                    details: serde_json::Value::Null,
+                    details: Some(serde_json::Value::Null),
                     terminate: None,
                 };
                 complete.send(()).unwrap();
@@ -225,7 +225,7 @@ pub async fn follow_priority() {
                 .steer(super::user("priority-steering"));
             ready(Ok(maestro_agent::AgentToolResult {
                 content: vec![],
-                details: serde_json::Value::Null,
+                details: Some(serde_json::Value::Null),
                 terminate: None,
             }))
         }))

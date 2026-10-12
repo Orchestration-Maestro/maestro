@@ -502,7 +502,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
                         text: format!("result:{id}"),
                         text_signature: None,
                     })],
-                    details: json!({}),
+                    details: Some(json!({})),
                     terminate: None,
                 }))
             }),

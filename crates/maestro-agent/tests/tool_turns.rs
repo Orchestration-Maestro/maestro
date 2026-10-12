@@ -99,7 +99,7 @@ async fn preparation_precedes_validation_and_preserves_raw_events_case() {
             Box::pin(async {
                 Ok(AgentToolResult {
                     content: vec![],
-                    details: serde_json::Value::Null,
+                    details: Some(serde_json::Value::Null),
                     terminate: Some(true),
                 })
             })
@@ -157,7 +157,7 @@ async fn progress_runs_while_execution_is_pending_case() {
             update.unwrap()(result());
             gate.await.unwrap();
             Ok(AgentToolResult {
-                details: serde_json::json!({"done":true}),
+                details: Some(serde_json::json!({"done":true})),
                 ..result()
             })
         })
@@ -222,7 +222,7 @@ async fn tool_artifacts_keep_content_details_and_timestamps_case() {
                 Box::pin(async {
                     Ok(AgentToolResult {
                         content: vec![],
-                        details: serde_json::json!({"original":true}),
+                        details: Some(serde_json::json!({"original":true})),
                         terminate: Some(true),
                     })
                 })
@@ -338,11 +338,11 @@ async fn progress_failure_case() {
     let context = with_execute(Arc::new(|_, _, _, update| {
         let update = update.unwrap();
         update(AgentToolResult {
-            details: serde_json::json!(0),
+            details: Some(serde_json::json!(0)),
             ..result()
         });
         update(AgentToolResult {
-            details: serde_json::json!(1),
+            details: Some(serde_json::json!(1)),
             ..result()
         });
         ready(Err(diagnostic("execution failed")))
@@ -376,7 +376,7 @@ fn progress_failure_sink(
     use std::sync::atomic::Ordering;
     match event {
         AgentEvent::ToolExecutionUpdate { partial_result, .. }
-            if partial_result.details == serde_json::json!(0) =>
+            if partial_result.details == Some(serde_json::json!(0)) =>
         {
             let gate = gate.lock().unwrap().take().unwrap();
             let effect = Arc::clone(effect);
@@ -417,11 +417,11 @@ async fn overlapping_progress_case() {
     let context = with_execute(Arc::new(|_, _, _, update| {
         let update = update.unwrap();
         update(AgentToolResult {
-            details: serde_json::json!(0),
+            details: Some(serde_json::json!(0)),
             ..result()
         });
         update(AgentToolResult {
-            details: serde_json::json!(1),
+            details: Some(serde_json::json!(1)),
             ..result()
         });
         ready(Ok(result()))
@@ -456,7 +456,7 @@ fn overlap_sink(
     use std::sync::atomic::Ordering;
     match event {
         AgentEvent::ToolExecutionUpdate { partial_result, .. }
-            if partial_result.details == serde_json::json!(0) =>
+            if partial_result.details == Some(serde_json::json!(0)) =>
         {
             let gate = released.lock().unwrap().take().unwrap();
             let effects = Arc::clone(effects);
@@ -564,7 +564,7 @@ fn ordered_tools(
                     Box::pin(async {
                         Ok(AgentToolResult {
                             content: vec![],
-                            details: serde_json::Value::Null,
+                            details: Some(serde_json::Value::Null),
                             terminate: None,
                         })
                     })
