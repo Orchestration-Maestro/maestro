@@ -1,0 +1,1120 @@
+[
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {},
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": null
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": false
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": false,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": 0
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": 0,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": ""
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": "",
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": {}
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {},
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": []
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": [
+        2,
+        1,
+        2
+      ]
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [
+        2,
+        1,
+        2
+      ],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "terminate": true
+    },
+    "override": {
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      }
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      },
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {},
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": null
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": false
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": false,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": 0
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": 0,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": ""
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": "",
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": {}
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {},
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": []
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": [
+        2,
+        1,
+        2
+      ]
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [
+        2,
+        1,
+        2
+      ],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "terminate": true
+    },
+    "override": {
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      }
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      },
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {},
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": null
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": false
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": false,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": 0
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": 0,
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": ""
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": "",
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": {}
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {},
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": []
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": [
+        2,
+        1,
+        2
+      ]
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": [
+        2,
+        1,
+        2
+      ],
+      "isError": false
+    }
+  },
+  {
+    "input": {
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "retained": 1,
+        "nested": {
+          "old": 2
+        }
+      },
+      "terminate": true
+    },
+    "override": {
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      }
+    },
+    "expected": {
+      "role": "toolResult",
+      "toolCallId": "call-1",
+      "toolName": "echo",
+      "content": [
+        {
+          "type": "text",
+          "text": "completed"
+        },
+        {
+          "type": "image",
+          "data": "AA==",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": {
+        "replacement": 3,
+        "nested": {
+          "new": 4
+        }
+      },
+      "isError": false
+    }
+  }
+]

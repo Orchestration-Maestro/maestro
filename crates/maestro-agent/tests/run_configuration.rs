@@ -117,7 +117,7 @@ fn constructor_hooks(calls: &Arc<Mutex<Vec<&'static str>>>) -> AgentOptions {
             support::ready(Ok(None))
         })),
         after_tool_call: Some(Arc::new(move |context, _| {
-            assert_eq!(context.result.details, serde_json::json!("executed"));
+            assert_eq!(context.result.details, Some(serde_json::json!("executed")));
             after_calls.lock().unwrap().push("after");
             support::ready(Ok(Some(maestro_agent::AfterToolCallResult {
                 details: Some(serde_json::json!("after")),
@@ -181,7 +181,7 @@ async fn drive_constructor(
         assert_eq!(args, serde_json::json!({"constructor":"before"}));
         executed.lock().unwrap().push("execute");
         support::ready(Ok(maestro_agent::AgentToolResult {
-            details: serde_json::json!("executed"),
+            details: Some(serde_json::json!("executed")),
             terminate: None,
             content: vec![],
         }))

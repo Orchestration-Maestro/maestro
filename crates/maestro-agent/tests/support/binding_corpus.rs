@@ -389,7 +389,7 @@ fn captured_tool(agent: &Agent) {
     let tool = super::with_execute(Arc::new(|_, _, _, _| {
         ready(Ok(maestro_agent::AgentToolResult {
             content: vec![],
-            details: json!({}),
+            details: Some(json!({})),
             terminate: None,
         }))
     }))

@@ -175,7 +175,7 @@ pub fn with_execute(execute: maestro_agent::ExecuteTool) -> AgentContext {
 pub fn result() -> maestro_agent::AgentToolResult {
     maestro_agent::AgentToolResult {
         content: vec![],
-        details: serde_json::Value::Null,
+        details: Some(serde_json::Value::Null),
         terminate: Some(true),
     }
 }

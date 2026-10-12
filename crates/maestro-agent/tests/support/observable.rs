@@ -95,7 +95,7 @@ pub fn artifact(text: &str, terminate: bool) -> maestro_agent::AgentToolResult {
                 text_signature: None,
             },
         )],
-        details: serde_json::json!({"output":text}),
+        details: Some(serde_json::json!({"output":text})),
         terminate: Some(terminate),
     }
 }

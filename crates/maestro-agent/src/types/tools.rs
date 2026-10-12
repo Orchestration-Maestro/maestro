@@ -10,11 +10,15 @@ pub enum ToolExecutionMode {
     Parallel,
 }
 /// Tool output with caller-defined details.
+///
+/// `details` has three states: `None` is absent and is omitted from the tool
+/// result message, `Some` of a JSON null keeps an explicit null, and any other
+/// `Some` carries its value.
 pub struct AgentToolResult<TDetails = serde_json::Value> {
     /// Text and image output.
     pub content: Vec<UserBlock>,
-    /// Caller-defined result data.
-    pub details: TDetails,
+    /// Caller-defined result data; `None` when the tool returned none.
+    pub details: Option<TDetails>,
     /// Whether this result requests termination.
     pub terminate: Option<bool>,
 }
@@ -77,7 +81,8 @@ impl AgentTool {
     ///
     /// Arguments are decoded with [`serde_json::from_value`] and a decoding
     /// error does not invoke the callback. Details and progress details are
-    /// encoded with [`serde_json::to_value`].
+    /// encoded with [`serde_json::to_value`]; absent details stay absent and a
+    /// present detail that encodes as JSON null stays an explicit null.
     #[must_use]
     pub fn typed<P: serde::de::DeserializeOwned + 'static, D: serde::Serialize + 'static>(
         definition: Tool,
@@ -134,7 +139,11 @@ fn encode_result<D: serde::Serialize>(
 ) -> Result<AgentToolResult, DiagnosticErrorInfo> {
     Ok(AgentToolResult {
         content: result.content,
-        details: serde_json::to_value(result.details).map_err(|error| json_error(&error))?,
+        details: result
+            .details
+            .map(serde_json::to_value)
+            .transpose()
+            .map_err(|error| json_error(&error))?,
         terminate: result.terminate,
     })
 }

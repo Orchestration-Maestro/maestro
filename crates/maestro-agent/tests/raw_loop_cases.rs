@@ -168,7 +168,7 @@ fn maestro_tool_turn_returns_tool_results() {
                 is_error,
             } => {
                 assert!(!is_error);
-                assert_eq!(result.details, serde_json::json!({"output":"hello"}));
+                assert_eq!(result.details, Some(serde_json::json!({"output":"hello"})));
                 Some(tool_call.id.as_str())
             }
             _ => None,

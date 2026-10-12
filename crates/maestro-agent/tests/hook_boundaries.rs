@@ -99,7 +99,7 @@ async fn recovery_case() {
         let mut config = config();
         config.after_tool_call = Some(Arc::new(move |c, _| {
             assert!(c.is_error);
-            assert_eq!(c.result.details, serde_json::json!({}));
+            assert_eq!(c.result.details, Some(serde_json::json!({})));
             assert!(
                 matches!(&c.result.content[0], maestro_models::UserBlock::Text(t) if t.text == "execute failed")
             );

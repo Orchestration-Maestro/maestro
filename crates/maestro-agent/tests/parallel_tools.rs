@@ -461,7 +461,7 @@ fn selection_hook(
                 selected_execute(Arc::clone(&lifetime));
             let replacement = with_execute(Arc::new(|_, _, _, _| {
                 ready(Ok(maestro_agent::AgentToolResult {
-                    details: serde_json::json!("replacement"),
+                    details: Some(serde_json::json!("replacement")),
                     ..result()
                 }))
             }));
@@ -480,7 +480,7 @@ fn selected_execute(lifetime: Arc<()>) -> maestro_agent::ExecuteTool {
         Box::pin(async move {
             drop(lifetime);
             Ok(maestro_agent::AgentToolResult {
-                details: serde_json::json!("selected edit"),
+                details: Some(serde_json::json!("selected edit")),
                 ..result()
             })
         })
