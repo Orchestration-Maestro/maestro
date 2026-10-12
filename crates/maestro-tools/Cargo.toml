@@ -11,12 +11,9 @@ ryu-js.workspace = true
 num-traits.workspace = true
 maestro-models = { path = "../maestro-models" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
-photon-rs = { version = "=0.3.3", default-features = false }
+image = { version = "=0.24.9", default-features = false, features = ["png", "jpeg", "gif", "webp", "bmp"] }
 kamadak-exif = "=0.6.1"
 jpeg-decoder = { version = "=0.3.2", default-features = false, features = ["platform_independent"] }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-photon-rs = { version = "=0.3.3", default-features = false, features = ["enable_wasm"] }
 
 [package.metadata.cargo-machete]
 # Enables deterministic color conversion in the existing image decoder.

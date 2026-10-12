@@ -4,7 +4,8 @@ mod support;
 use support::TestResult;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use maestro_tools::utils::{exif_orientation::apply_exif_orientation, photon::PhotonImageType};
+use image::RgbaImage;
+use maestro_tools::utils::exif_orientation::apply_exif_orientation;
 use serde::Deserialize;
 use serde_json::json;
 
@@ -28,11 +29,12 @@ fn check(name: &str) -> TestResult {
         assert_eq!(case.operation, "orient", "{}", case.id);
         let input: Input = serde_json::from_value(case.input)?;
         let bytes = STANDARD.decode(input.bytes)?;
-        let image = PhotonImageType::new(input.pixels, input.width, input.height);
+        let image = RgbaImage::from_raw(input.width, input.height, input.pixels)
+            .ok_or("invalid fixture pixels")?;
         let image = apply_exif_orientation(image, &bytes);
         assert_eq!(
-            json!({"width":image.get_width(), "height":image.get_height(),
-            "pixels":image.get_raw_pixels()}),
+            json!({"width":image.width(), "height":image.height(),
+            "pixels":image.as_raw()}),
             case.expected,
             "{}",
             case.id

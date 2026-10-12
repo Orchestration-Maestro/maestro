@@ -1,8 +1,13 @@
 //! PNG conversion for inline images.
 
-use super::photon::decode_image;
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use super::exif_orientation::apply_exif_orientation;
+use base64::{
+    Engine as _, alphabet,
+    engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig, general_purpose::STANDARD},
+};
+use image::{DynamicImage, ImageOutputFormat, RgbaImage};
 use serde::Serialize;
+use std::io::Cursor;
 
 /// Encoded image data and its format.
 #[derive(Serialize)]
@@ -22,10 +27,41 @@ pub fn convert_to_png(base64_data: &str, mime_type: &str) -> Option<ConvertedIma
     let data = if mime_type == "image/png" {
         base64_data.to_owned()
     } else {
-        STANDARD.encode(decode_image(base64_data)?.get_bytes())
+        encode_image(
+            &DynamicImage::ImageRgba8(decode_image(base64_data)?),
+            ImageOutputFormat::Png,
+        )?
     };
     Some(ConvertedImage {
         data,
         mime_type: "image/png".to_owned(),
     })
+}
+
+/// Decode padded or unpadded base64 with URL-safe spelling and ASCII whitespace.
+pub(super) fn decode_image(data: &str) -> Option<RgbaImage> {
+    let normalized: String = data
+        .chars()
+        .filter(|c| !c.is_ascii_whitespace())
+        .map(|c| match c {
+            '-' => '+',
+            '_' => '/',
+            other => other,
+        })
+        .collect();
+    let config = GeneralPurposeConfig::new()
+        .with_decode_padding_mode(DecodePaddingMode::Indifferent)
+        .with_decode_allow_trailing_bits(true);
+    let bytes = GeneralPurpose::new(&alphabet::STANDARD, config)
+        .decode(normalized)
+        .ok()?;
+    let image = image::load_from_memory(&bytes).ok()?.to_rgba8();
+    Some(apply_exif_orientation(image, &bytes))
+}
+
+/// Encode RGBA pixels in the requested format as base64.
+pub(super) fn encode_image(image: &DynamicImage, format: ImageOutputFormat) -> Option<String> {
+    let mut bytes = Cursor::new(Vec::new());
+    image.write_to(&mut bytes, format).ok()?;
+    Some(STANDARD.encode(bytes.into_inner()))
 }

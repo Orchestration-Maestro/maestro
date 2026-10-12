@@ -1,13 +1,12 @@
 //! Image fitting with independent geometry and base64 payload limits.
 
-use super::{
-    image_convert::ConvertedImage,
-    photon::{PhotonImageType, decode_image},
+use super::image_convert::{ConvertedImage, decode_image, encode_image};
+use image::{
+    DynamicImage, ImageOutputFormat,
+    imageops::{FilterType, resize},
 };
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use maestro_models::ImageContent;
 use num_traits::ToPrimitive;
-use photon_rs::transform::{SamplingFilter, resize};
 use serde::Serialize;
 
 /// Independent image limits; absent fields select the documented defaults.
@@ -48,7 +47,7 @@ pub struct ResizedImage {
 #[must_use]
 pub fn resize_image(img: &ImageContent, options: ImageResizeOptions) -> Option<ResizedImage> {
     let image = decode_image(&img.data)?;
-    let (width, height) = (image.get_width(), image.get_height());
+    let (width, height) = (image.width(), image.height());
     let cap = options.max_bytes.unwrap_or(4_718_592);
     let bounds = (
         options.max_width.unwrap_or(2000),
@@ -67,13 +66,13 @@ pub fn resize_image(img: &ImageContent, options: ImageResizeOptions) -> Option<R
     }
     let (mut width, mut height) = initial_dimensions((width, height), bounds)?;
     loop {
-        let scaled = resize(&image, width, height, SamplingFilter::Lanczos3);
+        let scaled = DynamicImage::ImageRgba8(resize(&image, width, height, FilterType::Lanczos3));
         if let Some(encoded) = fitting_encoding(&scaled, cap, options.jpeg_quality.unwrap_or(80)) {
             return Some(ResizedImage {
                 data: encoded.data,
                 mime_type: encoded.mime_type,
-                original_width: image.get_width(),
-                original_height: image.get_height(),
+                original_width: image.width(),
+                original_height: image.height(),
                 width,
                 height,
                 was_resized: true,
@@ -88,15 +87,15 @@ pub fn resize_image(img: &ImageContent, options: ImageResizeOptions) -> Option<R
 }
 
 /// Try PNG then first-occurrence JPEG qualities, stopping at the first strict fit.
-fn fitting_encoding(image: &PhotonImageType, cap: usize, quality: u8) -> Option<ConvertedImage> {
-    let data = STANDARD.encode(image.get_bytes());
+fn fitting_encoding(image: &DynamicImage, cap: usize, quality: u8) -> Option<ConvertedImage> {
+    let data = encode_image(image, ImageOutputFormat::Png)?;
     if data.len() < cap {
         return Some(ConvertedImage {
             data,
             mime_type: "image/png".to_owned(),
         });
     }
-    if image.get_width() > u32::from(u16::MAX) || image.get_height() > u32::from(u16::MAX) {
+    if image.width() > u32::from(u16::MAX) || image.height() > u32::from(u16::MAX) {
         return None;
     }
     let qualities = [quality, 85, 70, 55, 40];
@@ -104,7 +103,7 @@ fn fitting_encoding(image: &PhotonImageType, cap: usize, quality: u8) -> Option<
         if qualities[..index].contains(quality) {
             continue;
         }
-        let data = STANDARD.encode(image.get_bytes_jpeg(*quality));
+        let data = encode_image(image, ImageOutputFormat::Jpeg(*quality))?;
         if data.len() < cap {
             return Some(ConvertedImage {
                 data,

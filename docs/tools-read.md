@@ -121,7 +121,7 @@ selects the first primary JPEG/WebP orientation retained by the metadata reader,
 including optional WebP EXIF prefixes and padded chunks. A retained unreadable or
 out-of-range value leaves pixels unchanged. Metadata decoding follows the
 [EXIF reader](libraries/tools-output.md#image-libraries).
-The eight orientations use flips and integer quarter-turn pixel permutations.
+The eight orientations use `image::imageops` flips and integer quarter-turns.
 Pixel decoding, Lanczos3 resampling and encoding are delegated to the
 [image libraries](libraries/tools-output.md#image-libraries).
 
