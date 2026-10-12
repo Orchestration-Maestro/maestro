@@ -1,7 +1,7 @@
 //! Conversation policy over the shared server-sent event reader.
 use super::events::Events;
 use crate::providers::{
-    http::{RequestFailure, SseMessages},
+    http::{FetchError, RequestFailure, SseMessages},
     json_text::{raw_json, try_object_record},
 };
 use crate::{AssistantMessageEventStream, HttpBody, SharedAssistantMessage};
@@ -17,7 +17,10 @@ pub(super) async fn read(
     let mut decoder = SseMessages::default();
     let mut events = Events::default();
     while let Some(bytes) = body.next().await {
-        let bytes = bytes.map_err(|error| RequestFailure::new(error.to_string()))?;
+        let bytes = bytes.map_err(|error| match error {
+            FetchError::Aborted => super::stream::aborted(),
+            other => RequestFailure::new(other.to_string()),
+        })?;
         for frame in decoder.push(&bytes) {
             if frame.data == "[DONE]" {
                 events.complete(stream, output);
