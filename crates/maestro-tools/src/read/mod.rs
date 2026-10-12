@@ -10,21 +10,15 @@ use crate::{
     path_utils::resolve_read_path,
     tool_definition_wrapper::wrap_tool_definition,
     types::ToolDefinition,
+    utils::diagnostics::diagnostic,
 };
 use execution::Reader;
 use maestro_agent::AgentTool;
-use maestro_models::{
-    BoxFuture, DiagnosticErrorInfo, DiagnosticInput, Model, Tool, extract_diagnostic_error,
-};
+use maestro_models::{BoxFuture, DiagnosticErrorInfo, Model, Tool};
 use native::NativeReadOperations;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{rc::Rc, sync::Arc};
-
-/// A failure whose message is `message`, named `ThrownValue` with no stack or code.
-fn failure(message: &str) -> DiagnosticErrorInfo {
-    extract_diagnostic_error(DiagnosticInput::Text(message))
-}
 
 /// Arguments of one read.
 #[derive(Clone, Debug, Deserialize)]
@@ -132,7 +126,7 @@ pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
                     let reader = Arc::clone(&reader);
                     Box::pin(async move { reader.read(path, input, signal, context).await })
                 }
-                Err(error) => Box::pin(std::future::ready(Err(native::diagnostic(&error)))),
+                Err(error) => Box::pin(std::future::ready(Err(diagnostic(&error)))),
             }
         }),
         render_call: Some(Rc::new(render::render_call)),

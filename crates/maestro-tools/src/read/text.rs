@@ -1,22 +1,18 @@
 //! Line selection and continuation notices for text reads.
 
-use super::{ReadToolDetails, failure};
-use crate::output::truncate::{
-    DEFAULT_MAX_BYTES, TruncationBy, TruncationOptions, TruncationResult, format_size,
-    truncate_head,
+use super::ReadToolDetails;
+use crate::{
+    output::{
+        render_parts::{float, num},
+        truncate::{
+            DEFAULT_MAX_BYTES, TruncationBy, TruncationOptions, TruncationResult, format_size,
+            truncate_head,
+        },
+    },
+    utils::diagnostics::failure,
 };
 use maestro_models::DiagnosticErrorInfo;
 use num_traits::ToPrimitive;
-
-/// Format a line number or count the way the model has always seen it.
-pub(super) fn num(value: f64) -> String {
-    ryu_js::Buffer::new().format(value).to_owned()
-}
-
-/// Convert a length to a float, which holds every realistic length exactly.
-pub(super) fn float(len: usize) -> f64 {
-    len.to_f64().unwrap_or(f64::MAX)
-}
 
 /// Resolve a slice bound: truncate toward zero, count a negative bound from the end.
 fn bound(value: f64, len: usize) -> usize {

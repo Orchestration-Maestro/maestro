@@ -1,34 +1,48 @@
-//! Locale collation for native inventory sorting.
-use icu_collator::{Collator, CollatorBorrowed, options::CollatorOptions};
-use std::io;
+//! Locale collation shared by native inventory sorting and tool listings.
+use icu_collator::{CollatorBorrowed, options::CollatorOptions};
+use std::{cmp::Ordering, io};
 
-/// Prepare a collator from the first present of `LC_ALL`, `LC_MESSAGES` and `LANG`.
-///
-/// Encoding and modifier suffixes are dropped, `C` and `POSIX` mean `en-US`, and
-/// text that is not a locale selects the library default.
-pub(super) fn collator(
-    environment: &dyn Fn(&str) -> Option<String>,
-) -> io::Result<CollatorBorrowed<'static>> {
-    let raw = ["LC_ALL", "LC_MESSAGES", "LANG"]
-        .into_iter()
-        .find_map(environment)
-        .unwrap_or_else(|| "en_US".into());
-    let base = raw.split(['.', '@']).next().unwrap_or_default();
-    let locale = match base {
-        "C" | "POSIX" => "en-US".into(),
-        "" => "und".into(),
-        value => value.replace('_', "-"),
-    };
-    let preferences = locale
-        .parse::<icu_locale_core::Locale>()
-        .map(Into::into)
-        .unwrap_or_default();
-    Collator::try_new(preferences, CollatorOptions::default()).map_err(io::Error::other)
+/// A locale-aware string comparison.
+pub struct Collator(CollatorBorrowed<'static>);
+
+impl Collator {
+    /// Prepare a collator from the first present of `LC_ALL`, `LC_MESSAGES` and `LANG`.
+    ///
+    /// Encoding and modifier suffixes are dropped, `C` and `POSIX` mean `en-US`, and
+    /// text that is not a locale selects the library default.
+    ///
+    /// # Errors
+    /// Returns the library's failure to load collation data.
+    pub fn new(environment: &dyn Fn(&str) -> Option<String>) -> io::Result<Self> {
+        let raw = ["LC_ALL", "LC_MESSAGES", "LANG"]
+            .into_iter()
+            .find_map(environment)
+            .unwrap_or_else(|| "en_US".into());
+        let base = raw.split(['.', '@']).next().unwrap_or_default();
+        let locale = match base {
+            "C" | "POSIX" => "en-US".into(),
+            "" => "und".into(),
+            value => value.replace('_', "-"),
+        };
+        let preferences = locale
+            .parse::<icu_locale_core::Locale>()
+            .map(Into::into)
+            .unwrap_or_default();
+        icu_collator::Collator::try_new(preferences, CollatorOptions::default())
+            .map(Self)
+            .map_err(io::Error::other)
+    }
+
+    /// Order `left` before, equal to or after `right`.
+    #[must_use]
+    pub fn compare(&self, left: &str, right: &str) -> Ordering {
+        self.0.compare(left, right)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::collator;
+    use super::Collator;
     use std::cmp::Ordering;
 
     /// Compare `left` with `right` under the locale operands `env`.
@@ -38,7 +52,7 @@ mod tests {
                 .find(|(key, _)| *key == name)
                 .map(|(_, value)| (*value).to_owned())
         };
-        collator(&lookup).unwrap().compare(left, right)
+        Collator::new(&lookup).unwrap().compare(left, right)
     }
 
     #[test]

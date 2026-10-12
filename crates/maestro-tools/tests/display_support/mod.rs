@@ -241,7 +241,11 @@ pub fn cases(test: &str) -> Vec<Case> {
 
 /// A theme whose key `i` of the corpus has palette color `i + 1 + shift`.
 pub fn palette(shift: u8) -> Theme {
-    let keys = theme_keys();
+    palette_of(&theme_keys(), shift)
+}
+
+/// A theme whose key `i` of `keys` has palette color `i + 1 + shift`.
+pub fn palette_of(keys: &[String], shift: u8) -> Theme {
     let colors = keys.iter().enumerate().map(|(index, key)| {
         let color = ThemeColor::Named(key.clone());
         (
@@ -525,7 +529,12 @@ pub fn render_case(case: &Case) -> Vec<String> {
 
 /// The recorded rows padded to the viewport.
 pub fn padded(expected: &str) -> String {
-    format!("{expected}{}", " ".repeat(WIDTH - visible_width(expected)))
+    padded_to(expected, WIDTH)
+}
+
+/// The recorded row padded to `width` columns.
+pub fn padded_to(expected: &str, width: usize) -> String {
+    format!("{expected}{}", " ".repeat(width - visible_width(expected)))
 }
 
 /// A recorded row made only of style escapes shown as an empty row, which is how the toolkit's

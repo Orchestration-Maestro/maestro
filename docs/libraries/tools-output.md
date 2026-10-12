@@ -35,6 +35,15 @@ On Unix a present `HOME` is used verbatim, including an empty value, and
 [`std::env::home_dir`](https://doc.rust-lang.org/std/env/fn.home_dir.html)
 runs only when `HOME` is absent; Windows always uses that platform lookup. A missing entry is a lookup error returned only for `~` paths.
 
+## Directory listing
+
+The [`ls` tool](../tools-search.md) adds no package, feature or version. It orders names with
+`maestro-theme`'s [collator](../theme.md#replaceable-operations), which uses the theme crate's
+existing `icu_collator`/`icu_locale_core` pins, reads native names through
+`NativeThemeOperations`, spells numbers with `ryu-js` and runs blocking file effects on the
+existing `tokio` blocking pool. Its call and result renderers reuse the read renderers' shared
+display helpers rather than adding their own.
+
 ## Display strings
 
 `maestro-tools` uses `regex =1.13.1` with default features (MIT or Apache-2.0), already
