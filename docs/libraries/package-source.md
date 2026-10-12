@@ -11,8 +11,8 @@ commands and run capture deadlines; captured children come from `maestro-process
 All targets enable `sync` for worker results.
 Unix adds rustix `=1.1.5`, defaults off, `std` and `process`, for signal names. Native tests enable Tokio `test-util`. The native constructor takes
 a caller-owned `Rc<tokio::task::LocalSet>` and retains it weakly. Serde derive is test-only
-here, as is Tokio's runtime builder. Internal dependencies are settings, resources
-and the shared path utility. Native effects use the standard library and Tokio and
+here, as is Tokio's runtime builder. Internal dependencies are settings, resources,
+the shared path utility and, on native targets, `maestro-process`. Native effects use the standard library and Tokio and
 remain outside the browser target; browser callers supply `PackageOperations`.
 
 Deterministic temporary cache names use `sha2 =0.11.0`, defaults off

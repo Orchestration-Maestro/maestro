@@ -337,22 +337,6 @@ fn native_child_abort_waits_for_cleanup() {
     });
 }
 
-/// Polls a pinned future a bounded number of times, once per scheduler turn.
-#[cfg(unix)]
-async fn settle<F: std::future::Future>(mut run: std::pin::Pin<&mut F>) -> Option<F::Output> {
-    for _ in 0..1000 {
-        if let std::task::Poll::Ready(output) = std::future::poll_fn(|cx| {
-            std::task::Poll::Ready(std::future::Future::poll(run.as_mut(), cx))
-        })
-        .await
-        {
-            return Some(output);
-        }
-        tokio::task::yield_now().await;
-    }
-    None
-}
-
 #[cfg(unix)]
 #[test]
 fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
@@ -389,26 +373,13 @@ fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
         () = ready => {}
     }
     signal.abort();
-    let (_, mut parent) = sockets.remove(sockets.iter().position(|(role, _)| *role == b'P').unwrap());
-    let mut sink = vec![];
-    let result = tokio::select! {
-        result = &mut run => Some(result),
-        _ = parent.read_to_end(&mut sink) => None,
-    };
-    let result = match result {
-        Some(result) => Some(result),
-        None => settle(run.as_mut()).await,
-    };
-    let settled_before_release = result.is_some();
-    let (_, mut descendant) = sockets.remove(0);
+    // The descendant still holds its pipes here; a search that waited for them
+    // would never settle until the release below.
+    let result = run.as_mut().await;
+    let (_, mut descendant) = sockets.remove(sockets.iter().position(|(role, _)| *role == b'D').unwrap());
     let _ = descendant.write_all(b"go").await;
     let mut rest = vec![];
     let _ = descendant.read_to_end(&mut rest).await;
-    let result = match result {
-        Some(result) => result,
-        None => run.await,
-    };
-    assert!(settled_before_release, "search waited for the descendant's pipes");
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::Interrupted);
     });
 }

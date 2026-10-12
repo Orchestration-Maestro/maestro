@@ -14,20 +14,28 @@ use std::task::{Context, Poll};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-/// Child behaviours selected by the first argument; later arguments are the port.
+/// Child behaviours selected by the first argument; later arguments are the port and,
+/// for the `live` and `exit` modes, the stream descriptors closed before the hold.
 const CHILD: &str = r"
-import os, signal, socket, sys, time
+import os, signal, socket, sys
 mode, port = sys.argv[1], int(sys.argv[2])
 def hold():
     s = socket.create_connection(('127.0.0.1', port)); s.sendall(b'READY'); s.recv(1)
-if mode == 'eof_first':
-    os.write(1, b'early'); os.close(1); os.close(2); hold()
-elif mode == 'exit_first':
-    os.write(1, b'early'); os.write(2, b'diagnostic')
-    parent = os.getpid()
+def finish(closed):
+    for fd in (1, 2):
+        if str(fd) not in closed: os.write(fd, b'tail')
+    os._exit(0)
+if mode in ('live', 'exit'):
+    closed = sys.argv[3]
+    os.write(1, b'early'); os.write(2, b'diag')
+    if mode == 'live':
+        for fd in closed: os.close(int(fd))
+        hold(); finish(closed)
+    gone, alive = os.pipe()
     if os.fork() == 0:
-        while os.getppid() == parent: time.sleep(0.001)
-        hold(); os.write(1, b'tail'); os.write(2, b'late'); os._exit(0)
+        os.close(alive); os.read(gone, 1)
+        for fd in closed: os.close(int(fd))
+        hold(); finish(closed)
     os._exit(0)
 elif mode == 'term':
     def stop(*_): os.write(1, b'terminated'); os._exit(0)
@@ -46,7 +54,7 @@ fn runtime() -> tokio::runtime::Runtime {
 }
 
 /// A readiness listener and the child command that connects back to it.
-async fn fixture(mode: &str) -> (TcpListener, tokio::process::Command) {
+async fn fixture(mode: &str, closed: &str) -> (TcpListener, tokio::process::Command) {
     let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
     let mut command = tokio::process::Command::new("python3");
     command.args([
@@ -54,6 +62,7 @@ async fn fixture(mode: &str) -> (TcpListener, tokio::process::Command) {
         CHILD,
         mode,
         &listener.local_addr().unwrap().port().to_string(),
+        closed,
     ]);
     (listener, command)
 }
@@ -67,7 +76,7 @@ async fn ready(listener: &TcpListener) -> TcpStream {
     socket
 }
 
-/// Releases a held child and waits until it closes its socket by exiting.
+/// Releases a held child and reads its socket until the child closes it.
 async fn release(mut socket: TcpStream) {
     let _ = socket.write_all(b"go").await;
     let mut rest = Vec::new();
@@ -112,7 +121,7 @@ async fn request(requested: Termination) -> (Output, Vec<TcpStream>, CapturedChi
         "term"
     };
     let holders = if requested == Termination::Kill { 2 } else { 1 };
-    let (listener, mut command) = fixture(mode).await;
+    let (listener, mut command) = fixture(mode, "").await;
     let mut child = CapturedChild::spawn(&mut command).unwrap();
     let (stop, request) = tokio::sync::oneshot::channel();
     let dropped = Rc::new(Cell::new(false));
@@ -178,26 +187,32 @@ sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
 #[test]
 fn captured_process_waits_for_exit_and_both_eofs() {
     runtime().block_on(async {
-        for (mode, stdout, stderr) in [
-            ("exit_first", &b"earlytail"[..], &b"diagnosticlate"[..]),
-            ("eof_first", b"early", b""),
+        for (mode, closed, stdout, stderr) in [
+            ("live", "", &b"earlytail"[..], &b"diagtail"[..]),
+            ("live", "1", b"early", b"diagtail"),
+            ("live", "2", b"earlytail", b"diag"),
+            ("live", "12", b"early", b"diag"),
+            ("exit", "", b"earlytail", b"diagtail"),
+            ("exit", "1", b"early", b"diagtail"),
+            ("exit", "2", b"earlytail", b"diag"),
         ] {
-            let (listener, mut command) = fixture(mode).await;
+            let case = format!("{mode} closing {closed:?}");
+            let (listener, mut command) = fixture(mode, closed).await;
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let run = wait_for_child_process(&mut child, StderrMode::Capture, never());
             tokio::pin!(run);
             let socket = tokio::select! {
                 socket = ready(&listener) => socket,
-                _ = &mut run => panic!("{mode} completed before the held producer closed"),
+                _ = &mut run => panic!("{case} completed before the held producer closed"),
             };
-            assert!(is_pending(&mut run).await, "{mode}");
+            assert!(is_pending(&mut run).await, "{case}");
             let (output, ()) = tokio::join!(run, release(socket));
             let output = output.unwrap();
-            assert!(output.status.success(), "{mode}");
+            assert!(output.status.success(), "{case}");
             assert_eq!(
                 (output.stdout, output.stderr),
                 (stdout.to_vec(), stderr.to_vec()),
-                "{mode}"
+                "{case}"
             );
         }
         let mut command = tokio::process::Command::new("true");

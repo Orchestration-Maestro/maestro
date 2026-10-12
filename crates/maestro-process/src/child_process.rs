@@ -10,7 +10,8 @@ use tokio::process::{Child, ChildStderr, ChildStdout, Command};
 
 /// A spawned child whose stdout and stderr are captured and whose stdin is closed.
 pub struct CapturedChild {
-    /// The native child, which this value reaps.
+    /// The native child, reaped by [`CapturedChild::terminate`] with [`Termination::Kill`]
+    /// and by [`wait_for_child_process`] once it returns.
     child: Child,
     /// Stdout, until a wait takes it.
     stdout: Option<ChildStdout>,
@@ -21,9 +22,9 @@ pub struct CapturedChild {
 /// Whether stderr bytes are returned or consumed and dropped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StderrMode {
-    /// Return every stderr byte.
+    /// Return the stderr bytes the wait collects.
     Capture,
-    /// Read stderr to its end and return nothing.
+    /// Read stderr and return nothing.
     Discard,
 }
 
@@ -117,9 +118,10 @@ async fn collect(pipe: Option<impl AsyncRead + Unpin>, mode: StderrMode) -> io::
 /// Waits for the exit and both pipe EOFs, honouring one termination request.
 ///
 /// `termination` is polled until it yields once. [`Termination::Terminate`]
-/// keeps collecting until exit and both EOFs; [`Termination::Kill`] stops the
-/// readers and returns once the direct child is reaped, with whatever bytes
-/// were already read. The future is dropped when this function returns.
+/// keeps collecting until exit and both EOFs. [`Termination::Kill`] abandons
+/// readers that have not finished, returns once the direct child is reaped and
+/// gives empty bytes for each abandoned stream; completed streams keep theirs.
+/// The future is dropped when this function returns.
 ///
 /// # Errors
 /// Returns the first native pipe, status or termination error unchanged.
