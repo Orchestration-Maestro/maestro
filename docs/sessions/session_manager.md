@@ -216,8 +216,9 @@ the nonheader records of a source file into a new published native history. The
 source is read as for `open`, converted as [loading](#native-history) converts a
 history, and never rewritten. The new header holds `target_cwd` and the
 source path exactly as supplied. An omitted directory is the default for
-`target_cwd` beneath `agent_dir`; an empty directory fails with a not-found
-error before anything is created. A source that is empty or has no valid header
+`target_cwd` beneath `agent_dir`. After the source is loaded and converted, an
+empty `session_dir` path fails with a not-found error before the destination is
+created. A source that is empty or has no valid header
 fails with `Cannot fork: source session file is empty or invalid: {source}`
 before anything is created; a null source record and later write errors leave the
 records already written.
