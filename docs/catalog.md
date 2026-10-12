@@ -5,6 +5,8 @@ model file. `create` uses native file operations; `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential owner.
 
+[Model selection](selection.md) describes references, patterns and command-line choices.
+
 ## Errors
 
 Construction, registration, refresh, removal and provider-key lookup return

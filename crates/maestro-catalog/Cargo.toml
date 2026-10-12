@@ -11,6 +11,9 @@ maestro-credentials = { path = "../maestro-credentials" }
 serde.workspace = true
 serde_json.workspace = true
 
+icu_collator = "=2.3.1"
+icu_locale_core = { version = "=2.3.0", default-features = false, features = ["alloc"] }
+
 indexmap = { version = "=2.14.2", features = ["serde"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

@@ -10,6 +10,8 @@ Add terms here when the specs establish their meaning; use one name per concept.
 From `docs/specs/maestro-port.md`.
 
 - **Provider:** A named source of model descriptors and authentication behavior; a protocol adapter owns invocation and wire conversion.
+- **Model reference:** A bare model ID or provider/ID accepted by [model selection](docs/selection.md).
+- **Model pattern:** Authored ID/name selection text with an optional thinking suffix; [model selection](docs/selection.md) owns matching and diagnostics.
 - **Model identity:** The combination of provider ID and model ID.
 - **Replay identity:** Provider, API and model ID used to decide whether signed response content is reusable.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
