@@ -200,6 +200,11 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-lock", "core"),
         ("maestro-process", "core"),
         ("maestro-pattern", "core"),
+        ("maestro-text", "core"),
+        ("maestro-json", "core"),
+        ("maestro-entry", "core"),
+        ("maestro-tool", "core"),
+        ("maestro-brand", "core"),
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
         ("maestro-settings", "core"),
@@ -849,8 +854,21 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-lock", "core"),
         ("maestro-pattern", "core"),
         ("maestro-process", "core"),
+        ("maestro-text", "core"),
+        ("maestro-json", "core"),
+        ("maestro-entry", "core"),
+        ("maestro-tool", "core"),
+        ("maestro-brand", "core"),
     ]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for absent in ["text", "json", "entry", "tool", "brand"] {
+        assert!(
+            !workspace
+                .root
+                .join(format!("crates/maestro-{absent}"))
+                .exists()
+        );
+    }
     assert!(!workspace.root.join("crates/maestro-process").exists());
     assert!(!workspace.root.join("crates/maestro-tools").exists());
     assert!(!workspace.root.join("crates/maestro-chat").exists());
