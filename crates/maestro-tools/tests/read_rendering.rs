@@ -5,8 +5,8 @@
 mod display_support;
 
 use display_support::{
-    Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context, padded,
-    theme_keys,
+    Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context,
+    native_highlighter, padded, theme_keys,
 };
 use futures_util::FutureExt;
 use maestro_agent::AgentToolResult;
@@ -223,6 +223,7 @@ fn read_highlighting_uses_only_selected_filename_language() {
             "{args} supported={supported}"
         );
     }
+    assert_native_language_selection();
 }
 
 #[test]
@@ -260,6 +261,72 @@ fn read_highlighting_reads_the_current_published_theme() {
             keyword + 40
         ))
     );
+    let mut native = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let original = Rc::clone(&native.theme);
+    assert_eq!(
+        native_row(
+            &json!({"path": "main.rs"}),
+            "fn main() {}",
+            &native,
+            &original
+        ),
+        padded(&native_styled(0))
+    );
+    native.republish(40);
+    assert_eq!(
+        native_row(
+            &json!({"path": "main.rs"}),
+            "fn main() {}",
+            &native,
+            &original
+        ),
+        padded(&native_styled(40))
+    );
+}
+
+/// Row 1 of `code` in a settled expanded read of `path`, through the native engine.
+fn native_row(
+    args: &serde_json::Value,
+    code: &str,
+    env: &Env,
+    theme: &Rc<maestro_theme::Theme>,
+) -> String {
+    let ctx = context(args, &setup(), env, None);
+    (tool().render_result.unwrap())(&text_result(code), settled(true), theme, &ctx)
+        .unwrap()
+        .render(WIDTH)[1]
+        .clone()
+}
+
+/// Native engine rows for the selected-language paths, with their styles intact.
+fn assert_native_language_selection() {
+    let env = Env::with(Rc::new(display_support::palette(0)), native_highlighter());
+    let plain = format!("\x1b[38;5;{}mfn main() {{}}\x1b[39m", color("toolOutput"));
+    for (args, expected) in [
+        (json!({"path": "code.rs"}), native_styled(0)),
+        (json!({"path": "CODE.RS"}), native_styled(0)),
+        (
+            json!({"path": "other.txt", "file_path": "chosen.rs"}),
+            native_styled(0),
+        ),
+        (json!({"path": "code.unknown"}), plain.clone()),
+        (json!({"path": "LICENSE"}), plain),
+    ] {
+        assert_eq!(
+            native_row(&args, "fn main() {}", &env, &env.theme),
+            padded(&expected),
+            "{args}"
+        );
+    }
+}
+
+/// `fn main() {}` as the native engine styles it, with colors shifted by `shift`.
+fn native_styled(shift: usize) -> String {
+    let [storage, function, punctuation] =
+        ["syntaxType", "syntaxFunction", "syntaxPunctuation"].map(|key| color(key) + shift);
+    format!(
+        "\x1b[38;5;{storage}mfn\x1b[39m \x1b[38;5;{function}mmain\x1b[39m\x1b[38;5;{punctuation}m()\x1b[39m \x1b[38;5;{punctuation}m{{}}\x1b[39m"
+    )
 }
 
 #[test]

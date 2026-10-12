@@ -2,6 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+mod display_support;
+
+use display_support::NoLanguages;
 use futures_util::FutureExt;
 use maestro_agent::{
     AgentTool, AgentToolResult, AgentToolUpdateCallback, ExecuteTool, PrepareArguments,
@@ -9,8 +12,7 @@ use maestro_agent::{
 };
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
 use maestro_theme::{
-    ColorMode, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories,
-    ThemeOptions, ThemeState,
+    ColorMode, NativeThemeOperations, Theme, ThemeDirectories, ThemeOptions, ThemeState,
 };
 use maestro_tools::{
     ToolContextFactory, ToolDefinition, ToolRenderContext, ToolRenderPhase,
@@ -393,23 +395,6 @@ struct Observed {
 
 /// The six row flags in the order execution started, args complete, partial, expanded, images, error.
 type Flags = [bool; 6];
-
-/// A highlighter that supports no language.
-struct NoLanguages;
-
-impl SyntaxHighlighter for NoLanguages {
-    fn supports_language(&self, _: &str) -> bool {
-        false
-    }
-
-    fn highlight(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<Vec<SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>> {
-        Ok(Vec::new())
-    }
-}
 
 /// A definition whose renderers share row state and log what the result renderer saw.
 fn render_definition(

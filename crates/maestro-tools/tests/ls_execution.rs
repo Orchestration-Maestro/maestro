@@ -156,7 +156,10 @@ fn ls_root_operation_errors_keep_catch_boundaries() {
 
 #[test]
 fn ls_cancellation_rejects_before_and_during_operations() {
-    check_all("ls_cancellation_rejects_before_and_during_operations");
+    let mut all = cases("ls_cancellation_rejects_before_and_during_operations");
+    all.sort_by_key(|case| !execute_input(case).is_pending());
+    assert_eq!(all.len(), 13);
+    all.iter().for_each(check_execute);
 }
 
 /// A temporary directory with the entries the native listing cases name.
