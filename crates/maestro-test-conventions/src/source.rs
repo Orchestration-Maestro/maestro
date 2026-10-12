@@ -151,24 +151,57 @@ pub(crate) fn item_attributes(item: &syn::Item) -> &[syn::Attribute] {
     }
 }
 
-/// Access attributes on supported associated impl items.
-pub(crate) fn impl_item_attributes(item: &syn::ImplItem) -> &[syn::Attribute] {
-    match item {
-        syn::ImplItem::Const(item) => &item.attrs,
-        syn::ImplItem::Fn(item) => &item.attrs,
-        syn::ImplItem::Type(item) => &item.attrs,
-        syn::ImplItem::Macro(item) => &item.attrs,
-        _ => &[],
-    }
+/// Emit an accessor that borrows the attributes of the supported associated item variants.
+macro_rules! associated_item_attributes {
+    ($name:ident, $kind:ident) => {
+        #[doc = concat!("Access attributes on supported `", stringify!($kind), "` variants.")]
+        pub(crate) fn $name(item: &syn::$kind) -> &[syn::Attribute] {
+            match item {
+                syn::$kind::Const(item) => &item.attrs,
+                syn::$kind::Fn(item) => &item.attrs,
+                syn::$kind::Type(item) => &item.attrs,
+                syn::$kind::Macro(item) => &item.attrs,
+                _ => &[],
+            }
+        }
+    };
 }
 
-/// Access attributes on supported associated trait items.
-pub(crate) fn trait_item_attributes(item: &syn::TraitItem) -> &[syn::Attribute] {
-    match item {
-        syn::TraitItem::Const(item) => &item.attrs,
-        syn::TraitItem::Fn(item) => &item.attrs,
-        syn::TraitItem::Type(item) => &item.attrs,
-        syn::TraitItem::Macro(item) => &item.attrs,
-        _ => &[],
-    }
+associated_item_attributes!(impl_item_attributes, ImplItem);
+associated_item_attributes!(trait_item_attributes, TraitItem);
+
+/// Record the item's span when it is gated by the test configuration, otherwise walk its children.
+macro_rules! exclude_test_item {
+    ($visitor:ident, $item:ident, $attributes:expr, $visit:ident) => {
+        if $crate::source::cfg_test($attributes) {
+            $visitor.spans.push(span_positions($item.span()));
+        } else {
+            syn::visit::$visit($visitor, $item);
+        }
+    };
 }
+
+/// Emit a visitor method that treats the item as test-owned while visiting its descendants.
+macro_rules! inherit_test_context {
+    ($visit:ident, $kind:ident, $attributes:ident) => {
+        fn $visit(&mut self, item: &'ast syn::$kind) {
+            let testing = self.testing;
+            self.testing |= $crate::source::cfg_test($crate::source::$attributes(item));
+            syn::visit::$visit(self, item);
+            self.testing = testing;
+        }
+    };
+}
+
+pub(crate) use {exclude_test_item, inherit_test_context};
+
+/// Read a Cargo manifest through the native TOML parser.
+pub(crate) fn read_manifest(manifest: &Path) -> Result<toml::Table, String> {
+    std::fs::read_to_string(manifest)
+        .map_err(|error| format!("{}: {error}", manifest.display()))?
+        .parse()
+        .map_err(|error| format!("{}: {error}", manifest.display()))
+}
+
+#[cfg(test)]
+mod tests;

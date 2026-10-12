@@ -171,3 +171,6 @@ The following command groups are unavailable until delivered by their owners:
 Currently `maestro-tooling` automates repository development and
 `maestro-test-conventions` verifies workspace structure. Neither ships with the
 application. Their integration tests import their libraries.
+The conventions checker shares its private manifest reader and source traversal
+helpers; span exclusion and test-owned timer discovery keep separate traversal
+policies.

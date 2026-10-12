@@ -728,3 +728,75 @@ fn ordered_json_map_removal_stays_disallowed() {
     );
     assert!(!disallows_json_map_remove(&[unrelated]));
 }
+
+/// Source with `gated` excluded and the rest of the 500-line budget filled to `lines` production lines.
+fn gated_source(prefix: &str, gated: &str, suffix: &str, lines: usize) -> String {
+    let production = format!("{prefix}z!();\n{suffix}");
+    let used = production
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count();
+    let mut source = format!("{prefix}{gated} z!();\n{suffix}");
+    for index in 0..lines - used {
+        writeln!(source, "const P{index}: u8 = 0;").unwrap();
+    }
+    source
+}
+
+#[test]
+fn associated_test_spans_preserve_production_boundaries() {
+    let impl_prefix = "struct S;\nimpl S {\n";
+    let trait_prefix = "trait Tr {\n";
+    let foreign_prefix = "unsafe extern \"C\" {\n";
+    let cases = [
+        (
+            impl_prefix,
+            "    #[cfg(test)]\n    const C: u8 =\n        0;",
+        ),
+        (
+            impl_prefix,
+            "    #[cfg(test)]\n    fn f() {\n        ();\n    }",
+        ),
+        (impl_prefix, "    #[cfg(test)]\n    type T =\n        u8;"),
+        (impl_prefix, "    #[cfg(test)]\n    m!(\n        a);"),
+        (trait_prefix, "    #[cfg(test)]\n    const C: u8\n        ;"),
+        (
+            trait_prefix,
+            "    #[cfg(test)]\n    fn f() {\n        ();\n    }",
+        ),
+        (trait_prefix, "    #[cfg(test)]\n    type T\n        ;"),
+        (trait_prefix, "    #[cfg(test)]\n    m!(\n        a);"),
+        (
+            foreign_prefix,
+            "    #[cfg(test)]\n    fn f(\n        a: u8);",
+        ),
+        (
+            foreign_prefix,
+            "    #[cfg(test)]\n    static X:\n        u8;",
+        ),
+        (foreign_prefix, "    #[cfg(test)]\n    type T\n        ;"),
+        (foreign_prefix, "    #[cfg(test)]\n    m!(\n        a);"),
+    ];
+    for (prefix, gated) in cases {
+        let workspace = Workspace::new();
+        workspace.member("tui", "maestro-tui", "");
+        workspace.list(&[("maestro-tui", "core")]);
+        let path = workspace.root.join("crates/tui/src/lib.rs");
+        for (lines, expected) in [(500, true), (501, false)] {
+            let source = gated_source(prefix, gated, "}\n", lines);
+            assert!(syn::parse_file(&source).is_ok(), "{source}");
+            std::fs::write(&path, &source).unwrap();
+            let result = check_workspace(&workspace.root);
+            assert_eq!(result.is_ok(), expected, "{source}");
+            if !expected {
+                assert_eq!(
+                    result.unwrap_err(),
+                    format!("{}: 501 production lines exceeds 500", path.display())
+                );
+            }
+        }
+        let ungated = gated_source(prefix, &gated.replace("#[cfg(test)]", ""), "}\n", 500);
+        std::fs::write(&path, ungated).unwrap();
+        assert!(check_workspace(&workspace.root).is_err(), "{gated}");
+    }
+}
