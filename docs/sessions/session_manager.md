@@ -113,8 +113,7 @@ assert!(history.get_entries().is_empty());
 
 Each append operation captures the selected entry as parent, a generated
 identity and a UTC millisecond timestamp, accepts the record into memory, then
-runs the publication routine described under [Native history](#native-history);
-a memory session or an unpublished fresh history completes it without writing.
+runs the publication routine described under [Native history](#native-history).
 A publication error leaves the accepted record, its selection and any written
 bytes in place. Operations: `append_message`,
 `append_thinking_level_change`, `append_model_change`, `append_compaction`,

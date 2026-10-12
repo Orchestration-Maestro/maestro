@@ -184,7 +184,7 @@ fn registry_with_commands(
     *registry.get_all().write().unwrap() = handles.to_vec();
     registry
 }
-/// Captured stream bytes and the order in which streams were first written.
+/// Captured stream bytes and the order of the transitions between streams.
 #[derive(Default)]
 pub struct Captured {
     stdout: Rc<RefCell<Vec<u8>>>,

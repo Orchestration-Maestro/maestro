@@ -317,28 +317,34 @@ fn failed_label_publication_keeps_old_resolved_maps() {
         Presence::Null,
     ] {
         let scratch = Scratch::new();
-        let mut manager = SessionManager::create("/work", Some(scratch.text()), "unused").unwrap();
-        let first = manager
-            .append_message(json!({"role": "user", "content": "first", "timestamp": 1}))
-            .unwrap();
-        manager
-            .append_message(json!({"role": "assistant", "content": "second", "timestamp": 2}))
-            .unwrap();
-        manager
-            .append_label_change(&first, Presence::Present("old"))
-            .unwrap();
-        let stamp = manager.get_tree()[0].label_timestamp.cloned();
-        let file = manager.get_session_file().unwrap().to_owned();
+        let seeded = "2000-01-01T00:00:00.000Z";
+        let file = history_file(
+            &scratch,
+            "labels.jsonl",
+            &[
+                json!({"type": "message", "id": "first", "parentId": null, "timestamp": seeded,
+                    "message": {"role": "user", "content": "first", "timestamp": 1}}),
+                json!({"type": "message", "id": "reply", "parentId": "first", "timestamp": seeded,
+                    "message": {"role": "assistant", "content": "second", "timestamp": 2}}),
+                json!({"type": "label", "id": "old", "parentId": "reply", "timestamp": seeded,
+                    "targetId": "first", "label": "old"}),
+            ],
+        );
+        let mut manager = SessionManager::open(&file, None, None).unwrap();
+        let first = "first".to_owned();
+        assert_eq!(manager.get_tree()[0].label_timestamp, Some(&json!(seeded)));
         std::fs::remove_file(&file).unwrap();
         std::fs::create_dir(&file).unwrap();
         let before = manager.get_entries().len();
         manager.append_label_change(&first, next).unwrap_err();
         assert_eq!(manager.get_entries().len(), before + 1);
-        assert_eq!(manager.get_leaf_entry().unwrap()["type"], "label");
+        let leaf = manager.get_leaf_entry().unwrap();
+        assert_eq!(leaf["type"], "label");
+        assert_ne!(leaf["timestamp"], json!(seeded));
         assert_eq!(manager.get_label(&first), Some(&json!("old")));
         let tree = manager.get_tree();
         assert_eq!(tree[0].label, Some(&json!("old")));
-        assert_eq!(tree[0].label_timestamp.cloned(), stamp);
+        assert_eq!(tree[0].label_timestamp, Some(&json!(seeded)));
     }
     let scratch = Scratch::new();
     let (mut manager, first) = broken_history(&scratch);
