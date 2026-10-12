@@ -267,8 +267,9 @@ Creating and opening: `SessionManager::create`, `open`, `continue_recent`,
 `in_memory`; switching and resetting: `set_session_file`, `new_session`.
 Listing: `SessionManager::list` and `list_all`, described in
 [discovery](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/discovery.md).
-Extracting a branch into a new file and forking from another project's session
-are not delivered yet (filed as #592); this guide does not present them as usable.
+Extracting a branch into a new history: `create_branched_session`. Forking from
+another project's session file: `SessionManager::fork_from`. Their rules are in
+[branch extraction and forking](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md#branch-extraction-and-forking).
 
 Appending, each returning the new entry identity: `append_message`,
 `append_thinking_level_change`, `append_model_change`, `append_compaction`,
