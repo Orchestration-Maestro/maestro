@@ -194,3 +194,16 @@ fn read_paths_bind_before_future_poll() {
     let fresh = call(&tool, input("f.txt", None, None), None, None).unwrap();
     assert_eq!(only_text(&fresh), "decoy");
 }
+
+#[test]
+fn scratch_directory_never_adopts_an_existing_candidate() {
+    let parent = TempDir::new();
+    let taken = parent.0.join("scratch-0");
+    std::fs::create_dir(&taken).unwrap();
+    std::fs::write(taken.join("sentinel"), b"kept").unwrap();
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let fresh = TempDir::create_in(&parent.0, "scratch", &next);
+    assert_eq!(fresh.0, parent.0.join("scratch-1"));
+    drop(fresh);
+    assert_eq!(std::fs::read(taken.join("sentinel")).unwrap(), b"kept");
+}

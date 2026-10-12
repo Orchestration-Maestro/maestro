@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 
-/// A failure carrying only its message.
+/// A failure whose message is `message`, named `ThrownValue` with no stack or code.
 fn failure(message: &str) -> DiagnosticErrorInfo {
     extract_diagnostic_error(DiagnosticInput::Text(message))
 }

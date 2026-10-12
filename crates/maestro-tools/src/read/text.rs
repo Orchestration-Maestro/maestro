@@ -64,7 +64,7 @@ fn truncation_notice(truncation: &TruncationResult, start_display: f64, total: u
 
 /// Select the requested lines of `bytes` and describe what remains.
 ///
-/// `path` is the authored path, quoted verbatim in oversized-line guidance.
+/// `path` is the authored path, inserted verbatim, without shell quoting, in oversized-line guidance.
 pub(super) fn read_text(
     bytes: &[u8],
     path: &str,

@@ -1,7 +1,7 @@
 //! Native read-path transformations for authored tool paths.
 
 use icu_normalizer::DecomposingNormalizer;
-use maestro_path::{Cwd, is_absolute, resolve, try_resolve};
+use maestro_path::{Cwd, env_drive_directories, is_absolute, resolve, try_resolve};
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -50,7 +50,10 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
 
 /// Resolve an authored path lexically against `cwd`, leaving absolute spellings unchanged.
 ///
-/// The process working directory is read only when `cwd` is itself relative.
+/// On Windows the per-drive directories (`=X:` variables) are an operand of
+/// resolution, and the process working directory is read only when `cwd` and
+/// those directories cannot anchor a relative result; elsewhere it is read only
+/// when `cwd` is itself relative.
 ///
 /// # Errors
 /// Returns an error when expansion fails or a needed host directory is unavailable.
@@ -59,13 +62,22 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
     if is_absolute(&expanded) {
         return Ok(expanded);
     }
-    if let Ok(resolved) = try_resolve(&[cwd, &expanded], &[]) {
+    let directories = if cfg!(windows) {
+        env_drive_directories(|name| std::env::var_os(name))
+    } else {
+        Vec::new()
+    };
+    let drives: Vec<_> = directories
+        .iter()
+        .map(|(letter, path)| (*letter, path.as_str()))
+        .collect();
+    if let Ok(resolved) = try_resolve(&[cwd, &expanded], &drives) {
         return Ok(resolved);
     }
     let process_cwd = utf8(std::env::current_dir()?, "working directory")?;
     let anchor = Cwd {
         current: &process_cwd,
-        drive_directories: &[],
+        drive_directories: &drives,
     };
     Ok(resolve(&[cwd, &expanded], &anchor))
 }

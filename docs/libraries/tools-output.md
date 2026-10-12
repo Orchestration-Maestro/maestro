@@ -33,7 +33,7 @@ Read selection spells floating-point line numbers with `ryu-js`.
 
 The home directory comes from `std::env::home_dir`: an unset or empty `HOME`
 falls back to the account's home entry, where the JavaScript runtime would return
-an empty string, and a missing entry is a lookup error returned only for `~` paths.
+an empty string only for an empty `HOME` (an unset `HOME` also falls back there), and a missing entry is a lookup error returned only for `~` paths.
 
 ## Image libraries
 

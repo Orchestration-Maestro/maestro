@@ -10,7 +10,7 @@ use maestro_models::{Cancellation, DiagnosticCode, ModelInput};
 use maestro_tools::{ReadOperations, ReadToolInput, ReadToolOptions, create_read_tool_definition};
 use read_support::*;
 use serde_json::{Value, json};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, atomic::Ordering};
 
 /// A one-pixel PNG.
 const TINY_PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg==";
@@ -25,7 +25,7 @@ fn image_json(data: &str, mime: &str) -> Value {
     json!({"type": "image", "data": data, "mimeType": mime})
 }
 
-/// Lines `prefix 1` through `prefix n`.
+/// The fixed lines `Line 1` through `Line n`, joined by newlines.
 fn numbered(n: usize) -> String {
     (1..=n)
         .map(|i| format!("Line {i}"))
@@ -357,18 +357,54 @@ fn read_cancellation_stops_later_operations() {
 fn read_cancellation_interrupts_pending_operations() {
     for (stage, calls) in [(Stage::Access, 1), (Stage::Mime, 2), (Stage::Read, 3)] {
         let signal = Cancellation::new();
-        let ops =
-            Arc::new(ScriptedOps::new(b"x").at(stage, Behavior::AbortThenPend, Some(&signal)));
+        let ops = Arc::new(ScriptedOps::new(b"x").at(stage, Behavior::Pend, None));
+        let tool = tool_over(&ops);
+        let mut future = (tool.execute)(
+            "call".into(),
+            input("/work/f", None, None),
+            Some(signal.clone()),
+            None,
+            None,
+        );
+        let waker = std::task::Waker::noop();
+        let mut cx = std::task::Context::from_waker(waker);
+        assert!(future.as_mut().poll(&mut cx).is_pending(), "{stage:?}");
+        assert_eq!(ops.polled.load(Ordering::SeqCst), 1, "{stage:?}");
+        assert_eq!(ops.dropped.load(Ordering::SeqCst), 0, "{stage:?}");
+        signal.abort();
+        let std::task::Poll::Ready(Err(error)) = future.as_mut().poll(&mut cx) else {
+            panic!("{stage:?}: read did not settle after the abort");
+        };
+        assert_eq!(error.message, "Operation aborted", "{stage:?}");
+        assert_eq!(ops.dropped.load(Ordering::SeqCst), 1, "{stage:?}");
+        assert_eq!(ops.log().len(), calls, "{stage:?}");
+    }
+}
+
+#[test]
+fn read_cancellation_during_conversion_beats_result_and_failure() {
+    let png = STANDARD.decode(TINY_PNG).unwrap();
+    for (bytes, mime, offset) in [
+        (png.as_slice(), Some("image/png"), None),
+        (b"one\ntwo".as_slice(), None, None),
+        (b"one\ntwo".as_slice(), None, Some(9.0)),
+    ] {
+        let signal = Cancellation::new();
+        let mut ops =
+            ScriptedOps::new(bytes).at(Stage::Read, Behavior::AbortWhenDropped, Some(&signal));
+        if let Some(mime) = mime {
+            ops = ops.with_mime(mime);
+        }
+        let ops = Arc::new(ops);
         let error = call(
             &tool_over(&ops),
-            input("/work/f", None, None),
+            input("/work/f", offset, None),
             Some(signal),
             None,
         )
         .err()
         .unwrap();
-        assert_eq!(error.message, "Operation aborted", "{stage:?}");
-        assert_eq!(ops.log().len(), calls, "{stage:?}");
+        assert_eq!(error.message, "Operation aborted", "{mime:?} {offset:?}");
     }
 }
 

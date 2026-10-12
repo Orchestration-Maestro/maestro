@@ -160,7 +160,8 @@ working directory and the execution, argument, partial, expanded, image and erro
 flags; building a context or calling a renderer is the caller's job.
 
 [`wrap_tool_definition`](../crates/maestro-tools/src/tool_definition_wrapper.rs)
-turns a definition into an `AgentTool`. Each execution calls the optional context
+turns a definition into an `AgentTool`. Once the arguments decode (rejected
+arguments follow `AgentTool::typed`), each execution calls the optional context
 factory once; a factory error is the execution's error and the body does not run.
 Call id, arguments, signal and progress observer pass through, and result details
 keep the three states of `AgentToolResult` (absent, explicit null, value).
@@ -183,8 +184,12 @@ The authored path is resolved when the tool is called, before the returned futur
 is polled; see [`path_utils`](../crates/maestro-tools/src/path_utils.rs). A leading
 `@` is dropped, U+00A0, U+2000-U+200A, U+202F, U+205F and U+3000 become a space,
 and a bare `~` or `~/` becomes the home directory. Relative paths resolve
-lexically through `maestro-path`, with no canonicalization. The process working
-directory is read only for a relative `cwd`, and the home directory only for `~`.
+lexically through `maestro-path`, with no canonicalization. On Windows the
+per-drive directories (`=X:` variables) are resolution operands. The process
+working directory is read only when `cwd` and those directories cannot anchor a
+relative result (elsewhere: only for a relative `cwd`), and the home directory
+only for `~`. A cancellation observed after the bytes are read, including while
+converting them, still settles the read as cancelled, for results and failures.
 `resolve_read_path` then keeps the first existing spelling among the resolved
 path, the narrow-space AM/PM form, NFD, curly apostrophes, and NFD with curly
 apostrophes.
@@ -203,7 +208,7 @@ counts from the end. The caller limit applies first, then
 lines remain, `details` holds the truncation record only when the default limits
 cut the text, and an offset past the last line fails with the line count. When the
 first selected line alone exceeds the byte limit the text is a `sed` command for
-that line, quoting the authored path unchanged.
+that line, inserting the authored path verbatim without shell quoting.
 
 A detected image becomes `Read image file [<mime>]`, then the delegated dimension
 note, then a note when the active model (read from `ReadContext::model` after

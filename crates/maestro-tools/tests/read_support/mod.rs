@@ -35,13 +35,20 @@ impl TempDir {
     /// Create an empty directory unique to this process and call.
     pub fn new() -> Self {
         static NEXT: AtomicUsize = AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-read-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        std::fs::create_dir_all(&path).unwrap();
-        Self(path)
+        let stem = format!("maestro-read-{}", std::process::id());
+        Self::create_in(&std::env::temp_dir(), &stem, &NEXT)
+    }
+
+    /// Create the first `stem-N` below `parent` that does not exist yet; existing entries stay untouched.
+    pub fn create_in(parent: &std::path::Path, stem: &str, next: &AtomicUsize) -> Self {
+        loop {
+            let path = parent.join(format!("{stem}-{}", next.fetch_add(1, Ordering::Relaxed)));
+            match std::fs::create_dir(&path) {
+                Ok(()) => return Self(path),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+                Err(error) => panic!("cannot create {}: {error}", path.display()),
+            }
+        }
     }
 
     /// The directory as text.
@@ -83,8 +90,56 @@ pub enum Behavior {
     Fail,
     /// Abort the read's signal, then complete normally.
     AbortThenSucceed,
-    /// Abort the read's signal, then never complete.
-    AbortThenPend,
+    /// Never complete, counting polls and drops of the returned future.
+    Pend,
+    /// Complete normally, aborting the read's signal when the future is dropped.
+    AbortWhenDropped,
+}
+
+/// A future that never completes and records being polled and dropped.
+struct PendProbe {
+    /// Polls so far.
+    polled: Arc<AtomicUsize>,
+    /// Drops so far.
+    dropped: Arc<AtomicUsize>,
+}
+
+impl std::future::Future for PendProbe {
+    type Output = ();
+    fn poll(self: std::pin::Pin<&mut Self>, _: &mut std::task::Context<'_>) -> std::task::Poll<()> {
+        self.polled.fetch_add(1, Ordering::SeqCst);
+        std::task::Poll::Pending
+    }
+}
+
+impl Drop for PendProbe {
+    fn drop(&mut self) {
+        self.dropped.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+/// A ready value whose future aborts a signal when dropped.
+struct AbortOnDrop<T> {
+    /// The value yielded once.
+    value: Option<T>,
+    /// Signal aborted on drop.
+    signal: Cancellation,
+}
+
+impl<T: Unpin> std::future::Future for AbortOnDrop<T> {
+    type Output = Result<T, DiagnosticErrorInfo>;
+    fn poll(
+        mut self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        std::task::Poll::Ready(Ok(self.value.take().unwrap()))
+    }
+}
+
+impl<T> Drop for AbortOnDrop<T> {
+    fn drop(&mut self) {
+        self.signal.abort();
+    }
 }
 
 /// Controlled operations that log every call.
@@ -101,6 +156,10 @@ pub struct ScriptedOps {
     pub signal: Option<Cancellation>,
     /// Calls made so far, as `stage:path`.
     pub calls: Mutex<Vec<String>>,
+    /// Polls of the pending future.
+    pub polled: Arc<AtomicUsize>,
+    /// Drops of the pending future.
+    pub dropped: Arc<AtomicUsize>,
     /// Runs when detection is called, before it answers.
     pub on_detect: Option<Box<dyn Fn() + Send + Sync>>,
 }
@@ -115,6 +174,8 @@ impl ScriptedOps {
             behavior: Behavior::Succeed,
             signal: None,
             calls: Mutex::new(Vec::new()),
+            polled: Arc::default(),
+            dropped: Arc::default(),
             on_detect: None,
         }
     }
@@ -147,7 +208,7 @@ impl ScriptedOps {
     }
 
     /// Log the call and apply this stage's behavior.
-    fn step<T: Send + 'static>(
+    fn step<T: Send + Unpin + 'static>(
         &self,
         stage: Stage,
         path: &str,
@@ -162,15 +223,25 @@ impl ScriptedOps {
         } else {
             Behavior::Succeed
         };
-        if matches!(
-            behavior,
-            Behavior::AbortThenSucceed | Behavior::AbortThenPend
-        ) {
+        if matches!(behavior, Behavior::AbortThenSucceed) {
             self.signal.as_ref().unwrap().abort();
         }
         match behavior {
             Behavior::Fail => Box::pin(std::future::ready(Err(Self::failure(stage)))),
-            Behavior::AbortThenPend => Box::pin(std::future::pending()),
+            Behavior::Pend => {
+                let probe = PendProbe {
+                    polled: Arc::clone(&self.polled),
+                    dropped: Arc::clone(&self.dropped),
+                };
+                Box::pin(async move {
+                    probe.await;
+                    Ok(value)
+                })
+            }
+            Behavior::AbortWhenDropped => Box::pin(AbortOnDrop {
+                value: Some(value),
+                signal: self.signal.clone().unwrap(),
+            }),
             Behavior::Succeed | Behavior::AbortThenSucceed => {
                 Box::pin(std::future::ready(Ok(value)))
             }

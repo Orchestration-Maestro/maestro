@@ -7,7 +7,8 @@ use std::sync::Arc;
 
 /// Wrap a definition as an agent tool.
 ///
-/// Each execution asks the factory for a fresh context; a factory failure is the
+/// Once the arguments decode (see `AgentTool::typed` for rejected arguments), each
+/// execution asks the factory for a fresh context; a factory failure is the
 /// execution's error and the definition body does not run.
 #[must_use]
 pub fn wrap_tool_definition<C, P, D, S>(
