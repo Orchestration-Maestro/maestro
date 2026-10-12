@@ -418,6 +418,106 @@ async fn guide_tools_hooks_progress_and_termination_case() {
     assert_eq!(faux.get_pending_response_count(), 1);
 }
 
+/// Arguments of the guide's flaky tool; `count` is required by the type but not by the schema.
+#[derive(serde::Deserialize)]
+struct Flaky {
+    /// Text deciding whether the callback fails.
+    text: String,
+    /// Required by decoding only.
+    count: u8,
+}
+/// A tool whose callback fails for `boom`, counting how often it runs.
+fn flaky_tool(runs: &Arc<Mutex<u32>>) -> maestro_agent::SharedAgentTool {
+    let runs = Arc::clone(runs);
+    let definition = Tool {
+        name: "flaky".into(),
+        description: "Fail on demand".into(),
+        parameters: json!({"type": "object", "properties": {"text": {"type": "string"}}}),
+    };
+    let tool = AgentTool::typed(
+        definition,
+        "Flaky".into(),
+        Arc::new(move |_, params: Flaky, _, _| {
+            *runs.lock().unwrap() += u32::from(params.count);
+            let outcome = if params.text == "boom" {
+                Err(maestro_models::extract_diagnostic_error(
+                    maestro_models::DiagnosticInput::Text("boom failed"),
+                ))
+            } else {
+                Ok(AgentToolResult {
+                    content: vec![],
+                    details: json!({}),
+                    terminate: None,
+                })
+            };
+            ready(outcome)
+        }),
+    );
+    Arc::new(RwLock::new(tool))
+}
+
+/// A callback `Err` and an argument decoding failure both become error results without a second run.
+#[test]
+fn guide_tool_failures_become_error_results() {
+    support::run_io(guide_tool_failures_become_error_results_case());
+}
+/// Drive the scenario of `guide_tool_failures_become_error_results` on the test runtime.
+async fn guide_tool_failures_become_error_results_case() {
+    let mut registered = Registered::default();
+    let faux = registered.add(RegisterFauxProviderOptions::default());
+    let call = |id: &str, arguments: serde_json::Value| {
+        let arguments = arguments.as_object().unwrap().clone();
+        let options = maestro_models::FauxToolCallOptions {
+            id: Some(id.into()),
+        };
+        maestro_models::AssistantContent::ToolCall(maestro_models::faux_tool_call(
+            "flaky", arguments, options,
+        ))
+    };
+    let options = FauxAssistantMessageOptions {
+        stop_reason: Some(maestro_models::StopReason::ToolUse),
+        ..Default::default()
+    };
+    let content = vec![
+        call("a", json!({"text": "boom", "count": 1})),
+        call("b", json!({"text": "fine"})),
+    ];
+    let calls = FauxResponseStep::Message(Box::new(faux_assistant_message(content, options)));
+    faux.set_responses(vec![calls, say("recovered")]);
+    let runs = Arc::new(Mutex::new(0));
+    let agent = agent_for(faux.get_model(None).unwrap(), vec![flaky_tool(&runs)]);
+    let ends = Arc::new(Mutex::new(vec![]));
+    let sink = Arc::clone(&ends);
+    agent.subscribe(Arc::new(move |event, _| {
+        if let AgentEvent::ToolExecutionEnd {
+            tool_call,
+            result,
+            is_error,
+        } = &*event.read().unwrap()
+        {
+            let text = block_text(&result.content[0]).unwrap().to_owned();
+            sink.lock()
+                .unwrap()
+                .push((tool_call.id.clone(), text, *is_error));
+        }
+        ready(Ok(()))
+    }));
+    agent.prompt(support::owned::input("Go")).await.unwrap();
+    assert_eq!(*runs.lock().unwrap(), 1);
+    let ends = ends.lock().unwrap().clone();
+    assert_eq!(ends.len(), 2);
+    assert_eq!(ends[0], ("a".to_owned(), "boom failed".to_owned(), true));
+    assert_eq!((ends[1].0.as_str(), ends[1].2), ("b", true));
+    assert!(ends[1].1.contains("count"), "{}", ends[1].1);
+    let entries = history(&agent);
+    let roles: Vec<_> = entries.iter().map(|entry| entry.0).collect();
+    assert_eq!(
+        roles,
+        ["user", "assistant", "toolResult", "toolResult", "assistant"]
+    );
+    assert_eq!(entries[4].1, "recovered");
+}
+
 /// Final history texts of a prompt run with the given queue policies and queued input.
 async fn queued_run(steering: QueueMode, follow_up: QueueMode) -> Vec<String> {
     let mut registered = Registered::default();
@@ -570,7 +670,7 @@ fn label_sink() -> (maestro_agent::AgentEventSink, Labels) {
     (emit, labels)
 }
 /// Label sequence of one prompt-shaped run.
-const PROMPT_RUN: [&str; 9] = [
+const PROMPT_RUN: [&str; 8] = [
     "agent_start",
     "turn_start",
     "message_start",
@@ -579,7 +679,6 @@ const PROMPT_RUN: [&str; 9] = [
     "message_end",
     "turn_end",
     "agent_end",
-    "turn_end",
 ];
 
 /// The awaited loops report to an awaited sink and return the generated entries.
@@ -597,7 +696,7 @@ async fn awaited_loops() {
     .unwrap();
     assert_eq!(all.len(), 2);
     let names = labels.lock().unwrap().clone();
-    assert_eq!(names[..8], PROMPT_RUN[..8]);
+    assert_eq!(names, PROMPT_RUN);
     let (emit, labels) = label_sink();
     let generated = maestro_agent::run_agent_loop_continue(
         support::context(),
@@ -637,7 +736,7 @@ async fn observable_loops() {
     while let Some(event) = stream.next().await {
         names.push(label(&event));
     }
-    assert_eq!(names[..8], PROMPT_RUN[..8]);
+    assert_eq!(names, PROMPT_RUN);
     let empty = AgentContext {
         messages: Arc::new(RwLock::new(vec![])),
         ..support::context()

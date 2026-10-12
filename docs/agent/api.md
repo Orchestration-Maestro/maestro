@@ -4,7 +4,7 @@
 executes the tools the model requests and reports what happens as events. This guide
 walks through its public interface. [Agent state and owned runs](../agent.md) and
 [conversation turns](../loop.md) own the detailed contracts; the [proxy client](../proxy.md)
-owns remote dispatch. Every example runs offline against a registered scripted model.
+owns remote dispatch. Every example runs offline: model examples use a registered scripted model, and the proxy example uses a controlled fetch.
 
 ## Installation
 
@@ -113,11 +113,12 @@ Subscribers receive an `AgentEvent`; the ten kinds are `AgentStart`, `AgentEnd`,
 `ToolExecutionStart`, `ToolExecutionUpdate` and `ToolExecutionEnd`.
 
 `prompt` emits, in order: `AgentStart`, `TurnStart`, the prompt's `MessageStart` and
-`MessageEnd`, the assistant's `MessageStart`, one `MessageUpdate` per model event,
-`MessageEnd`, `TurnEnd` and `AgentEnd`. When the assistant calls tools, each call
-produces `ToolExecutionStart`, optional `ToolExecutionUpdate`s and `ToolExecutionEnd`,
-followed by the tool-result message events and a `TurnEnd` that carries the results; the
-model is then asked again in a new turn. `continue` resumes from the existing history. A user or tool-result tail adds no message
+`MessageEnd`, the assistant's `MessageStart`, a `MessageUpdate` for each model event between the start and terminal events
+(see [conversation turns](../loop.md)), `MessageEnd`, `TurnEnd` and `AgentEnd`. When the assistant calls tools, each call
+produces `ToolExecutionStart`, optional `ToolExecutionUpdate`s and `ToolExecutionEnd`, and
+the tool-result message events and a `TurnEnd` that carries the results follow (sequential
+tools interleave with their calls); whether the model is then asked again in a new turn is
+decided by [conversation turns](../loop.md). `continue` resumes from the existing history. A user or tool-result tail adds no message
 events for existing entries; an assistant tail restarts from the queued input, which is
 inserted before the reply.
 
@@ -223,8 +224,7 @@ Calls of one assistant message run in parallel by default; a tool whose `executi
 is `Sequential` makes the whole batch sequential. `before_tool_call` sees validated
 arguments, may edit them and may block with a reason (`Tool execution was blocked` when
 none is given). `after_tool_call` may replace content, details, the error flag and the
-termination flag. The loop stops asking the model only when every result in the batch
-requests termination. Details are in [conversation turns](../loop.md).
+termination flag. A batch whose results all request termination does not ask the model again by itself. Details are in [conversation turns](../loop.md).
 
 ## Proxy use
 

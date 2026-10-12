@@ -95,7 +95,8 @@ fn client_closed(error: &std::io::Error) -> bool {
     )
 }
 
-/// Read one complete request, or `None` when the client closes before finishing its head.
+/// Read one request, or `None` when the client closes before finishing its head; a body cut
+/// short by the client is returned as received.
 fn read_request(connection: &mut TcpStream) -> std::io::Result<Option<Received>> {
     let mut bytes = Vec::new();
     let mut buffer = [0_u8; 4096];

@@ -20,11 +20,13 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `text_start` form.
     TextStart {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
     },
     /// Compact `text_delta` form.
     TextDelta {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Delta.
         delta: String,
@@ -32,6 +34,7 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `text_end` form.
     TextEnd {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Content signature.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -40,11 +43,13 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `thinking_start` form.
     ThinkingStart {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
     },
     /// Compact `thinking_delta` form.
     ThinkingDelta {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Delta.
         delta: String,
@@ -52,6 +57,7 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `thinking_end` form.
     ThinkingEnd {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Content signature.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -60,6 +66,7 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `toolcall_start` form.
     ToolcallStart {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Id.
         id: String,
@@ -69,6 +76,7 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `toolcall_delta` form.
     ToolcallDelta {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
         /// Delta.
         delta: String,
@@ -76,6 +84,7 @@ pub enum ProxyAssistantMessageEvent {
     /// Compact `toolcall_end` form.
     ToolcallEnd {
         /// Content index.
+        #[serde(deserialize_with = "index")]
         content_index: usize,
     },
     /// Compact `done` form.
@@ -95,6 +104,31 @@ pub enum ProxyAssistantMessageEvent {
         /// Usage.
         usage: Usage,
     },
+}
+
+/// Accept any finite integral non-negative number as a content index, in any JSON spelling.
+fn index<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<usize, D::Error> {
+    struct Index;
+    impl serde::de::Visitor<'_> for Index {
+        type Value = usize;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a non-negative integral number")
+        }
+        fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<usize, E> {
+            usize::try_from(value).map_err(E::custom)
+        }
+        fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<usize, E> {
+            // An integral f64 prints without a fraction or exponent, so parsing is exact.
+            if value >= 0.0
+                && value.fract() == 0.0
+                && let Ok(index) = value.abs().to_string().parse()
+            {
+                return Ok(index);
+            }
+            Err(E::invalid_value(serde::de::Unexpected::Float(value), &self))
+        }
+    }
+    deserializer.deserialize_any(Index)
 }
 
 /// Producer-local protocol state; argument text never escapes into shared records.

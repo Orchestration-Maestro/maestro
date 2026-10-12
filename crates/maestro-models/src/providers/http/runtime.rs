@@ -7,13 +7,13 @@ use std::time::Duration;
 
 use crate::Cancellation;
 
-/// How racing work against a timer and a cancellation signal ended.
+/// How racing work against a timer and a cancellation signal ended, by [`race`]'s polling priority.
 pub enum Raced<T> {
-    /// The work finished first.
+    /// The work was ready when polled, before cancellation and the timer were checked.
     Done(T),
-    /// The timer elapsed first.
+    /// The work was pending and not cancelled, and the timer had elapsed.
     TimedOut,
-    /// The signal was aborted first.
+    /// The work was pending and the signal was aborted.
     Cancelled,
 }
 

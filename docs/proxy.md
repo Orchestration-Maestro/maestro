@@ -22,8 +22,9 @@ with the model-owned canonical JSON writer (array-index keys first, ECMAScript n
 spelling). `options` holds, in this order, `temperature`, `maxTokens`, `reasoning`,
 `cacheRetention`, `sessionId`, `headers`, `metadata`, `transport`, `thinkingBudgets`
 and `maxRetryDelayMs`. Absent values are omitted; explicitly empty values are kept.
-Credentials, callbacks, the signal, the timeout and the retry count never reach the body, and
-the options' `headers` are provider headers, separate from the two request headers.
+The local credential fields, callbacks, the signal, the timeout and the retry count are not
+written. The options' `headers`, the model's headers and the open `metadata` are, and the
+options' `headers` are provider headers, separate from the two request headers.
 
 ## Response framing
 
@@ -57,8 +58,8 @@ skipped.
 ## Failures
 
 Every failure marks the shared message `error` (or `aborted` when the signal is
-aborted), stores the text and publishes one terminal event; received content and usage
-are kept.
+aborted), stores the text and publishes a terminal event (`AssistantMessageEventStream` delivers only its
+first terminal event); received content and usage are kept.
 
 | Cause | Text |
 | --- | --- |
@@ -70,8 +71,8 @@ are kept.
 
 An abort wins over the premature-end text. Reading continues after a terminal event: later
 input still edits the retained message (and a later failure or abort rewrites it), but only
-the first terminal event is ever delivered. A discriminant with a wrongly typed field fails
-with the decoder's diagnostic; a block index that skips ahead of the next free slot fails
+the first terminal event is ever delivered. A known discriminant with a wrongly typed field fails
+with the decoder's diagnostic (an unknown discriminant is skipped before its fields are read); a block index that skips ahead of the next free slot fails
 instead of leaving a gap.
 
 There is no retry, timeout, buffer limit or URL normalization. Aborting drops the open

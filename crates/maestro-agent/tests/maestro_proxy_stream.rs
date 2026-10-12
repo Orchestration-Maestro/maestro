@@ -535,6 +535,45 @@ async fn proxy_tool_arguments_use_shared_parser_case() {
     }
 }
 
+/// Each tool-call delta re-parses the accumulated text into the live message before the next read.
+#[test]
+fn proxy_tool_arguments_parse_on_each_delta() {
+    support::run_io(proxy_tool_arguments_parse_on_each_delta_case());
+}
+/// Drive the scenario of `proxy_tool_arguments_parse_on_each_delta` on the test runtime.
+async fn proxy_tool_arguments_parse_on_each_delta_case() {
+    let (stream, producer, mut gate, _) =
+        spawn_gated(maestro_models::SimpleStreamOptions::default());
+    gate.reads.recv().await.unwrap();
+    gate.send
+        .send(Some(Ok(line(r#"{"type":"start"}"#))))
+        .unwrap();
+    gate.reads.recv().await.unwrap();
+    let Some(maestro_models::AssistantMessageEvent::Start { partial }) = stream.next().await else {
+        panic!("expected the start event first");
+    };
+    let start = r#"{"type":"toolcall_start","contentIndex":0,"id":"c","toolName":"t"}"#;
+    gate.send.send(Some(Ok(line(start)))).unwrap();
+    gate.reads.recv().await.unwrap();
+    let observed = |partial: &maestro_models::SharedAssistantMessage| {
+        support::proxy::snapshot(partial)["content"][0]["arguments"].clone()
+    };
+    assert_eq!(observed(&partial), json!({}));
+    for (delta, expected) in [
+        (r#"{\"n\":\"5"#, json!({"n": "5"})),
+        (r#" + 3\",\"m\":2"#, json!({"n": "5 + 3", "m": 2})),
+    ] {
+        let payload = format!(r#"{{"type":"toolcall_delta","contentIndex":0,"delta":"{delta}"}}"#);
+        gate.send.send(Some(Ok(line(&payload)))).unwrap();
+        gate.reads.recv().await.unwrap();
+        assert_eq!(observed(&partial), expected, "{delta}");
+    }
+    gate.send.send(Some(Ok(done("stop")))).unwrap();
+    gate.send.send(None).unwrap();
+    producer.await.unwrap();
+    assert_eq!(observed(&partial), json!({"n": "5 + 3", "m": 2}));
+}
+
 /// A restarted tool call forgets the argument text of the call it replaces.
 #[test]
 fn proxy_tool_restart_clears_pending_arguments() {
@@ -1125,6 +1164,44 @@ async fn proxy_wire_field_domains_keep_selection_and_failures_case() {
     }
 }
 
+/// Integral numbers select a content index whatever their JSON spelling; others fail natively.
+#[test]
+fn proxy_content_index_accepts_integral_number_spellings() {
+    support::run_io(proxy_content_index_accepts_integral_number_spellings_case());
+}
+/// Drive the scenario of `proxy_content_index_accepts_integral_number_spellings` on the test runtime.
+async fn proxy_content_index_accepts_integral_number_spellings_case() {
+    let lines = [
+        line(r#"{"type":"text_start","contentIndex":0.0}"#),
+        line(r#"{"type":"text_delta","contentIndex":0e0,"delta":"a"}"#),
+        line(r#"{"type":"text_end","contentIndex":-0.0}"#),
+        line(r#"{"type":"thinking_start","contentIndex":3,"contentIndex":1.0}"#),
+        line(r#"{"type":"thinking_delta","contentIndex":1E0,"delta":"b"}"#),
+        line(r#"{"type":"thinking_end","contentIndex":10e-1}"#),
+        line(r#"{"type":"toolcall_start","contentIndex":2.0,"id":"t","toolName":"n"}"#),
+        line(r#"{"type":"toolcall_delta","contentIndex":0.2e1,"delta":"{}"}"#),
+        line(r#"{"type":"toolcall_end","contentIndex":2e0}"#),
+        done("stop"),
+    ];
+    let run = run_lines(&lines).await;
+    assert_eq!(
+        run.message()["content"],
+        json!([
+            {"type": "text", "text": "a"},
+            {"type": "thinking", "thinking": "b"},
+            {"type": "toolCall", "id": "t", "name": "n", "arguments": {}}
+        ])
+    );
+    for payload in [
+        r#"{"type":"text_start","contentIndex":1.5}"#,
+        r#"{"type":"text_start","contentIndex":-1.0}"#,
+        r#"{"type":"text_start","contentIndex":1e300}"#,
+        r#"{"type":"text_start","contentIndex":0,"contentIndex":0.5}"#,
+    ] {
+        assert_native_error(&run_lines(&[line(payload)]).await, 0);
+    }
+}
+
 /// Handles stay shared from the first event to the result, and reported numbers are not altered.
 #[test]
 fn proxy_borrowed_result_and_final_usage_keep_identity() {
@@ -1420,8 +1497,8 @@ async fn proxy_unknown_event_warns_and_continues_case() {
     assert_eq!(run.message(), canonical_message());
 }
 
-/// The last assistant entry of an Agent, as text and stop reason.
-fn last_assistant(agent: &maestro_agent::Agent) -> (Value, Option<String>) {
+/// The last assistant entry of an Agent, as text, stop reason and error message.
+fn last_assistant(agent: &maestro_agent::Agent) -> (Value, Option<String>, String) {
     let state = agent.state().read().unwrap();
     let messages = state.messages().read().unwrap();
     let Some(maestro_agent::AgentMessage::Assistant(message)) = messages.last() else {
@@ -1429,7 +1506,15 @@ fn last_assistant(agent: &maestro_agent::Agent) -> (Value, Option<String>) {
     };
     let message = message.read().unwrap();
     let stop = serde_json::to_value(&message.stop_reason).unwrap();
-    (stop, message.error_message.clone())
+    let text = message
+        .content
+        .iter()
+        .filter_map(|block| match block {
+            maestro_models::AssistantContent::Text(text) => Some(text.text.as_str()),
+            _ => None,
+        })
+        .collect();
+    (stop, message.error_message.clone(), text)
 }
 
 /// The server side of one Agent scenario; it ends the body when told to.
@@ -1488,12 +1573,20 @@ fn proxy_agent_stream_fn_accepts_both_transports() {
 async fn proxy_agent_stream_fn_accepts_both_transports_case() {
     let start = line(r#"{"type":"start"}"#);
     let text_start = line(r#"{"type":"text_start","contentIndex":0}"#);
-    let aborted = (json!("aborted"), Some("Request aborted by user".to_owned()));
+    let aborted = (
+        json!("aborted"),
+        Some("Request aborted by user".to_owned()),
+        String::new(),
+    );
     let scenarios = [
-        (canonical_lines(), (json!("stop"), None)),
+        (canonical_lines(), (json!("stop"), None, "hé🙂!".to_owned())),
         (
             canonical_lines()[..5].to_vec(),
-            (json!("error"), Some(PREMATURE.to_owned())),
+            (
+                json!("error"),
+                Some(PREMATURE.to_owned()),
+                "hé🙂!".to_owned(),
+            ),
         ),
         (vec![start, text_start], aborted),
     ];
@@ -1521,12 +1614,42 @@ fn notify_on_update(
     }));
     updated
 }
+/// The variant names of every Agent event, in delivery order.
+fn record_lifecycle(
+    agent: &std::sync::Arc<maestro_agent::Agent>,
+) -> std::sync::Arc<std::sync::Mutex<Vec<String>>> {
+    let kinds = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
+    let sink = std::sync::Arc::clone(&kinds);
+    agent.subscribe(std::sync::Arc::new(move |event, _| {
+        use maestro_agent::AgentEvent as E;
+        let name = match &*event.read().unwrap() {
+            E::AgentStart => "AgentStart",
+            E::AgentEnd { .. } => "AgentEnd",
+            E::TurnStart => "TurnStart",
+            E::TurnEnd { .. } => "TurnEnd",
+            E::MessageStart { .. } => "MessageStart",
+            E::MessageUpdate { .. } => "MessageUpdate",
+            E::MessageEnd { .. } => "MessageEnd",
+            E::ToolExecutionStart { .. } => "ToolExecutionStart",
+            E::ToolExecutionUpdate { .. } => "ToolExecutionUpdate",
+            E::ToolExecutionEnd { .. } => "ToolExecutionEnd",
+        };
+        sink.lock().unwrap().push(name.to_owned());
+        Box::pin(std::future::ready(Ok(())))
+    }));
+    kinds
+}
 /// Run one prompt through the proxy over `route` and check how the Agent settles.
-async fn agent_scenario(route: Route, lines: Vec<Vec<u8>>, expected: &(Value, Option<String>)) {
+async fn agent_scenario(
+    route: Route,
+    lines: Vec<Vec<u8>>,
+    expected: &(Value, Option<String>, String),
+) {
     let abort = expected.0 == "aborted";
     let (backend, url, fetch) = Backend::start(route, lines);
     let agent = support::proxy::proxy_agent(support::proxy::proxy_stream_fn(url, fetch));
     let updated = notify_on_update(&agent);
+    let lifecycle = record_lifecycle(&agent);
     let done = agent.prompt(support::owned::input("hello"));
     if abort {
         updated.notified().await;
@@ -1537,6 +1660,23 @@ async fn agent_scenario(route: Route, lines: Vec<Vec<u8>>, expected: &(Value, Op
     done.await.unwrap();
     agent.wait_for_idle().await;
     assert_eq!(&last_assistant(&agent), expected, "{route:?}");
+    let mut kinds = lifecycle.lock().unwrap().clone();
+    kinds.dedup();
+    assert_eq!(
+        kinds,
+        [
+            "AgentStart",
+            "TurnStart",
+            "MessageStart",
+            "MessageEnd",
+            "MessageStart",
+            "MessageUpdate",
+            "MessageEnd",
+            "TurnEnd",
+            "AgentEnd"
+        ],
+        "{route:?}"
+    );
     assert!(!agent.state().read().unwrap().is_streaming());
     backend.release();
     backend.join();
