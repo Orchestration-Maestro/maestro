@@ -175,20 +175,3 @@ pub type FindToolResultEvent = ToolResultEvent<FindToolDetails>;
 pub type LsToolCallEvent = ToolCallEvent<LsToolInput>;
 /// `LsToolResultEvent` data.
 pub type LsToolResultEvent = ToolResultEvent<LsToolDetails>;
-
-#[cfg(any(test, target_arch = "wasm32"))]
-use crate::types::object;
-#[cfg(any(test, target_arch = "wasm32"))]
-impl ToolCallEvent {
-    /// Retains the input JSON without selecting a schema by name.
-    pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
-        object::from_str(text)
-    }
-}
-#[cfg(any(test, target_arch = "wasm32"))]
-impl ToolResultEvent {
-    /// Retains the details JSON without selecting a schema by name.
-    pub(crate) fn decode(text: &str) -> Result<Self, serde_json::Error> {
-        object::from_str(text)
-    }
-}

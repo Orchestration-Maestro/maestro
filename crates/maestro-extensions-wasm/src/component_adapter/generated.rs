@@ -18,7 +18,37 @@ use crate::{AutocompleteItem, FlagOptions, FlagValue};
 struct Generated;
 
 impl Imports for Generated {
+    forward_resources! { functions {
+        send_message(message: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_message;
+        send_user_message(content: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_user_message;
+        set_session_name(name: &str) -> ExtensionResult<()> => host::set_session_name;
+        get_session_name() -> ExtensionResult<Option<String>> => host::get_session_name;
+        set_label(entry_id: &str, label: Option<&str>) -> ExtensionResult<()> => host::set_label;
+        get_active_tools() -> ExtensionResult<Vec<String>> => host::get_active_tools;
+        get_all_tools() -> ExtensionResult<String> => host::get_all_tools;
+        set_active_tools(tool_names: &[String]) -> ExtensionResult<()> => host::set_active_tools;
+        get_commands() -> ExtensionResult<String> => host::get_commands;
+        get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
+        set_thinking_level(level: &str) -> ExtensionResult<()> => host::set_thinking_level;
+        event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
+        callback_emit(emitter: &Self::Emitter, channel: &str, data: &str) -> ExtensionResult<()> => host::callback_emit;
+        start_event_tail(emitter: &Self::Emitter, tail: &Self::Callback) -> ExtensionResult<()> => host::start_event_tail;
+        register_message_renderer(custom_type: &str, handler: &host::Callback) -> ExtensionResult<()> => host::register_message_renderer;
+        on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
+        register_command(name: &str, description: Option<&str>, completions: Option<&host::Callback>, handler: &host::Callback) -> ExtensionResult<()> => host::register_command;
+        register_shortcut(shortcut: &str, description: Option<&str>, handler: &host::Callback) -> ExtensionResult<()> => host::register_shortcut;
+        register_flag(name: &str, options: &FlagOptions) -> ExtensionResult<()> => host::register_flag;
+        get_flag(name: &str) -> ExtensionResult<Option<FlagValue>> => host::get_flag;
+        register_tool(metadata: &str, prepare: Option<&host::Callback>, execute: &host::Callback) -> ExtensionResult<()> => host::register_tool;
+        append_entry(custom_type: &str, data: Option<&str>) -> ExtensionResult<()> => host::append_entry;
+    } }
     forward_resources! {
+        compact(context: &Self::Context, instructions: Option<&str>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
+        unsubscribe(subscription: &Self::Subscription) -> ExtensionResult<()> => unsubscribe();
+        registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
+        bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
+        tool_update(update: &host::ToolUpdate, partial: &str) -> ExtensionResult<()> => update(partial);
+        aborted(signal: &host::AbortSignal) -> bool => aborted();
         writer_reader(resource: &Self::Writer) -> Self::Reader => reader();
         writer_set_session_file(resource: &Self::Writer, path: &str) -> ExtensionResult<()> => set_session_file(path);
         writer_new_session(resource: &Self::Writer, options: Option<&str>) -> ExtensionResult<Option<String>> => new_session(options);
@@ -132,87 +162,17 @@ impl Imports for Generated {
 
     type Writer = host::SessionManager;
 
-    fn send_message(&self, message: &str, options: Option<&str>) -> ExtensionResult<()> {
-        host::send_message(message, options)
-    }
-    fn send_user_message(&self, content: &str, options: Option<&str>) -> ExtensionResult<()> {
-        host::send_user_message(content, options)
-    }
-    fn set_session_name(&self, name: &str) -> ExtensionResult<()> {
-        host::set_session_name(name)
-    }
-    fn get_session_name(&self) -> ExtensionResult<Option<String>> {
-        host::get_session_name()
-    }
-    fn set_label(&self, entry_id: &str, label: Option<&str>) -> ExtensionResult<()> {
-        host::set_label(entry_id, label)
-    }
-    fn get_active_tools(&self) -> ExtensionResult<Vec<String>> {
-        host::get_active_tools()
-    }
-    fn get_all_tools(&self) -> ExtensionResult<String> {
-        host::get_all_tools()
-    }
-    fn set_active_tools(&self, tool_names: &[String]) -> ExtensionResult<()> {
-        host::set_active_tools(tool_names)
-    }
-    fn get_commands(&self) -> ExtensionResult<String> {
-        host::get_commands()
-    }
-    fn get_thinking_level(&self) -> ExtensionResult<String> {
-        host::get_thinking_level()
-    }
-    fn set_thinking_level(&self, level: &str) -> ExtensionResult<()> {
-        host::set_thinking_level(level)
-    }
     fn set_model(&self, model: String) -> ExtensionFuture<'_, bool> {
         Box::pin(host::set_model(model))
-    }
-    fn compact(
-        &self,
-        context: &Self::Context,
-        instructions: Option<&str>,
-        complete: Option<&Self::Callback>,
-        error: Option<&Self::Callback>,
-    ) -> ExtensionResult<()> {
-        context.compact(instructions, complete, error)
     }
 
     type Subscription = host::Subscription;
     type Emitter = host::CallbackEmitter;
-    fn event_on(
-        &self,
-        channel: &str,
-        handler: &Self::Callback,
-    ) -> ExtensionResult<Self::Subscription> {
-        host::event_on(channel, handler)
-    }
-    fn unsubscribe(&self, subscription: &Self::Subscription) -> ExtensionResult<()> {
-        subscription.unsubscribe()
-    }
     fn event_emit(&self, channel: String, data: String) -> ExtensionFuture<'_, ()> {
         Box::pin(host::event_emit(channel, data))
     }
-    fn callback_emit(
-        &self,
-        emitter: &Self::Emitter,
-        channel: &str,
-        data: &str,
-    ) -> ExtensionResult<()> {
-        host::callback_emit(emitter, channel, data)
-    }
-    fn start_event_tail(
-        &self,
-        emitter: &Self::Emitter,
-        tail: &Self::Callback,
-    ) -> ExtensionResult<()> {
-        host::start_event_tail(emitter, tail)
-    }
     type Ui = host::ExtensionUiContext;
     type Registry = host::ModelRegistry;
-    fn registry_get_all(&self, resource: &Self::Registry) -> ExtensionResult<String> {
-        resource.get_all()
-    }
 
     fn registry_get_api_key_and_headers<'a>(
         &'a self,
@@ -233,19 +193,9 @@ impl Imports for Generated {
     }
 
     type BashOutput = host::BashOutput;
-    fn bash_output(&self, output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> {
-        output.on_data(bytes)
-    }
     type Update = host::ToolUpdate;
     type Callback = host::Callback;
     type Theme = host::Theme;
-    fn register_message_renderer(
-        &self,
-        custom_type: &str,
-        handler: &host::Callback,
-    ) -> ExtensionResult<()> {
-        host::register_message_renderer(custom_type, handler)
-    }
     type Signal = host::AbortSignal;
     type Context = host::Context;
     type CommandContext = host::CommandContext;
@@ -257,53 +207,6 @@ impl Imports for Generated {
     fn new_callback(&self) -> (u32, host::Callback) {
         let handle = host::Callback::new();
         (handle.id(), handle)
-    }
-
-    fn on(&self, event: &str, handler: &host::Callback) -> ExtensionResult<()> {
-        host::on(event, handler)
-    }
-
-    fn register_command(
-        &self,
-        name: &str,
-        description: Option<&str>,
-        completions: Option<&host::Callback>,
-        handler: &host::Callback,
-    ) -> ExtensionResult<()> {
-        host::register_command(name, description, completions, handler)
-    }
-    fn register_shortcut(
-        &self,
-        shortcut: &str,
-        description: Option<&str>,
-        handler: &host::Callback,
-    ) -> ExtensionResult<()> {
-        host::register_shortcut(shortcut, description, handler)
-    }
-    fn register_flag(&self, name: &str, options: &FlagOptions) -> ExtensionResult<()> {
-        host::register_flag(name, options)
-    }
-    fn get_flag(&self, name: &str) -> ExtensionResult<Option<FlagValue>> {
-        host::get_flag(name)
-    }
-
-    fn register_tool(
-        &self,
-        metadata: &str,
-        prepare: Option<&host::Callback>,
-        execute: &host::Callback,
-    ) -> ExtensionResult<()> {
-        host::register_tool(metadata, prepare, execute)
-    }
-    fn tool_update(&self, update: &host::ToolUpdate, partial: &str) -> ExtensionResult<()> {
-        update.update(partial)
-    }
-    fn append_entry(&self, custom_type: &str, data: Option<&str>) -> ExtensionResult<()> {
-        host::append_entry(custom_type, data)
-    }
-
-    fn aborted(&self, signal: &host::AbortSignal) -> bool {
-        signal.aborted()
     }
 
     fn wait_for_idle<'a>(&'a self, context: &'a host::CommandContext) -> ExtensionFuture<'a, ()> {

@@ -23,25 +23,20 @@ pub enum ResolvedRequestAuth {
         error: String,
     },
 }
-/// Host queries available through a retained catalog.
-pub trait ModelRegistryPort {
-    /// Returns the supplied model list.
-    ///
-    /// # Errors
-    /// Returns the host query failure.
-    fn get_all(&self) -> ExtensionResult<Vec<Model>>;
-    /// Returns the supplied configured-auth list.
-    ///
-    /// # Errors
-    /// Returns the host query failure.
-    fn get_available(&self) -> ExtensionResult<Vec<Model>>;
-    /// Finds a descriptor using literal provider and model identifiers.
-    ///
-    /// # Errors
-    /// Returns the host query failure.
-    fn find(&self, provider: &str, model_id: &str) -> ExtensionResult<Option<Model>>;
-    /// Resolves credentials for the supplied model.
-    fn get_api_key_and_headers(&self, model: Model) -> ExtensionFuture<'_, ResolvedRequestAuth>;
+port! {
+    /// Host queries available through a retained catalog.
+    ModelRegistryPort for ModelRegistry via 0 {
+        /// Returns the supplied model list.
+        fn get_all() -> Vec<Model>;
+        /// Returns the supplied configured-auth list.
+        fn get_available() -> Vec<Model>;
+        /// Finds a descriptor using literal provider and model identifiers.
+        fn find(provider: &str, model_id: &str) -> Option<Model>;
+    }
+    asynchronous {
+        /// Resolves credentials for the supplied model.
+        fn get_api_key_and_headers(model: Model) -> ResolvedRequestAuth;
+    }
 }
 /// Retained catalog; clones share its host owner.
 #[derive(Clone)]
@@ -51,27 +46,6 @@ impl ModelRegistry {
     #[must_use]
     pub fn new(port: Rc<dyn ModelRegistryPort>) -> Self {
         Self(port)
-    }
-    /// Returns the supplied model list.
-    ///
-    /// # Errors
-    /// Returns the host failure or selected-record decoding error.
-    pub fn get_all(&self) -> ExtensionResult<Vec<Model>> {
-        self.0.get_all()
-    }
-    /// Returns the supplied configured-auth list.
-    ///
-    /// # Errors
-    /// Returns the host failure or selected-record decoding error.
-    pub fn get_available(&self) -> ExtensionResult<Vec<Model>> {
-        self.0.get_available()
-    }
-    /// Finds a descriptor using literal provider and model identifiers.
-    ///
-    /// # Errors
-    /// Returns the host failure or selected-record decoding error.
-    pub fn find(&self, provider: &str, model_id: &str) -> ExtensionResult<Option<Model>> {
-        self.0.find(provider, model_id)
     }
     /// Resolves credentials for the supplied model.
     ///

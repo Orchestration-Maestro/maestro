@@ -56,9 +56,14 @@ macro_rules! port {
     };
 }
 
-/// Implements resource-only forwarding without duplicating a method body per import.
+/// Implements resource and function forwarding without duplicating a body per import.
 #[cfg(target_arch = "wasm32")]
 macro_rules! forward_resources {
+    (functions { $($name:ident($($arg:ident: $ty:ty),* $(,)?) -> $ret:ty => $function:path;)* }) => {
+        $(fn $name(&self $(, $arg: $ty)*) -> $ret {
+            $function($($arg),*)
+        })*
+    };
     ($($name:ident($resource:ident: $resource_ty:ty $(, $arg:ident: $ty:ty)*) -> $ret:ty => $method:ident($($value:expr),* $(,)?);)*) => {
         $(fn $name(&self, $resource: $resource_ty $(, $arg: $ty)*) -> $ret {
             $resource.$method($($value),*)
