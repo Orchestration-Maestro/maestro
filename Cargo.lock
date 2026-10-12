@@ -1883,10 +1883,13 @@ dependencies = [
 name = "maestro-tui-crossterm"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "chrono",
  "maestro-tui",
  "rand",
  "rustix",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
