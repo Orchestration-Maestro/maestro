@@ -1,5 +1,5 @@
 //! Projection of caller-supplied entries without session-file reads or writes.
-//! Generated timestamps use the existing [`crate::messages`] formatting owner.
+//! Stored timestamp conversion uses the existing [`crate::messages`] owner.
 use super::types::{SessionContext, SessionContextModel, SessionEntry};
 use maestro_request::presence::Presence;
 use serde::de::Error as _;
@@ -19,9 +19,9 @@ fn property<'a>(
 }
 
 /// Collect a reachable ancestry, stopping before revisiting the same entry.
-pub(crate) fn ancestor_path<'a, S: BuildHasher>(
+pub(crate) fn ancestor_path<'a>(
     leaf: &'a SessionEntry,
-    by_id: &HashMap<String, &'a SessionEntry, S>,
+    lookup: impl Fn(&str) -> Option<&'a SessionEntry>,
 ) -> Result<Vec<&'a SessionEntry>, serde_json::Error> {
     let mut path = Vec::new();
     let mut visited = HashSet::new();
@@ -36,7 +36,7 @@ pub(crate) fn ancestor_path<'a, S: BuildHasher>(
             .get("parentId")
             .and_then(Value::as_str)
             .filter(|id| !id.is_empty())
-            .and_then(|id| by_id.get(id).copied());
+            .and_then(&lookup);
     }
     path.reverse();
     Ok(path)
@@ -66,7 +66,7 @@ pub fn build_session_context<'a, S: BuildHasher>(
     by_id: Option<&HashMap<String, &'a SessionEntry, S>>,
 ) -> Result<SessionContext, serde_json::Error> {
     if let Some(index) = by_id {
-        return indexed_context(entries, leaf_id, index);
+        return indexed_context(entries.last(), leaf_id, |id| index.get(id).copied());
     }
     let mut index = HashMap::new();
     for entry in entries {
@@ -75,13 +75,13 @@ pub fn build_session_context<'a, S: BuildHasher>(
             .unwrap_or_default();
         index.insert(id.to_owned(), entry);
     }
-    indexed_context(entries, leaf_id, &index)
+    indexed_context(entries.last(), leaf_id, |id| index.get(id).copied())
 }
 /// Select and project against the caller's authoritative index.
-fn indexed_context<'a, S: BuildHasher>(
-    entries: &'a [SessionEntry],
+pub(crate) fn indexed_context<'a>(
+    last_entry: Option<&'a SessionEntry>,
     leaf_id: Presence<&str>,
-    by_id: &HashMap<String, &'a SessionEntry, S>,
+    lookup: impl Fn(&str) -> Option<&'a SessionEntry>,
 ) -> Result<SessionContext, serde_json::Error> {
     let mut context = SessionContext {
         messages: Vec::new(),
@@ -90,14 +90,14 @@ fn indexed_context<'a, S: BuildHasher>(
     };
     let leaf = match leaf_id {
         Presence::Null => return Ok(context),
-        Presence::Present(id) if !id.is_empty() => by_id.get(id).copied(),
+        Presence::Present(id) if !id.is_empty() => lookup(id),
         _ => None,
     }
-    .or_else(|| entries.last());
+    .or(last_entry);
     let Some(leaf) = leaf else {
         return Ok(context);
     };
-    let path = ancestor_path(leaf, by_id)?;
+    let path = ancestor_path(leaf, lookup)?;
     let compaction = scan_settings(&path, &mut context)?;
     context.messages = project_messages(&path, compaction);
     Ok(context)

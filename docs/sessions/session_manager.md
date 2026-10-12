@@ -1,8 +1,8 @@
-# Stored-entry context
+# Session history and stored-entry context
 
 `maestro-session::session_manager` parses supplied JSONL text and projects a
 selected ancestry into context without session-file reads or writes.
-Generated timestamps delegate to [message formatting](messages.md).
+Stored timestamp conversion delegates to [message formatting](messages.md).
 
 ## Raw entries and explicit views
 
@@ -60,3 +60,43 @@ receivers return native errors identifying the field, not an eager schema error.
 `get_latest_compaction_entry` scans supplied order backwards without ancestry
 selection and borrows the matching original element. It stops at its first match;
 a null entry encountered before that match is an error.
+
+## In-memory history
+
+`SessionManager::in_memory` creates a memory history with no session-file reads
+or writes. An omitted cwd captures the process working directory and propagates
+its native lookup error; an explicit string, including empty, stays as authored.
+Session identities use `UUIDv7` unless `NewSessionOptions.id` supplies a string.
+Headers and message entries receive fresh UTC millisecond timestamps. Entry
+identities try eight hexadecimal characters from a random UUID up to 100 times
+before falling back to a full UUID.
+
+Appending moves the raw message into the retained sequence, indexes it and
+selects it as a child of the previous selection. `branch` validates membership
+before selecting; a missing target returns exactly `Entry {id} not found`.
+Abandoned branches remain in history. `get_branch(None)` uses the selection;
+an explicit empty or unknown identity returns an empty path without changing it.
+Context uses the [projection rules](#branch-selection) above.
+
+Reads borrow retained records. To keep a record across mutable operations,
+callers take an explicit owned copy. `new_session` replaces the header and
+clears entries, index and selection while retaining cwd; it returns no file.
+`NewSessionOptions.parent_session` preserves missing, null and string metadata.
+Memory history reports false persistence, an empty session directory and no file.
+
+```rust
+use maestro_session::{NewSessionOptions, SessionManager};
+use serde_json::json;
+
+let mut history = SessionManager::in_memory(Some("work"))?;
+let root = history.append_message(json!({"role":"user", "content":"hello", "timestamp":1}));
+history.append_message(json!({"role":"user", "content":"abandoned", "timestamp":2}));
+history.branch(&root)?;
+history.append_message(json!({"role":"user", "content":"selected", "timestamp":3}));
+let context = history.build_session_context()?;
+assert_eq!(context.messages[1]["content"], "selected");
+assert_eq!(history.get_entries().len(), 3);
+assert_eq!(history.new_session(NewSessionOptions::default()), None);
+assert!(history.get_entries().is_empty());
+# Ok::<(), Box<dyn std::error::Error>>(())
+```

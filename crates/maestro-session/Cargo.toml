@@ -9,6 +9,7 @@ repository.workspace = true
 maestro-agent = { path = "../maestro-agent" }
 maestro-models = { path = "../maestro-models" }
 maestro-request = { path = "../maestro-request" }
+uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4", "v7"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock", "wasmbind"] }
 ryu-js.workspace = true
 serde_json.workspace = true
@@ -16,6 +17,9 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+uuid = { version = "=1.27.0", default-features = false, features = ["js"] }
 
 [lints]
 workspace = true

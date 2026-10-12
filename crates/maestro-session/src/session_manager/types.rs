@@ -221,3 +221,12 @@ pub struct CustomMessageEntry<T = Value> {
     /// Recorded display.
     pub display: bool,
 }
+
+/// Identity and parent metadata for a new session.
+#[derive(Debug, Default)]
+pub struct NewSessionOptions {
+    /// Explicit identity, including an empty string; absence generates an identity.
+    pub id: Option<String>,
+    /// Optional parent-session metadata.
+    pub parent_session: Presence<String>,
+}
