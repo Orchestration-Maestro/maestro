@@ -84,7 +84,7 @@ fn definition() -> Tool {
         parameters: json!({"type":"object"}),
     }
 }
-/// A typed tool whose details follow `typed_result` and which reports every state as progress.
+/// A typed tool whose details follow `typed_result` and which reports every state as progress when supplied an observer.
 fn typed_execute() -> ExecuteTool<Value, Option<Record>> {
     Arc::new(|id, _, _, update| {
         if let Some(update) = update {
@@ -141,9 +141,15 @@ fn typed_callback_preserves_missing_null_and_value_details() {
         let seen: Vec<_> = partials.iter().map(|p| p.details.clone()).collect();
         assert_eq!(seen, (0..3).map(expected_state).collect::<Vec<_>>());
         assert!(partials.iter().all(|p| p.terminate == Some(true)));
+        let contents: Vec<_> = partials
+            .iter()
+            .map(|p| serde_json::to_value(&p.content).unwrap())
+            .collect();
         assert_eq!(
-            serde_json::to_value(&partials[2].content).unwrap(),
-            json!([{"type":"text","text":"partial-2"}])
+            contents,
+            (0..3)
+                .map(|n| json!([{"type":"text","text":format!("partial-{n}")}]))
+                .collect::<Vec<_>>()
         );
     }
 }
@@ -156,7 +162,7 @@ enum Entry {
     /// Continue retained history.
     Continue,
 }
-/// Everything the loop reports about tool results.
+/// The selected tool-result observations: progress and end details, hook inputs, messages and turn results.
 #[derive(Default)]
 struct Seen {
     /// Progress details by call id, in emission order.
@@ -383,7 +389,7 @@ fn after_tool_details_keep_nullish_inputs_and_replace_values() {
         }
     });
 }
-/// Drive one fixture case and compare every observation with its expectation.
+/// Drive one fixture case and compare the hook input, returned message and end details with its expectation.
 async fn run_case(case: &Case, mode: ToolExecutionMode) {
     let input = case.input.clone();
     let execute: ExecuteTool = Arc::new(move |_, _, _, _| {
