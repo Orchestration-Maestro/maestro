@@ -6,12 +6,12 @@ use std::borrow::Cow;
 
 use super::google_shared::{
     FunctionCallingConfigMode, GenerateContentParameters, GoogleThinkingLevel, ThinkingConfig,
-    build_parameters, enabled_thinking, failure, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
+    build_parameters, enabled_thinking, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
 };
 use crate::options::resolve_api_key;
 use crate::{
     Context, DiagnosticErrorInfo, Model, ModelThinkingLevel, SimpleStreamOptions, StreamOptions,
-    ThinkingBudgets, ThinkingLevel, build_base_options, clamp_thinking_level,
+    ThinkingBudgets, ThinkingLevel, build_base_options, clamp_reasoning, clamp_thinking_level,
 };
 
 /// Content-generation options: common settings, tool choice and optional raw thinking.
@@ -90,7 +90,9 @@ pub fn build_simple_options(
             .and_then(|options| options.common.api_key.as_deref())
             .map(Cow::Borrowed),
     )
-    .ok_or_else(|| failure(format!("No API key for provider: {}", model.provider)))?;
+    .ok_or_else(|| {
+        DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
+    })?;
     let thinking = match options.and_then(|options| options.reasoning) {
         None => GoogleThinking::default(),
         Some(reasoning) => {
@@ -107,14 +109,14 @@ pub fn build_simple_options(
 
 /// Clamp a requested level to the model's support; off and extra-high select high.
 fn effort(model: &Model, requested: ThinkingLevel) -> ThinkingLevel {
-    match clamp_thinking_level(model, requested.into()) {
+    let supported = match clamp_thinking_level(model, requested.into()) {
         ModelThinkingLevel::Minimal => ThinkingLevel::Minimal,
         ModelThinkingLevel::Low => ThinkingLevel::Low,
         ModelThinkingLevel::Medium => ThinkingLevel::Medium,
-        ModelThinkingLevel::Off | ModelThinkingLevel::High | ModelThinkingLevel::Xhigh => {
-            ThinkingLevel::High
-        }
-    }
+        ModelThinkingLevel::Off | ModelThinkingLevel::High => ThinkingLevel::High,
+        ModelThinkingLevel::Xhigh => ThinkingLevel::Xhigh,
+    };
+    clamp_reasoning(Some(supported)).unwrap_or(ThinkingLevel::High)
 }
 
 /// Enabled thinking for an effort: a level for level-based families, else a budget.

@@ -6,7 +6,7 @@ use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde::Deserialize;
 
 use crate::chat::TestResult;
-use crate::child_process::{child_case, rerun};
+use crate::environment_rows::check_by_environment;
 
 /// One recorded case.
 #[derive(Deserialize)]
@@ -30,7 +30,7 @@ pub struct Input {
     pub provider: String,
     /// Supplied options.
     pub options: Options,
-    /// Exact environment of the process that evaluates the case.
+    /// Variables supplied to the process that evaluates the case; see the child runner.
     env: BTreeMap<String, String>,
 }
 
@@ -90,7 +90,7 @@ fn all_rows(owners: &[&str]) -> TestResult<Vec<Row>> {
     Ok(rows)
 }
 
-/// Check every case of `test`, each in a child process holding exactly its environment.
+/// Check every case of `test`, each in a child process holding its recorded environment.
 ///
 /// # Errors
 /// Returns the first fixture or case failure.
@@ -100,24 +100,5 @@ pub fn assert_rows(owners: &[&str], test: &str, check: impl Fn(&Row) -> TestResu
         .filter(|row| row.test == test)
         .collect();
     assert!(!rows.is_empty(), "{test} has no rows");
-    if let Some(case) = child_case() {
-        let environment: BTreeMap<String, String> = serde_json::from_str(&case)?;
-        for row in rows.iter().filter(|row| row.input.env == environment) {
-            check(row)?;
-        }
-        return Ok(());
-    }
-    let environments: BTreeSet<String> = rows
-        .iter()
-        .map(|row| serde_json::to_string(&row.input.env))
-        .collect::<Result<_, _>>()?;
-    for case in &environments {
-        let environment: BTreeMap<String, String> = serde_json::from_str(case)?;
-        let variables: Vec<(&str, &str)> = environment
-            .iter()
-            .map(|(name, value)| (name.as_str(), value.as_str()))
-            .collect();
-        rerun(test, case, &variables)?;
-    }
-    Ok(())
+    check_by_environment(test, &rows, |row| Some(&row.input.env), check)
 }

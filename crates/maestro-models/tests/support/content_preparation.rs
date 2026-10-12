@@ -16,7 +16,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use crate::chat::{self, TestResult};
-use crate::child_process::{child_case, rerun};
+use crate::environment_rows::check_by_environment;
 
 /// Every test name a fixture row may select.
 pub const TEST_NAMES: [&str; 25] = [
@@ -81,7 +81,7 @@ struct Input {
     context: Value,
     /// Options in their recorded form.
     options: OptionsInput,
-    /// Exact environment of the child process that evaluates the row.
+    /// Variables supplied to the child process that evaluates the row; see the child runner.
     env: Option<BTreeMap<String, String>>,
 }
 
@@ -179,17 +179,14 @@ fn all_rows() -> TestResult<Vec<Row>> {
 
 /// The baseline model with the row's members overlaid.
 fn model(overlay: &Value) -> TestResult<Model> {
-    let mut members = json!({
+    let members = json!({
         "id": "gemini-2.5-flash", "name": "fixture", "api": "google-generative-ai",
         "provider": "google", "baseUrl": "https://fixture.invalid/v1beta", "reasoning": true,
         "input": ["text", "image"],
         "cost": {"input": 1, "output": 2, "cacheRead": 3, "cacheWrite": 4},
         "contextWindow": 128_000, "maxTokens": 8192
     });
-    if let (Some(base), Some(changes)) = (members.as_object_mut(), overlay.as_object()) {
-        base.extend(changes.iter().map(|(k, v)| (k.clone(), v.clone())));
-    }
-    chat::model(&members)
+    chat::model(&chat::overlay(members, overlay))
 }
 
 /// The level named by its wire spelling.
@@ -370,11 +367,15 @@ fn assert_outcome(
         (Err(error), Some(message), None) => {
             assert_eq!(&error.message, message);
             assert_eq!(error.name.as_deref(), Some("Error"));
+            assert!(error.stack.is_none() && error.code.is_none());
         }
         _ => return Err("outcome does not match the recorded kind".into()),
     }
     Ok(())
 }
+
+/// The only test whose simple rows fail during option selection.
+const MISSING_KEY_TEST: &str = "simple_missing_key_fails_before_parameter_preparation";
 
 /// Evaluate one row through the public operations.
 fn check(row: &Row) -> TestResult {
@@ -390,7 +391,10 @@ fn check(row: &Row) -> TestResult {
             let simple = simple_options(&row.input.options)?;
             let selected = match build_simple_options(&model, Some(&simple)) {
                 Ok(selected) => selected,
-                Err(error) => return assert_outcome(Err(error), expected),
+                Err(error) if row.test == MISSING_KEY_TEST => {
+                    return assert_outcome(Err(error), expected);
+                }
+                Err(error) => return Err(format!("simple preparation failed: {error}").into()),
             };
             if let Some(options) = &expected.options {
                 assert_eq!(
@@ -421,32 +425,5 @@ pub fn assert_rows(test: &str) -> TestResult {
         .filter(|row| row.test == test)
         .collect();
     assert!(!rows.is_empty(), "{test} has no rows");
-    if let Some(case) = child_case() {
-        let environment: BTreeMap<String, String> = serde_json::from_str(&case)?;
-        for row in rows
-            .iter()
-            .filter(|row| row.input.env.as_ref() == Some(&environment))
-        {
-            check(row)?;
-        }
-        return Ok(());
-    }
-    let mut environments = std::collections::BTreeSet::new();
-    for row in &rows {
-        match &row.input.env {
-            None => check(row)?,
-            Some(environment) => {
-                environments.insert(serde_json::to_string(environment)?);
-            }
-        }
-    }
-    for case in &environments {
-        let environment: BTreeMap<String, String> = serde_json::from_str(case)?;
-        let variables: Vec<(&str, &str)> = environment
-            .iter()
-            .map(|(name, value)| (name.as_str(), value.as_str()))
-            .collect();
-        rerun(test, case, &variables)?;
-    }
-    Ok(())
+    check_by_environment(test, &rows, |row| row.input.env.as_ref(), check)
 }

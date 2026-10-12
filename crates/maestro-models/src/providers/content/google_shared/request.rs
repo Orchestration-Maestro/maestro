@@ -89,16 +89,6 @@ fn serialize_empty_object<T, S: Serializer>(_value: &T, serializer: S) -> Result
     serializer.serialize_map(Some(0))?.end()
 }
 
-/// Build the error value shared by preparation failures.
-pub(crate) fn failure(message: String) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message,
-        stack: None,
-        code: None,
-    }
-}
-
 /// Assemble request parameters from converted context, common settings and selected controls.
 ///
 /// A tool mode is emitted only with declared tools. An already-aborted signal fails
@@ -111,7 +101,7 @@ pub(crate) fn build_parameters(
     thinking_config: Option<ThinkingConfig>,
 ) -> Result<GenerateContentParameters, DiagnosticErrorInfo> {
     if common.signal.as_ref().is_some_and(Cancellation::is_aborted) {
-        return Err(failure("Request aborted".to_owned()));
+        return Err(DiagnosticErrorInfo::error("Request aborted"));
     }
     let tools = context
         .tools

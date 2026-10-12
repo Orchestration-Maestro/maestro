@@ -9,12 +9,7 @@ use base64::{
 
 /// Read the account claim without signature verification.
 pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorInfo> {
-    let failure = || DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: "Failed to extract accountId from token".to_owned(),
-        stack: None,
-        code: None,
-    };
+    let failure = || DiagnosticErrorInfo::error("Failed to extract accountId from token");
     let parts: Vec<_> = token.split('.').collect();
     let [_, payload, _] = parts.as_slice() else {
         return Err(failure());
@@ -58,12 +53,7 @@ pub(crate) struct PreparedRequest {
 
 /// A failure with its authored diagnostic identity.
 pub(super) fn diagnostic(message: impl Into<String>) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 
 /// Ordered serialization-only response-session body.

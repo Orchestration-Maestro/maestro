@@ -73,12 +73,7 @@ pub(crate) struct OpenAIResponsesStreamOptions<'a> {
 
 /// A failure with the given message, as a thrown error reports it.
 fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 
 /// Reduce framed response events, given as JSON text, into `output`, publishing content

@@ -161,12 +161,7 @@ pub fn stream_simple_openai_responses(
 
 /// Failure text carried by the stream source or simple key boundary.
 pub(super) fn diagnostic(message: impl Into<String>) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 
 /// Serialization-only request body.

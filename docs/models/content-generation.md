@@ -176,7 +176,7 @@ assert_eq!(
 );
 ```
 
-`build_params` always returns the model identifier, the converted turns and a configuration.
+On success `build_params` returns the model identifier, the converted turns and a configuration.
 Temperature and output limit are kept as supplied, zero and negative values included; the
 system prompt is omitted only when empty and is otherwise kept untrimmed. Tools are
 declared whole (`parametersJsonSchema`), and a tool mode is emitted only when the context
@@ -195,8 +195,8 @@ anywhere in the model identifier, with ASCII digits only), and a zero budget oth
 `build_simple_options` fails with `No API key for provider: <provider>` unless a nonempty
 supplied key (kept untrimmed) or the provider's environment key exists; it does so before
 anything else and does not inspect the context or the signal, which `build_params` checks
-later. Common settings come from [`build_base_options`](../model-options.md), so a missing
-output limit becomes the model limit capped at 32,000 and no thinking tokens are added;
+later. Common settings come from [`build_base_options`](../model-options.md), which also decides the
+output limit; no thinking tokens are added;
 the simple tool choice is not forwarded. Missing reasoning selects disabled thinking. A
 requested effort is first clamped to the model's supported levels, and off and extra-high
 both select high. Level-based families (Pro and Flash of the third generation, Gemma 4)

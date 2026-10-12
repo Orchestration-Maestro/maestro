@@ -10,9 +10,12 @@ mod chat;
 mod child_process;
 #[path = "support/content_preparation.rs"]
 mod content_preparation;
+#[path = "support/environment_rows.rs"]
+mod environment_rows;
 
 use chat::TestResult;
 use content_preparation::assert_rows;
+use environment_rows::check_by_environment;
 use indexmap::IndexMap;
 use maestro_models::providers::content::google::{
     GoogleOptions, GoogleThinking, build_params, build_simple_options,
@@ -22,6 +25,7 @@ use maestro_models::{
     StreamOptions, ThinkingLevel, Transport,
 };
 use serde_json::json;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -281,7 +285,14 @@ fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> 
         reasoning: Some(ThinkingLevel::Low),
         ..SimpleStreamOptions::default()
     };
-    let common = build_simple_options(&model, Some(&simple))?.common;
+    let selected = build_simple_options(&model, Some(&simple))?;
+    let raw = GoogleOptions {
+        common: selected.common.clone(),
+        ..GoogleOptions::default()
+    };
+    build_params(&model, &context()?, Some(&raw))?;
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+    let common = selected.common;
     assert_scalar_settings(&common, metadata.as_ref());
     assert!(common.signal.is_some());
     assert!(same_handle(
@@ -316,4 +327,40 @@ fn prepared_values_do_not_mutate_the_supplied_context() -> TestResult {
     assert_eq!(again.config.system_instruction.as_deref(), Some("system"));
     assert!(again.config.tools.is_some());
     Ok(())
+}
+
+#[test]
+fn absent_options_prepare_like_empty_options() -> TestResult {
+    let model = chat::model(&json!({"api": "google-generative-ai", "provider": "google"}))?;
+    let environment = BTreeMap::from([("GEMINI_API_KEY".to_owned(), "env-key".to_owned())]);
+    check_by_environment(
+        "absent_options_prepare_like_empty_options",
+        &[environment],
+        |environment| Some(environment),
+        |_| {
+            let context = context()?;
+            assert_eq!(
+                serde_json::to_value(build_params(&model, &context, None)?)?,
+                serde_json::to_value(build_params(
+                    &model,
+                    &context,
+                    Some(&GoogleOptions::default())
+                )?)?
+            );
+            let absent = build_simple_options(&model, None)?;
+            let empty = build_simple_options(&model, Some(&SimpleStreamOptions::default()))?;
+            assert_eq!(absent.common.api_key.as_deref(), Some("env-key"));
+            assert_eq!(absent.common.max_tokens, Some(4096.0));
+            assert_eq!(
+                (absent.common.api_key, absent.common.max_tokens),
+                (empty.common.api_key, empty.common.max_tokens)
+            );
+            let (a, e) = (
+                absent.thinking.ok_or("thinking")?,
+                empty.thinking.ok_or("thinking")?,
+            );
+            assert!(!a.enabled && !e.enabled);
+            Ok(())
+        },
+    )
 }

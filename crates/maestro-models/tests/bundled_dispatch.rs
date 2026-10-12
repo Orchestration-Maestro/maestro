@@ -10,6 +10,8 @@ mod bundled;
 mod chat;
 #[path = "support/child_process.rs"]
 mod child_process;
+#[path = "support/environment_rows.rs"]
+mod environment_rows;
 #[path = "support/key_selection.rs"]
 mod key_selection;
 

@@ -70,10 +70,5 @@ pub fn validate_schema(schema: &Value, value: &Value) -> Result<Vec<String>, Dia
 
 /// Wrap a corrective message in the existing error record.
 fn diagnostic(message: String) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message,
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }

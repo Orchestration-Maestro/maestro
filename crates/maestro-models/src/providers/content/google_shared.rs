@@ -22,7 +22,7 @@ pub use request::{
     ToolConfig,
 };
 pub(crate) use request::{
-    build_parameters, enabled_thinking, failure, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
+    build_parameters, enabled_thinking, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
 };
 pub use stream::process_google_stream;
 
