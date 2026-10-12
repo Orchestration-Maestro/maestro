@@ -366,7 +366,7 @@ fn project_listing_directory_failures_return_empty() {
     let file = Path::new(scratch.text()).join("plain");
     std::fs::write(&file, "x").unwrap();
     let empty = Scratch::new();
-    let mut dirs = vec![
+    let dirs = vec![
         missing.to_str().unwrap(),
         file.to_str().unwrap(),
         "",
@@ -375,7 +375,8 @@ fn project_listing_directory_failures_return_empty() {
     #[cfg(unix)]
     let unreadable = Path::new(scratch.text()).join("locked");
     #[cfg(unix)]
-    {
+    let dirs = {
+        let mut dirs = dirs;
         std::fs::create_dir(&unreadable).unwrap();
         std::fs::set_permissions(
             &unreadable,
@@ -383,7 +384,8 @@ fn project_listing_directory_failures_return_empty() {
         )
         .unwrap();
         dirs.push(unreadable.to_str().unwrap());
-    }
+        dirs
+    };
     let mut calls = 0;
     for dir in dirs {
         let mut count = |_, _| {
@@ -639,7 +641,7 @@ fn progress_error_returns_empty_without_draining_reads() {
             Path::new(scratch.text()).to_path_buf()
         };
         std::fs::create_dir_all(&dir).unwrap();
-        let pipe = fifo(&dir, "pipe.jsonl");
+        fifo(&dir, "pipe.jsonl");
         std::fs::write(dir.join("ready.jsonl"), session_text("ready", &[])).unwrap();
         let mut calls = 0;
         let mut fail = |_, _| {
@@ -661,9 +663,8 @@ fn progress_error_returns_empty_without_draining_reads() {
         };
         assert!(listed.is_empty());
         assert_eq!(calls, 1);
-        // The abandoned read is still blocked in the pipe open; release it before the runtime drops.
-        produce(pipe, session_text("pipe", &[])).join().unwrap();
-        drop(runtime);
+        // The abandoned read may still be blocked in the pipe open; do not wait for it.
+        runtime.shutdown_background();
     }
 }
 
