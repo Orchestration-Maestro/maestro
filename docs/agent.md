@@ -1,5 +1,8 @@
 # Agent state and owned runs
 
+The [Agent guide](agent/api.md) walks through installation, events, options and tools; the
+[proxy client](proxy.md) supplies a `stream_fn` body for remote dispatch.
+
 `maestro-agent` owns live conversation state, shared message and executable-tool
 entries, and independent steering and follow-up input queues.
 The [conversation operations](loop.md) accept turn controls and tool-batch

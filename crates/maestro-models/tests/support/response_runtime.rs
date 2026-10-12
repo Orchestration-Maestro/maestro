@@ -142,8 +142,7 @@ async fn native_case(
 ) -> TestResult {
     let server = crate::loopback::serve(
         head,
-        vec![body.as_bytes().to_vec()],
-        std::time::Duration::ZERO,
+        crate::loopback::Step::writes(vec![body.as_bytes().to_vec()]),
     )?;
     let (mut target, history) = inputs(call.endpoint)?;
     target.base_url = match call.endpoint {

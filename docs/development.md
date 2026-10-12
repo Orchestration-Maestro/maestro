@@ -163,7 +163,8 @@ The following command groups are unavailable until delivered by their owners:
 
 - `maestro-models`: model interfaces, providers and catalog data.
 - `maestro-agent`: [live conversation state and queued input](agent.md), with
-  [awaited and observable conversation operations](loop.md).
+  [awaited and observable conversation operations](loop.md) and the
+  [proxy stream client](proxy.md).
 - `maestro-tui`: terminal components.
 - `maestro-app`: shared application operations.
 

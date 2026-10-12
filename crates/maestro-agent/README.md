@@ -4,3 +4,6 @@ Live conversation state, caller-owned prompt/continuation execution, awaited liv
 subscriptions and consumed steering/follow-up queues. See [Agent state and owned runs](../../docs/agent.md)
 for admission, captured configuration and queue policy. The [conversation loop](../../docs/loop.md)
 owns request and tool-turn behavior.
+
+Start with the [Agent guide](../../docs/agent/api.md); the [proxy client](../../docs/proxy.md)
+streams model responses from a caller-chosen proxy through the same interface.

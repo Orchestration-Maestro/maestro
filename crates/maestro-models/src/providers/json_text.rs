@@ -19,7 +19,7 @@ use crate::{JsonObject, parse_streaming_json};
 ///
 /// # Errors
 /// Returns the serializer failure when a string cannot be written.
-pub(crate) fn compact_json(value: &Value) -> Result<String, serde_json::Error> {
+pub fn compact_json(value: &Value) -> Result<String, serde_json::Error> {
     let mut text = String::new();
     write_value(value, &mut text)?;
     Ok(text)
@@ -209,7 +209,8 @@ where
 }
 
 /// Parse streamed argument text into the object of a tool call; any other value becomes empty.
-pub(crate) fn parsed_arguments(partial: &str) -> JsonObject {
+#[must_use]
+pub fn parsed_arguments(partial: &str) -> JsonObject {
     match parse_streaming_json(Some(partial)) {
         Value::Object(arguments) => arguments,
         _ => JsonObject::new(),

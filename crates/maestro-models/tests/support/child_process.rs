@@ -1,6 +1,6 @@
 //! Re-run one test in a fresh process whose environment holds only chosen variables.
 
-use std::process::Command;
+use std::process::{Command, Output};
 
 /// Fallible test body result.
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -12,18 +12,25 @@ pub fn child_case() -> Option<String> {
     std::env::var(CASE).ok()
 }
 
-/// Run `test` again in a child with exactly `variables` set and `case` as its marker.
-pub fn rerun(test: &str, case: &str, variables: &[(&str, &str)]) -> TestResult {
+/// Run `test` again in a child with exactly `variables` set and `case` as its marker, returning
+/// what the child wrote.
+pub fn capture(test: &str, case: &str, variables: &[(&str, &str)]) -> TestResult<Output> {
     let mut command = Command::new(std::env::current_exe()?);
     command.env_clear();
     if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
         command.env("LLVM_PROFILE_FILE", profile);
     }
-    let output = command
+    Ok(command
         .args(["--exact", test, "--nocapture"])
         .envs(variables.iter().copied())
         .env(CASE, case)
-        .output()?;
+        .output()?)
+}
+
+/// Run `test` again in a child with exactly `variables` set and `case` as its marker, and require
+/// that it succeeds.
+pub fn rerun(test: &str, case: &str, variables: &[(&str, &str)]) -> TestResult {
+    let output = capture(test, case, variables)?;
     assert!(
         output.status.success(),
         "{test} case {case} failed:\n{}\n{}",

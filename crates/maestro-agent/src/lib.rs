@@ -14,3 +14,11 @@ pub use agent_loop::{
     AgentEventSink, AgentLoopOptions, agent_loop, agent_loop_continue, run_agent_loop,
     run_agent_loop_continue,
 };
+
+/// Compact proxy requests and response reconstruction.
+pub mod proxy;
+/// The Agent guide, compiled and run as documentation tests.
+#[cfg(doctest)]
+#[doc = include_str!("../../../docs/agent/api.md")]
+mod guide {}
+pub use proxy::{ProxyAssistantMessageEvent, ProxyStreamOptions, stream_proxy};

@@ -25,7 +25,8 @@ pub(crate) use failure::{
 pub(crate) use headers::{client_pairs, edge_whitespace, normalize_request};
 pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::sleep;
-pub(crate) use runtime::{Raced, race, spawn_detached};
+pub(crate) use runtime::spawn_detached;
+pub use runtime::{Raced, race};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
 pub(crate) use text::decode_utf8;
 

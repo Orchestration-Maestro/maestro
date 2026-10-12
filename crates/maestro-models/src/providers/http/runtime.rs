@@ -8,7 +8,7 @@ use std::time::Duration;
 use crate::Cancellation;
 
 /// How racing work against a timer and a cancellation signal ended.
-pub(crate) enum Raced<T> {
+pub enum Raced<T> {
     /// The work finished first.
     Done(T),
     /// The timer elapsed first.
@@ -18,7 +18,7 @@ pub(crate) enum Raced<T> {
 }
 
 /// Run `work` until it finishes, the optional `timeout` elapses or the `signal` aborts.
-pub(crate) async fn race<T>(
+pub async fn race<T>(
     work: impl Future<Output = T>,
     timeout: Option<Duration>,
     signal: Option<&Cancellation>,

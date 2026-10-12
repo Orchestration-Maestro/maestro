@@ -13,7 +13,7 @@ serde_json.workspace = true
 serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "macros"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync", "macros", "net", "time"] }
 
 [lints]
 workspace = true
