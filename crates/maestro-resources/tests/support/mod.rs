@@ -5,7 +5,10 @@ use maestro_resources::{
 use std::{
     io,
     path::{Path, PathBuf},
-    sync::atomic::{AtomicUsize, Ordering},
+    sync::{
+        Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 /// Disposable native resource tree.
@@ -85,6 +88,8 @@ pub struct Controlled {
     pub failures: Vec<(&'static str, PathBuf)>,
     /// Explicit order for selected native directories.
     pub order: Vec<(PathBuf, Vec<&'static str>)>,
+    /// Paths given to link-following metadata, in call order.
+    pub reads: Mutex<Vec<PathBuf>>,
 }
 impl Controlled {
     /// Inject the selected failure without executing native I/O.
@@ -122,6 +127,7 @@ impl ResourceOperations for Controlled {
         NativeResourceOperations.read_file(path)
     }
     fn metadata(&self, path: &Path) -> io::Result<ResourceFileType> {
+        self.reads.lock().unwrap().push(path.to_path_buf());
         self.check("metadata", path)?;
         NativeResourceOperations.metadata(path)
     }

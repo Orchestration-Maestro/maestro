@@ -369,6 +369,7 @@ fn maestro_skills_root_failure_stops_descent() {
             vec![]
         };
         let ops = support::Controlled {
+            reads: std::sync::Mutex::default(),
             failures,
             order: vec![(file.parent().unwrap().into(), vec!["child", "SKILL.md"])],
         };
@@ -686,6 +687,7 @@ fn maestro_skills_report_explicit_path_failures() {
         listener
     };
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![("metadata", stat.clone())],
         order: vec![],
     };
@@ -878,6 +880,7 @@ fn maestro_skills_load_defaults_before_explicit_paths() {
     );
     let paths = [explicit.clone()];
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.join("agent/skills"), vec!["calendar", "other"])],
     };
@@ -984,6 +987,7 @@ fn maestro_skills_deduplicate_paths_before_names() {
     #[cfg(unix)]
     assert!(result.diagnostics.is_empty());
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![("canonicalize", file), ("canonicalize", alias.clone())],
         order: vec![],
     };
@@ -1048,6 +1052,7 @@ fn maestro_skills_limit_loose_markdown_to_the_scan_root() {
     }
     let target = dir.file("outside/calendar/SKILL.md", "---\ndescription: Linked\n---");
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.clone(), vec!["loose.md", "nested", "outside"])],
     };
@@ -1079,29 +1084,141 @@ fn maestro_skills_follow_native_links_and_skip_broken_links() {
     let scan = dir.0.join("scan");
     std::fs::create_dir(&scan).unwrap();
     std::os::unix::fs::symlink(&target, scan.join("linked.md")).unwrap();
+    std::os::unix::fs::symlink(&target, scan.join("denied.md")).unwrap();
     std::os::unix::fs::symlink(target.parent().unwrap(), scan.join("calendar")).unwrap();
     std::os::unix::fs::symlink("absent", scan.join("broken")).unwrap();
+    let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
+        failures: vec![("metadata", scan.join("denied.md"))],
+        order: vec![(
+            scan.clone(),
+            vec!["denied.md", "calendar", "broken", "linked.md"],
+        )],
+    };
     let result = load_skills_from_dir(
         LoadSkillsFromDirOptions {
             cwd: support::text(&std::env::temp_dir()),
             dir: support::text(&scan),
             source: "path",
         },
-        &NativeResourceOperations,
+        &ops,
     );
-    assert_eq!(result.skills.len(), 2);
-    assert!(
+    assert_eq!(
         result
             .skills
             .iter()
-            .any(|s| s.file_path == scan.join("linked.md"))
+            .map(|s| &s.file_path)
+            .collect::<Vec<_>>(),
+        vec![&scan.join("calendar/SKILL.md"), &scan.join("linked.md")]
     );
-    assert!(
-        result
+    assert!(result.diagnostics.is_empty());
+}
+
+/// A linked root entry file is the only skill; every other outcome leaves the child.
+#[cfg(unix)]
+#[test]
+fn skill_entry_links_preserve_precedence_and_failure_fallback() {
+    use std::os::unix::{fs::symlink, net::UnixListener};
+    for (branch, expect_root) in [
+        ("file", true),
+        ("directory", false),
+        ("socket", false),
+        ("dangling", false),
+        ("denied", false),
+    ] {
+        let dir = Directory::new();
+        let scan = dir.0.join("scan");
+        let child = dir.file("scan/child/SKILL.md", "---\ndescription: Child\n---");
+        let target = dir.0.join("target");
+        let _socket;
+        match branch {
+            "file" | "denied" => drop(dir.file("target", "---\ndescription: Root\n---")),
+            "directory" => std::fs::create_dir(&target).unwrap(),
+            "socket" => _socket = UnixListener::bind(&target).unwrap(),
+            _ => {}
+        }
+        symlink(&target, scan.join("SKILL.md")).unwrap();
+        let ops = support::Controlled {
+            reads: std::sync::Mutex::default(),
+            failures: if branch == "denied" {
+                vec![("metadata", scan.join("SKILL.md"))]
+            } else {
+                vec![]
+            },
+            order: vec![],
+        };
+        let result = load_skills_from_dir(
+            LoadSkillsFromDirOptions {
+                cwd: support::text(&std::env::temp_dir()),
+                dir: support::text(&scan),
+                source: "path",
+            },
+            &ops,
+        );
+        let paths = result
             .skills
             .iter()
-            .any(|s| s.file_path == scan.join("calendar/SKILL.md"))
-    );
+            .map(|s| &s.file_path)
+            .collect::<Vec<_>>();
+        if expect_root {
+            assert_eq!(paths, vec![&scan.join("SKILL.md")], "{branch}");
+        } else {
+            assert_eq!(paths, vec![&child], "{branch}");
+        }
+        assert!(result.diagnostics.is_empty(), "{branch}");
+    }
+}
+
+/// The shared classifier reads metadata only for links and returns `None` when that read fails.
+#[cfg(unix)]
+#[test]
+fn entry_classification_uses_supplied_observations() {
+    use maestro_resources::skills::observed_type;
+    use maestro_resources::{ResourceFileType as Kind, ResourceOperations};
+    use std::os::unix::{fs::symlink, net::UnixListener};
+    let dir = Directory::new();
+    let file = dir.file("file", "x");
+    let sub = dir.0.join("dir");
+    std::fs::create_dir(&sub).unwrap();
+    let socket = dir.0.join("sock");
+    let _listener = UnixListener::bind(&socket).unwrap();
+    symlink(&file, dir.0.join("link-file")).unwrap();
+    symlink(&sub, dir.0.join("link-dir")).unwrap();
+    symlink(&socket, dir.0.join("link-sock")).unwrap();
+    symlink("absent", dir.0.join("link-dangling")).unwrap();
+    symlink(&file, dir.0.join("link-denied")).unwrap();
+    symlink("link-loop", dir.0.join("link-loop")).unwrap();
+    let controlled = support::Controlled {
+        failures: vec![("metadata", dir.0.join("link-denied"))],
+        ..Default::default()
+    };
+    let ops: &dyn ResourceOperations = &controlled;
+    let entries = NativeResourceOperations.read_dir(&dir.0).unwrap();
+    let observed = |name: &str| {
+        let entry = entries.iter().find(|e| e.name == name).unwrap();
+        observed_type(entry, support::text(&dir.0.join(name)), ops)
+    };
+    let cases = [
+        ("file", Some(Kind::File), 0),
+        ("dir", Some(Kind::Directory), 0),
+        ("sock", Some(Kind::Other), 0),
+        ("link-file", Some(Kind::File), 1),
+        ("link-dir", Some(Kind::Directory), 1),
+        ("link-sock", Some(Kind::Other), 1),
+        ("link-dangling", None, 1),
+        ("link-denied", None, 1),
+        ("link-loop", None, 1),
+    ];
+    let mut reads = 0;
+    for (name, expected, count) in cases {
+        assert_eq!(observed(name), expected, "{name}");
+        let seen = controlled.reads.lock().unwrap();
+        assert_eq!(seen.len() - reads, count, "{name}");
+        if count == 1 {
+            assert_eq!(seen[reads], dir.0.join(name), "{name}");
+        }
+        reads = seen.len();
+    }
 }
 
 /// Three ignore files share ordered rules and later negations reopen files.
@@ -1115,6 +1232,7 @@ fn maestro_skills_apply_all_ignore_files_in_order() {
     let _ = dir.file(".ignore", "!a/SKILL.md\n!b/SKILL.md\n");
     let _ = dir.file(".fdignore", "b/SKILL.md\n!c/SKILL.md\n");
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.clone(), vec!["a", "b", "c"])],
     };
@@ -1146,6 +1264,7 @@ fn maestro_skills_scope_nested_ignore_rules() {
     let _ = dir.file("nested/#literal/SKILL.md", "---\ndescription: Hash\n---");
     let _ = dir.file("nested/.ignore", "\n  \n# comment\n/drop/\n\\#literal/\n");
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.clone(), vec!["nested", "sibling"])],
     };
@@ -1189,6 +1308,7 @@ fn maestro_skills_preserve_escaped_exclamation_rules() {
     let _ = dir.file(".ignore", "\\!literal.md\n");
     let _ = dir.file("nested/.ignore", "\\!literal/\n");
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.clone(), vec!["ordinary.md", "nested"])],
     };
@@ -1287,6 +1407,7 @@ fn maestro_skills_keep_partial_results_after_io_failures() {
         failures.push(("metadata", dir.0.join("link")));
     }
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures,
         order: vec![(dir.0.clone(), vec!["keep", "blocked", "link", "unreadable"])],
     };
@@ -1325,6 +1446,7 @@ fn maestro_skills_share_native_and_controlled_operations() {
     let second = dir.file("second/SKILL.md", "---\ndescription: Second\n---");
     let first = dir.file("first/SKILL.md", "---\ndescription: First\n---");
     let ops = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: vec![],
         order: vec![(dir.0.clone(), vec!["second", "first"])],
     };

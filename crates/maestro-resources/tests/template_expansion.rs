@@ -3889,6 +3889,7 @@ fn native_prompt_discovery_reads_authored_file_links() {
     std::os::unix::fs::symlink(dir.0.join("absent"), folder.join("broken.md")).unwrap();
     let paths = vec![support::text(folder).into()];
     let operations = support::Controlled {
+        reads: std::sync::Mutex::default(),
         failures: Vec::new(),
         order: vec![(
             folder.into(),

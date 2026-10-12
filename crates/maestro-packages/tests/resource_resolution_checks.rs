@@ -1,6 +1,7 @@
 //! Explicit resource resolution through the manager boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+mod native_support;
 mod resolution_support;
 mod resource_cases;
 mod resource_output;
@@ -821,4 +822,126 @@ async fn assert_context_free_manifest(restore: bool) -> std::io::Result<()> {
     assert!(result.prompts.is_empty());
     assert!(result.themes.is_empty());
     Ok(())
+}
+
+/// Resolves the package at `root` with metadata reads failing under the given suffixes.
+#[cfg(unix)]
+fn resolved_relative(root: &std::path::Path, failing: &[&str]) -> [Vec<String>; 4] {
+    let base = root.to_string_lossy().into_owned();
+    let resources = resolution_support::Filesystem {
+        fail: std::collections::BTreeMap::from([(
+            "statSync".into(),
+            failing.iter().map(|s| (*s).to_owned()).collect(),
+        )]),
+        ..Default::default()
+    };
+    let (manager, _) = resolution_support::manager(&base, resources);
+    let mut result = None;
+    resolution_support::run(async {
+        result = Some(
+            manager
+                .resolve_extension_sources(std::slice::from_ref(&base), None)
+                .await?,
+        );
+        Ok(())
+    })
+    .unwrap();
+    let result = result.unwrap();
+    [
+        result.extensions,
+        result.skills,
+        result.prompts,
+        result.themes,
+    ]
+    .map(|items| {
+        items
+            .into_iter()
+            .map(|r| r.path.replace(&base, ""))
+            .collect()
+    })
+}
+/// Conventional collectors keep linked files and directories and skip failed link reads.
+#[cfg(unix)]
+#[test]
+fn package_entry_links_preserve_admission_and_failure_fallback() {
+    use std::os::unix::fs::symlink;
+    let put = |path: &std::path::Path| native_support::write(path.to_str().unwrap(), "{}");
+    let dir = scratch::Scratch::new().unwrap();
+    let root = dir.0.join("pkg");
+    let outside = dir.0.join("outside");
+    for (kind, file, nested) in [
+        ("extensions", "t.ts", "index.ts"),
+        ("skills", "t.md", "SKILL.md"),
+        ("prompts", "t.md", "n.md"),
+        ("themes", "t.json", "n.json"),
+    ] {
+        put(&root.join(kind).join(format!("ok.{}", &file[2..])));
+        put(&outside.join(kind).join(file));
+        put(&outside.join(kind).join("dir").join(nested));
+        let ext = &file[2..];
+        let entries = root.join(kind);
+        symlink(
+            outside.join(kind).join(file),
+            entries.join(format!("file.{ext}")),
+        )
+        .unwrap();
+        symlink(outside.join(kind).join("dir"), entries.join("dir")).unwrap();
+        symlink("missing", entries.join(format!("broken.{ext}"))).unwrap();
+        symlink(
+            outside.join(kind).join(file),
+            entries.join(format!("denied.{ext}")),
+        )
+        .unwrap();
+    }
+    let failing = ["denied.ts", "denied.md", "denied.json"];
+    let [extensions, skills, prompts, themes] = resolved_relative(&root, &failing);
+    assert_eq!(
+        extensions,
+        [
+            "/extensions/dir/index.ts",
+            "/extensions/file.ts",
+            "/extensions/ok.ts"
+        ]
+    );
+    assert_eq!(
+        skills,
+        ["/skills/dir/SKILL.md", "/skills/file.md", "/skills/ok.md"]
+    );
+    assert_eq!(
+        prompts,
+        ["/prompts/dir/n.md", "/prompts/file.md", "/prompts/ok.md"]
+    );
+    assert_eq!(
+        themes,
+        ["/themes/dir/n.json", "/themes/file.json", "/themes/ok.json"]
+    );
+}
+/// A linked skill entry admits only a file target; any other outcome leaves the children.
+#[cfg(unix)]
+#[test]
+fn package_skill_root_links_follow_the_target_kind() {
+    use std::os::unix::{fs::symlink, net::UnixListener};
+    let cases: [(&str, &[&str], &[&str]); 5] = [
+        ("file", &[], &["/skills/SKILL.md"]),
+        ("directory", &[], &["/skills/child/SKILL.md"]),
+        ("socket", &[], &["/skills/child/SKILL.md"]),
+        ("dangling", &[], &["/skills/child/SKILL.md"]),
+        ("denied", &["skills/SKILL.md"], &["/skills/child/SKILL.md"]),
+    ];
+    for (name, failing, expected) in cases {
+        let dir = scratch::Scratch::new().unwrap();
+        let root = dir.0.join("pkg");
+        native_support::write(root.join("skills/child/SKILL.md").to_str().unwrap(), "{}");
+        let target = dir.0.join("target");
+        let entry = root.join("skills/SKILL.md");
+        let _socket;
+        match name {
+            "file" | "denied" => native_support::write(target.to_str().unwrap(), "{}"),
+            "directory" => fs::create_dir(&target).unwrap(),
+            "socket" => _socket = UnixListener::bind(&target).unwrap(),
+            _ => {}
+        }
+        symlink(&target, &entry).unwrap();
+        assert_eq!(resolved_relative(&root, failing)[1], expected, "{name}");
+    }
 }

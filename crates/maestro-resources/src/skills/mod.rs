@@ -4,6 +4,7 @@ mod operations;
 mod prompt;
 pub use prompt::format_skills_for_prompt;
 mod discovery;
+pub use discovery::observed_type;
 #[cfg(not(target_arch = "wasm32"))]
 mod real_path;
 mod validation;
