@@ -25,26 +25,7 @@ fn conversion_rejects_nonnumeric_versions_at_the_consuming_read() {
 
 #[test]
 fn conversion_cut_indices_use_final_header_inclusive_ids() {
-    if std::env::var_os("MAESTRO_CUT_UTC_CHILD").is_some() {
-        conversions("conversion_cut_indices_use_final_header_inclusive_ids");
-        return;
-    }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "conversion_cut_indices_use_final_header_inclusive_ids",
-            "--nocapture",
-        ])
-        .env("TZ", "UTC")
-        .env("MAESTRO_CUT_UTC_CHILD", "1")
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "stdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
+    conversions("conversion_cut_indices_use_final_header_inclusive_ids");
 }
 
 #[test]
