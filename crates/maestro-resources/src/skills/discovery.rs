@@ -161,8 +161,9 @@ impl Discovery<'_> {
         Ok(())
     }
 }
-/// Follow symlink metadata without turning broken links into diagnostics.
-fn observed_type(
+/// Returns a non-link's supplied kind without reading metadata; for a link, returns the supplied
+/// adapter's metadata result or `None` if that read fails.
+pub fn observed_type(
     entry: &ResourceEntry,
     path: &str,
     operations: &dyn ResourceOperations,

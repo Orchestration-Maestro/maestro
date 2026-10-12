@@ -1,7 +1,9 @@
 //! Conventional resource collection over replaceable filesystem observations.
 use maestro_path::join;
 use maestro_pattern::ignore::{Ignore, ScopedIgnoreRules};
-use maestro_resources::skills::{ResourceEntry, ResourceFileType, ResourceOperations};
+use maestro_resources::skills::{
+    ResourceEntry, ResourceFileType, ResourceOperations, observed_type,
+};
 use std::{io, path::Path};
 /// The conventional resource directories.
 #[derive(Clone, Copy)]
@@ -80,7 +82,7 @@ fn collect_files(
             continue;
         }
         let path = join(&[dir, &name]);
-        let Some(file_type) = entry_type(&entry, &path, operations) else {
+        let Some(file_type) = observed_type(&entry, &path, operations) else {
             continue;
         };
         if rules.ignored(
@@ -188,19 +190,6 @@ fn load_ignore(rules: &mut Ignore, dir: &str, operations: &dyn ResourceOperation
     }
 }
 
-/// Follows only link entries, skipping failed target observations.
-fn entry_type(
-    entry: &ResourceEntry,
-    path: &str,
-    operations: &dyn ResourceOperations,
-) -> Option<ResourceFileType> {
-    if entry.file_type == ResourceFileType::Symlink {
-        operations.metadata(Path::new(path)).ok()
-    } else {
-        Some(entry.file_type)
-    }
-}
-
 /// Selects a child entry list or recursively collects its conventional suffix kind.
 fn collect_child(
     dir: &str,
@@ -226,7 +215,7 @@ fn admitted_skill(
     entries.iter().any(|entry| {
         let path = join(&[dir, "SKILL.md"]);
         entry.name == "SKILL.md"
-            && entry_type(entry, &path, operations) == Some(ResourceFileType::File)
+            && observed_type(entry, &path, operations) == Some(ResourceFileType::File)
             && !rules.ignored(&relative_path(root, &path), false)
     })
 }
