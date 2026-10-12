@@ -150,7 +150,7 @@ fn credential_scope(authorization: &str) -> Option<(&str, &str)> {
 /// The options of a case: the controlled sender, a counting payload hook and the case's inputs.
 fn options_of(
     case: &Case,
-    scripted: &bedrock::Scripted,
+    scripted: &transport::Transport,
     hooked: &Arc<AtomicUsize>,
 ) -> BedrockOptions {
     let hooked = Arc::clone(hooked);

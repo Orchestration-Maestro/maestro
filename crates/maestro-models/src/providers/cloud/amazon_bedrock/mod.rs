@@ -102,12 +102,12 @@ mod native {
     use super::events::Reducer;
     use super::proxy::Environment;
     use super::request::{payload, prepare};
-    use crate::providers::assistant_output::fail;
+    use crate::providers::assistant_output::{callback_failure, fail};
     use crate::providers::http::{Raced, RequestFailure, race};
     use crate::providers::responses::openai_responses::conclude;
     use crate::{
-        AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo, Model,
-        ProviderResponse, SharedAssistantMessage,
+        AssistantMessageEventStream, Cancellation, Context, Model, ProviderResponse,
+        SharedAssistantMessage,
     };
     use aws_sdk_bedrockruntime::primitives::event_stream::EventReceiver;
     use aws_sdk_bedrockruntime::types::ConverseStreamOutput;
@@ -140,21 +140,22 @@ mod native {
         }
     }
 
-    /// The failure a callback reports, with its message as it is.
-    fn callback_failure(error: DiagnosticErrorInfo) -> RequestFailure {
-        RequestFailure::new(error.message)
-    }
-
-    /// The next event of the stream, or none at its end. The response hook waits for the first
-    /// one, so a stream that fails before it never reaches the hook.
+    /// The next known event of the stream, or none at its end. Events of an unknown kind are
+    /// skipped here, so nothing downstream sees them. The response hook waits for the first
+    /// known event, so a stream that fails before it never reaches the hook.
     async fn next_event(
         events: &mut EventReceiver<ConverseStreamOutput, ConverseStreamOutputError>,
         signal: Option<&Cancellation>,
     ) -> Result<Option<ConverseStreamOutput>, RequestFailure> {
-        match race(events.recv(), None, signal).await {
-            Raced::Done(Ok(event)) => Ok(event),
-            Raced::Done(Err(error)) => Err(describe(&error, streamed_class)),
-            Raced::Cancelled | Raced::TimedOut => Err(RequestFailure::new(ABORTED_TEXT)),
+        loop {
+            match race(events.recv(), None, signal).await {
+                Raced::Done(Ok(Some(event))) if event.is_unknown() => {}
+                Raced::Done(Ok(event)) => return Ok(event),
+                Raced::Done(Err(error)) => return Err(describe(&error, streamed_class)),
+                Raced::Cancelled | Raced::TimedOut => {
+                    return Err(RequestFailure::new(ABORTED_TEXT));
+                }
+            }
         }
     }
 

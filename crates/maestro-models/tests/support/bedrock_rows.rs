@@ -154,17 +154,18 @@ async fn observe(row: &Row) -> TestResult<Observed> {
     let seen = Arc::new(Mutex::new(None));
     let sent = Arc::clone(&phases);
     let answer = bedrock::answer("answer")?;
-    let scripted = bedrock::scripted(move |_| {
-        if let Ok(mut phases) = sent.lock() {
-            phases.push(Phase::Transport);
-        }
-        let headers = [("x-amzn-requestid", "fixture-id")];
-        Box::pin(std::future::ready(Ok(bedrock::response(
-            200,
-            &headers,
-            answer.clone(),
-        ))))
-    });
+    let scripted = transport::transport(vec![transport::Attempt::streaming_with_headers(
+        200,
+        &[("x-amzn-requestid", "fixture-id")],
+        move || {
+            if let Ok(mut phases) = sent.lock() {
+                phases.push(Phase::Transport);
+            }
+            Box::pin(futures_util::stream::iter(
+                answer.clone().into_iter().map(Ok),
+            ))
+        },
+    )]);
     let responded = Arc::clone(&phases);
     let mut common = StreamOptions {
         fetch: Some(scripted.fetch.clone()),

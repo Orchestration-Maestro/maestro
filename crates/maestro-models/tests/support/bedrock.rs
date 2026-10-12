@@ -1,14 +1,12 @@
-//! Controlled Bedrock conversations: event-stream frames, a scripted sender and request capture.
+//! Controlled Bedrock conversations: event-stream frames and the scripted transport that serves them.
 
-use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-use maestro_models::{
-    BoxFuture, Context, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, Model,
-};
+use maestro_models::{Context, HttpBody, Model};
 use serde_json::{Value, json};
 
 use crate::chat::TestResult;
+use crate::transport::{Attempt, Transport, transport};
 
 /// The model every controlled conversation asks.
 pub fn model(base_url: &str) -> TestResult<Model> {
@@ -95,64 +93,21 @@ pub fn answer(text: &str) -> TestResult<Vec<Vec<u8>>> {
     ])
 }
 
-/// A response with the given status, headers and body chunks.
-pub fn response(status: u16, headers: &[(&str, &str)], chunks: Vec<Vec<u8>>) -> HttpResponse {
-    let body: HttpBody = Box::pin(futures_util::stream::iter(chunks.into_iter().map(Ok)));
-    HttpResponse {
-        status,
-        status_text: String::new(),
-        headers: headers
-            .iter()
-            .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
-            .collect::<BTreeMap<_, _>>(),
-        body,
-    }
+/// A transport that answers every request with a successful stream of `chunks`.
+pub fn serve(chunks: Vec<Vec<u8>>) -> Transport {
+    transport(vec![stream_of(
+        200,
+        &[("x-amzn-requestid", "fixture-id")],
+        chunks,
+    )])
 }
 
-/// A sender and the requests it received.
-pub struct Scripted {
-    /// Sender to install in the options.
-    pub fetch: Fetch,
-    /// Every request received, in order.
-    pub requests: Arc<Mutex<Vec<HttpRequest>>>,
-}
-
-impl Scripted {
-    /// The requests received so far.
-    pub fn seen(&self) -> TestResult<Vec<HttpRequest>> {
-        Ok(self
-            .requests
-            .lock()
-            .map_err(|error| error.to_string())?
-            .clone())
-    }
-}
-
-/// A sender that records each request and answers it with `reply`.
-pub fn scripted(
-    reply: impl Fn(usize) -> BoxFuture<Result<HttpResponse, FetchError>> + Send + Sync + 'static,
-) -> Scripted {
-    let requests = Arc::new(Mutex::new(Vec::new()));
-    let seen = Arc::clone(&requests);
-    let fetch: Fetch = Arc::new(move |request| {
-        let position = seen.lock().map_or(0, |mut seen| {
-            seen.push(request);
-            seen.len() - 1
-        });
-        reply(position)
-    });
-    Scripted { fetch, requests }
-}
-
-/// A sender that answers every request with a successful stream of `chunks`.
-pub fn serve(chunks: Vec<Vec<u8>>) -> Scripted {
-    scripted(move |_| {
-        let headers = [("x-amzn-requestid", "fixture-id")];
-        Box::pin(std::future::ready(Ok(response(
-            200,
-            &headers,
-            chunks.clone(),
-        ))))
+/// An attempt that answers with the given status and headers and the chunks as body reads.
+pub fn stream_of(status: u16, headers: &[(&str, &str)], chunks: Vec<Vec<u8>>) -> Attempt {
+    Attempt::streaming_with_headers(status, headers, move || {
+        Box::pin(futures_util::stream::iter(
+            chunks.clone().into_iter().map(Ok),
+        ))
     })
 }
 
@@ -178,7 +133,7 @@ impl Drop for DropFlag {
 }
 
 /// A body that yields `before`, then waits for `gate`, then yields `after` and reports on `end`
-/// that a reader reached its end. The guard is dropped when the body is dropped or finished.
+/// that a reader reached its end. The guard is dropped when the body is dropped, or once the gate has fired.
 pub fn gated(
     before: Vec<Vec<u8>>,
     gate: tokio::sync::oneshot::Receiver<()>,

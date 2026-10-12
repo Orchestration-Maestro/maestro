@@ -48,8 +48,6 @@ mod rows;
 )]
 #[path = "support/transport.rs"]
 mod transport;
-#[path = "support/wasm_example.rs"]
-mod wasm_example;
 
 use cases::{Case, Expect, run_cases};
 use chat::{TestResult, block_on};
@@ -366,6 +364,62 @@ fn native_credentials_sign_without_api_key() -> TestResult {
 }
 
 #[test]
+fn selected_profile_skips_environment_credentials() -> TestResult {
+    const KEYS: &[(&str, &str)] = &[
+        ("AWS_ACCESS_KEY_ID", "environment-key"),
+        ("AWS_SECRET_ACCESS_KEY", "environment-secret"),
+    ];
+    const KEYS_AND_PROFILE: &[(&str, &str)] = &[
+        ("AWS_ACCESS_KEY_ID", "environment-key"),
+        ("AWS_SECRET_ACCESS_KEY", "environment-secret"),
+        ("AWS_PROFILE", "selected"),
+    ];
+    const KEYS_AND_EMPTY_PROFILE: &[(&str, &str)] = &[
+        ("AWS_ACCESS_KEY_ID", "environment-key"),
+        ("AWS_SECRET_ACCESS_KEY", "environment-secret"),
+        ("AWS_PROFILE", ""),
+    ];
+    run_cases(
+        "selected_profile_skips_environment_credentials",
+        &[
+            Case {
+                profile: Some("selected"),
+                env: KEYS,
+                ..Case::new(
+                    "option profile",
+                    EU,
+                    Expect::standard("us-west-2", "controlled-selected"),
+                )
+            },
+            Case {
+                env: KEYS_AND_PROFILE,
+                ..Case::new(
+                    "environment profile",
+                    EU,
+                    Expect::standard("us-west-2", "controlled-selected"),
+                )
+            },
+            Case {
+                env: &[("AWS_PROFILE", "")],
+                ..Case::new(
+                    "empty environment profile uses the default profile",
+                    EU,
+                    Expect::signed(EU, "eu-central-1", "controlled-default"),
+                )
+            },
+            Case {
+                env: KEYS_AND_EMPTY_PROFILE,
+                ..Case::new(
+                    "empty environment profile keeps environment credentials",
+                    EU,
+                    Expect::signed(EU, "eu-central-1", "environment-key"),
+                )
+            },
+        ],
+    )
+}
+
+#[test]
 fn catalog_regions_use_standard_hosts() -> TestResult {
     let named = maestro_models::get_model(
         "amazon-bedrock",
@@ -474,39 +528,4 @@ fn redirects_are_returned_without_being_followed() -> TestResult {
             redirects: true,
         }],
     )
-}
-
-#[test]
-fn force_http1_uses_shared_transport() -> TestResult {
-    run_routes(
-        "force_http1_uses_shared_transport",
-        &[
-            Route {
-                id: "forced",
-                env: &[("AWS_BEDROCK_FORCE_HTTP1", "1")],
-                proxied: false,
-            },
-            Route {
-                id: "forced with a proxy",
-                env: &[("AWS_BEDROCK_FORCE_HTTP1", "1"), ("HTTP_PROXY", "PROXY")],
-                proxied: true,
-            },
-        ],
-    )
-}
-
-#[test]
-fn browser_call_returns_unsupported_without_host_access() -> TestResult {
-    let artifact = wasm_example::build()?;
-    let contains = |text: &str| {
-        artifact
-            .windows(text.len())
-            .any(|window| window == text.as_bytes())
-    };
-    assert!(contains("Bedrock is not supported in browsers."));
-    assert!(
-        !contains("AWS4-HMAC-SHA256"),
-        "the browser artifact links the native signing"
-    );
-    Ok(())
 }

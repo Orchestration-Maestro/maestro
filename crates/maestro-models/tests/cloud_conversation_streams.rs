@@ -27,7 +27,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use maestro_models::{
     AssistantContent, AssistantMessage, BoxFuture, Cancellation, DiagnosticErrorInfo, FetchError,
-    HttpResponse, ProviderResponse, StreamOptions,
+    ProviderResponse, StreamOptions,
 };
 use serde_json::json;
 
@@ -47,7 +47,7 @@ type EventCase<'a> = (&'a str, Vec<Vec<u8>>, Vec<&'a str>, Vec<&'a str>);
 const ENDPOINT: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
 /// Options that authenticate with a bearer token and send through `scripted`.
-fn options(scripted: &bedrock::Scripted) -> BedrockOptions {
+fn options(scripted: &transport::Transport) -> BedrockOptions {
     BedrockOptions {
         common: StreamOptions {
             fetch: Some(scripted.fetch.clone()),
@@ -368,15 +368,14 @@ async fn run_with(options: BedrockOptions) -> TestResult<(Vec<String>, Assistant
 }
 
 /// The service failure a sender answers with.
-fn service_failure(status: u16, class: &str, message: &str) -> TestResult<HttpResponse> {
-    let body = serde_json::to_vec(&json!({"message": message}))?;
-    Ok(bedrock::response(
+fn service_failure(status: u16, class: &str, message: &str) -> TestResult<transport::Attempt> {
+    Ok(transport::Attempt::body(
         status,
         &[
             ("x-amzn-errortype", class),
             ("content-type", "application/json"),
         ],
-        vec![body],
+        serde_json::to_vec(&json!({"message": message}))?,
     ))
 }
 
@@ -392,11 +391,7 @@ fn service_failures_keep_readable_prefixes() -> TestResult {
             (403, "AccessDeniedException", "AccessDeniedException"),
         ];
         for (status, class, prefix) in sent {
-            let scripted = bedrock::scripted(move |_| {
-                Box::pin(std::future::ready(
-                    service_failure(status, class, "the cause").map_err(|_| FetchError::Aborted),
-                ))
-            });
+            let scripted = transport::transport(vec![service_failure(status, class, "the cause")?]);
             let (labels, message) = run_with(options(&scripted)).await?;
             assert_eq!(labels, ["error"], "{class}");
             assert_eq!(
@@ -529,12 +524,11 @@ async fn hook_sees(
     let polled = Arc::new(AtomicBool::new(false));
     let body_flag = Arc::clone(&polled);
     let chunks = bedrock::answer("text")?;
-    let scripted = bedrock::scripted(move |_| {
-        let body = bedrock::watched(Arc::clone(&body_flag), chunks.clone());
-        let mut response = bedrock::response(200, &headers, vec![]);
-        response.body = body;
-        Box::pin(std::future::ready(Ok(response)))
-    });
+    let scripted = transport::transport(vec![transport::Attempt::streaming_with_headers(
+        200,
+        &headers,
+        move || bedrock::watched(Arc::clone(&body_flag), chunks.clone()),
+    )]);
     let (entered, entered_signal) = tokio::sync::oneshot::channel();
     let (release_signal, release) = tokio::sync::oneshot::channel();
     let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
@@ -613,6 +607,76 @@ fn first_frame_failure_ends_before_the_response_hook() -> TestResult {
     })
 }
 
+/// A frame of an event kind the SDK does not know.
+fn unknown() -> TestResult<Vec<u8>> {
+    bedrock::event("futureEvent", &json!({"note": "ignored"}))
+}
+
+/// Run `chunks` with a response hook that counts its calls; returns the hook count too.
+async fn run_counting(
+    chunks: Vec<Vec<u8>>,
+    failing: bool,
+) -> TestResult<(Vec<String>, AssistantMessage, usize)> {
+    let scripted = bedrock::serve(chunks);
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counted = Arc::clone(&calls);
+    let mut hooked = options(&scripted);
+    hooked.common.on_response = Some(Arc::new(move |_, _| {
+        counted.fetch_add(1, Ordering::SeqCst);
+        Box::pin(std::future::ready(if failing {
+            Err(callback_error("hook says"))
+        } else {
+            Ok(())
+        }))
+    }));
+    let (labels, message) = run_with(hooked).await?;
+    Ok((labels, message, calls.load(Ordering::SeqCst)))
+}
+
+#[test]
+fn unknown_events_are_skipped_before_and_between_real_events() -> TestResult {
+    block_on(false, async {
+        let plain = bedrock::answer("text")?;
+        let (expected, expected_message, _) = run_counting(plain.clone(), false).await?;
+        let mut leading = vec![unknown()?];
+        leading.extend(plain.clone());
+        let mut between = plain.clone();
+        between.insert(2, unknown()?);
+        for (name, chunks) in [("leading", leading), ("between", between)] {
+            let (labels, message, hooks) = run_counting(chunks, false).await?;
+            assert_eq!(labels, expected, "{name}");
+            assert_eq!(texts(&message), texts(&expected_message), "{name}");
+            assert_eq!(hooks, 1, "{name}");
+        }
+        let (labels, message, hooks) = run_counting(vec![unknown()?], false).await?;
+        let (empty_labels, empty_message, empty_hooks) = run_counting(vec![], false).await?;
+        assert_eq!(labels, empty_labels);
+        assert_eq!(texts(&message), texts(&empty_message));
+        assert_eq!((hooks, empty_hooks), (1, 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn damaged_frame_after_unknown_event_wins_over_the_response_hook() -> TestResult {
+    block_on(false, async {
+        let mut damaged = start()?;
+        if let Some(last) = damaged.last_mut() {
+            *last ^= 0xFF;
+        }
+        let (labels, message, hooks) = run_counting(vec![unknown()?, damaged], true).await?;
+        assert_eq!(labels, ["error"]);
+        assert_eq!(hooks, 0);
+        assert!(
+            message
+                .error_message
+                .as_deref()
+                .is_some_and(|text| !text.is_empty() && text != "hook says")
+        );
+        Ok(())
+    })
+}
+
 #[test]
 fn callback_failure_stops_before_events() -> TestResult {
     block_on(false, async {
@@ -632,7 +696,7 @@ fn callback_failure_stops_before_events() -> TestResult {
 
 /// A sender whose body yields `before`, then waits for the returned gate.
 struct Held {
-    scripted: bedrock::Scripted,
+    scripted: transport::Transport,
     release: tokio::sync::oneshot::Sender<()>,
     dropped: Arc<AtomicBool>,
     ended: tokio::sync::oneshot::Receiver<()>,
@@ -645,14 +709,15 @@ fn held(before: Vec<Vec<u8>>, after: Vec<Vec<u8>>) -> Held {
     let (sender, received) = tokio::sync::mpsc::unbounded_channel();
     let dropped = Arc::new(AtomicBool::new(false));
     let guard = std::sync::Mutex::new(Some((gate, end, bedrock::DropFlag(Arc::clone(&dropped)))));
-    let scripted = bedrock::scripted(move |_| {
+    let scripted = transport::transport(vec![transport::Attempt::streaming(move || {
         sender.send(()).ok();
-        let mut response = bedrock::response(200, &[], vec![]);
-        if let Some((gate, end, flag)) = guard.lock().ok().and_then(|mut guard| guard.take()) {
-            response.body = bedrock::gated(before.clone(), gate, after.clone(), flag, end);
+        match guard.lock().ok().and_then(|mut guard| guard.take()) {
+            Some((gate, end, flag)) => {
+                bedrock::gated(before.clone(), gate, after.clone(), flag, end)
+            }
+            None => Box::pin(futures_util::stream::empty()),
         }
-        Box::pin(std::future::ready(Ok(response)))
-    });
+    })]);
     Held {
         scripted,
         release,
@@ -831,8 +896,7 @@ fn sdk_setup_failures_end_stream() -> TestResult {
         child_process::rerun("sdk_setup_failures_end_stream", case, &isolated)?;
     }
     block_on(true, async {
-        let scripted =
-            bedrock::scripted(|_| Box::pin(std::future::ready(Err(FetchError::Timeout))));
+        let scripted = transport::transport(vec![transport::Attempt::Fail(FetchError::Timeout)]);
         let (labels, message) = run_with(options(&scripted)).await?;
         assert_eq!(labels, ["error"]);
         assert!(

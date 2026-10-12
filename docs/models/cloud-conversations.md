@@ -34,7 +34,10 @@ after the payload hook ran.
 
 ## Authentication
 
-The SDK's credential chain signs the request unless a bearer token is selected. The token is the
+The SDK's credential chain signs the request unless a bearer token is selected. When a profile
+is selected the chain skips the environment's access keys and tries that profile, then web
+identity, then the container and instance metadata services; an empty `AWS_PROFILE` selects
+nothing, so the environment's keys come first and the `default` profile is the fallback. The token is the
 nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs
 with placeholder credentials and ignores both bearer sources, which is for proxies that do not
@@ -76,7 +79,8 @@ error`, `Validation error`, `Throttling error` and `Service unavailable` for tho
 errors, and any other service error uses its own class name; an exception frame later in the
 stream uses the same prefixes. Other SDK failures keep the SDK's own text with its causes.
 
-Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
+Events of a kind the SDK does not know are skipped before anything else sees them; the
+response hook waits for the first known event. Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
 block for its block number when none is open and appends, `contentBlockStop` closes the block
 of that number, `messageStop` sets the stop reason (`end_turn` and `stop_sequence` stop,
 `max_tokens` and `model_context_window_exceeded` length, `tool_use` tool use, anything else

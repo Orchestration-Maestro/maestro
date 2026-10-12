@@ -41,6 +41,8 @@ pub enum Attempt {
     Streaming {
         /// Status code.
         status: u16,
+        /// Response headers.
+        headers: Vec<(String, String)>,
         /// Builds the body for each call.
         build: Arc<dyn Fn() -> HttpBody + Send + Sync>,
     },
@@ -90,8 +92,21 @@ impl Attempt {
         status: u16,
         build: impl Fn() -> HttpBody + Send + Sync + 'static,
     ) -> Self {
+        Self::streaming_with_headers(status, &[], build)
+    }
+
+    /// A response with the given status and headers whose body is built by `build` for each call.
+    pub fn streaming_with_headers(
+        status: u16,
+        headers: &[(&str, &str)],
+        build: impl Fn() -> HttpBody + Send + Sync + 'static,
+    ) -> Self {
         Self::Streaming {
             status,
+            headers: headers
+                .iter()
+                .map(|(name, value)| ((*name).to_owned(), (*value).to_owned()))
+                .collect(),
             build: Arc::new(build),
         }
     }
@@ -115,13 +130,14 @@ impl Attempt {
                     body,
                 ))))
             }
-            Self::Streaming { status, build } => {
+            Self::Streaming {
+                status,
+                headers,
+                build,
+            } => {
                 let body = build();
-                Box::pin(std::future::ready(Ok(response(
-                    *status,
-                    BTreeMap::new(),
-                    body,
-                ))))
+                let headers = headers.iter().cloned().collect();
+                Box::pin(std::future::ready(Ok(response(*status, headers, body))))
             }
             Self::Respond {
                 status,
@@ -161,6 +177,15 @@ impl Transport {
     pub fn gaps(&self) -> Vec<Duration> {
         let starts = self.starts.lock().map(|s| s.clone()).unwrap_or_default();
         starts.windows(2).map(|pair| pair[1] - pair[0]).collect()
+    }
+
+    /// Every request received so far, in order.
+    pub fn seen(&self) -> TestResult<Vec<HttpRequest>> {
+        Ok(self
+            .requests
+            .lock()
+            .map_err(|error| error.to_string())?
+            .clone())
     }
 
     /// The URL and body of the first request.

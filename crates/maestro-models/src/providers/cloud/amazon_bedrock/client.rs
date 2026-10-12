@@ -7,6 +7,12 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::task::{Context, Poll};
 
 use aws_config::BehaviorVersion;
+use aws_config::ecs::EcsCredentialsProvider;
+use aws_config::imds::credentials::ImdsCredentialsProvider;
+use aws_config::meta::credentials::CredentialsProviderChain;
+use aws_config::profile::ProfileFileCredentialsProvider;
+use aws_config::provider_config::ProviderConfig;
+use aws_config::web_identity_token::WebIdentityTokenCredentialsProvider;
 use aws_sdk_bedrockruntime::config::{Credentials, Region, StalledStreamProtectionConfig, Token};
 use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamOutput;
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
@@ -249,14 +255,42 @@ fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) ->
     })
 }
 
-/// Build the SDK client from the settings. Credentials and region are looked up lazily by the
-/// SDK, on the first send.
+/// The credential sources tried when a profile is selected: that profile, web identity, then
+/// the container and instance metadata services. The environment's own keys are not consulted.
+fn profile_chain(profile: &str, region: Option<&Region>) -> CredentialsProviderChain {
+    let conf = ProviderConfig::default().with_region(region.cloned());
+    CredentialsProviderChain::first_try(
+        "Profile",
+        ProfileFileCredentialsProvider::builder()
+            .configure(&conf)
+            .profile_name(profile)
+            .build(),
+    )
+    .or_else(
+        "WebIdentityToken",
+        WebIdentityTokenCredentialsProvider::builder()
+            .configure(&conf)
+            .build(),
+    )
+    .or_else(
+        "EcsContainer",
+        EcsCredentialsProvider::builder().configure(&conf).build(),
+    )
+    .or_else(
+        "Ec2InstanceMetadata",
+        ImdsCredentialsProvider::builder().configure(&conf).build(),
+    )
+}
+
+/// Build the SDK client from the settings. The region is looked up while the shared
+/// configuration loads; credentials are looked up by the SDK on the first send.
 pub(super) async fn connect(
     settings: &Settings,
     options: &BedrockOptions,
     env: Environment,
 ) -> Service {
     let observed = Arc::new(Mutex::new(None));
+    let empty_profile = env.0.get("AWS_PROFILE").is_some_and(String::is_empty);
     let fetch = transport(options, settings, env);
     let signal = options.common.signal.clone();
     let seen = Arc::clone(&observed);
@@ -270,6 +304,8 @@ pub(super) async fn connect(
     let mut loader = aws_config::defaults(BehaviorVersion::latest());
     if let Some(profile) = &settings.profile {
         loader = loader.profile_name(profile);
+    } else if empty_profile {
+        loader = loader.profile_name("default");
     }
     if let Some(region) = &settings.region {
         loader = loader.region(Region::new(region.clone()));
@@ -282,7 +318,10 @@ pub(super) async fn connect(
         config = config.endpoint_url(endpoint);
     }
     config = match &settings.auth {
-        Auth::Chain => config,
+        Auth::Chain => match &settings.profile {
+            Some(profile) => config.credentials_provider(profile_chain(profile, shared.region())),
+            None => config,
+        },
         Auth::Bearer(token) => config
             .token_provider(Token::new(token, None))
             .auth_scheme_preference([HTTP_BEARER_AUTH_SCHEME_ID]),
