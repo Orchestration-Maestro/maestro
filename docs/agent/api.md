@@ -17,7 +17,8 @@ maestro-agent = { path = "../maestro-agent" }
 maestro-models = { path = "../maestro-models" }
 ```
 
-The runnable examples also use `tokio` for the task facility the caller must supply.
+The runnable examples also use `tokio` for the task facility the caller must supply and
+`futures-util` for stream and future combinators.
 
 ## Quick start
 
@@ -648,6 +649,19 @@ at once, and their result settles without any reader consuming the events:
 # fn entry(text: &str) -> AgentMessage {
 #     AgentMessage::User(Arc::new(RwLock::new(UserMessage { content: UserContent::Text(text.into()), timestamp: 0.0 })))
 # }
+# fn said(messages: &[AgentMessage]) -> Vec<String> {
+#     messages.iter().map(|entry| match entry {
+#         AgentMessage::User(user) => match &user.read().unwrap().content {
+#             UserContent::Text(text) => format!("user:{text}"),
+#             _ => "user:other".into(),
+#         },
+#         AgentMessage::Assistant(reply) => match &reply.read().unwrap().content[0] {
+#             maestro_models::AssistantContent::Text(text) => format!("assistant:{}", text.text),
+#             _ => "assistant:other".into(),
+#         },
+#         _ => "other".into(),
+#     }).collect()
+# }
 # fn label(event: &AgentEvent) -> &'static str {
 #     match event {
 #         AgentEvent::AgentStart => "agent_start",
@@ -694,6 +708,9 @@ let prompt_run = [
     "agent_start", "turn_start", "message_start", "message_end", "message_start",
     "message_end", "turn_end", "agent_end",
 ];
+let continue_run = [
+    "agent_start", "turn_start", "message_start", "message_end", "turn_end", "agent_end",
+];
 // The number of `MessageUpdate` events follows the model's chunking, so they are left out.
 let interesting = |event: &AgentEvent| !matches!(event, AgentEvent::MessageUpdate { .. });
 
@@ -709,19 +726,27 @@ let emit: maestro_agent::AgentEventSink = Arc::new(move |event| {
 let generated = run_agent_loop(vec![entry("p")], context(vec![]), &config, emit, AgentLoopOptions::default())
     .await
     .unwrap();
-assert_eq!(generated.len(), 2);
+assert_eq!(said(&generated), ["user:p", "assistant:a1"]);
 assert_eq!(*labels.lock().unwrap(), prompt_run);
 
-let emit: maestro_agent::AgentEventSink = Arc::new(|_| ready(Ok(())));
+let labels = Arc::new(Mutex::new(Vec::new()));
+let sink = Arc::clone(&labels);
+let emit: maestro_agent::AgentEventSink = Arc::new(move |event| {
+    if interesting(&event) {
+        sink.lock().unwrap().push(label(&event));
+    }
+    ready(Ok(()))
+});
 let generated = run_agent_loop_continue(context(vec![entry("question")]), &config, emit, AgentLoopOptions::default())
     .await
     .unwrap();
-assert_eq!(generated.len(), 1);
+assert_eq!(said(&generated), ["assistant:a2"]);
+assert_eq!(*labels.lock().unwrap(), continue_run);
 
 // Observable: the result settles with nobody reading the events, which stay buffered.
 let config = Arc::new(config);
 let stream = agent_loop(vec![entry("p")], context(vec![]), Arc::clone(&config), AgentLoopOptions::default(), Arc::clone(&spawn));
-assert_eq!(stream.result().await.len(), 2);
+assert_eq!(said(&stream.result().await), ["user:p", "assistant:a3"]);
 let mut observed = Vec::new();
 while let Some(event) = stream.next().await {
     if interesting(&event) {
@@ -733,7 +758,14 @@ assert_eq!(observed, prompt_run);
 let refused = agent_loop_continue(context(vec![]), Arc::clone(&config), AgentLoopOptions::default(), Arc::clone(&spawn));
 assert_eq!(refused.err().unwrap().message, "Cannot continue: no messages in context");
 let stream = agent_loop_continue(context(vec![entry("question")]), config, AgentLoopOptions::default(), spawn).unwrap();
-assert_eq!(stream.result().await.len(), 1);
+assert_eq!(said(&stream.result().await), ["assistant:a4"]);
+let mut observed = Vec::new();
+while let Some(event) = stream.next().await {
+    if interesting(&event) {
+        observed.push(label(&event));
+    }
+}
+assert_eq!(observed, continue_run);
 # faux.unregister();
 # });
 ```
