@@ -37,7 +37,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-tui-crossterm", &["maestro-tui"]),
     (
         "maestro-catalog",
-        &["maestro-models", "maestro-credentials"],
+        &["maestro-models", "maestro-credentials", "maestro-pattern"],
     ),
     (
         "maestro-session",

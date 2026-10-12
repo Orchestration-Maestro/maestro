@@ -192,7 +192,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui` | 1 |
-| `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials` | 2 |
+| `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui` | 3 |
@@ -227,8 +227,8 @@ layers stay unchanged; the shared owner precedes its consumers.
 
 `maestro-pattern` is a core leaf below layer 0 whose one job is matching file
 patterns: glob patterns and ignore rules. It has no workspace dependencies,
-including `maestro-path`. Only `maestro-resources` and `maestro-packages` may
-depend on it. Move the existing matchers only after this contract lands, through
+including `maestro-path`. Only `maestro-resources`, `maestro-packages` and `maestro-catalog` (for model-scope
+matching) may depend on it. Move the existing matchers only after this contract lands, through
 [shared file-pattern ownership](https://github.com/Orchestration-Maestro/maestro/issues/561).
 
 `maestro-watch` and `maestro-lock` are core leaves below layer 0, with no

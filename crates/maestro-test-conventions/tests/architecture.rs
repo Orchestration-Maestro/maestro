@@ -424,6 +424,7 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro-extensions-wasmtime", "maestro-models"),
         ("maestro", "maestro-agent"),
         ("maestro-agent", "maestro-app"),
+        ("maestro-app", "maestro-pattern"),
     ] {
         let workspace = Workspace::new();
         workspace.list(&[(from, support::class(from)), (to, support::class(to))]);
@@ -456,6 +457,38 @@ fn forbidden_direct_edges_are_rejected() {
         let corrected = Workspace::new();
         corrected.foundation(&[from, to]);
         assert_eq!(check_workspace(&corrected.root), Ok(()));
+    }
+}
+
+#[test]
+fn catalog_pattern_edge_is_scoped() {
+    for from in ["maestro-catalog", "maestro-resources", "maestro-packages"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-pattern"]);
+        check_permitted_declarations(&workspace, from, "maestro-pattern", &["maestro-pattern"]);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-catalog", "maestro-pattern"]);
+    workspace.member(
+        "maestro-catalog",
+        "maestro-catalog",
+        "[dev-dependencies]\nalias = { package = \"maestro-pattern\", path = \"../maestro-pattern\" }",
+    );
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("internal dev dependency requires declared dependency-free test support: maestro-catalog -> maestro-pattern".into())
+    );
+    workspace.member("maestro-catalog", "maestro-catalog", "");
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-pattern",
+            "maestro-pattern",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-catalog\", path = \"../maestro-catalog\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("maestro-pattern must not depend on workspace crate maestro-catalog".into())
+        );
     }
 }
 
@@ -539,7 +572,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        73
+        74
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
