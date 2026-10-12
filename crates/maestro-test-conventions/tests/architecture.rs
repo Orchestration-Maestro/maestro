@@ -198,6 +198,7 @@ fn leaf_internal_dependencies_are_rejected() {
         ("maestro-request", "core"),
         ("maestro-watch", "core"),
         ("maestro-lock", "core"),
+        ("maestro-process", "core"),
         ("maestro-pattern", "core"),
         ("maestro-models", "core"),
         ("maestro-resources", "core"),
@@ -425,6 +426,10 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro", "maestro-agent"),
         ("maestro-agent", "maestro-app"),
         ("maestro-app", "maestro-pattern"),
+        ("maestro-process", "maestro-tools"),
+        ("maestro-process", "maestro-packages"),
+        ("maestro-process", "maestro-tui"),
+        ("maestro-models", "maestro-process"),
     ] {
         let workspace = Workspace::new();
         workspace.list(&[(from, support::class(from)), (to, support::class(to))]);
@@ -445,7 +450,9 @@ fn forbidden_direct_edges_are_rejected() {
             );
             assert_eq!(
                 check_workspace(&workspace.root),
-                Err(if kind.ends_with("dev-dependencies") {
+                Err(if is_leaf(from) {
+                    format!("{from} must not depend on workspace crate {to}")
+                } else if kind.ends_with("dev-dependencies") {
                     format!(
                         "internal dev dependency requires declared dependency-free test support: {from} -> {to}"
                     )
@@ -490,6 +497,55 @@ fn catalog_pattern_edge_is_scoped() {
             Err("forbidden production dependency: maestro-pattern -> maestro-catalog".into())
         );
     }
+}
+
+#[test]
+fn process_capture_consumers_may_declare_the_owner() {
+    for from in ["maestro-tools", "maestro-packages", "maestro-tui"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, "maestro-process"]);
+        check_permitted_declarations(&workspace, from, "maestro-process", &["maestro-process"]);
+        workspace.member(
+            from,
+            from,
+            "[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nnative = { package = \"maestro-process\", path = \"../maestro-process\" }",
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
+        workspace.member(
+            from,
+            from,
+            "[dev-dependencies]\nalias = { package = \"maestro-process\", path = \"../maestro-process\" }",
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!(
+                "internal dev dependency requires declared dependency-free test support: {from} -> maestro-process"
+            ))
+        );
+    }
+}
+
+#[test]
+fn process_leaf_cannot_depend_on_cancellation() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-process", "maestro-cancellation"]);
+    for (kind, extra) in DECLARATIONS.iter().chain(&[
+        ("dev-dependencies", ""),
+        ("target.'cfg(target_os = \"none\")'.dev-dependencies", ""),
+    ]) {
+        workspace.member(
+            "maestro-process",
+            "maestro-process",
+            &format!("[{kind}]\nalias = {{ package = \"maestro-cancellation\", path = \"../maestro-cancellation\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("maestro-process must not depend on workspace crate maestro-cancellation".into()),
+            "{kind}{extra}"
+        );
+    }
+    workspace.member("maestro-process", "maestro-process", "");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
 #[test]
@@ -566,13 +622,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 36);
+    assert_eq!(support::policy::POLICY.len(), 37);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        105
+        108
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -601,6 +657,7 @@ const DECLARATIONS: &[(&str, &str)] = &[
 const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-watch",
     "maestro-lock",
+    "maestro-process",
     "maestro-pattern",
     "maestro-cancellation",
     "maestro-request",
@@ -649,9 +706,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 36);
+    assert_eq!(rows.len(), 37);
     assert_eq!(consumers.len(), 22);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 9);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 10);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }
@@ -791,8 +848,10 @@ fn sparse_inventory_does_not_create_product_crates() {
         ("maestro-watch", "core"),
         ("maestro-lock", "core"),
         ("maestro-pattern", "core"),
+        ("maestro-process", "core"),
     ]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+    assert!(!workspace.root.join("crates/maestro-process").exists());
     assert!(!workspace.root.join("crates/maestro-tools").exists());
     assert!(!workspace.root.join("crates/maestro-chat").exists());
     assert!(!workspace.root.join("crates/maestro-watch").exists());

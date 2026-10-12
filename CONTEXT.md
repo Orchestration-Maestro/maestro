@@ -112,7 +112,7 @@ are later scope, not active foundation concepts.
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The declared `maestro-tool` library, which depends only on `maestro-request`, owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
-- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf and the optional foundation utility, without application selectors or framework/highlighting engines.
+- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process leaf and the optional foundation utility, without application selectors or framework/highlighting engines.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
 - **Overlay:** A retained component layered over the frame, with live placement/visibility options and a public handle for focus, temporary hiding and removal.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
@@ -141,6 +141,7 @@ are later scope, not active foundation concepts.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Text:** The declared core leaf `maestro-text` below layer 0, owning common text operations (whitespace, lexical comparison, markup escaping, locale construction); it depends on no workspace crate and `maestro-pattern` depends on it.
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text); it depends on no workspace crate.
+- **Process:** The declared core leaf `maestro-process` below layer 0, owning native child-process lifecycles for tools, packages and the terminal toolkit; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) leaves cancellation, termination and settlement choices with callers.
 - **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.

@@ -96,7 +96,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness, cancellation leaf, watch leaf, lock leaf,
+  terminal scenario harness, cancellation leaf, watch leaf, lock leaf, process leaf,
   file-pattern crate, text leaf, JSON leaf, entry and tool record crates and
   brand crate may not. Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler
@@ -122,6 +122,11 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   existing theme paths may re-export moved types, not duplicate implementations.
   Land this contract before creating the leaves; size moves by net added
   production lines with matching moved/deleted counts, not claimed savings.
+- `maestro-process` is a declared core leaf below layer 0 with no workspace
+  dependencies, including the path and cancellation leaves. Only tools, packages
+  and the toolkit may depend on it, on native targets. It owns native child-process
+  lifecycles; the callers keep cancellation, termination and settlement policy and
+  all output handling. Details: [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
