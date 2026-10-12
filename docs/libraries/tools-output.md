@@ -32,8 +32,8 @@ open the file. No package or version beyond the existing lockfile is added.
 Read selection spells floating-point line numbers with `ryu-js`.
 
 On Unix a present `HOME` is used verbatim, including an empty value, and
-`std::env::home_dir` runs only when `HOME` is absent; Windows always uses that
-platform lookup. A missing entry is a lookup error returned only for `~` paths.
+[`std::env::home_dir`](https://doc.rust-lang.org/std/env/fn.home_dir.html)
+runs only when `HOME` is absent; Windows always uses that platform lookup. A missing entry is a lookup error returned only for `~` paths.
 
 ## Image libraries
 

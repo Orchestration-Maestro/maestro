@@ -189,22 +189,49 @@ fn empty_home_is_used_verbatim() {
     }
 }
 
+/// A directory below the account home that mirrors an absolute path, removed with its created parents.
+#[cfg(unix)]
+struct HomeMirror {
+    home: std::path::PathBuf,
+    leaf: std::path::PathBuf,
+}
+
+#[cfg(unix)]
+impl Drop for HomeMirror {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.leaf);
+        let mut dir = self.leaf.parent();
+        while let Some(path) = dir.filter(|path| *path != self.home) {
+            if std::fs::remove_dir(path).is_err() {
+                break;
+            }
+            dir = path.parent();
+        }
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn read_selects_distinct_files_for_empty_and_absent_home() {
     let test = "read_selects_distinct_files_for_empty_and_absent_home";
-    let read = || {
-        let dir = TempDir::new();
-        dir.file("note.txt", b"empty home keeps the path root");
-        let tool = create_read_tool_definition::<()>("/".into(), ReadToolOptions::default());
-        let authored = format!("~{}/note.txt", dir.text());
-        call(&tool, input(&authored, None, None), None, None).map(|result| only_text(&result))
-    };
+    let dir = TempDir::new();
+    dir.file("note.txt", b"empty home keeps the path root");
+    let authored = format!("~{}/note.txt", dir.text());
+    let tool = create_read_tool_definition::<()>("/".into(), ReadToolOptions::default());
+    let read = || only_text(&call(&tool, input(&authored, None, None), None, None).unwrap());
     if isolated(test, "empty", &[("HOME", Some(""))]) {
-        assert_eq!(read().unwrap(), "empty home keeps the path root");
+        assert_eq!(read(), "empty home keeps the path root");
     }
     if isolated(test, "absent", &[("HOME", None)]) {
-        assert!(read().is_err());
+        let home = std::env::home_dir().unwrap();
+        let leaf = home.join(dir.text().trim_start_matches('/'));
+        std::fs::create_dir_all(&leaf).unwrap();
+        let _mirror = HomeMirror {
+            home,
+            leaf: leaf.clone(),
+        };
+        std::fs::write(leaf.join("note.txt"), b"account home").unwrap();
+        assert_eq!(read(), "account home");
     }
 }
 

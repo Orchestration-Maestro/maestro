@@ -20,7 +20,7 @@ fn utf8(path: PathBuf, what: &str) -> io::Result<String> {
 /// Strip one leading `@`, replace Unicode spaces and expand a bare `~` or `~/`.
 ///
 /// The home directory is read only for those two forms: on Unix `HOME` as set, even
-/// empty, otherwise the platform lookup.
+/// empty, otherwise [`std::env::home_dir`].
 ///
 /// # Errors
 /// Returns an error when the home directory is needed but unknown or not UTF-8.
@@ -44,11 +44,11 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
         Some(rest) if rest.starts_with('/') => rest,
         _ => return Ok(normalized),
     };
-    let home = match std::env::var_os("HOME").filter(|_| cfg!(unix)) {
-        Some(home) => home.into(),
-        None => std::env::home_dir()
-            .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?,
-    };
+    let home = std::env::var_os("HOME")
+        .filter(|_| cfg!(unix))
+        .map(PathBuf::from)
+        .or_else(std::env::home_dir)
+        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
     Ok(utf8(home, "home directory")? + rest)
 }
 
@@ -66,11 +66,9 @@ pub fn resolve_to_cwd(file_path: &str, cwd: &str) -> io::Result<String> {
     if is_absolute(&expanded) {
         return Ok(expanded);
     }
-    let directories = if cfg!(windows) {
-        env_drive_directories(|name| std::env::var_os(name))
-    } else {
-        Vec::new()
-    };
+    let directories = cfg!(windows)
+        .then(|| env_drive_directories(|name| std::env::var_os(name)))
+        .unwrap_or_default();
     let drives: Vec<_> = directories
         .iter()
         .map(|(letter, path)| (*letter, path.as_str()))
@@ -111,9 +109,7 @@ fn narrow_space_before_meridiem(path: &str) -> String {
 /// Returns the error of [`resolve_to_cwd`].
 pub fn resolve_read_path(file_path: &str, cwd: &str) -> io::Result<String> {
     let resolved = resolve_to_cwd(file_path, cwd)?;
-    let nfd = DecomposingNormalizer::new_nfd()
-        .normalize(&resolved)
-        .into_owned();
+    let nfd = String::from(DecomposingNormalizer::new_nfd().normalize(&resolved));
     let candidates = [
         narrow_space_before_meridiem(&resolved),
         nfd.clone(),
