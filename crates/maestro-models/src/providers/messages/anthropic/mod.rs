@@ -7,8 +7,10 @@ mod sse;
 mod tool_names;
 mod wire;
 
+use std::borrow::Cow;
 use std::sync::{Arc, PoisonError, RwLock};
 
+use crate::options::resolve_api_key;
 use crate::providers::assistant_output::{callback_failure, fail, initial_message};
 use crate::providers::http::{
     HttpResponse, RequestFailure, envelope_failure, send_with_status_error, spawn_detached,
@@ -17,7 +19,7 @@ use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
     DiagnosticErrorInfo, DoneReason, Model, ProviderResponse, SharedAssistantMessage,
     SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice,
-    adjust_max_tokens_for_thinking, build_base_options, get_env_api_key,
+    adjust_max_tokens_for_thinking, build_base_options,
 };
 use events::Reducer;
 use request::Invocation;
@@ -179,19 +181,17 @@ pub fn stream_simple_anthropic(
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let mut options = options.unwrap_or_default();
-    let key = options
-        .common
-        .api_key
-        .take()
-        .filter(|key| !key.is_empty())
-        .or_else(|| get_env_api_key(&model.provider))
-        .filter(|key| !key.is_empty())
-        .ok_or_else(|| DiagnosticErrorInfo {
-            name: Some("Error".to_owned()),
-            message: format!("No API key for provider: {}", model.provider),
-            stack: None,
-            code: None,
-        })?;
+    let key = resolve_api_key(
+        &model.provider,
+        options.common.api_key.take().map(Cow::Owned),
+    )
+    .map(Cow::into_owned)
+    .ok_or_else(|| DiagnosticErrorInfo {
+        name: Some("Error".to_owned()),
+        message: format!("No API key for provider: {}", model.provider),
+        stack: None,
+        code: None,
+    })?;
     let mut raw = AnthropicOptions {
         common: build_base_options(&model, Some(&options), Some(&key)),
         thinking_enabled: Some(options.reasoning.is_some()),

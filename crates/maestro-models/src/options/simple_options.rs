@@ -1,5 +1,19 @@
 #![doc = include_str!("../../../../docs/model-options.md")]
-use crate::{Model, SimpleStreamOptions, StreamOptions, ThinkingBudgets, ThinkingLevel};
+use std::borrow::Cow;
+
+use crate::{
+    Model, SimpleStreamOptions, StreamOptions, ThinkingBudgets, ThinkingLevel, get_env_api_key,
+};
+
+/// Keep a nonempty supplied key as written, otherwise look the provider's key up in the environment.
+pub(crate) fn resolve_api_key<'a>(
+    provider: &str,
+    explicit: Option<Cow<'a, str>>,
+) -> Option<Cow<'a, str>> {
+    explicit
+        .filter(|key| !key.is_empty())
+        .or_else(|| get_env_api_key(provider).map(Cow::Owned))
+}
 
 /// Copy common settings without invoking retained hooks.
 ///

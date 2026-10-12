@@ -26,18 +26,23 @@ pub fn rows(fixture: &str, test: &str) -> TestResult<Vec<Value>> {
     Ok(all.into_iter().filter(|row| row["test"] == test).collect())
 }
 
+/// `base` with the members of `overrides` replacing its own.
+pub fn overlay(mut base: Value, overrides: &Value) -> Value {
+    if let (Some(members), Some(changes)) = (base.as_object_mut(), overrides.as_object()) {
+        members.extend(changes.iter().map(|(k, v)| (k.clone(), v.clone())));
+    }
+    base
+}
+
 /// Merge `overrides` over the shared fixture model and decode it.
 pub fn model(overrides: &Value) -> TestResult<Model> {
-    let mut value = json!({
+    let value = json!({
         "id": "model", "name": "Model", "api": "openai-completions", "provider": "fixture",
         "baseUrl": "https://api.openai.com/v1", "reasoning": true, "input": ["text", "image"],
         "cost": {"input": 1, "output": 2, "cacheRead": 0.1, "cacheWrite": 1.25},
         "contextWindow": 128_000, "maxTokens": 4096
     });
-    if let (Some(base), Some(changes)) = (value.as_object_mut(), overrides.as_object()) {
-        base.extend(changes.iter().map(|(k, v)| (k.clone(), v.clone())));
-    }
-    Ok(serde_json::from_value(value)?)
+    Ok(serde_json::from_value(overlay(value, overrides))?)
 }
 
 /// Fill the defaults fixtures omit from messages, then decode the context.

@@ -137,3 +137,70 @@ undeclared finish reason returns without closing it, leaving earlier updates in 
 A call closes the open block and takes its identifier before its arguments are converted,
 so an argument failure keeps those earlier effects. A part's text, thought flag and
 signature are read together; unknown members and later candidates are never decoded.
+
+## Request preparation
+
+`maestro_models::providers::content::google` prepares the parameters of a content-generation
+request. It sends nothing, calls no hook and never reads a retained timeout, retry or transport
+setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
+
+- `build_simple_options(model, options)` selects raw options from simple ones.
+- `build_params(model, context, options)` builds `GenerateContentParameters` from the
+  [converted](#content-generation-conversion) context and raw options.
+
+```rust
+use maestro_models::providers::content::google::{build_params, build_simple_options};
+use maestro_models::{Context, Model, SimpleStreamOptions, StreamOptions, ThinkingLevel};
+use serde_json::json;
+
+let model: Model = serde_json::from_value(json!({
+    "id": "gemini-2.5-flash", "name": "Gemini", "api": "google-generative-ai",
+    "provider": "google", "baseUrl": "https://example.invalid/v1beta", "reasoning": true,
+    "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    "contextWindow": 1_000_000, "maxTokens": 8192
+})).expect("model");
+let context: Context = serde_json::from_value(json!({
+    "messages": [{"role": "user", "content": "hello", "timestamp": 1}]
+})).expect("context");
+let simple = SimpleStreamOptions {
+    common: StreamOptions { api_key: Some("fixture-key".to_owned()), ..StreamOptions::default() },
+    reasoning: Some(ThinkingLevel::Low),
+    ..SimpleStreamOptions::default()
+};
+let options = build_simple_options(&model, Some(&simple)).expect("a key is supplied");
+let params = build_params(&model, &context, Some(&options)).expect("not aborted");
+let wire = serde_json::to_value(&params).expect("serializes");
+assert_eq!(
+    maestro_models::compact_json(&wire["config"]["thinkingConfig"]).expect("compact"),
+    r#"{"includeThoughts":true,"thinkingBudget":2048}"#,
+);
+```
+
+On success `build_params` returns the model identifier, the converted turns and a configuration.
+Temperature and output limit are kept as supplied, zero and negative values included; the
+system prompt is omitted only when empty and is otherwise kept untrimmed. Tools are
+declared whole (`parametersJsonSchema`), and a tool mode is emitted only when the context
+declares at least one tool. A signal supplied already aborted fails with `Request aborted`;
+an active one is retained and serializes as `{}`, so aborting the original later is seen
+through the prepared value.
+
+Raw thinking is never inferred. Without a thinking request, or for a model that does not
+reason, no thinking configuration is emitted. An enabled request on a reasoning model
+includes thoughts and carries its level, or its budget when no level is given; budgets are
+not clamped. A disabled request ignores any level and budget and selects the family's
+lowest setting without thoughts: `LOW` for third-generation Pro, `MINIMAL` for
+third-generation Flash and fourth-generation Gemma (recognized case-insensitively
+anywhere in the model identifier, with ASCII digits only), and a zero budget otherwise.
+
+`build_simple_options` fails with `No API key for provider: <provider>` unless a nonempty
+supplied key (kept untrimmed) or the provider's environment key exists; it does so before
+anything else and does not inspect the context or the signal, which `build_params` checks
+later. Common settings come from [`build_base_options`](../model-options.md), which also decides the
+output limit; no thinking tokens are added;
+the simple tool choice is not forwarded. Missing reasoning selects disabled thinking. A
+requested effort is first clamped to the model's supported levels, and off and extra-high
+both select high. Level-based families (Pro and Flash of the third generation, Gemma 4)
+map the effort to a level and ignore custom budgets; other models use the selected
+`thinking_budgets` slot, an explicit zero included, or the family default: Pro
+`128/2048/8192/32768`, Flash-Lite `512/2048/8192/24576`, Flash `128/2048/8192/24576`
+(minimal to high; `2.5` identifiers, matched case-sensitively) and `-1` (dynamic) otherwise.

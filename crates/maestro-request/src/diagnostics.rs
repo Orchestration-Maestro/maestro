@@ -30,6 +30,19 @@ pub struct DiagnosticErrorInfo {
     pub code: Option<DiagnosticCode>,
 }
 
+impl DiagnosticErrorInfo {
+    /// An error named `Error` with the given message and no stack or code.
+    #[must_use]
+    pub fn error(message: impl Into<String>) -> Self {
+        Self {
+            name: Some("Error".to_owned()),
+            message: message.into(),
+            stack: None,
+            code: None,
+        }
+    }
+}
+
 impl fmt::Display for DiagnosticErrorInfo {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(&format_thrown_value(DiagnosticInput::Error(self)))

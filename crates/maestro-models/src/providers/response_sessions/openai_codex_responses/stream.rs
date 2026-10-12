@@ -5,13 +5,13 @@ use super::{
     http::invoke_sse,
     request::{diagnostic, prepare_request},
 };
+use crate::options::resolve_api_key;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::http::{RequestFailure, spawn_detached};
 use crate::providers::responses::openai_responses::conclude;
 use crate::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ModelThinkingLevel,
     SharedAssistantMessage, SimpleStreamOptions, build_base_options, clamp_thinking_level,
-    get_env_api_key,
 };
 use std::{
     borrow::Cow,
@@ -63,13 +63,14 @@ pub fn stream_simple_openai_codex_responses(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let key = options
-        .as_ref()
-        .and_then(|o| o.common.api_key.as_deref())
-        .filter(|key| !key.is_empty())
-        .map(Cow::Borrowed)
-        .or_else(|| get_env_api_key(&model.provider).map(Cow::Owned))
-        .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
+    let key = resolve_api_key(
+        &model.provider,
+        options
+            .as_ref()
+            .and_then(|o| o.common.api_key.as_deref())
+            .map(Cow::Borrowed),
+    )
+    .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
     let common = build_base_options(&model, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()

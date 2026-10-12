@@ -1,5 +1,6 @@
 //! Independently produced conversation updates.
 use super::{MistralOptions, request};
+use crate::options::resolve_api_key;
 use crate::providers::{
     assistant_output::{fail, initial_message},
     http::{RequestFailure, spawn_detached},
@@ -8,6 +9,7 @@ use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, DoneReason,
     Model, SimpleStreamOptions, StopReason,
 };
+use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
 /// Start a raw conversation stream on the caller's runtime.
@@ -33,11 +35,11 @@ pub fn stream_simple_mistral(
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let mut options = options.unwrap_or_default();
-    options.common.api_key = options
-        .common
-        .api_key
-        .filter(|key| !key.is_empty())
-        .or_else(|| crate::get_env_api_key(model.provider.as_str()));
+    options.common.api_key = resolve_api_key(
+        model.provider.as_str(),
+        options.common.api_key.take().map(Cow::Owned),
+    )
+    .map(Cow::into_owned);
     if options.common.api_key.is_none() {
         return Err(DiagnosticErrorInfo {
             message: format!("No API key for provider: {}", model.provider),
