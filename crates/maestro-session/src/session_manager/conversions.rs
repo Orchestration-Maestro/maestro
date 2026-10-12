@@ -67,11 +67,8 @@ fn assign_ids(entries: &mut [FileEntry], next_uuid: &mut impl FnMut() -> Uuid) -
 
 /// Resolve numeric header-inclusive cuts against the final identity sequence.
 fn resolve_cuts(entries: &mut [FileEntry]) {
-    let ids: Vec<_> = entries
-        .iter()
-        .map(|entry| (entry["type"] != "session").then(|| entry["id"].clone()))
-        .collect();
-    for entry in entries {
+    for position in 0..entries.len() {
+        let entry = &entries[position];
         if entry["type"] != "compaction" {
             continue;
         }
@@ -85,13 +82,15 @@ fn resolve_cuts(entries: &mut [FileEntry]) {
             .map_or(spelling.as_str(), |_| "0")
             .parse::<usize>()
             .ok()
-            .and_then(|index| ids.get(index))
-            .and_then(Option::as_ref);
+            .and_then(|index| entries.get(index))
+            .filter(|entry| entry["type"] != "session")
+            .map(|entry| entry["id"].clone());
+        let entry = &mut entries[position];
         if let Some(target) = target {
-            entry["firstKeptEntryId"] = target.clone();
+            entry["firstKeptEntryId"] = target;
         }
         if let Some(object) = entry.as_object_mut() {
-            object.remove("firstKeptEntryIndex");
+            object.shift_remove("firstKeptEntryIndex");
         }
     }
 }

@@ -42,7 +42,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -143,7 +142,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -244,7 +242,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -345,7 +342,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -446,7 +442,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -547,7 +542,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -648,7 +642,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -749,7 +742,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -850,7 +842,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": false,
           "entries": [
             {
               "type": "session",
@@ -951,7 +942,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": false,
           "entries": [
             {
               "type": "session",
@@ -2433,7 +2423,6 @@
       "input": [],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": []
         }
       }
@@ -2452,7 +2441,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -2483,7 +2471,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "message",
@@ -2543,7 +2530,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -2659,7 +2645,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -2753,7 +2738,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -2791,7 +2775,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",
@@ -2846,7 +2829,6 @@
       ],
       "expected": {
         "ok": {
-          "changed": true,
           "entries": [
             {
               "type": "session",

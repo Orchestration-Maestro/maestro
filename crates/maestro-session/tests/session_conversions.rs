@@ -41,8 +41,9 @@ fn conversion_cut_indices_use_final_header_inclusive_ids() {
         .unwrap();
     assert!(
         output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stdout)
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
     );
 }
 
@@ -74,6 +75,7 @@ fn repeated_conversion_is_inert_after_current_version() {
     }
 }
 
+#[cfg(not(windows))]
 #[test]
 fn converted_context_uses_existing_local_timestamp_policy() {
     if let Ok(zone) = std::env::var("MAESTRO_CONVERSION_TIME_CHILD") {
@@ -85,25 +87,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         if zone == "America/New_York" {
             assert_ne!(chrono::Local::now().offset().local_minus_utc(), 0);
         }
-        for case in
-            support::session_files::cases("converted_context_uses_existing_local_timestamp_policy")
-        {
-            let mut entries = vec![
-                json!({"type":"session","version":1,"id":"history"}),
-                json!({"type":"message","message":{"role":"user","content":"a","timestamp":1}}),
-                json!({"type":"compaction","firstKeptEntryIndex":1,"summary":"time","tokensBefore":1,"timestamp":case.input["timestamp"]}),
-            ];
-            migrate_session_entries(&mut entries).unwrap();
-            let result = serde_json::to_value(
-                build_session_context(&entries, Presence::Missing, None::<&HashMap<_, _>>).unwrap(),
-            )
-            .unwrap();
-            let mut expected = case.expected["ok"].clone();
-            if case.input["timestamp"] == "2025-01-01T01:00:00" {
-                expected["messages"][0]["timestamp"] = json!(local);
-            }
-            support::value::assert_value(&result, &expected, &case.id);
-        }
+        check_converted_timestamps(local);
         return;
     }
     for zone in ["UTC", "America/New_York"] {
@@ -119,9 +103,45 @@ fn converted_context_uses_existing_local_timestamp_policy() {
             .unwrap();
         assert!(
             output.status.success(),
-            "child failed: {}",
+            "stdout: {}\nstderr: {}",
+            String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+    }
+}
+
+#[cfg(windows)]
+#[test]
+fn converted_context_uses_existing_local_timestamp_policy() {
+    use chrono::TimeZone;
+    let local = chrono::Local
+        .with_ymd_and_hms(2025, 1, 1, 1, 0, 0)
+        .earliest()
+        .unwrap()
+        .timestamp_millis();
+    check_converted_timestamps(local);
+}
+
+/// Compare converted timestamps against the platform's local-time expectation.
+fn check_converted_timestamps(local: i64) {
+    for case in
+        support::session_files::cases("converted_context_uses_existing_local_timestamp_policy")
+    {
+        let mut entries = vec![
+            json!({"type":"session","version":1,"id":"history"}),
+            json!({"type":"message","message":{"role":"user","content":"a","timestamp":1}}),
+            json!({"type":"compaction","firstKeptEntryIndex":1,"summary":"time","tokensBefore":1,"timestamp":case.input["timestamp"]}),
+        ];
+        migrate_session_entries(&mut entries).unwrap();
+        let result = serde_json::to_value(
+            build_session_context(&entries, Presence::Missing, None::<&HashMap<_, _>>).unwrap(),
+        )
+        .unwrap();
+        let mut expected = case.expected["ok"].clone();
+        if case.input["timestamp"] == "2025-01-01T01:00:00" {
+            expected["messages"][0]["timestamp"] = json!(local);
+        }
+        support::value::assert_value(&result, &expected, &case.id);
     }
 }
 
@@ -174,13 +194,26 @@ fn conversions(name: &str) {
             continue;
         }
         result.unwrap();
+        if case.id == "conversion-wire-cut-1.0" {
+            assert_eq!(
+                entries[2].as_object().unwrap().keys().collect::<Vec<_>>(),
+                [
+                    "type",
+                    "summary",
+                    "tokensBefore",
+                    "timestamp",
+                    "id",
+                    "parentId",
+                    "firstKeptEntryId"
+                ],
+                "{}: converted property order",
+                case.id
+            );
+        }
         if version < 2.0 {
             normalize(&mut entries);
         }
         let mut observed = json!({"entries": entries});
-        if case.expected["ok"].get("changed").is_some() {
-            observed["changed"] = json!(version < 3.0);
-        }
         if case.expected["ok"].get("context").is_some() {
             observed["context"] = serde_json::to_value(
                 build_session_context(&entries, Presence::Missing, None::<&HashMap<_, _>>).unwrap(),

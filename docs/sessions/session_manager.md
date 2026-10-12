@@ -123,7 +123,8 @@ selected path. A missing explicit file waits for first publication at that path.
 Continuation filters valid `.jsonl` files using a first-512-byte header probe and
 selects by descending millisecond mtime, preserving native enumeration ties.
 Historical conversion applies only the ID/parent and custom-message passes;
-current and future versions remain unchanged. Loading retains raw records, while
+current and future versions remain unchanged. Removing a numeric legacy compaction
+cut index preserves the remaining object member order. Loading retains raw records, while
 selected identity, version and cwd reads can return native invalid-data errors.
 
 ```rust

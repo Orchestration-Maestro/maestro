@@ -160,8 +160,9 @@ fn default_directory_encodes_authored_cwd_before_joining() {
             .unwrap();
         assert!(
             output.status.success(),
-            "{}",
-            String::from_utf8_lossy(&output.stdout)
+            "stdout: {}\nstderr: {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
         );
         return;
     }
@@ -472,6 +473,28 @@ fn append_failure_keeps_memory_and_partial_bytes() {
 }
 
 #[test]
+fn published_append_failure_keeps_accepted_memory() {
+    let directory = Directory::new();
+    let path = directory.file("published.jsonl", jsonl(&[
+        header(&json!("cwd")),
+        json!({"type":"message","id":"published","parentId":null,"message":{"role":"assistant","content":"published"}}),
+    ]));
+    let mut manager = SessionManager::open(&path, None, None).unwrap();
+    fs::remove_file(&path).unwrap();
+    fs::create_dir(&path).unwrap();
+    assert!(
+        manager
+            .append_message(json!({"role":"user","content":"accepted-after-failure"}))
+            .is_err()
+    );
+    assert_eq!(
+        manager.get_leaf_entry().unwrap()["message"]["content"],
+        "accepted-after-failure"
+    );
+    assert_eq!(manager.get_entries().len(), 2);
+}
+
+#[test]
 fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     let directory = Directory::new();
     assert!(find_most_recent_session(directory.text()).is_none());
@@ -492,20 +515,14 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
         .collect();
     for (position, path) in order.iter().enumerate() {
         let nanos = if position == 0 { 100 } else { 900_000 };
-        fs::File::open(path)
-            .unwrap()
-            .set_modified(instant + std::time::Duration::from_nanos(nanos))
-            .unwrap();
+        set_modified(path, instant + std::time::Duration::from_nanos(nanos));
     }
     let winner = order[1].to_str().unwrap();
     assert_eq!(
         find_most_recent_session(directory.text()).unwrap(),
         order[0].to_str().unwrap()
     );
-    fs::File::open(winner)
-        .unwrap()
-        .set_modified(instant + std::time::Duration::from_millis(2))
-        .unwrap();
+    set_modified(winner, instant + std::time::Duration::from_millis(2));
     assert_eq!(
         find_most_recent_session(directory.text()).as_deref(),
         Some(winner)
@@ -532,6 +549,16 @@ fn continuation_uses_mtime_stable_ties_and_existing_catches() {
     {
         removed_fifo_metadata_discards_selection(&directory);
     }
+}
+
+/// Set a fixture's timestamp through a writable native handle.
+fn set_modified(path: impl AsRef<std::path::Path>, time: std::time::SystemTime) {
+    fs::OpenOptions::new()
+        .write(true)
+        .open(path)
+        .unwrap()
+        .set_modified(time)
+        .unwrap();
 }
 
 #[test]
@@ -707,8 +734,9 @@ fn removed_cwd_child(name: &str) -> bool {
         .unwrap();
     assert!(
         output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stdout)
+        "stdout: {}\nstderr: {}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
     );
     false
 }

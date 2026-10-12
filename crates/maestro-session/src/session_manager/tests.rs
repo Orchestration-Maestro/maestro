@@ -147,8 +147,9 @@ fn failed_probe_releases_its_owned_file() {
         }
     }
     let released = std::rc::Rc::new(std::cell::Cell::new(false));
+    let path = std::env::temp_dir().join(format!("maestro-reader-{}", Uuid::new_v4()));
     let reader = Failing {
-        file: Some(std::fs::File::open(std::env::temp_dir()).unwrap()),
+        file: Some(std::fs::File::create(&path).unwrap()),
         released: released.clone(),
     };
     assert_eq!(
@@ -156,6 +157,7 @@ fn failed_probe_releases_its_owned_file() {
         Some(5)
     );
     assert!(released.get());
+    std::fs::remove_file(path).unwrap();
     #[cfg(unix)]
     assert!(super::files::probe(std::fs::File::open(std::env::temp_dir()).unwrap()).is_err());
 }
