@@ -3,10 +3,14 @@ mod append;
 mod conversions;
 mod extraction;
 #[cfg(not(target_arch = "wasm32"))]
+mod discovery;
+#[cfg(not(target_arch = "wasm32"))]
 mod files;
 #[cfg(not(target_arch = "wasm32"))]
 mod persistence;
 pub use conversions::migrate_session_entries;
+#[cfg(not(target_arch = "wasm32"))]
+pub use discovery::SessionListProgress;
 #[cfg(not(target_arch = "wasm32"))]
 pub use files::{find_most_recent_session, get_default_session_dir, load_entries_from_file};
 /// Context projection operations.

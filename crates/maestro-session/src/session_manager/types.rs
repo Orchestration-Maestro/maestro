@@ -1,4 +1,5 @@
 //! Raw entries and explicit session record views.
+#![doc = include_str!("../../../../docs/sessions/session_format.md")]
 use maestro_models::UserContent;
 use maestro_request::presence::Presence;
 use serde::{Deserialize, Serialize};
@@ -262,6 +263,31 @@ impl Drop for SessionTreeNode<'_> {
             pending.append(&mut node.children);
         }
     }
+}
+
+/// Listing metadata of one stored session; dates are epoch milliseconds and `NaN` marks an invalid created date.
+#[derive(Debug)]
+pub struct SessionInfo {
+    /// Session file path.
+    pub path: String,
+    /// Header identity, passed through unvalidated.
+    pub id: Presence<Value>,
+    /// Header working directory; empty when the header holds no string.
+    pub cwd: String,
+    /// Latest trimmed session name; `None` when absent or cleared.
+    pub name: Option<String>,
+    /// Header parent session, passed through unvalidated.
+    pub parent_session_path: Presence<Value>,
+    /// Header creation time.
+    pub created: f64,
+    /// Latest user or assistant activity, else header time, else file mtime.
+    pub modified: f64,
+    /// Number of message records.
+    pub message_count: usize,
+    /// First nonempty user text, or `(no messages)`.
+    pub first_message: String,
+    /// User and assistant text joined by single spaces.
+    pub all_messages_text: String,
 }
 
 /// Read-only view of a session history.

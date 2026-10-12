@@ -5,6 +5,9 @@ selected ancestry into context. Native operations create, reopen, switch and
 continue JSONL histories; explicit memory history remains available.
 Stored timestamp conversion delegates to [message formatting](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/messages.md).
 
+See also the [session format](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_format.md) for record shapes and
+[discovery](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/discovery.md) for listing sessions.
+
 ## Raw entries and explicit views
 
 `FileEntry` and `SessionEntry` are ordered JSON values, not validated schemas.

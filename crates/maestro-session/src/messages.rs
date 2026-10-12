@@ -168,7 +168,7 @@ pub const BRANCH_SUMMARY_PREFIX: &str =
 pub const BRANCH_SUMMARY_SUFFIX: &str = "</summary>";
 
 /// Convert integer epoch milliseconds to the floating-point message representation.
-fn millis_number(millis: i64) -> f64 {
+pub(crate) fn millis_number(millis: i64) -> f64 {
     millis.to_string().parse().unwrap_or(f64::NAN)
 }
 

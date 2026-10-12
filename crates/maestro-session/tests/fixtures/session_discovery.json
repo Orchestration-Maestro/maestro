@@ -1,0 +1,1282 @@
+[
+ {
+  "name": "empty",
+  "input": "\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "malformed_only",
+  "input": "{broken\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "wrong_first_record",
+  "input": "{\"type\":\"custom\"}\n{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "null_first_record",
+  "input": "null\n{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "header_only",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "missing_identity",
+  "input": "{\"type\":\"session\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "absent": true
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "null_identity",
+  "input": "{\"type\":\"session\",\"id\":null,\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": null,
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "open_identity",
+  "input": "{\"type\":\"session\",\"id\":{\"future\":1},\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": {
+     "future": 1
+    }
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "sentinel_metadata",
+  "input": "{\"type\":\"session\",\"id\":{\"absent\":true},\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":{\"invalid\":true}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": {
+     "absent": true
+    }
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "present": {
+     "invalid": true
+    }
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "missing_cwd",
+  "input": "{\"type\":\"session\",\"id\":\"no-cwd\",\"timestamp\":\"2025-01-02T03:04:05.000Z\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "no-cwd"
+   },
+   "cwd": "",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "null_cwd",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":null}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "wrong_cwd",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":3}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "empty_cwd",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "missing_created",
+  "input": "{\"type\":\"session\",\"id\":\"no-time\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "no-time"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": {
+    "invalid": true
+   },
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "invalid_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"bad\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": {
+    "invalid": true
+   },
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "null_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":null,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 0,
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "numeric_created",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":42,\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 42,
+   "modified": 1893456000000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "parent_null",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":null}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": null,
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "parent_empty",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":\"\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "present": ""
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "parent_open",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":{\"future\":1}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "present": {
+     "future": 1
+    }
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "parent_text",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"parentSession\":\"/parent/session.jsonl\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "present": "/parent/session.jsonl"
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "text_order_and_duplicates",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"assist\"},{\"type\":\"thinking\",\"thinking\":\"secret\"},{\"type\":\"text\",\"text\":\"answer\"}],\"timestamp\":7000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"question\",\"timestamp\":4000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"question\",\"timestamp\":3000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"toolResult\",\"content\":[{\"type\":\"text\",\"text\":\"hidden\"}],\"timestamp\":9000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"custom\",\"content\":\"hidden\",\"timestamp\":10000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 7000,
+   "messageCount": 5,
+   "firstMessage": "question",
+   "allMessagesText": "assist answer question question"
+  }
+ },
+ {
+  "name": "first_user_ignores_empty",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"\",\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":[],\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"image\",\"data\":\"x\"}],\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"only assistant\",\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"  \",\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"later\",\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 6,
+   "firstMessage": "  ",
+   "allMessagesText": "only assistant    later"
+  }
+ },
+ {
+  "name": "assistant_only",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"answer\",\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": "answer"
+  }
+ },
+ {
+  "name": "space_join",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"\"},{\"type\":\"text\",\"text\":\"\"},{\"type\":\"image\",\"data\":\"x\"},{\"type\":\"text\",\"text\":\"tail\"}],\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "  tail",
+   "allMessagesText": "  tail"
+  }
+ },
+ {
+  "name": "missing_content",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"message\":{\"role\":\"user\",\"timestamp\":9000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "wrong_role",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":4,\"content\":\"text\",\"timestamp\":9000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "missing_role",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"message\":{\"content\":\"text\",\"timestamp\":9000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "null_role",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":null,\"content\":\"text\",\"timestamp\":9000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "null_message",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"message\":null}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "missing_message",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\"}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "null_content",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":null,\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "number_content",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":42,\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "null_block",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":[null],\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "null_record_after_header",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\nnull\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "nonobject_record_after_header",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n42\n\"future\"\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "text_missing_or_null",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\"},{\"type\":\"text\",\"text\":null},{\"type\":\"text\",\"text\":\"last\"}],\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "  last",
+   "allMessagesText": "  last"
+  }
+ },
+ {
+  "name": "unread_fields",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\",\"extra\":{\"invalidForTypedHeader\":[]}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":2000},\"id\":null,\"parentId\":{\"bad\":true},\"unused\":{\"anything\":true}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "kept",
+   "allMessagesText": "kept"
+  }
+ },
+ {
+  "name": "name_trim",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\",\"name\":\"﻿  Named  \"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": "Named",
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "name_clear",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\",\"name\":\" \\t﻿\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "name_null",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\",\"name\":null}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "name_wrong",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\",\"name\":42}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "name_nel",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\",\"name\":\"Name\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": "Name",
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "name_absent",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":\"previous\"}\n{\"type\":\"session_info\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "name_wrong_then_valid",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"session_info\",\"name\":42}\n{\"type\":\"session_info\",\"name\":\"new\"}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "outer_bom",
+  "input": "﻿{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\r\n{broken\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"after\",\"timestamp\":2000}}\n﻿",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "after",
+   "allMessagesText": "after"
+  }
+ },
+ {
+  "name": "interior_bom",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n﻿{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"skipped\",\"timestamp\":2000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"kept\",\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2000,
+   "messageCount": 1,
+   "firstMessage": "kept",
+   "allMessagesText": "kept"
+  }
+ },
+ {
+  "name": "nel_prefix",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n",
+  "mtime": 1893456000000,
+  "expected": null
+ },
+ {
+  "name": "duplicate_selected_fields",
+  "input": "{\"type\":\"custom\",\"type\":\"session\",\"id\":\"first\",\"id\":\"last\",\"timestamp\":\"2025-01-02T03:04:05Z\",\"cwd\":3,\"cwd\":\"/last\"}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "last"
+   },
+   "cwd": "/last",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 0,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "activity_positive",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":2345.9}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 2345,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_zero",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2030-01-01T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":0}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_negative",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2030-01-01T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":-1}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_absent",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\"}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_null",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_wrong",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":\"2345\"}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_invalid_entry",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"bad\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_date_only",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_offset",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T01:00:00+01:00\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_local",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735862400000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "activity_max_not_last",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"new\",\"timestamp\":8000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"assistant\",\"content\":\"old\",\"timestamp\":2000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 8000,
+   "messageCount": 2,
+   "firstMessage": "new",
+   "allMessagesText": "new old"
+  }
+ },
+ {
+  "name": "tool_only_uses_header",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"toolResult\",\"content\":\"tool\",\"timestamp\":9000}}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"custom\",\"content\":\"custom\",\"timestamp\":10000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 2,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "bad_header_uses_mtime",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"bad\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":0}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": {
+    "invalid": true
+   },
+   "modified": 1893456000000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "empty_text_still_activity",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":\"2025-01-03T00:00:00Z\",\"message\":{\"role\":\"user\",\"content\":\"\",\"timestamp\":9000}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 9000,
+   "messageCount": 1,
+   "firstMessage": "(no messages)",
+   "allMessagesText": ""
+  }
+ },
+ {
+  "name": "missing_entry_time",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"message\":{\"role\":\"user\",\"content\":\"text\"}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ },
+ {
+  "name": "nonstring_entry_time",
+  "input": "{\"type\":\"session\",\"id\":\"original\",\"timestamp\":\"2025-01-02T03:04:05.000Z\",\"cwd\":\"/project\"}\n{\"type\":\"message\",\"timestamp\":3333,\"message\":{\"role\":\"user\",\"content\":\"text\",\"timestamp\":null}}\n",
+  "mtime": 1893456000000,
+  "expected": {
+   "path": "<file>",
+   "id": {
+    "present": "original"
+   },
+   "cwd": "/project",
+   "name": {
+    "absent": true
+   },
+   "parentSessionPath": {
+    "absent": true
+   },
+   "created": 1735787045000,
+   "modified": 1735787045000,
+   "messageCount": 1,
+   "firstMessage": "text",
+   "allMessagesText": "text"
+  }
+ }
+]

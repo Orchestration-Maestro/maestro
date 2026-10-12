@@ -73,14 +73,18 @@ pub fn find_most_recent_session(session_dir: &str) -> Option<String> {
     let mut files = paths
         .into_iter()
         .map(|path| {
-            let modified = fs::metadata(&path).ok()?.modified().ok()?;
-            let millis = match modified.duration_since(UNIX_EPOCH) {
-                Ok(duration) => i128::try_from(duration.as_millis()).ok()?,
-                Err(error) => -i128::try_from(error.duration().as_millis()).ok()?,
-            };
+            let millis = modified_millis(&fs::metadata(&path).ok()?)?;
             Some((path, millis))
         })
         .collect::<Option<Vec<_>>>()?;
     files.sort_by_key(|file| std::cmp::Reverse(file.1));
     files.into_iter().next().map(|(path, _)| path)
+}
+
+/// Whole epoch milliseconds of a modification time; earlier times are negative.
+pub(super) fn modified_millis(metadata: &fs::Metadata) -> Option<i128> {
+    Some(match metadata.modified().ok()?.duration_since(UNIX_EPOCH) {
+        Ok(duration) => i128::try_from(duration.as_millis()).ok()?,
+        Err(error) => -i128::try_from(error.duration().as_millis()).ok()?,
+    })
 }

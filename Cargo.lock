@@ -1849,6 +1849,7 @@ name = "maestro-session"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "futures-util",
  "maestro-agent",
  "maestro-models",
  "maestro-path",
