@@ -131,11 +131,11 @@
  },
  "forge-light": {
   "colors": {
-   "accent": "#B7410E",
+   "accent": "#2A1F1A",
    "background": "#F2E8DC",
    "border": "#5E7383",
-   "error": "#B7410E",
-   "live": "#B7410E",
+   "error": "#2A1F1A",
+   "live": "#2A1F1A",
    "mark-live": "#B7410E",
    "mark-m": "#B7410E",
    "mark-node": "#B7410E",
@@ -144,16 +144,16 @@
    "muted": "#2A1F1A",
    "on-accent": "#F2E8DC",
    "panel": "#F2E8DC",
-   "success": "#B7410E",
+   "success": "#2A1F1A",
    "text": "#0E0B09",
    "warning": "#2A1F1A"
   },
   "css": {
-   "--maestro-color-accent": "#B7410E",
+   "--maestro-color-accent": "#2A1F1A",
    "--maestro-color-background": "#F2E8DC",
    "--maestro-color-border": "#5E7383",
-   "--maestro-color-error": "#B7410E",
-   "--maestro-color-live": "#B7410E",
+   "--maestro-color-error": "#2A1F1A",
+   "--maestro-color-live": "#2A1F1A",
    "--maestro-color-mark-live": "#B7410E",
    "--maestro-color-mark-m": "#B7410E",
    "--maestro-color-mark-node": "#B7410E",
@@ -162,7 +162,7 @@
    "--maestro-color-muted": "#2A1F1A",
    "--maestro-color-on-accent": "#F2E8DC",
    "--maestro-color-panel": "#F2E8DC",
-   "--maestro-color-success": "#B7410E",
+   "--maestro-color-success": "#2A1F1A",
    "--maestro-color-text": "#0E0B09",
    "--maestro-color-warning": "#2A1F1A",
    "--maestro-font-body": "\"Barlow\", system-ui, sans-serif",
@@ -200,19 +200,19 @@
   "glyphs": {
    "failed": {
     "symbol": "✗",
-    "color": "#B7410E"
+    "color": "#2A1F1A"
    },
    "idle": {
     "symbol": "✦",
-    "color": "#B7410E"
+    "color": "#2A1F1A"
    },
    "mark": {
     "symbol": "✦",
-    "color": "#B7410E"
+    "color": "#2A1F1A"
    },
    "passed": {
     "symbol": "✓",
-    "color": "#B7410E"
+    "color": "#2A1F1A"
    },
    "tool-step": {
     "symbol": "┃",
@@ -220,25 +220,25 @@
    },
    "working": {
     "symbol": "✦",
-    "color": "#B7410E"
+    "color": "#2A1F1A"
    }
   },
   "ansi": {
    "black": "#2A1F1A",
-   "red": "#B7410E",
-   "green": "#B7410E",
+   "red": "#2A1F1A",
+   "green": "#2A1F1A",
    "yellow": "#2A1F1A",
-   "blue": "#B7410E",
-   "magenta": "#B7410E",
-   "cyan": "#B7410E",
+   "blue": "#2A1F1A",
+   "magenta": "#2A1F1A",
+   "cyan": "#2A1F1A",
    "white": "#0E0B09",
    "bright-black": "#2A1F1A",
-   "bright-red": "#B7410E",
-   "bright-green": "#B7410E",
+   "bright-red": "#2A1F1A",
+   "bright-green": "#2A1F1A",
    "bright-yellow": "#2A1F1A",
-   "bright-blue": "#B7410E",
-   "bright-magenta": "#B7410E",
-   "bright-cyan": "#B7410E",
+   "bright-blue": "#2A1F1A",
+   "bright-magenta": "#2A1F1A",
+   "bright-cyan": "#2A1F1A",
    "bright-white": "#0E0B09"
   },
   "truecolor": {
@@ -246,11 +246,11 @@
    "panel": "#F2E8DC",
    "text": "#0E0B09",
    "muted": "#2A1F1A",
-   "accent": "#B7410E",
-   "live": "#B7410E",
-   "success": "#B7410E",
+   "accent": "#2A1F1A",
+   "live": "#2A1F1A",
+   "success": "#2A1F1A",
    "warning": "#2A1F1A",
-   "error": "#B7410E"
+   "error": "#2A1F1A"
   },
   "svg": {
    "template": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\" width=\"512\" height=\"512\">\n  <title>Maestro mark</title>\n  <rect width=\"512\" height=\"512\" fill=\"#F2E8DC\"/>\n  <circle cx=\"256\" cy=\"256\" r=\"232\" fill=\"none\" stroke=\"#B7410E\" stroke-width=\"12\"/>\n  <g stroke=\"#B7410E\" stroke-width=\"12\" stroke-linecap=\"round\">\n    <path d=\"M256 30 L256 58\"/>\n    <path d=\"M482 256 L454 256\"/>\n    <path d=\"M256 482 L256 454\"/>\n    <path d=\"M30 256 L58 256\"/>\n  </g>\n  <g stroke=\"#B7410E\" stroke-width=\"20\" stroke-linecap=\"round\">\n    <line x1=\"150\" y1=\"386\" x2=\"150\" y2=\"196\"/>\n    <line x1=\"150\" y1=\"196\" x2=\"256\" y2=\"326\"/>\n    <line x1=\"256\" y1=\"326\" x2=\"362\" y2=\"196\"/>\n    <line x1=\"362\" y1=\"196\" x2=\"362\" y2=\"386\"/>\n  </g>\n  <g fill=\"#B7410E\">\n    <circle cx=\"150\" cy=\"386\" r=\"26\"/>\n    <circle cx=\"150\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"196\" r=\"26\"/>\n    <circle cx=\"362\" cy=\"386\" r=\"26\"/>\n  </g>\n  <circle cx=\"256\" cy=\"326\" r=\"26\" fill=\"#B7410E\"/>\n  <path d=\"M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z\" fill=\"#B7410E\"/>\n</svg>\n",

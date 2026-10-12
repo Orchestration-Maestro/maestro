@@ -11,8 +11,8 @@ use brand_support::{
 use live::{Ops, Scratch, custom_json, state};
 use maestro_request::source_info::{SourceInfo, SourceOrigin, SourceScope};
 use maestro_theme::{
-    BrandMode, BrandPack, BrandPresentation, ColorMode, NativeThemeOperations, Theme, ThemeColor,
-    ThemeError, ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,
+    BrandMode, BrandPack, BrandPresentation, ColorMode, NativeThemeOperations, Theme, ThemeBg,
+    ThemeColor, ThemeError, ThemeExportColors, ThemeOptions, load_brand_pack, load_theme_from_path,
 };
 use serde_json::{Value, json};
 use std::cell::RefCell;
@@ -328,9 +328,9 @@ fn brand_pack_aliases_do_not_depend_on_pack_or_swatch_names() {
 #[test]
 fn brand_pack_terminal_and_glyph_aliases_reach_outputs() {
     let pack = load_value(&edited(|pack| {
-        pack["terminal"]["ansi"]["blue"] = "warning".into();
-        pack["terminal"]["truecolor"]["accent"] = "warning".into();
-        pack["glyphs"]["working"] = json!({"symbol": "w!", "color": "warning"});
+        pack["terminal"]["ansi"]["blue"] = "text".into();
+        pack["terminal"]["truecolor"]["accent"] = "text".into();
+        pack["glyphs"]["working"] = json!({"symbol": "w!", "color": "text"});
     }))
     .unwrap();
     let base = forge();
@@ -338,11 +338,11 @@ fn brand_pack_terminal_and_glyph_aliases_reach_outputs() {
         pack.presentation(BrandMode::Light).unwrap(),
         base.presentation(BrandMode::Light).unwrap(),
     );
-    assert_eq!(old.ansi["blue"], "#B7410E");
-    assert_eq!(new.ansi["blue"], "#2A1F1A");
-    assert_eq!(old.truecolor["accent"], "#B7410E");
-    assert_eq!(new.truecolor["accent"], "#2A1F1A");
-    assert_eq!(new.glyphs["working"].color, "#2A1F1A");
+    assert_eq!(old.ansi["blue"], "#2A1F1A");
+    assert_eq!(new.ansi["blue"], "#0E0B09");
+    assert_eq!(old.truecolor["accent"], "#2A1F1A");
+    assert_eq!(new.truecolor["accent"], "#0E0B09");
+    assert_eq!(new.glyphs["working"].color, "#0E0B09");
     assert_eq!(new.glyphs["working"].symbol, "w!");
     assert_eq!(new.ansi["bright-blue"], old.ansi["bright-blue"]);
 }
@@ -1105,6 +1105,108 @@ fn design_color_quotes_resolve_from_the_brand_pack() {
     for (mode, data) in pack["modes"].as_object().unwrap() {
         for role in data["colors"].as_object().unwrap().keys() {
             assert!(names.contains(format!("{mode}-{role}").as_str()));
+        }
+    }
+}
+
+/// Decode an emitted foreground or background prefix using the standard terminal palette.
+#[cfg(test)]
+fn ansi_hex(prefix: &str, plane: u8) -> String {
+    let body = prefix
+        .strip_prefix("\x1b[")
+        .unwrap()
+        .strip_suffix('m')
+        .unwrap();
+    let fields: Vec<u8> = body.split(';').map(|part| part.parse().unwrap()).collect();
+    assert_eq!(fields[0], plane);
+    match fields.as_slice() {
+        [_, 2, red, green, blue] => format!("#{red:02x}{green:02x}{blue:02x}"),
+        [_, 5, index] => include_str!("live/palette_hex.txt")
+            .lines()
+            .nth(usize::from(*index))
+            .unwrap()
+            .to_owned(),
+        _ => panic!("expected an explicit emitted color"),
+    }
+}
+
+/// Check a concrete foreground against each shipped panel output.
+#[cfg(test)]
+fn check_terminal_panels(theme: &Theme, foreground: &str, minimum: f64, label: &str) {
+    let color = ThemeColor::Named(foreground.to_owned());
+    let fg = theme.get_fg_ansi(&color).unwrap();
+    for background in [
+        ThemeBg::SelectedBg,
+        ThemeBg::UserMessageBg,
+        ThemeBg::CustomMessageBg,
+        ThemeBg::ToolPendingBg,
+        ThemeBg::ToolSuccessBg,
+        ThemeBg::ToolErrorBg,
+    ] {
+        let bg = theme.get_bg_ansi(&background).unwrap();
+        let found = ratio(&ansi_hex(fg, 38), &ansi_hex(bg, 48));
+        assert!(
+            found >= minimum,
+            "{label} {foreground}/{}: {found} < {minimum}",
+            background.as_str()
+        );
+        assert_eq!(
+            theme
+                .bg(&background, &theme.fg(&color, "Sample").unwrap())
+                .unwrap(),
+            format!("{bg}{fg}Sample\x1b[39m\x1b[49m"),
+        );
+    }
+}
+
+#[test]
+fn brand_pack_terminal_pairs_keep_text_and_border_contrast() {
+    let groups: &[(&[&str], f64)] = &[
+        (
+            &[
+                "accent",
+                "borderAccent",
+                "customMessageLabel",
+                "mdHeading",
+                "mdLink",
+                "mdCode",
+                "mdListBullet",
+                "syntaxKeyword",
+                "syntaxFunction",
+                "thinkingLow",
+                "thinkingMedium",
+            ],
+            4.5,
+        ),
+        (&["syntaxType", "thinkingHigh", "thinkingXhigh"], 4.5),
+        (
+            &["success", "toolDiffAdded", "syntaxString", "bashMode"],
+            4.5,
+        ),
+        (&["error", "toolDiffRemoved"], 4.5),
+        (
+            &[
+                "border",
+                "borderMuted",
+                "mdCodeBlockBorder",
+                "mdQuoteBorder",
+                "mdHr",
+                "thinkingOff",
+            ],
+            3.0,
+        ),
+    ];
+    for name in ["dark", "light"] {
+        for mode in [ColorMode::Truecolor, ColorMode::Color256] {
+            let path = format!("{}/assets/theme/{name}.json", env!("CARGO_MANIFEST_DIR"));
+            let theme = load_theme_from_path(&path, Some(mode), &NativeThemeOperations).unwrap();
+            let label = format!("{name} {mode:?}");
+            for (key, minimum) in groups
+                .iter()
+                .flat_map(|(keys, minimum)| keys.iter().map(move |key| (*key, *minimum)))
+            {
+                check_terminal_panels(&theme, key, minimum, &label);
+            }
         }
     }
 }

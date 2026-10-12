@@ -182,7 +182,7 @@ palettes; do not add tinted, translucent or interpolated text colors.
 | --- | --- | --- |
 | Forge Black | `#0E0B09` | Dark canvas, light-mode text |
 | Oxide | `#2A1F1A` | Dark panels, light-mode secondary text |
-| Rust Copper | `#B7410E` | Mark; accessible accent text on Bone |
+| Rust Copper | `#B7410E` | Mark on its supplied canvas |
 | Burnished Brass | `#D9A066` | Dark accent and secondary text |
 | Molten Ember | `#FF6A1A` | Dark activity and status text |
 | Vector Steel | `#5E7383` | Borders, never body text on dark |
@@ -231,7 +231,7 @@ Frost/Frost.
 | Forge dark | live, success, error | molten-ember | 6.85 | 5.60 |
 | Forge light | text | forge-black | 16.21 | 16.21 |
 | Forge light | muted, warning | oxide | 13.25 | 13.25 |
-| Forge light | accent, live, success, error | rust-copper | 4.60 | 4.60 |
+| Forge light | accent, live, success, error | oxide | 13.25 | 13.25 |
 | Signal dark | text, muted | frost | 16.41 | 13.95 |
 | Signal dark | accent, live, success | lime | 14.45 | 12.29 |
 | Signal dark | warning, error | fault | 6.54 | 5.57 |
@@ -243,7 +243,7 @@ The only additional text/background pairing is `on-accent` on `accent`:
 | Pack and mode | Foreground / background palette keys | Ratio |
 | --- | --- | ---: |
 | Forge dark | forge-black / burnished-brass | 8.57 |
-| Forge light | bone / rust-copper | 4.60 |
+| Forge light | bone / oxide | 13.25 |
 | Signal dark | carbon / lime | 14.45 |
 | Signal light | frost / graphite | 13.95 |
 
@@ -251,8 +251,10 @@ Rust Copper on Forge Black is 3.53:1; Vector Steel is 3.98:1. Neither is body
 text on dark. The 3:1 threshold permits large text (at least 24 CSS pixels, or
 18.67 bold) and necessary non-text graphics, but Copper on Oxide is only 2.88:1.
 Keep the dark Copper mark on its supplied canvas, not directly on an Oxide panel.
-Copper on Bone is 4.60:1 and is valid light-mode body text. Steel on Bone is
-4.08:1, so it remains a border rather than body text there too.
+Copper on Bone is 4.60:1 in truecolor but falls below 4.5:1 after standard
+256-color conversion. Forge light uses Oxide for accent, live, success and error
+text; Copper remains a mark color. Steel on Bone is 4.08:1, so it remains a
+border rather than body text there too.
 
 Signal's Indigo is 4.51:1 on Carbon, 3.83:1 on Graphite and 3.64:1 on Frost.
 It cannot be a text role used across those surfaces. Lime replaces it for dark
@@ -306,8 +308,11 @@ hue requirements: the limited palettes do not supply sixteen distinct hues.
 to the same mode colors. Thus every ANSI foreground and every truecolor text
 role has the ratios in the text table on both supported backgrounds. Arbitrary
 ANSI foreground/background combinations, inverse video, user-customized terminal
-palettes and 256-color quantization are not covered by those ratios. Check the
-actual rendered combinations in the terminal implementation. Keep existing
+palettes are not covered by those ratios. The shipped Forge themes also meet
+4.5:1 for accent, live, success and error text on their six panel outputs in
+256-color mode using the standard palette RGB values; their border keys meet
+3:1. These checks use emitted ANSI colors, not authored hex alone. Terminal-default
+text and user-customized palettes are outside this measurement. Keep existing
 terminal theme names, color keys, format and custom-theme loading unchanged;
 this pack supplies defaults, not a replacement terminal theme format.
 

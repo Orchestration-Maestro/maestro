@@ -2,11 +2,11 @@
   "$schema": "https://raw.githubusercontent.com/Orchestration-Maestro/maestro/main/crates/maestro-theme/assets/theme/theme-schema.json",
   "name": "light",
   "vars": {
-    "accent": "#B7410E",
+    "accent": "#2A1F1A",
     "background": "#F2E8DC",
     "border": "#5E7383",
-    "error": "#B7410E",
-    "live": "#B7410E",
+    "error": "#2A1F1A",
+    "live": "#2A1F1A",
     "mark-live": "#B7410E",
     "mark-m": "#B7410E",
     "mark-node": "#B7410E",
@@ -15,7 +15,7 @@
     "muted": "#2A1F1A",
     "on-accent": "#F2E8DC",
     "panel": "#F2E8DC",
-    "success": "#B7410E",
+    "success": "#2A1F1A",
     "text": "#0E0B09",
     "warning": "#2A1F1A"
   },

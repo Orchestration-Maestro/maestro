@@ -52,6 +52,13 @@ or a gray-ramp entry when its channel spread is below 10 and the gray is closer
 (weighted distance 0.299, 0.587, 0.114; lower index wins ties). Explicit
 indices are never requantized.
 
+The shipped Forge light theme selects the brand pack's Oxide for accent, live,
+success and error text. Nearest-color conversion is unchanged. The ANSI contrast
+regression checks those text keys at 4.5:1 and border keys at 3:1 on all six
+panel outputs, in both shipped themes and both color modes, using standard
+256-color palette RGB values. Terminal-default text and user-customized palettes
+are outside that measurement; see the [identity guide](identity.md#terminal-roles).
+
 ## Errors
 
 `ThemeError` messages are:
