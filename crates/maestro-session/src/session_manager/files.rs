@@ -55,6 +55,13 @@ pub(super) fn probe(mut reader: impl Read) -> io::Result<bool> {
         .is_some_and(|header| valid_header(&header)))
 }
 
+/// Path of a directory entry whose name ends in exactly `.jsonl`.
+pub(super) fn jsonl_path(dir: &str, name: &std::ffi::OsStr) -> Option<String> {
+    let name = name.to_string_lossy();
+    name.ends_with(".jsonl")
+        .then(|| maestro_path::join(&[dir, &name]))
+}
+
 /// Select the valid JSONL file with greatest millisecond mtime, retaining native ties.
 /// Directory/stat errors discard selection; individual probe failures skip a file.
 #[must_use]
@@ -65,9 +72,7 @@ pub fn find_most_recent_session(session_dir: &str) -> Option<String> {
         .ok()?;
     let paths: Vec<_> = entries
         .into_iter()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.strip_suffix(".jsonl").is_some())
-        .map(|name| maestro_path::join(&[session_dir, &name]))
+        .filter_map(|entry| jsonl_path(session_dir, &entry.file_name()))
         .filter(|path| fs::File::open(path).and_then(probe).unwrap_or(false))
         .collect();
     let mut files = paths

@@ -29,8 +29,10 @@ The header `version` field selects the layout:
 - Version 3 (current): the `hookMessage` role is named `custom`.
 
 Opening a history through a conversion-capable operation (`open`,
-`set_session_file`, `continue_recent`) converts older records in memory and
-rewrites the file; `migrate_session_entries` converts supplied records.
+`set_session_file`, `continue_recent`) converts older records in memory; native
+persistence then rewrites the file, while an in-memory manager never writes
+(see [session history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md)).
+`migrate_session_entries` converts supplied records.
 Listing never converts or writes: it reads whatever the file holds. Versions
 newer than the current one are left unchanged.
 
@@ -150,9 +152,9 @@ Holds the display name; the newest record wins, and an empty name clears it.
 
 ## Tree structure
 
-The first entry has `parentId: null`; every later entry points at its parent.
-Branching appends a child to an earlier entry, and the leaf is the selected
-position.
+The first entry has `parentId: null`; an appended entry points at the selected
+leaf, which is `null` after the selection is reset, so a history may hold several
+roots. Branching moves the selection to an earlier entry before appending.
 
 ```text
 [user] ── [assistant] ── [user] ── [assistant] ─┬─ [user]             ← leaf
@@ -161,15 +163,8 @@ position.
 
 ## Context construction
 
-`build_session_context` walks from the selected leaf to the root and:
-
-1. collects the entries on that path;
-2. takes the last model and thinking-level settings seen;
-3. when a compaction is on the path, emits its summary, then the messages from
-   `firstKeptEntryId` up to the compaction, then the messages after it;
-4. turns branch summaries and custom messages into model-visible messages.
-
-The exact selection and fallback rules are in
+`build_session_context` turns the path from the selected leaf into model-visible
+messages; the selection, compaction and fallback rules are in
 [session history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md#branch-selection).
 
 ## Parsing
@@ -191,25 +186,79 @@ let text = concat!(
     r#"{"type":"model_change","id":"d4e5f6a7","parentId":"d0e1f2a3","timestamp":"2024-12-03T14:05:00.000Z","provider":"openai","modelId":"gpt-4o"}"#, "\n",
     r#"{"type":"thinking_level_change","id":"e5f6a7b8","parentId":"d4e5f6a7","timestamp":"2024-12-03T14:06:00.000Z","thinkingLevel":"high"}"#, "\n",
 );
+let show = |value: &serde_json::Value| match value.as_str() {
+    Some(text) => text.to_owned(),
+    None => value.to_string(),
+};
 let lines: Vec<String> = parse_session_entries(text)
     .iter()
-    .map(|entry| match entry["type"].as_str() {
-        Some("session") => format!("session v{}: {}", entry["version"], entry["id"]),
-        Some("message") => format!("[{}] {}", entry["id"], entry["message"]["role"]),
-        Some("compaction") => format!("[{}] {} tokens summarized", entry["id"], entry["tokensBefore"]),
-        Some("branch_summary") => format!("[{}] branch from {}", entry["id"], entry["fromId"]),
-        Some("custom") => format!("[{}] custom {}", entry["id"], entry["customType"]),
-        Some("custom_message") => format!("[{}] message {}", entry["id"], entry["customType"]),
-        Some("label") => format!("[{}] label {} on {}", entry["id"], entry["label"], entry["targetId"]),
-        Some("model_change") => format!("[{}] model {}/{}", entry["id"], entry["provider"], entry["modelId"]),
-        Some("thinking_level_change") => format!("[{}] thinking {}", entry["id"], entry["thinkingLevel"]),
-        _ => String::from("other"),
+    .map(|entry| {
+        let field = |name: &str| show(&entry[name]);
+        match entry["type"].as_str() {
+            Some("session") => format!(
+                "Session v{}: {}",
+                entry.get("version").map_or(String::from("1"), &show),
+                field("id")
+            ),
+            Some("message") => format!(
+                "[{}] {}: {}",
+                field("id"),
+                show(&entry["message"]["role"]),
+                entry["message"]["content"]
+            ),
+            Some("compaction") => format!(
+                "[{}] Compaction: {} tokens summarized",
+                field("id"),
+                field("tokensBefore")
+            ),
+            Some("branch_summary") => format!("[{}] Branch from {}", field("id"), field("fromId")),
+            Some("custom") => format!(
+                "[{}] Custom ({}): {}",
+                field("id"),
+                field("customType"),
+                entry["data"]
+            ),
+            Some("custom_message") => format!(
+                "[{}] Extension message ({}): {}",
+                field("id"),
+                field("customType"),
+                field("content")
+            ),
+            Some("label") => format!(
+                "[{}] Label \"{}\" on {}",
+                field("id"),
+                field("label"),
+                field("targetId")
+            ),
+            Some("model_change") => format!(
+                "[{}] Model: {}/{}",
+                field("id"),
+                field("provider"),
+                field("modelId")
+            ),
+            Some("thinking_level_change") => format!(
+                "[{}] Thinking: {}",
+                field("id"),
+                field("thinkingLevel")
+            ),
+            _ => String::from("other"),
+        }
     })
     .collect();
-assert_eq!(lines[0], r#"session v3: "s1""#);
-assert_eq!(lines[1], r#"["a1b2c3d4"] "user""#);
-assert_eq!(lines.len(), 9);
-assert!(!lines.contains(&String::from("other")));
+assert_eq!(
+    lines,
+    [
+        "Session v3: s1",
+        "[a1b2c3d4] user: \"Hi\"",
+        "[f6a7b8c9] Compaction: 50000 tokens summarized",
+        "[a7b8c9d0] Branch from f6a7b8c9",
+        "[b8c9d0e1] Custom (my-extension): {\"count\":42}",
+        "[c9d0e1f2] Extension message (my-extension): Injected",
+        "[d0e1f2a3] Label \"checkpoint-1\" on a1b2c3d4",
+        "[d4e5f6a7] Model: openai/gpt-4o",
+        "[e5f6a7b8] Thinking: high",
+    ]
+);
 ```
 
 ## Operations

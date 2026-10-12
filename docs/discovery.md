@@ -32,22 +32,25 @@ A file becomes a `SessionInfo` when its first parsed record has `type` `session`
 so the header needs no string `id` (identity and `parentSession` pass through as
 supplied or absent). The file fails, and is silently skipped, when it cannot be
 read or stat-ed, when a reached record is `null`, or when a selected field has an
-unusable type: a `message` without an object `message`, `content` that is neither
-a string nor an array, a `null` content block, or a `session_info` name that is
-neither a string nor `null`. A file whose later records are malformed lines
+unusable type: a `message` record whose `message` member is missing or `null`; for
+a `user` or `assistant` message, `content` that is neither a string nor an array
+or a `null` content block; or a `session_info` name that is neither a string nor
+`null`. A file whose later records are malformed lines
 is not failed; those lines are skipped by the shared parser.
 
 - `message_count` counts every `message` record.
-- Only `user` and `assistant` messages that have a `content` member are indexed.
-  Their text (a string, or the `text` members of text blocks joined by one
-  space) is joined across messages by one space; empty text is not indexed.
+- Only `user` and `assistant` messages that have a `content` member are
+  eligible. Their text (a string, or the `text` members of text blocks joined by one
+  space) is joined across messages by one space; empty text adds nothing to the search
+  text.
   `first_message` is the first nonempty user text, untrimmed, else `(no messages)`.
 - `name` is the newest `session_info` name, trimmed; an absent, null or blank name
   clears it, and the whole file is scanned forward, so a wrong-typed earlier name
   fails the file.
 - `cwd` is the header string or empty; `created` is the header time (`NaN` when it
   is absent or not a date, zero for null).
-- `modified` is the greatest activity time of indexed messages when positive. A
+- `modified` is the greatest activity time of eligible messages when positive,
+  independently of whether their text is empty. A
   numeric message `timestamp` is that message's activity (even zero or
   negative); otherwise its record `timestamp` string is parsed. When no positive
   activity exists, the header time is used, then the file's modification time.
@@ -57,7 +60,7 @@ is not failed; those lines are skipped by the shared parser.
 
 ## Progress and ordering
 
-`on_progress(loaded, total)` runs once for every candidate as its read completes,
+`on_progress(loaded, total)` runs once for every candidate as its processing completes,
 valid or not, in completion order, from the task awaiting the listing. A callback
 error stops the listing at once and returns an empty list; reads already in flight
 are dropped, not drained, and the callback is never called after the listing
@@ -105,7 +108,8 @@ wraps that issue in `MissingSessionCwdError`, whose message is formatted once
 when the error is built. `format_missing_session_cwd_error` and
 `format_missing_session_cwd_prompt` interpolate the authored strings
 unchanged; the session-file line appears only for a nonempty file. A caller that
-passes an existing working directory to `SessionManager::open` avoids the issue
-without the header being rewritten. Deciding what to do about an issue belongs to
+passes an existing working directory to `SessionManager::open` avoids the issue;
+the override itself rewrites no healthy current header (recovery and conversion
+of older files follow the [session history](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/sessions/session_manager.md)). Deciding what to do about an issue belongs to
 the application. The records and formatters are available on every target; the
 diagnosis reads the filesystem and is native-only.

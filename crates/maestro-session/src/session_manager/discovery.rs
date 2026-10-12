@@ -3,13 +3,13 @@
 use super::{
     SessionInfo, SessionManager,
     context::{ecma_whitespace, observation, property},
-    files::{get_default_session_dir, modified_millis},
+    files::{get_default_session_dir, jsonl_path, modified_millis},
     parse_session_entries,
 };
 use crate::messages::{millis_number, timestamp_millis};
 use futures_util::{StreamExt, stream::FuturesUnordered};
 use serde_json::Value;
-use std::io;
+use std::{borrow::Cow, io};
 use tokio::fs::DirEntry;
 
 /// Progress callback receiving completed and total candidate counts; an error stops the listing.
@@ -30,8 +30,8 @@ impl SessionManager {
         on_progress: Option<&mut SessionListProgress<'_>>,
     ) -> io::Result<Vec<SessionInfo>> {
         let dir = match session_dir {
-            Some(dir) => dir.to_owned(),
-            None => get_default_session_dir(cwd, agent_dir)?,
+            Some(dir) => Cow::Borrowed(dir),
+            None => Cow::Owned(get_default_session_dir(cwd, agent_dir)?),
         };
         let files = match read_entries(&dir).await {
             Ok(entries) => jsonl_paths(&dir, &entries),
@@ -78,9 +78,7 @@ async fn read_entries(dir: &str) -> io::Result<Vec<DirEntry>> {
 fn jsonl_paths(dir: &str, entries: &[DirEntry]) -> Vec<String> {
     entries
         .iter()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.strip_suffix(".jsonl").is_some())
-        .map(|name| maestro_path::join(&[dir, &name]))
+        .filter_map(|entry| jsonl_path(dir, &entry.file_name()))
         .collect()
 }
 

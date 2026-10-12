@@ -280,7 +280,7 @@ pub struct SessionInfo {
     pub parent_session_path: Presence<Value>,
     /// Header creation time.
     pub created: f64,
-    /// Latest user or assistant activity, else header time, else file mtime.
+    /// Greatest positive user or assistant activity, else a valid header time string, else file mtime.
     pub modified: f64,
     /// Number of message records.
     pub message_count: usize,

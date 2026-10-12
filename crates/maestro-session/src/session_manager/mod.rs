@@ -1,9 +1,9 @@
 #![doc = include_str!("../../../../docs/sessions/session_manager.md")]
 mod append;
 mod conversions;
-mod extraction;
 #[cfg(not(target_arch = "wasm32"))]
 mod discovery;
+mod extraction;
 #[cfg(not(target_arch = "wasm32"))]
 mod files;
 #[cfg(not(target_arch = "wasm32"))]

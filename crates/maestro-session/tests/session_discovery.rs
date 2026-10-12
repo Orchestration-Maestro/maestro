@@ -198,7 +198,7 @@ fn session_header(id: &str) -> String {
         .to_string()
 }
 
-/// Write a session whose messages are `(role, text, timestamp)`.
+/// Construct the text of a session whose messages are `(role, text, timestamp)`.
 fn session_text(id: &str, messages: &[(&str, &str, u64)]) -> String {
     let mut text = session_header(id);
     for (role, content, timestamp) in messages {
@@ -440,11 +440,18 @@ fn all_projects_lists_real_directories_and_ignores_root_files() {
 fn all_projects_counts_candidates_before_reading() {
     let scratch = Scratch::new();
     let agent = projects(&scratch, &[("a", "a1", 1000), ("b", "b1", 2000)]);
-    let late = Path::new(&agent).join("sessions/b/late.jsonl");
+    let late = ["a", "b"].map(|project| {
+        Path::new(&agent)
+            .join("sessions")
+            .join(project)
+            .join("late.jsonl")
+    });
     let mut seen = Vec::new();
     let mut record = |loaded, total| {
         seen.push((loaded, total));
-        std::fs::write(&late, session_text("late", &[("user", "x", 5000)])).unwrap();
+        for path in &late {
+            std::fs::write(path, session_text("late", &[("user", "x", 5000)])).unwrap();
+        }
         Ok(())
     };
     let listed = runtime().block_on(SessionManager::list_all(&agent, Some(&mut record)));
@@ -460,6 +467,7 @@ fn all_projects_skips_unreadable_children() {
     std::fs::write(sessions.join("good/bad.jsonl"), "{broken").unwrap();
     let locked = sessions.join("locked");
     std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o000)).unwrap();
+    let restricted = std::fs::read_dir(&locked).is_err();
     let mut seen = Vec::new();
     let mut record = |loaded, total| {
         seen.push((loaded, total));
@@ -467,8 +475,7 @@ fn all_projects_skips_unreadable_children() {
     };
     let listed = runtime().block_on(SessionManager::list_all(&agent, Some(&mut record)));
     std::fs::set_permissions(&locked, std::os::unix::fs::PermissionsExt::from_mode(0o700)).unwrap();
-    let readable_anyway = std::fs::read_dir(&locked).is_ok() && ids(&listed).contains(&"l1");
-    if !readable_anyway {
+    if restricted {
         assert_eq!(ids(&listed), ["g1"]);
         assert_eq!(seen, [(1, 2), (2, 2)]);
     }
@@ -505,9 +512,35 @@ fn fifo(dir: &Path, name: &str) -> std::path::PathBuf {
     path
 }
 
-/// Open, fill and close a pipe on another thread, returning once the reader opened it.
+/// Write a pipe on another thread; the returned handle joins that write.
 fn produce(path: std::path::PathBuf, text: String) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || std::fs::write(path, text).unwrap())
+}
+
+/// Create a blocking pipe and a ready session in `dir` so native enumeration lists the pipe first.
+fn pipe_enumerated_first(dir: &Path) -> std::path::PathBuf {
+    for (pipe_name, ready_name) in [("pipe", "ready"), ("ready", "pipe")] {
+        for pipe_first in [true, false] {
+            let make_ready = || {
+                let text = session_text(ready_name, &[]);
+                std::fs::write(dir.join(format!("{ready_name}.jsonl")), text).unwrap();
+            };
+            if !pipe_first {
+                make_ready();
+            }
+            let pipe = fifo(dir, &format!("{pipe_name}.jsonl"));
+            if pipe_first {
+                make_ready();
+            }
+            let order = native_order(dir.to_str().unwrap());
+            if order[0] == format!("{pipe_name}.jsonl") {
+                return pipe;
+            }
+            std::fs::remove_file(&pipe).unwrap();
+            std::fs::remove_file(dir.join(format!("{ready_name}.jsonl"))).unwrap();
+        }
+    }
+    panic!("no creation order lists the pipe first");
 }
 
 #[test]
@@ -520,14 +553,14 @@ fn progress_observes_completion_order_before_stable_results() {
             Path::new(scratch.text()).to_path_buf()
         };
         std::fs::create_dir_all(&dir).unwrap();
-        let pipe = fifo(&dir, "pipe.jsonl");
-        std::fs::write(dir.join("ready.jsonl"), session_text("ready", &[])).unwrap();
+        let pipe = pipe_enumerated_first(&dir);
+        let pipe_id = pipe.file_stem().unwrap().to_str().unwrap().to_owned();
         let mut producers = Vec::new();
         let mut seen = Vec::new();
         let mut record = |loaded, total| {
             seen.push((loaded, total));
             if loaded == 1 {
-                producers.push(produce(pipe.clone(), session_text("pipe", &[])));
+                producers.push(produce(pipe.clone(), session_text(&pipe_id, &[])));
             }
             Ok(())
         };
@@ -651,27 +684,78 @@ fn guide_records() -> Vec<Value> {
         .collect()
 }
 
+/// The first guide record of one kind.
+fn guide_record<'a>(records: &'a [Value], kind: &str) -> &'a Value {
+    records
+        .iter()
+        .find(|record| record["type"] == kind)
+        .unwrap()
+}
+
+/// Assert the header, conversation and compaction examples.
+fn assert_conversation_records(records: &[Value]) {
+    let session = guide_record(records, "session");
+    assert_eq!(session["version"], 3);
+    assert_eq!(session["cwd"], "/path/to/project");
+    assert_eq!(session["parentSession"], "/path/to/original/session.jsonl");
+    assert!(session.get("parentId").is_none());
+    let message = guide_record(records, "message");
+    assert_eq!(message["message"]["role"], "user");
+    assert_eq!(message["message"]["content"], "Hello");
+    assert_eq!(message["parentId"], Value::Null);
+    let compaction = guide_record(records, "compaction");
+    assert_eq!(compaction["firstKeptEntryId"], "c3d4e5f6");
+    assert_eq!(compaction["tokensBefore"], 50000);
+    let branch = guide_record(records, "branch_summary");
+    assert_eq!(branch["fromId"], compaction["id"]);
+    assert_eq!(branch["summary"], "Branch explored approach A...");
+}
+
+/// Assert the extension, label, setting and name examples.
+fn assert_annotation_records(records: &[Value]) {
+    let custom = guide_record(records, "custom");
+    assert_eq!(custom["customType"], "my-extension");
+    assert_eq!(custom["data"], json!({"count": 42}));
+    let injected = guide_record(records, "custom_message");
+    assert_eq!(injected["content"], "Injected context...");
+    assert_eq!(injected["display"], true);
+    let label = guide_record(records, "label");
+    assert_eq!(label["label"], "checkpoint-1");
+    assert_eq!(label["targetId"], "a1b2c3d4");
+    let model = guide_record(records, "model_change");
+    assert_eq!(model["provider"], "openai");
+    assert_eq!(model["modelId"], "gpt-4o");
+    assert_eq!(
+        guide_record(records, "thinking_level_change")["thinkingLevel"],
+        "high"
+    );
+    assert_eq!(
+        guide_record(records, "session_info")["name"],
+        "Refactor auth module"
+    );
+}
+
 #[test]
 fn session_format_examples_replay_all_record_kinds() {
     let records = guide_records();
-    let kinds: Vec<_> = records
-        .iter()
-        .map(|record| record["type"].as_str().unwrap())
-        .collect();
-    for kind in [
-        "session",
-        "message",
-        "model_change",
-        "thinking_level_change",
-        "compaction",
-        "branch_summary",
-        "custom",
-        "custom_message",
-        "label",
-        "session_info",
-    ] {
-        assert!(kinds.contains(&kind), "{kind}");
-    }
-    assert_eq!(records[0]["version"], 3);
-    assert!(records[0].get("parentId").is_none());
+    assert_conversation_records(&records);
+    assert_annotation_records(&records);
+    let entries: Vec<_> = records.iter().skip(1).cloned().collect();
+    let context = maestro_session::build_session_context(
+        &entries,
+        maestro_request::presence::Presence::Present("f6a7b8c9"),
+        None::<&std::collections::HashMap<_, _>>,
+    )
+    .unwrap();
+    assert_eq!(context.messages.len(), 2);
+    assert_eq!(context.messages[1]["role"], "toolResult");
+    assert_eq!(
+        context.thinking_level,
+        maestro_request::presence::Presence::Present(json!("high"))
+    );
+    let model = context.model.unwrap();
+    assert_eq!(
+        model.model_id,
+        maestro_request::presence::Presence::Present(json!("gpt-4o"))
+    );
 }
