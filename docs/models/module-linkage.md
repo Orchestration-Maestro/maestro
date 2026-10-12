@@ -46,6 +46,14 @@ registered custom callback keeps returning its own setup error immediately (insi
 the future for `complete`). A bundled callback never does: its setup failures are
 settled error streams.
 
+## Direct-only protocols
+
+`stream_bedrock` (see [cloud conversations](cloud-conversations.md)) is not in the registry
+above. Until built-in registration covers it, it is reachable only by calling it directly from
+`maestro_models::providers::cloud::amazon_bedrock`, and `stream`, `stream_simple`, `complete` and
+`complete_simple` answer `bedrock-converse-stream` with `No API provider registered for api:
+bedrock-converse-stream`.
+
 ## Raw extras
 
 `ProviderStreamOptions.common` reaches the adapter unchanged. A bundled raw

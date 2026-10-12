@@ -1,3 +1,4 @@
+use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use maestro_models::providers::response_sessions::openai_codex_responses::{
     Nullable, OpenAICodexReasoningSummary, OpenAICodexTextVerbosity,
     close_openai_codex_web_socket_sessions, get_openai_codex_web_socket_debug_stats,
@@ -34,8 +35,49 @@ fn local_client() -> (
     (client, calls)
 }
 
+/// Ask Bedrock on the browser target: the stream ends at once with the unsupported-target error,
+/// and neither hook nor sender runs.
+#[cfg(target_arch = "wasm32")]
+fn bedrock_unsupported() {
+    let model = get_model(
+        "amazon-bedrock",
+        "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+    );
+    let Some(model) = model else {
+        return;
+    };
+    let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
+    let seen = std::rc::Rc::clone(&calls);
+    let options = BedrockOptions {
+        common: maestro_models::StreamOptions {
+            on_payload: Some(std::sync::Arc::new(move |body, _| {
+                seen.set(seen.get() + 1);
+                Box::pin(async { Ok(body) })
+            })),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let context = maestro_models::Context {
+        system_prompt: None,
+        messages: vec![],
+        tools: None,
+    };
+    let stream = stream_bedrock(model, context, Some(options));
+    wasm_bindgen_futures::spawn_local(async move {
+        let message = stream.result().await;
+        let message = message.read().expect("the message is readable");
+        assert_eq!(
+            message.error_message.as_deref(),
+            Some("Bedrock is not supported in browsers.")
+        );
+        assert_eq!(calls.get(), 0);
+    });
+}
+
 fn main() {
     response_session_surface();
+    std::hint::black_box((stream_bedrock, BedrockOptions::default()));
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
         model,
@@ -65,6 +107,7 @@ fn main() {
     )));
     #[cfg(target_arch = "wasm32")]
     {
+        bedrock_unsupported();
         response_session_callbacks();
         let mut objects = ProviderObjects::default();
         let (client, calls) = local_client();

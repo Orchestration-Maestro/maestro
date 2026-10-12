@@ -1,6 +1,9 @@
 //! Default HTTP client over reqwest.
 
+use std::borrow::Borrow;
 use std::error::Error;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Arc;
 
 use futures_util::StreamExt;
 
@@ -10,31 +13,71 @@ use crate::{BoxFuture, DiagnosticErrorInfo};
 
 /// Send one attempt with the shared client.
 pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, FetchError>> {
-    Box::pin(async move {
-        let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
-        let mut headers = request.headers;
-        let mut builder = build()?.request(method, &request.url);
-        for (name, value) in client_pairs(&mut headers).map_err(connection)? {
-            builder = builder.header(name, value);
-        }
-        let response = builder.body(request.body).send().await.map_err(failed)?;
-        let status = response.status().as_u16();
-        #[cfg(not(target_arch = "wasm32"))]
-        let status_text = status_text(&response);
-        #[cfg(target_arch = "wasm32")]
-        let status_text = String::new();
-        let headers = response_record(response.headers());
-        let body: HttpBody = Box::pin(
-            response
-                .bytes_stream()
-                .map(|chunk| chunk.map(|bytes| bytes.to_vec()).map_err(failed)),
-        );
-        Ok(HttpResponse {
-            status,
-            status_text,
-            headers,
-            body,
-        })
+    Box::pin(async move { send(build()?, request).await })
+}
+
+/// Send one attempt with `client`.
+async fn send(
+    client: impl Borrow<reqwest::Client>,
+    request: HttpRequest,
+) -> Result<HttpResponse, FetchError> {
+    let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
+    let mut headers = request.headers;
+    let mut builder = client.borrow().request(method, &request.url);
+    for (name, value) in client_pairs(&mut headers).map_err(connection)? {
+        builder = builder.header(name, value);
+    }
+    let response = builder.body(request.body).send().await.map_err(failed)?;
+    let status = response.status().as_u16();
+    #[cfg(not(target_arch = "wasm32"))]
+    let status_text = status_text(&response);
+    #[cfg(target_arch = "wasm32")]
+    let status_text = String::new();
+    let headers = response_record(response.headers());
+    let body: HttpBody = Box::pin(
+        response
+            .bytes_stream()
+            .map(|chunk| chunk.map(|bytes| bytes.to_vec()).map_err(failed)),
+    );
+    Ok(HttpResponse {
+        status,
+        status_text,
+        headers,
+        body,
+    })
+}
+
+/// Chooses the proxy for a destination URL, or none.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) type ProxySelector = Arc<dyn Fn(&url::Url) -> Option<url::Url> + Send + Sync>;
+
+/// Client choices a provider makes for its own requests.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+pub(crate) struct Route {
+    /// Proxy chosen per destination; without one the client uses none, whatever the environment.
+    pub(crate) proxy: Option<ProxySelector>,
+    /// Whether the connection speaks HTTP/1 only.
+    pub(crate) http1_only: bool,
+}
+
+/// Build a sender over a private client that follows `route`, for requests that do not
+/// use the process-wide client.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
+    let mut builder = reqwest::Client::builder()
+        .retry(reqwest::retry::never())
+        .no_proxy();
+    if let Some(select) = route.proxy {
+        builder = builder.proxy(reqwest::Proxy::custom(move |url| select(url)));
+    }
+    if route.http1_only {
+        builder = builder.http1_only();
+    }
+    let client = builder.build().map_err(|error| connection(chain(&error)));
+    Arc::new(move |request| {
+        let client = client.clone();
+        Box::pin(async move { send(client?, request).await })
     })
 }
 
