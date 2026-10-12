@@ -1,6 +1,7 @@
 #![doc = include_str!("../../../../docs/sessions/session_manager.md")]
 mod append;
 mod conversions;
+mod extraction;
 #[cfg(not(target_arch = "wasm32"))]
 mod files;
 #[cfg(not(target_arch = "wasm32"))]
@@ -88,24 +89,9 @@ impl SessionManager {
     /// Replace history without writing; native mode selects a fresh filename.
     pub fn new_session(&mut self, options: NewSessionOptions) -> Option<&str> {
         self.session_id = options.id.unwrap_or_else(|| Uuid::now_v7().to_string());
-        let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
-        let mut header = json!({
-            "type": "session", "version": CURRENT_SESSION_VERSION,
-            "id": self.session_id, "timestamp": timestamp,
-            "cwd": self.cwd,
-        });
-        match options.parent_session {
-            Presence::Missing => {}
-            Presence::Null => header["parentSession"] = Value::Null,
-            Presence::Present(parent) => header["parentSession"] = parent.into(),
-        }
-        #[cfg(not(target_arch = "wasm32"))]
+        let (header, file) = session_header(&self.session_id, &self.cwd, options.parent_session);
         if self.persist {
-            let timestamp = timestamp.replace([':', '.'], "-");
-            self.session_file = Some(maestro_path::join(&[
-                &self.session_dir,
-                &format!("{timestamp}_{}.jsonl", self.session_id),
-            ]));
+            self.session_file = Some(maestro_path::join(&[&self.session_dir, &file]));
         }
         self.flushed = false;
         self.file_entries = vec![header];
@@ -155,6 +141,49 @@ impl SessionManager {
     pub fn is_persisted(&self) -> bool {
         self.persist
     }
+}
+
+/// Build a current-version header and its lexical native filename.
+fn session_header(id: &str, cwd: &str, parent: Presence<String>) -> (FileEntry, String) {
+    let timestamp = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+    let file = format!("{}_{id}.jsonl", timestamp.replace([':', '.'], "-"));
+    let mut header = json!({
+        "type": "session", "version": CURRENT_SESSION_VERSION,
+        "id": id, "timestamp": timestamp, "cwd": cwd,
+    });
+    match parent {
+        Presence::Missing => {}
+        Presence::Null => header["parentSession"] = Value::Null,
+        Presence::Present(parent) => header["parentSession"] = parent.into(),
+    }
+    (header, file)
+}
+
+/// Index retained records, select the last identity and resolve labels in order.
+///
+/// # Errors
+/// Returns invalid data for a retained record whose identity is not a string.
+fn build_index(
+    entries: &[FileEntry],
+    by_id: &mut HashMap<String, usize>,
+    leaf_id: &mut Option<String>,
+    labels: &mut Map<String, Value>,
+    label_timestamps: &mut Map<String, Value>,
+) -> std::io::Result<()> {
+    for (position, entry) in entries.iter().enumerate() {
+        if entry["type"] == "session" {
+            continue;
+        }
+        let id = entry["id"]
+            .as_str()
+            .ok_or_else(|| conversions::invalid("nonstring entry id"))?;
+        by_id.insert(id.to_owned(), position);
+        *leaf_id = Some(id.to_owned());
+        if entry["type"] == "label" {
+            tree::apply_label(labels, label_timestamps, entry);
+        }
+    }
+    Ok(())
 }
 
 /// Generate a free short entry identity, falling back after one hundred collisions.

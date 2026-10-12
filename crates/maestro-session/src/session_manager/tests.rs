@@ -224,3 +224,251 @@ fn new_session_clears_resolved_labels_and_timestamps() {
     assert_eq!(tree[0].label, None);
     assert_eq!(tree[0].label_timestamp, None);
 }
+
+/// Fresh scratch directory path, created empty.
+#[cfg(not(target_arch = "wasm32"))]
+fn scratch(prefix: &str) -> std::path::PathBuf {
+    let path = std::env::temp_dir().join(format!("{prefix}-{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&path).unwrap();
+    path
+}
+
+#[test]
+fn extraction_generates_unique_chained_label_ids() {
+    let mut manager = super::SessionManager::in_memory(Some("cwd")).unwrap();
+    let message = |id: &str, parent: Value| {
+        serde_json::json!({"type": "message", "id": id, "parentId": parent, "timestamp": "t",
+            "message": {"role": "user", "content": id, "timestamp": 1}})
+    };
+    manager.file_entries.push(message("aaaaaaaa", Value::Null));
+    manager
+        .file_entries
+        .push(message("dddddddd", "aaaaaaaa".into()));
+    for (position, id) in ["aaaaaaaa", "dddddddd"].into_iter().enumerate() {
+        manager.by_id.insert(id.to_owned(), position + 1);
+        manager.labels.insert(id.to_owned(), id.into());
+        manager.label_timestamps.insert(id.to_owned(), "t".into());
+    }
+    let mut candidates = ["aaaaaaaa", "bbbbbbbb", "bbbbbbbb", "cccccccc"]
+        .into_iter()
+        .map(|prefix| Uuid::from_u128(u128::from_str_radix(prefix, 16).unwrap() << 96));
+    manager
+        .branch_history("dddddddd", || candidates.next().unwrap())
+        .unwrap();
+    assert_eq!(candidates.next(), None);
+    let labels: Vec<_> = manager
+        .get_entries()
+        .into_iter()
+        .filter(|entry| entry["type"] == "label")
+        .collect();
+    let chain: Vec<_> = labels
+        .iter()
+        .map(|entry| {
+            (
+                entry["id"].as_str(),
+                entry["parentId"].as_str(),
+                entry["targetId"].as_str(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        chain,
+        [
+            (Some("bbbbbbbb"), Some("dddddddd"), Some("aaaaaaaa")),
+            (Some("cccccccc"), Some("bbbbbbbb"), Some("dddddddd")),
+        ]
+    );
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn failed_extraction_keeps_a_consistent_owner() {
+    let directory = scratch("maestro-extract-fail");
+    let mut manager =
+        super::SessionManager::create("cwd", Some(directory.to_str().unwrap()), "").unwrap();
+    manager
+        .append_message(serde_json::json!({"role": "assistant", "content": "a", "timestamp": 1}))
+        .unwrap();
+    let previous = manager.get_session_file().unwrap().to_owned();
+    let leaf = manager.get_leaf_id().unwrap().to_owned();
+    manager.branch_history(&leaf, Uuid::new_v4).unwrap();
+    let error = manager
+        .publish_branched(|path, _| {
+            std::fs::write(path, b"{\"type\"")?;
+            Err(std::io::Error::from_raw_os_error(5))
+        })
+        .unwrap_err();
+    assert_eq!(error.raw_os_error(), Some(5));
+    let path = manager.get_session_file().unwrap().to_owned();
+    assert_ne!(path, previous);
+    assert!(manager.flushed);
+    manager
+        .append_message(serde_json::json!({"role": "user", "content": "next", "timestamp": 2}))
+        .unwrap();
+    let bytes = std::fs::read_to_string(&path).unwrap();
+    assert!(bytes.starts_with("{\"type\"{\"type\":\"message\""));
+    assert_eq!(bytes.lines().count(), 1);
+    assert!(!bytes.contains("\"type\":\"session\""));
+    std::fs::remove_dir_all(&directory).unwrap();
+    let error = manager.create_branched_session(&leaf).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert_ne!(manager.get_session_file().unwrap(), path);
+}
+
+/// A readable source below a scratch root, forked into chosen directories.
+#[cfg(not(target_arch = "wasm32"))]
+struct ForkRig {
+    /// Scratch root removed by the owning test.
+    root: std::path::PathBuf,
+    /// Source file with a header and two records.
+    source: String,
+    /// The two record lines of the source.
+    records: [&'static str; 2],
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl ForkRig {
+    /// Header line of every source.
+    const HEADER: &'static str =
+        r#"{"type":"session","id":"s","version":3,"cwd":"/src","timestamp":"t"}"#;
+
+    fn new() -> Self {
+        let root = scratch("maestro-fork-order");
+        let records = [
+            r#"{"type":"custom","id":"a","parentId":null,"customType":"k"}"#,
+            r#"{"type":"custom","id":"b","parentId":"a","customType":"k"}"#,
+        ];
+        let source = format!("{}/source.jsonl", root.display());
+        let text = format!("{}\n{}\n{}\n", Self::HEADER, records[0], records[1]);
+        std::fs::write(&source, text).unwrap();
+        Self {
+            root,
+            source,
+            records,
+        }
+    }
+
+    fn path(&self, name: &str) -> String {
+        format!("{}/{name}", self.root.display())
+    }
+
+    fn fork(
+        &self,
+        dir: &str,
+        write: impl FnMut(&str, &[u8]) -> std::io::Result<()>,
+    ) -> std::io::Result<super::SessionManager> {
+        super::SessionManager::fork_with(&self.source, "/t", Some(dir), "", write)
+    }
+
+    /// The single file created in a destination directory.
+    fn only_file(dir: &str) -> String {
+        let entry = std::fs::read_dir(dir).unwrap().next().unwrap().unwrap();
+        std::fs::read_to_string(entry.path()).unwrap()
+    }
+}
+
+/// Append the first seven bytes of a record, then fail like a full disk.
+#[cfg(not(target_arch = "wasm32"))]
+fn partial_append(path: &str, bytes: &[u8]) -> std::io::Result<()> {
+    super::persistence::append(path, &bytes[..7])?;
+    Err(std::io::Error::from_raw_os_error(5))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn fork_preserves_write_and_returned_owner_failure_order() {
+    let rig = ForkRig::new();
+    let real = super::persistence::append;
+
+    let unreadable = rig.path("directory.jsonl");
+    std::fs::create_dir(&unreadable).unwrap();
+    let missing = rig.path("never");
+    let error = super::SessionManager::fork_with(&unreadable, "/t", Some(&missing), "", real)
+        .err()
+        .unwrap();
+    assert_ne!(error.kind(), std::io::ErrorKind::InvalidData);
+    assert!(!std::fs::exists(&missing).unwrap());
+
+    let file_target = rig.path("file-target");
+    std::fs::write(&file_target, "keep").unwrap();
+    assert!(rig.fork(&file_target, real).is_err());
+    assert!(rig.fork(&format!("{file_target}/child"), real).is_err());
+    assert_eq!(std::fs::read_to_string(&file_target).unwrap(), "keep");
+
+    let first = rig.path("first");
+    let error = rig.fork(&first, partial_append).err().unwrap();
+    assert_eq!(error.raw_os_error(), Some(5));
+    assert_eq!(ForkRig::only_file(&first), "{\"type\"");
+
+    let later = rig.path("later");
+    let mut calls = 0;
+    let third = |path: &str, bytes: &[u8]| {
+        calls += 1;
+        if calls < 3 {
+            return real(path, bytes);
+        }
+        partial_append(path, bytes)
+    };
+    assert!(rig.fork(&later, third).is_err());
+    let written = ForkRig::only_file(&later);
+    assert!(written.ends_with(&format!("{}\n{{\"type\"", rig.records[0])));
+    assert_eq!(super::parse_session_entries(&written).len(), 2);
+
+    let reopen = rig.path("reopen");
+    let (mut calls, mut snapshot) = (0, Vec::new());
+    let last = |path: &str, bytes: &[u8]| {
+        calls += 1;
+        real(path, bytes)?;
+        if calls == 3 {
+            snapshot = std::fs::read(path)?;
+            std::fs::remove_file(path)?;
+            std::fs::create_dir(path)?;
+        }
+        Ok(())
+    };
+    assert!(rig.fork(&reopen, last).is_err());
+    assert_eq!(calls, 3);
+    let snapshot = String::from_utf8(snapshot).unwrap();
+    assert_eq!(super::parse_session_entries(&snapshot).len(), 3);
+    invalid_later_id_fails_after_all_writes(&rig);
+    std::fs::remove_dir_all(&rig.root).unwrap();
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn fork_stops_at_a_null_record_before_writing_it_or_later_records() {
+    let rig = ForkRig::new();
+    let text = format!(
+        "{}\n{}\nnull\n{}\n",
+        ForkRig::HEADER,
+        rig.records[0],
+        rig.records[1]
+    );
+    std::fs::write(&rig.source, text).unwrap();
+    let dir = rig.path("null-target");
+    let error = rig.fork(&dir, super::persistence::append).err().unwrap();
+    assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+    let written = ForkRig::only_file(&dir);
+    assert_eq!(written.lines().count(), 2);
+    assert!(written.ends_with(&format!("{}\n", rig.records[0])));
+    std::fs::remove_dir_all(&rig.root).unwrap();
+}
+
+/// A later numeric identity fails the returned owner's index after every write.
+#[cfg(not(target_arch = "wasm32"))]
+fn invalid_later_id_fails_after_all_writes(rig: &ForkRig) {
+    let numeric = rig.path("numeric.jsonl");
+    let text = format!(
+        "{}\n{}\n{{\"type\":\"custom\",\"id\":5}}\n",
+        ForkRig::HEADER,
+        rig.records[0]
+    );
+    std::fs::write(&numeric, text).unwrap();
+    let invalid = rig.path("invalid");
+    let error = super::SessionManager::fork_from(&numeric, "/t", Some(&invalid), "")
+        .err()
+        .unwrap();
+    assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+    let written = ForkRig::only_file(&invalid);
+    assert_eq!(super::parse_session_entries(&written).len(), 3);
+}
