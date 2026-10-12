@@ -3,8 +3,6 @@
 //! See `docs/theme.md` for the file format, color modes and errors.
 
 pub mod theme;
-#[cfg(not(target_arch = "wasm32"))]
-pub use theme::Collator;
 pub use theme::watch_with_error_handler;
 pub use theme::{BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation};
 pub use theme::{BrandType, load_brand_pack};
