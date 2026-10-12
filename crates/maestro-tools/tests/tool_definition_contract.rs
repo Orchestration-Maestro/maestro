@@ -311,6 +311,62 @@ fn agent_tool_conversion_forwards_execution_without_render_metadata() {
     );
 }
 
+/// Preparation that adds ten to `value`.
+fn add_ten() -> PrepareArguments {
+    Arc::new(|args| Ok(json!({"value": args["value"].as_u64().unwrap() + 10})))
+}
+
+#[test]
+fn wrapper_preserves_transforming_preparation() {
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let mut source = definition("transform", &log);
+    source.prepare_arguments = Some(add_ten());
+    let tool = wrap_tool_definition(source, None);
+    let prepared = (tool.prepare_arguments.as_ref().unwrap())(json!({"value": 3})).unwrap();
+    assert_eq!(prepared, json!({"value": 13}));
+    assert!(log.lock().unwrap().is_empty());
+    (tool.execute)("id".into(), prepared, None, None)
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    assert_eq!(*log.lock().unwrap(), [("id".to_owned(), 13, None, None)]);
+}
+
+#[test]
+fn agent_tool_conversion_preserves_transforming_preparation() {
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let converted = create_tool_definition_from_agent_tool::<u32>(agent_tool(&log, &add_ten()));
+    let prepared = (converted.prepare_arguments.as_ref().unwrap())(json!({"value": 8})).unwrap();
+    assert_eq!(prepared, json!({"value": 18}));
+    assert!(log.lock().unwrap().is_empty());
+    (converted.execute)("id".into(), prepared, None, None, None)
+        .now_or_never()
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        *log.lock().unwrap(),
+        [("id".to_owned(), json!({"value": 18}), None)]
+    );
+}
+
+#[test]
+fn agent_tool_conversion_preserves_execution_errors() {
+    let invoked = Arc::new(AtomicU32::new(0));
+    let counted = Arc::clone(&invoked);
+    let mut tool = agent_tool(&Arc::new(Mutex::new(Vec::new())), &add_ten());
+    tool.execute = Arc::new(move |_, _, _, _| {
+        counted.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async { Err(failure("reverse failed")) })
+    });
+    let converted = create_tool_definition_from_agent_tool::<u32>(tool);
+    let error = (converted.execute)("id".into(), json!({"value": 1}), None, None, None)
+        .now_or_never()
+        .unwrap()
+        .err();
+    assert_eq!(error, Some(failure("reverse failed")));
+    assert_eq!(invoked.load(Ordering::SeqCst), 1);
+}
+
 /// A rendered row recording nothing; only its identity matters.
 struct Row;
 

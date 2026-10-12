@@ -217,7 +217,7 @@ impl ScriptedOps {
         self.calls
             .lock()
             .unwrap()
-            .push(format!("{stage:?}:{path}").to_lowercase());
+            .push(format!("{}:{path}", format!("{stage:?}").to_lowercase()));
         let behavior = if stage == self.at {
             self.behavior
         } else {

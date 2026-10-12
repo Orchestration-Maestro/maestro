@@ -8,14 +8,22 @@ use maestro_tools::{
     ReadToolOptions, create_read_tool_definition, expand_path, resolve_read_path, resolve_to_cwd,
 };
 use read_support::*;
-
-/// The host's home directory as the native lookup reports it.
-fn home() -> String {
-    std::env::home_dir().unwrap().to_str().unwrap().to_owned()
-}
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 
 #[test]
 fn path_expansion_preserves_only_the_named_transforms() {
+    const HOME: &str = "/explicit-home";
+    let envs = [("HOME", Some(HOME)), ("USERPROFILE", Some(HOME))];
+    if !isolated(
+        "path_expansion_preserves_only_the_named_transforms",
+        "home",
+        &envs,
+    ) {
+        return;
+    }
     let spaced: Vec<(String, String)> = [
         '\u{a0}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}',
         '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200a}', '\u{202f}', '\u{205f}',
@@ -40,12 +48,9 @@ fn path_expansion_preserves_only_the_named_transforms() {
     for (path, expected) in cases {
         assert_eq!(expand_path(&path).unwrap(), expected, "{path:?}");
     }
-    assert_eq!(expand_path("~").unwrap(), home());
-    assert_eq!(expand_path("~/notes").unwrap(), format!("{}/notes", home()));
-    assert_eq!(
-        expand_path("@~/notes").unwrap(),
-        format!("{}/notes", home())
-    );
+    assert_eq!(expand_path("~").unwrap(), HOME);
+    assert_eq!(expand_path("~/notes").unwrap(), "/explicit-home/notes");
+    assert_eq!(expand_path("@~/notes").unwrap(), "/explicit-home/notes");
 }
 
 #[test]
@@ -121,6 +126,19 @@ fn read_paths_try_original_ampm_nfd_curly_then_combined() {
     );
 }
 
+#[test]
+fn read_paths_accept_lowercase_meridiem() {
+    for suffix in ["am", "pm"] {
+        let dir = TempDir::new();
+        let chosen = format!("Screenshot 2024-01-01 at 10.00.00\u{202f}{suffix}.png");
+        dir.file(&chosen, b"chosen");
+        let ask = format!("Screenshot 2024-01-01 at 10.00.00 {suffix}.png");
+        let resolved = resolve_read_path(&ask, &dir.text()).unwrap();
+        assert_eq!(resolved, format!("{}/{chosen}", dir.text()));
+        assert_eq!(std::fs::read(&resolved).unwrap(), b"chosen");
+    }
+}
+
 #[cfg(unix)]
 #[test]
 fn read_paths_keep_lexical_symlink_identity() {
@@ -189,49 +207,32 @@ fn empty_home_is_used_verbatim() {
     }
 }
 
-/// A directory below the account home that mirrors an absolute path, removed with its created parents.
-#[cfg(unix)]
-struct HomeMirror {
-    home: std::path::PathBuf,
-    leaf: std::path::PathBuf,
-}
-
-#[cfg(unix)]
-impl Drop for HomeMirror {
-    fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.leaf);
-        let mut dir = self.leaf.parent();
-        while let Some(path) = dir.filter(|path| *path != self.home) {
-            if std::fs::remove_dir(path).is_err() {
-                break;
-            }
-            dir = path.parent();
-        }
-    }
-}
-
 #[cfg(unix)]
 #[test]
-fn read_selects_distinct_files_for_empty_and_absent_home() {
-    let test = "read_selects_distinct_files_for_empty_and_absent_home";
+fn read_resolves_empty_and_absent_home_without_home_writes() {
+    let test = "read_resolves_empty_and_absent_home_without_home_writes";
     let dir = TempDir::new();
-    dir.file("note.txt", b"empty home keeps the path root");
-    let authored = format!("~{}/note.txt", dir.text());
-    let tool = create_read_tool_definition::<()>("/".into(), ReadToolOptions::default());
-    let read = || only_text(&call(&tool, input(&authored, None, None), None, None).unwrap());
+    dir.file("MiXeD-Note.txt", b"empty home keeps the path root");
+    let authored = format!("~{}/MiXeD-Note.txt", dir.text());
     if isolated(test, "empty", &[("HOME", Some(""))]) {
-        assert_eq!(read(), "empty home keeps the path root");
+        let tool = create_read_tool_definition::<()>("/".into(), ReadToolOptions::default());
+        let result = call(&tool, input(&authored, None, None), None, None).unwrap();
+        assert_eq!(only_text(&result), "empty home keeps the path root");
     }
     if isolated(test, "absent", &[("HOME", None)]) {
         let home = std::env::home_dir().unwrap();
-        let leaf = home.join(dir.text().trim_start_matches('/'));
-        std::fs::create_dir_all(&leaf).unwrap();
-        let _mirror = HomeMirror {
-            home,
-            leaf: leaf.clone(),
-        };
-        std::fs::write(leaf.join("note.txt"), b"account home").unwrap();
-        assert_eq!(read(), "account home");
+        let path = format!("{}{}/MiXeD-Note.txt", home.to_str().unwrap(), dir.text());
+        let ops = Arc::new(ScriptedOps::new(b"account home"));
+        let result = call(&tool_over(&ops), input(&authored, None, None), None, None).unwrap();
+        assert_eq!(only_text(&result), "account home");
+        assert_eq!(
+            ops.log(),
+            [
+                format!("access:{path}"),
+                format!("mime:{path}"),
+                format!("read:{path}")
+            ]
+        );
     }
 }
 
@@ -254,13 +255,22 @@ fn read_paths_bind_before_future_poll() {
 
 #[test]
 fn scratch_directory_never_adopts_an_existing_candidate() {
-    let parent = TempDir::new();
-    let taken = parent.0.join("scratch-0");
+    let root = TempDir::new();
+    let tmp = root.0.join("tmp");
+    std::fs::create_dir(&tmp).unwrap();
+    let next = AtomicUsize::new(0);
+    drop(TempDir::create_in(&tmp, "scratch", &next));
+    assert!(tmp.is_dir());
+    assert_eq!(std::fs::read_dir(&tmp).unwrap().count(), 0);
+
+    let taken = tmp.join("scratch-0");
     std::fs::create_dir(&taken).unwrap();
-    std::fs::write(taken.join("sentinel"), b"kept").unwrap();
-    let next = std::sync::atomic::AtomicUsize::new(0);
-    let fresh = TempDir::create_in(&parent.0, "scratch", &next);
-    assert_eq!(fresh.0, parent.0.join("scratch-1"));
+    std::fs::write(taken.join("note.txt"), b"kept").unwrap();
+    next.store(0, Ordering::Relaxed);
+    let fresh = TempDir::create_in(&tmp, "scratch", &next);
+    assert_eq!(fresh.0, tmp.join("scratch-1"));
     drop(fresh);
-    assert_eq!(std::fs::read(taken.join("sentinel")).unwrap(), b"kept");
+    assert!(!tmp.join("scratch-1").exists());
+    assert_eq!(std::fs::read(taken.join("note.txt")).unwrap(), b"kept");
+    assert!(tmp.is_dir() && root.0.is_dir());
 }
