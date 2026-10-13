@@ -9,7 +9,8 @@ use crate::{
     tool_definition_wrapper::wrap_tool_definition, types::ToolDefinition,
     utils::diagnostics::diagnostic,
 };
-use execute::{NativeWriteOperations, write_file};
+pub(crate) use execute::NativeWriteOperations;
+use execute::write_file;
 use maestro_agent::AgentTool;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, Tool};
 use maestro_path::dirname;

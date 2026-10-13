@@ -60,7 +60,7 @@ pub fn compute_edit_diff(
 }
 
 /// Keep supplied codes intact while adding the authored path to an access failure.
-fn access_failure(path: &str, failure: DiagnosticErrorInfo) -> EditDiffError {
+pub(crate) fn access_failure(path: &str, failure: DiagnosticErrorInfo) -> EditDiffError {
     let detail = match failure.code {
         Some(DiagnosticCode::Text(code)) => format!("Error code: {code}"),
         Some(DiagnosticCode::Number(code)) => {

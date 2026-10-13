@@ -3,11 +3,13 @@
 use super::text_diff::{Change, diff_lines};
 
 /// A numbered diff and the first changed line of the new text.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EditDiffResult {
     /// The numbered diff.
     pub diff: String,
     /// The first changed line in the new text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub first_changed_line: Option<usize>,
 }
 

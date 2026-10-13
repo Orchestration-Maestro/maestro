@@ -125,6 +125,8 @@ pub struct Turn {
     pub results: Vec<Value>,
     /// Progress events emitted by tools.
     pub updates: usize,
+    /// Tool arguments retained by the assistant message after execution.
+    pub arguments: Vec<Value>,
 }
 
 /// Run one turn of tool calls, given as `(id, tool, arguments)`, through the raw loop.
@@ -147,12 +149,13 @@ pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
         }
         Box::pin(std::future::ready(Ok(())))
     });
+    let requested = assistant("call", calls);
     let returned = crate::read_support::run(run_agent_loop(
         vec![user("go")],
         context,
         &config(),
         emit,
-        responses(vec![assistant("call", calls), assistant("done", &[])]),
+        responses(vec![Arc::clone(&requested), assistant("done", &[])]),
     ))
     .unwrap();
     let results = returned
@@ -167,5 +170,15 @@ pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
     Turn {
         results,
         updates: updates.load(Ordering::SeqCst),
+        arguments: requested
+            .read()
+            .unwrap()
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                AssistantContent::ToolCall(call) => Some(Value::Object(call.arguments.clone())),
+                _ => None,
+            })
+            .collect(),
     }
 }

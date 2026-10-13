@@ -1,4 +1,4 @@
-//! Tool definitions, the `read` and `write` tools, the file mutation queue, and output and
+//! Tool definitions, the `read`, `write` and `edit` tools, the file mutation queue, and output and
 //! inline-image helpers for Maestro tools.
 //!
 //! ```
@@ -28,6 +28,8 @@
 //! ```
 
 #[cfg(not(target_arch = "wasm32"))]
+pub mod edit;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod edit_diff;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod file_mutation_queue;
@@ -47,6 +49,11 @@ pub mod utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod write;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use edit::{
+    EditOperations, EditToolDetails, EditToolInput, EditToolOptions, create_edit_tool,
+    create_edit_tool_definition,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_mutation_queue::with_file_mutation_queue;
 pub use keybinding_hints::{key_hint, key_text, raw_key_hint};
