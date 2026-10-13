@@ -28,6 +28,8 @@
 //! ```
 
 #[cfg(not(target_arch = "wasm32"))]
+pub mod edit_diff;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod file_mutation_queue;
 pub mod keybinding_hints;
 pub mod output;

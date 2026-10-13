@@ -1,0 +1,2491 @@
+{
+  "tests": {
+    "line_endings_follow_first_lf": [
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            ""
+          ]
+        },
+        "expected": "\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "plain"
+          ]
+        },
+        "expected": "\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\r"
+          ]
+        },
+        "expected": "\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\n"
+          ]
+        },
+        "expected": "\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\r\n"
+          ]
+        },
+        "expected": "\r\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\nb\r\n"
+          ]
+        },
+        "expected": "\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\r\nb\n"
+          ]
+        },
+        "expected": "\r\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "a\rb\r\n"
+          ]
+        },
+        "expected": "\r\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "\r\n\n"
+          ]
+        },
+        "expected": "\r\n"
+      },
+      {
+        "input": {
+          "operation": "detectLineEnding",
+          "arguments": [
+            "\n\r\n"
+          ]
+        },
+        "expected": "\n"
+      }
+    ],
+    "line_endings_restore_only_lf": [
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "",
+            "\n"
+          ]
+        },
+        "expected": ""
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "a\nb\n",
+            "\n"
+          ]
+        },
+        "expected": "a\nb\n"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "a\r\nb\r",
+            "\n"
+          ]
+        },
+        "expected": "a\r\nb\r"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "\n\n",
+            "\n"
+          ]
+        },
+        "expected": "\n\n"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "😀\n中",
+            "\n"
+          ]
+        },
+        "expected": "😀\n中"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "",
+            "\r\n"
+          ]
+        },
+        "expected": ""
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "a\nb\n",
+            "\r\n"
+          ]
+        },
+        "expected": "a\r\nb\r\n"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "a\r\nb\r",
+            "\r\n"
+          ]
+        },
+        "expected": "a\r\r\nb\r"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "\n\n",
+            "\r\n"
+          ]
+        },
+        "expected": "\r\n\r\n"
+      },
+      {
+        "input": {
+          "operation": "restoreLineEndings",
+          "arguments": [
+            "😀\n中",
+            "\r\n"
+          ]
+        },
+        "expected": "😀\r\n中"
+      }
+    ],
+    "bom_removal_is_prefix_only": [
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            ""
+          ]
+        },
+        "expected": {
+          "bom": "",
+          "text": ""
+        }
+      },
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            "plain"
+          ]
+        },
+        "expected": {
+          "bom": "",
+          "text": "plain"
+        }
+      },
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            "﻿"
+          ]
+        },
+        "expected": {
+          "bom": "﻿",
+          "text": ""
+        }
+      },
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            "﻿hello"
+          ]
+        },
+        "expected": {
+          "bom": "﻿",
+          "text": "hello"
+        }
+      },
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            "﻿﻿hello"
+          ]
+        },
+        "expected": {
+          "bom": "﻿",
+          "text": "﻿hello"
+        }
+      },
+      {
+        "input": {
+          "operation": "stripBom",
+          "arguments": [
+            "a﻿b"
+          ]
+        },
+        "expected": {
+          "bom": "",
+          "text": "a﻿b"
+        }
+      }
+    ],
+    "fuzzy_normalization_applies_nfkc_before_line_trimming": [
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            ""
+          ]
+        },
+        "expected": ""
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "ＡＢＣ１２３\ncafé\n"
+          ]
+        },
+        "expected": "ABC123\ncafé\n"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "ﬃ ① ㍿ Å"
+          ]
+        },
+        "expected": "ffi 1 株式会社 Å"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "你好，世界\n你好（世界）\n"
+          ]
+        },
+        "expected": "你好,世界\n你好(世界)\n"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " A \t\n B﻿\n\n"
+          ]
+        },
+        "expected": " A\n B\n\n"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x\ry"
+          ]
+        },
+        "expected": "x\ry"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y "
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x"
+          ]
+        },
+        "expected": "x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x﻿"
+          ]
+        },
+        "expected": "x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "¨"
+          ]
+        },
+        "expected": " ̈"
+      }
+    ],
+    "fuzzy_normalization_maps_punctuation_and_spaces": [
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‘y"
+          ]
+        },
+        "expected": "x'y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x’y"
+          ]
+        },
+        "expected": "x'y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‚y"
+          ]
+        },
+        "expected": "x'y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‛y"
+          ]
+        },
+        "expected": "x'y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x“y"
+          ]
+        },
+        "expected": "x\"y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x”y"
+          ]
+        },
+        "expected": "x\"y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x„y"
+          ]
+        },
+        "expected": "x\"y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‟y"
+          ]
+        },
+        "expected": "x\"y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‐y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‑y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x‒y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x–y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x—y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x―y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x−y"
+          ]
+        },
+        "expected": "x-y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x y"
+          ]
+        },
+        "expected": "x y"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "x　y"
+          ]
+        },
+        "expected": "x y"
+      }
+    ],
+    "fuzzy_trailing_space_uses_authored_whitespace_set": [
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x\t"
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x\n"
+          ]
+        },
+        "expected": " x\n"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x\u000b"
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x\f"
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x\r"
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x "
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x　"
+          ]
+        },
+        "expected": " x"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "keep﻿"
+          ]
+        },
+        "expected": "keep"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            "keep"
+          ]
+        },
+        "expected": "keep"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x᠎"
+          ]
+        },
+        "expected": " x᠎"
+      },
+      {
+        "input": {
+          "operation": "normalizeForFuzzyMatch",
+          "arguments": [
+            " x​"
+          ]
+        },
+        "expected": " x​"
+      }
+    ],
+    "fuzzy_matching_prefers_exact_and_reports_byte_ranges": [
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "“a” / \"a\"",
+            "\"a\""
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 10,
+          "matchLength": 3,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "“a” / \"a\""
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "z😀中文x",
+            "中文"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 5,
+          "matchLength": 6,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "z😀中文x"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "😀😀X",
+            "X"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 8,
+          "matchLength": 1,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "😀😀X"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "a a",
+            "a"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 1,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "a a"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "",
+            ""
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": ""
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "😀",
+            ""
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "😀"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "Ａ Ａ",
+            "Ａ"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 3,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "Ａ Ａ"
+        }
+      }
+    ],
+    "fuzzy_matching_uses_normalized_space_or_retains_missing_input": [
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "α😀 “hi”  \n",
+            "\"hi\""
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 7,
+          "matchLength": 4,
+          "usedFuzzyMatch": true,
+          "contentForReplacement": "α😀 \"hi\"\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "ＡＢＣ１２３\ncafé\n",
+            "ABC123\ncafé\n"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 13,
+          "usedFuzzyMatch": true,
+          "contentForReplacement": "ABC123\ncafé\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "Ａtext",
+            "missing"
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "Ａtext"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "line one   \nline two  \n",
+            "line one\nline two\n"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 18,
+          "usedFuzzyMatch": true,
+          "contentForReplacement": "line one\nline two\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "x\ny",
+            "X"
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "x\ny"
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "¨",
+            " ̈"
+          ]
+        },
+        "expected": {
+          "found": true,
+          "index": 0,
+          "matchLength": 3,
+          "usedFuzzyMatch": true,
+          "contentForReplacement": " ̈"
+        }
+      }
+    ],
+    "empty_normalized_needles_are_exact_only": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in note.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "",
+            " "
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": ""
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in note.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "abc",
+            " "
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "abc"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a\t",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in note.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "a\t",
+            " "
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "a\t"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a b",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in note.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "fuzzyFindText",
+          "arguments": [
+            "a b",
+            " "
+          ]
+        },
+        "expected": {
+          "found": false,
+          "index": -1,
+          "matchLength": 0,
+          "usedFuzzyMatch": false,
+          "contentForReplacement": "a b"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a b",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "a b",
+          "newContent": "aXb"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a  b",
+            [
+              {
+                "oldText": " ",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "x\t",
+            [
+              {
+                "oldText": "\t",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "x\t",
+          "newContent": "xX"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a﻿",
+            [
+              {
+                "oldText": "﻿",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "a﻿",
+          "newContent": "aX"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            " \t",
+            [
+              {
+                "oldText": " \t",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": " \t",
+          "newContent": "X"
+        }
+      }
+    ],
+    "snapshot_edits_are_disjoint_original_matches": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a b c",
+            [
+              {
+                "oldText": "c",
+                "newText": "C!"
+              },
+              {
+                "oldText": "a",
+                "newText": "long a"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "a b c",
+          "newContent": "long a b C!"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "ab",
+                "newText": "AB"
+              },
+              {
+                "oldText": "c",
+                "newText": "C"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "abc",
+          "newContent": "ABC"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "alpha beta",
+            [
+              {
+                "oldText": "alpha",
+                "newText": "beta"
+              },
+              {
+                "oldText": "beta",
+                "newText": "alpha"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "alpha beta",
+          "newContent": "beta alpha"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "A B",
+            [
+              {
+                "oldText": "A",
+                "newText": "B"
+              },
+              {
+                "oldText": "B",
+                "newText": "C"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "A B",
+          "newContent": "B C"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "😀a中b",
+            [
+              {
+                "oldText": "b",
+                "newText": "Z"
+              },
+              {
+                "oldText": "a",
+                "newText": "Y"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "😀a中b",
+          "newContent": "😀Y中Z"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "α\nβ\nγ\n",
+            [
+              {
+                "oldText": "γ",
+                "newText": ""
+              },
+              {
+                "oldText": "α",
+                "newText": "omega"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "α\nβ\nγ\n",
+          "newContent": "omega\nβ\n\n"
+        }
+      }
+    ],
+    "snapshot_edits_normalize_operands_not_replacement_typography": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "first\nsecond\n",
+            [
+              {
+                "oldText": "first\r\n",
+                "newText": "one\r\ntwo\r"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "first\nsecond\n",
+          "newContent": "one\ntwo\nsecond\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "Ａ\n",
+            [
+              {
+                "oldText": "A\r\n",
+                "newText": "“Ｒ”\t \r\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "A\n",
+          "newContent": "“Ｒ”\t \n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "foo",
+            [
+              {
+                "oldText": "foo",
+                "newText": ""
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "foo",
+          "newContent": ""
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "b",
+                "newText": "$& $1 $$ \\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "abc",
+          "newContent": "a$& $1 $$ \\nc"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a\nb",
+            [
+              {
+                "oldText": "\r",
+                "newText": "|"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "a\nb",
+          "newContent": "a|b"
+        }
+      }
+    ],
+    "snapshot_fuzzy_match_normalizes_shared_base": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "left  \n“foo”\nＡ\n",
+            [
+              {
+                "oldText": "left",
+                "newText": "LEFT"
+              },
+              {
+                "oldText": "\"foo\"",
+                "newText": "bar"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "left\n\"foo\"\nA\n",
+          "newContent": "LEFT\nbar\nA\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "Ａleft\nＢright\n",
+            [
+              {
+                "oldText": "Ａleft",
+                "newText": "one"
+              },
+              {
+                "oldText": "Bright",
+                "newText": "two"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "Aleft\nBright\n",
+          "newContent": "one\ntwo\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "x  \n“y”  \n",
+            [
+              {
+                "oldText": "\"y\"",
+                "newText": "z"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "x\n\"y\"\n",
+          "newContent": "x\nz\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "console.log(‘hello’);\nhello world\n",
+            [
+              {
+                "oldText": "console.log('hello');\n",
+                "newText": "console.log('world');\n"
+              },
+              {
+                "oldText": "hello world\n",
+                "newText": "hello universe\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "console.log('hello');\nhello world\n",
+          "newContent": "console.log('world');\nhello universe\n"
+        }
+      }
+    ],
+    "snapshot_errors_keep_validation_precedence": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "No changes made to note.txt. The replacements produced identical content."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "oldText must not be empty in note.txt."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "missing",
+                "newText": "x"
+              },
+              {
+                "oldText": "",
+                "newText": "x"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[1].oldText must not be empty in note.txt."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "",
+                "newText": "x"
+              },
+              {
+                "oldText": "",
+                "newText": "y"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[0].oldText must not be empty in note.txt."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "missing",
+                "newText": "x"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in note.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "a",
+                "newText": "x"
+              },
+              {
+                "oldText": "missing",
+                "newText": "y"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find edits[1] in note.txt. The oldText must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "A",
+            [
+              {
+                "oldText": "A",
+                "newText": "B"
+              },
+              {
+                "oldText": "B",
+                "newText": "C"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find edits[1] in note.txt. The oldText must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a a",
+            [
+              {
+                "oldText": "a",
+                "newText": "A"
+              },
+              {
+                "oldText": "missing",
+                "newText": "x"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of edits[0] in note.txt. Each oldText must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "abc",
+                "newText": "x"
+              },
+              {
+                "oldText": "bcd",
+                "newText": "y"
+              },
+              {
+                "oldText": "missing",
+                "newText": "z"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find edits[2] in note.txt. The oldText must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "Ａ\n",
+            [
+              {
+                "oldText": "Ａ",
+                "newText": "A"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "Ａ\n",
+          "newContent": "A\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "missing",
+                "newText": "X"
+              }
+            ],
+            "../📁/other name.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find the exact text in ../📁/other name.txt. The old text must match exactly including all whitespace and newlines."
+        }
+      }
+    ],
+    "snapshot_duplicates_include_fuzzy_equivalents": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "hello world   \nhello world\n",
+            [
+              {
+                "oldText": "hello world",
+                "newText": "replaced"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "Ａ A",
+            [
+              {
+                "oldText": "A",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "foo foo foo",
+            [
+              {
+                "oldText": "foo",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 3 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "foo foo z",
+            [
+              {
+                "oldText": "z",
+                "newText": "Z"
+              },
+              {
+                "oldText": "foo",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of edits[1] in note.txt. Each oldText must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "hello\nworld\n---\nhello\nworld\n",
+            [
+              {
+                "oldText": "hello\r\nworld\r\n",
+                "newText": "replaced"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      }
+    ],
+    "snapshot_duplicates_count_overlapping_occurrences": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "aaa",
+            [
+              {
+                "oldText": "aa",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "aaaa",
+            [
+              {
+                "oldText": "aa",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 3 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "ababa",
+            [
+              {
+                "oldText": "aba",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "😀😀😀",
+            [
+              {
+                "oldText": "😀😀",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "ＡＡＡ",
+            [
+              {
+                "oldText": "AA",
+                "newText": "X"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 2 occurrences of the text in note.txt. The text must be unique. Please provide more context to make it unique."
+        }
+      }
+    ],
+    "snapshot_overlap_errors_keep_stable_source_order": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "abc",
+                "newText": "A"
+              },
+              {
+                "oldText": "bcd",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[0] and edits[1] overlap in note.txt. Merge them into one edit or target disjoint regions."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "bcd",
+                "newText": "B"
+              },
+              {
+                "oldText": "abc",
+                "newText": "A"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[1] and edits[0] overlap in note.txt. Merge them into one edit or target disjoint regions."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "abcd",
+                "newText": "A"
+              },
+              {
+                "oldText": "bc",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[0] and edits[1] overlap in note.txt. Merge them into one edit or target disjoint regions."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "abc",
+                "newText": "A"
+              },
+              {
+                "oldText": "abc",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[0] and edits[1] overlap in note.txt. Merge them into one edit or target disjoint regions."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abcdef",
+            [
+              {
+                "oldText": "ab",
+                "newText": "A"
+              },
+              {
+                "oldText": "abcd",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "edits[0] and edits[1] overlap in note.txt. Merge them into one edit or target disjoint regions."
+        }
+      }
+    ],
+    "snapshot_no_change_compares_final_normalized_base": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "abc",
+                "newText": "abc"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "No changes made to note.txt. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "ab",
+                "newText": "a"
+              },
+              {
+                "oldText": "c",
+                "newText": "bc"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "No changes made to note.txt. The replacements produced identical content."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "“abc”\n",
+            [
+              {
+                "oldText": "\"abc\"",
+                "newText": "\"abc\""
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "No changes made to note.txt. The replacement produced identical content. This might indicate an issue with special characters or the text not existing as expected."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "abc",
+            [
+              {
+                "oldText": "a",
+                "newText": "a"
+              },
+              {
+                "oldText": "b",
+                "newText": "B"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "abc",
+          "newContent": "aBc"
+        }
+      }
+    ],
+    "snapshot_corrected_matching_keeps_shared_base_and_error_order": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a b\n“c”\n",
+            [
+              {
+                "oldText": " ",
+                "newText": "_"
+              },
+              {
+                "oldText": "\"c\"",
+                "newText": "C"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "a b\n\"c\"\n",
+          "newContent": "a_b\nC\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "a \n“c”\n",
+            [
+              {
+                "oldText": " ",
+                "newText": "_"
+              },
+              {
+                "oldText": "\"c\"",
+                "newText": "C"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Could not find edits[0] in note.txt. The oldText must match exactly including all whitespace and newlines."
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "aaaa",
+            [
+              {
+                "oldText": "aa",
+                "newText": "X"
+              },
+              {
+                "oldText": "missing",
+                "newText": "Z"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "error": "Found 3 occurrences of edits[0] in note.txt. Each oldText must be unique. Please provide more context to make it unique."
+        }
+      }
+    ],
+    "snapshot_matching_accepts_supported_unicode_forms": [
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "line one   \nline two  \nline three\n",
+            [
+              {
+                "oldText": "line one\nline two\n",
+                "newText": "replaced\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "line one\nline two\nline three\n",
+          "newContent": "replaced\nline three\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "你好，世界\n你好（世界）\n",
+            [
+              {
+                "oldText": "你好,世界\n你好(世界)\n",
+                "newText": "你好，maestro\n你好(maestro)\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "你好,世界\n你好(世界)\n",
+          "newContent": "你好，maestro\n你好(maestro)\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "ＡＢＣ１２３\ncafé\n",
+            [
+              {
+                "oldText": "ABC123\ncafé\n",
+                "newText": "XYZ789\ncoffee\n"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "ABC123\ncafé\n",
+          "newContent": "XYZ789\ncoffee\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "console.log(‘hello’);\n",
+            [
+              {
+                "oldText": "console.log('hello');",
+                "newText": "console.log('world');"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "console.log('hello');\n",
+          "newContent": "console.log('world');\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "const msg = “Hello World”;\n",
+            [
+              {
+                "oldText": "const msg = \"Hello World\";",
+                "newText": "const msg = \"Goodbye\";"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "const msg = \"Hello World\";\n",
+          "newContent": "const msg = \"Goodbye\";\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "range: 1–5\nbreak—here\n",
+            [
+              {
+                "oldText": "range: 1-5\nbreak-here",
+                "newText": "range: 10-50\nbreak--here"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "range: 1-5\nbreak-here\n",
+          "newContent": "range: 10-50\nbreak--here\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "hello world\n",
+            [
+              {
+                "oldText": "hello world",
+                "newText": "hello universe"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "hello world\n",
+          "newContent": "hello universe\n"
+        }
+      },
+      {
+        "input": {
+          "operation": "applyEditsToNormalizedContent",
+          "arguments": [
+            "const x = 'exact';\nconst y = 'other';\n",
+            [
+              {
+                "oldText": "const x = 'exact';",
+                "newText": "const x = 'changed';"
+              }
+            ],
+            "note.txt"
+          ]
+        },
+        "expected": {
+          "baseContent": "const x = 'exact';\nconst y = 'other';\n",
+          "newContent": "const x = 'changed';\nconst y = 'other';\n"
+        }
+      }
+    ]
+  }
+}

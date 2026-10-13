@@ -1,0 +1,38 @@
+[
+  {
+    "input": "",
+    "expected": ""
+  },
+  {
+    "input": "plain",
+    "expected": "plain"
+  },
+  {
+    "input": "\r",
+    "expected": "\n"
+  },
+  {
+    "input": "\n",
+    "expected": "\n"
+  },
+  {
+    "input": "\r\n",
+    "expected": "\n"
+  },
+  {
+    "input": "\r\r\n",
+    "expected": "\n\n"
+  },
+  {
+    "input": "\r\n\r",
+    "expected": "\n\n"
+  },
+  {
+    "input": "a\rb\r\nc\nd\t  ",
+    "expected": "a\nb\nc\nd\t  "
+  },
+  {
+    "input": "😀\r\n中",
+    "expected": "😀\n中"
+  }
+]

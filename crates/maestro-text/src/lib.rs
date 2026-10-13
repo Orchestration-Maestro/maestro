@@ -15,7 +15,9 @@
 pub mod collation;
 mod lexical;
 pub mod markup;
+mod newlines;
 mod whitespace;
 
 pub use lexical::utf16_order;
+pub use newlines::normalize_to_lf;
 pub use whitespace::{WHITESPACE, is_whitespace_scalar};
