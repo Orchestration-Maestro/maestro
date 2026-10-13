@@ -15,3 +15,7 @@ For inline images, `maestro-tui` may use `base64 =0.23.1` (defaults off,
 Apache-2.0; base64 adds no transitive dependencies, and the existing random/browser
 closure is reused. Fixture consumption uses `serde_json` only as a dev-dependency.
 No third-party type appears in the image interface.
+
+`maestro-chat` reuses `indexmap =2.14.2` with default `std` for its shared,
+replaceable action map. Its direct closure is `equivalent =1.0.2` and
+`hashbrown =0.17.1` without hashbrown defaults; all three are MIT OR Apache-2.0.

@@ -1,0 +1,90 @@
+//! Whole-second countdown policy over the toolkit runtime.
+use maestro_tui::TUI;
+use maestro_tui::tui::{RenderTimer, TuiRuntime};
+use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+use std::time::Duration;
+
+/// A countdown whose last owner cancels its pending continuation.
+pub struct CountdownTimer(Rc<State>);
+/// Countdown state retained only weakly by scheduled work.
+struct State {
+    /// Current ceiling in seconds.
+    remaining: Cell<f64>,
+    /// Optional render request that does not retain its writer.
+    request: Option<Rc<dyn Fn()>>,
+    /// Existing scheduling owner.
+    runtime: Rc<dyn TuiRuntime>,
+    /// Count notification.
+    on_tick: Rc<dyn Fn(f64)>,
+    /// Expiration notification.
+    on_expire: Rc<dyn Fn()>,
+    /// Owned continuation.
+    timer: RefCell<Option<Box<dyn RenderTimer>>>,
+}
+impl CountdownTimer {
+    /// Reports the initial ceiling immediately, then schedules one-second ticks.
+    #[must_use]
+    pub fn new(
+        timeout_ms: f64,
+        tui: Option<&TUI>,
+        runtime: Rc<dyn TuiRuntime>,
+        on_tick: Rc<dyn Fn(f64)>,
+        on_expire: Rc<dyn Fn()>,
+    ) -> Self {
+        let state = Rc::new(State {
+            remaining: Cell::new((timeout_ms / 1000.0).ceil()),
+            request: tui.map(TUI::weak_render_request),
+            runtime,
+            on_tick,
+            on_expire,
+            timer: RefCell::default(),
+        });
+        (state.on_tick)(state.remaining.get());
+        state.arm();
+        Self(state)
+    }
+    /// Cancels future countdown work; callbacks retained by this owner remain installed.
+    pub fn dispose(&self) {
+        self.0.stop();
+    }
+}
+impl State {
+    /// Arms before notifying so a callback can dispose the next tick.
+    fn arm(self: &Rc<Self>) {
+        let weak = Rc::downgrade(self);
+        let timer = self.runtime.schedule(
+            Duration::from_secs(1),
+            Box::new(move || {
+                let Some(state) = weak.upgrade() else {
+                    return Ok(());
+                };
+                state.arm();
+                let remaining = state.remaining.get() - 1.0;
+                state.remaining.set(remaining);
+                (state.on_tick)(remaining);
+                if let Some(request) = &state.request {
+                    request();
+                }
+                if remaining <= 0.0 {
+                    state.stop();
+                    (state.on_expire)();
+                }
+                Ok(())
+            }),
+        );
+        let previous = self.timer.replace(Some(timer));
+        drop(previous);
+    }
+    /// Shares explicit and last-owner teardown.
+    fn stop(&self) {
+        if let Some(mut timer) = self.timer.take() {
+            timer.cancel();
+        }
+    }
+}
+impl Drop for State {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}

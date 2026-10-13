@@ -1,0 +1,2137 @@
+[
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 0,
+      "custom": false
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m─\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;31m─\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 0,
+      "custom": true
+    },
+    "expected": {
+      "before": [
+        "[1:─]"
+      ],
+      "after": [
+        "[2:─]"
+      ],
+      "calls": 2
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 1,
+      "custom": false
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m─\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;31m─\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 1,
+      "custom": true
+    },
+    "expected": {
+      "before": [
+        "[1:─]"
+      ],
+      "after": [
+        "[2:─]"
+      ],
+      "calls": 2
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 2,
+      "custom": false
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m──\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;31m──\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 2,
+      "custom": true
+    },
+    "expected": {
+      "before": [
+        "[1:──]"
+      ],
+      "after": [
+        "[2:──]"
+      ],
+      "calls": 2
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 5,
+      "custom": false
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m─────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;31m─────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 5,
+      "custom": true
+    },
+    "expected": {
+      "before": [
+        "[1:─────]"
+      ],
+      "after": [
+        "[2:─────]"
+      ],
+      "calls": 2
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 80,
+      "custom": false
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "border_clamps_width_and_recolors_each_render",
+    "input": {
+      "width": 80,
+      "custom": true
+    },
+    "expected": {
+      "before": [
+        "[1:────────────────────────────────────────────────────────────────────────────────]"
+      ],
+      "after": [
+        "[2:────────────────────────────────────────────────────────────────────────────────]"
+      ],
+      "calls": 2
+    }
+  },
+  {
+    "test": "border_uses_live_theme_but_custom_color_needs_no_theme",
+    "input": {},
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m───\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;35m───\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": -1500,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          -1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          -1
+        ],
+        [
+          "tick",
+          -2
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": -1500,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          -1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          -1
+        ],
+        [
+          "tick",
+          -2
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": -1,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          0
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          0
+        ],
+        [
+          "tick",
+          -1
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": -1,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          0
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          0
+        ],
+        [
+          "tick",
+          -1
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 0,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          0
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          0
+        ],
+        [
+          "tick",
+          -1
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 0,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          0
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          0
+        ],
+        [
+          "tick",
+          -1
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 0.1,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 0.1,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 999,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 999,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1000,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1000,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          1
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1000.1,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1000.1,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "render"
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1001,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 1001,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "render"
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 2000,
+      "hasTui": false
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_ceil_tick_render_expire_order",
+    "input": {
+      "timeoutMs": 2000,
+      "hasTui": true
+    },
+    "expected": {
+      "initial": [
+        [
+          "tick",
+          2
+        ]
+      ],
+      "delays": [
+        1000
+      ],
+      "events": [
+        [
+          "tick",
+          2
+        ],
+        [
+          "tick",
+          1
+        ],
+        [
+          "render"
+        ],
+        [
+          "tick",
+          0
+        ],
+        [
+          "render"
+        ],
+        [
+          "expire",
+          0
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_disposal_is_idempotent_and_reentrant",
+    "input": {
+      "mode": "before"
+    },
+    "expected": {
+      "events": [
+        2
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_disposal_is_idempotent_and_reentrant",
+    "input": {
+      "mode": "in_tick"
+    },
+    "expected": {
+      "events": [
+        2,
+        1,
+        "render"
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_disposal_is_idempotent_and_reentrant",
+    "input": {
+      "mode": "in_terminal_tick"
+    },
+    "expected": {
+      "events": [
+        2,
+        1,
+        "render",
+        0,
+        "render",
+        "expire"
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "countdown_disposal_is_idempotent_and_reentrant",
+    "input": {
+      "mode": "in_expire"
+    },
+    "expected": {
+      "events": [
+        2,
+        1,
+        "render",
+        0,
+        "render",
+        "expire"
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 4,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 4,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 12,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 12,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 30,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": null,
+      "width": 30,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 4,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 4,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        " \u001b[38;5;34mes ",
+        " \u001b[38;5;34mca ",
+        " \u001b[38;5;34mpe ",
+        " \u001b[38;5;34m/c ",
+        " \u001b[38;5;34mtr ",
+        " \u001b[38;5;34ml+ ",
+        " \u001b[38;5;34mc\u001b[39m\u001b[38;5;33m  ",
+        " \u001b[38;5;33mca ",
+        " \u001b[38;5;33mnc ",
+        " \u001b[38;5;33mel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 12,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 12,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        " \u001b[38;5;34mescape/ctr ",
+        " \u001b[38;5;34ml+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 30,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": true,
+      "width": 30,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 4,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m  ",
+        " \u001b[38;5;34mWo ",
+        " \u001b[38;5;34mrk ",
+        " \u001b[38;5;34min ",
+        " \u001b[38;5;34mg\u001b[39m  ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 4,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m ",
+        "",
+        "\u001b[38;5;32m────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 12,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m  ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 12,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 30,
+      "message": "Working"
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_layout_preserves_padding_and_message",
+    "input": {
+      "cancellable": false,
+      "width": 30,
+      "message": ""
+    },
+    "expected": {
+      "first": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "next": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠙\u001b[39m \u001b[38;5;34m\u001b[39m                           ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "bordered_loader_keeps_captured_theme_and_hint_but_matches_live_keys",
+    "input": {},
+    "expected": {
+      "before": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m",
+        "",
+        " \u001b[38;5;33m⠋\u001b[39m \u001b[38;5;34mWorking\u001b[39m                    ",
+        "",
+        " \u001b[38;5;34mescape/ctrl+c\u001b[39m\u001b[38;5;33m cancel\u001b[39m         ",
+        "",
+        "\u001b[38;5;32m──────────────────────────────\u001b[39m"
+      ],
+      "old": false,
+      "aborted": true,
+      "seen": [
+        true,
+        true
+      ],
+      "pending": 0,
+      "sameSignal": true
+    }
+  },
+  {
+    "test": "bordered_loader_dispose_stops_animation_without_forcing_abort",
+    "input": {
+      "cancellable": true
+    },
+    "expected": {
+      "unmatched": false,
+      "disposed": false,
+      "called": 2,
+      "aborted": true,
+      "pending": 0
+    }
+  },
+  {
+    "test": "bordered_loader_dispose_stops_animation_without_forcing_abort",
+    "input": {
+      "cancellable": false
+    },
+    "expected": {
+      "unmatched": false,
+      "disposed": false,
+      "called": 0,
+      "aborted": false,
+      "pending": 0
+    }
+  },
+  {
+    "test": "plain_loader_never_aborts_or_reads_hint_theme",
+    "input": {},
+    "expected": {
+      "called": 0,
+      "aborted": false,
+      "sameSignal": true,
+      "pending": 0
+    }
+  },
+  {
+    "test": "application_hint_exports_use_owner_semantics",
+    "input": {
+      "keys": []
+    },
+    "expected": {
+      "text": "",
+      "hint": "\u001b[38;5;34m\u001b[39m\u001b[38;5;33m cancel\u001b[39m",
+      "raw": "\u001b[38;5;34mZ\u001b[39m\u001b[38;5;33m cancel\u001b[39m"
+    }
+  },
+  {
+    "test": "application_hint_exports_use_owner_semantics",
+    "input": {
+      "keys": [
+        "escape"
+      ]
+    },
+    "expected": {
+      "text": "escape",
+      "hint": "\u001b[38;5;34mescape\u001b[39m\u001b[38;5;33m cancel\u001b[39m",
+      "raw": "\u001b[38;5;34mZ\u001b[39m\u001b[38;5;33m cancel\u001b[39m"
+    }
+  },
+  {
+    "test": "application_hint_exports_use_owner_semantics",
+    "input": {
+      "keys": [
+        "ctrl+c",
+        "escape",
+        "ctrl+c"
+      ]
+    },
+    "expected": {
+      "text": "ctrl+c/escape",
+      "hint": "\u001b[38;5;34mctrl+c/escape\u001b[39m\u001b[38;5;33m cancel\u001b[39m",
+      "raw": "\u001b[38;5;34mZ\u001b[39m\u001b[38;5;33m cancel\u001b[39m"
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "extension_claims",
+      "data": "x",
+      "extension": true,
+      "paste": "x",
+      "interrupt": "x",
+      "exit": "x",
+      "generic": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [
+        [
+          "extension",
+          "x"
+        ]
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "extension_declines",
+      "data": "x",
+      "extension": false,
+      "generic": "x"
+    },
+    "expected": {
+      "events": [
+        [
+          "extension",
+          "x"
+        ],
+        "first"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "paste_with_handler",
+      "data": "x",
+      "paste": "x",
+      "interrupt": "x",
+      "exit": "x",
+      "generic": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [
+        "paste"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "paste_without_handler",
+      "data": "x",
+      "paste": "x",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "interrupt_dynamic",
+      "data": "x",
+      "interrupt": "x",
+      "generic": "x",
+      "dynamic": true,
+      "registered": true
+    },
+    "expected": {
+      "events": [
+        "escape"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "interrupt_registered",
+      "data": "x",
+      "interrupt": "x",
+      "registered": true
+    },
+    "expected": {
+      "events": [
+        "registered_interrupt"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "interrupt_no_handler",
+      "data": "x",
+      "interrupt": "x",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [],
+      "text": "x",
+      "cursor": {
+        "line": 0,
+        "col": 1
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "exit_dynamic",
+      "data": "x",
+      "exit": "x",
+      "dynamic": true,
+      "registered": true
+    },
+    "expected": {
+      "events": [
+        "exit"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "exit_registered",
+      "data": "x",
+      "exit": "x",
+      "registered": true
+    },
+    "expected": {
+      "events": [
+        "registered_exit"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "exit_no_handler",
+      "data": "x",
+      "exit": "x",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "exit_space_is_nonempty",
+      "data": "x",
+      "exit": "x",
+      "text": " "
+    },
+    "expected": {
+      "events": [],
+      "text": " x",
+      "cursor": {
+        "line": 0,
+        "col": 2
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "nonempty_exit_generic",
+      "data": "x",
+      "exit": "x",
+      "text": "ab",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [
+        "first"
+      ],
+      "text": "ab",
+      "cursor": {
+        "line": 0,
+        "col": 2
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "generic_first",
+      "data": "x",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [
+        "first"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "wrong_modifier",
+      "data": "\u001b[120;2u",
+      "generic": "x"
+    },
+    "expected": {
+      "events": [],
+      "text": "x",
+      "cursor": {
+        "line": 0,
+        "col": 1
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "normal_text",
+      "data": "é"
+    },
+    "expected": {
+      "events": [],
+      "text": "é",
+      "cursor": {
+        "line": 0,
+        "col": 2
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "delete_forward",
+      "data": "\u0004",
+      "text": "ab",
+      "home": true
+    },
+    "expected": {
+      "events": [],
+      "text": "b",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "interrupt_wins_exit",
+      "data": "x",
+      "interrupt": "x",
+      "exit": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [
+        "escape"
+      ],
+      "text": "",
+      "cursor": {
+        "line": 0,
+        "col": 0
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "paste_wrong_modifier",
+      "data": "\u001b[120;2u",
+      "paste": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [],
+      "text": "x",
+      "cursor": {
+        "line": 0,
+        "col": 1
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "interrupt_wrong_modifier",
+      "data": "\u001b[120;2u",
+      "interrupt": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [],
+      "text": "x",
+      "cursor": {
+        "line": 0,
+        "col": 1
+      }
+    }
+  },
+  {
+    "test": "custom_editor_routes_actions_in_source_order",
+    "input": {
+      "name": "exit_wrong_modifier",
+      "data": "\u001b[120;2u",
+      "exit": "x",
+      "dynamic": true
+    },
+    "expected": {
+      "events": [],
+      "text": "x",
+      "cursor": {
+        "line": 0,
+        "col": 1
+      }
+    }
+  },
+  {
+    "test": "custom_editor_preserves_order_and_replaceable_map_aliases",
+    "input": {},
+    "expected": {
+      "keys": [
+        "app.first",
+        "app.second"
+      ],
+      "aliasKeys": [
+        "app.second",
+        "app.first"
+      ],
+      "currentKeys": [
+        "app.first"
+      ],
+      "events": [
+        "replacement",
+        "second",
+        "new_map"
+      ],
+      "text": ""
+    }
+  },
+  {
+    "test": "custom_editor_callback_replacement_and_reentry_take_effect",
+    "input": {},
+    "expected": {
+      "events": [
+        "first",
+        "second",
+        "registered",
+        "added"
+      ],
+      "padding": 2,
+      "maximum": 7,
+      "text": ""
+    }
+  },
+  {
+    "test": "custom_editor_autocomplete_owns_first_interrupt",
+    "input": {},
+    "expected": {
+      "before": true,
+      "after": false,
+      "events": [
+        "escape"
+      ],
+      "text": ""
+    }
+  },
+  {
+    "test": "custom_editor_uses_supplied_manager_after_global_replacement",
+    "input": {},
+    "expected": {
+      "events": [
+        "first",
+        "first"
+      ],
+      "text": "yx"
+    }
+  },
+  {
+    "test": "custom_editor_inherits_editor_and_focus_capabilities",
+    "input": {},
+    "expected": {
+      "disabledText": "!abc",
+      "text": "",
+      "expanded": "",
+      "padding": 2,
+      "maximum": 7,
+      "render": [
+        "\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m",
+        "  \u001b_maestro:c\u0007\u001b[7m \u001b[0m                 ",
+        "\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m\u001b[38;5;31m─\u001b[39m"
+      ],
+      "changes": [
+        "abc",
+        "!abc",
+        "",
+        "saved",
+        "",
+        "[paste #1 +11 lines]"
+      ],
+      "submits": [
+        "!abc"
+      ],
+      "history": "saved",
+      "storedPaste": "[paste #1 +11 lines]",
+      "expandedPaste": "p\np\np\np\np\np\np\np\np\np\nq",
+      "updatedPadding": 3,
+      "updatedMaximum": 4,
+      "borderSample": "\u001b[38;5;31msample\u001b[39m"
+    }
+  },
+  {
+    "test": "loader_container_mutations_keep_shared_child_identity",
+    "input": {},
+    "expected": {
+      "added": "tail",
+      "afterClear": [],
+      "oldLength": 8,
+      "restored": [
+        "tail",
+        "tail"
+      ],
+      "finalLength": 7
+    }
+  },
+  {
+    "test": "border_uses_live_theme_but_custom_color_needs_no_theme",
+    "input": {
+      "uninitialized": true
+    },
+    "expected": {
+      "result": [
+        "[──]"
+      ]
+    }
+  }
+]

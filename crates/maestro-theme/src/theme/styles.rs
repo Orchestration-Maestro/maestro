@@ -1,5 +1,5 @@
 //! Text decorations and the border callbacks that keep their prepared theme.
-use super::{LiveTheme, Theme, ThemeColor};
+use super::{Theme, ThemeColor};
 use owo_colors::Style;
 use std::rc::Rc;
 
@@ -28,12 +28,12 @@ fn decorate(text: &str, enabled: bool, open: Style, close: &str) -> String {
     out
 }
 
-/// Style `text` with a foreground of the published theme, or leave it unstyled when
-/// the theme is not initialized or lacks the key.
-pub(super) fn paint(live: &LiveTheme, key: &ThemeColor, text: &str) -> String {
-    live.get()
-        .and_then(|theme| theme.fg(key, text))
-        .unwrap_or_else(|_| text.to_owned())
+/// Style text with the supplied foreground, or leave it unstyled if the theme or key is absent.
+#[must_use]
+pub fn paint(theme: Option<&Theme>, key: &ThemeColor, text: &str) -> String {
+    theme
+        .and_then(|theme| theme.fg(key, text).ok())
+        .unwrap_or_else(|| text.to_owned())
 }
 
 impl Theme {
