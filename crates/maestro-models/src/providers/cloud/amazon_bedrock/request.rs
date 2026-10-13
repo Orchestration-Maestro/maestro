@@ -8,20 +8,11 @@ use super::BedrockOptions;
 use super::messages::{messages, system_blocks, tool_config};
 use super::proxy::Environment;
 use super::thinking::{additional_model_request_fields, cache_point};
-use super::wire::{ContentBlock, SystemContentBlock, ToolConfiguration, list, map};
+use super::wire::{ContentBlock, SystemContentBlock, TextBlock, ToolConfiguration, list, map};
 use crate::providers::chat::openai_completions::resolve_cache_retention;
 use crate::providers::http::RequestFailure;
 use crate::providers::json_text::compact_json;
 use crate::{Context, Model};
-
-/// One text member of a content, system or prompt-variable union.
-#[derive(Default, Serialize, Deserialize)]
-#[serde(default)]
-pub(super) struct TextBlock {
-    /// The text.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) text: Option<String>,
-}
 
 /// One conversation turn.
 #[derive(Default, Serialize, Deserialize)]

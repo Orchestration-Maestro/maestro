@@ -154,6 +154,10 @@ pub struct Expected {
     stop_reason: Option<String>,
     /// Failure text of a failed request.
     error: Option<String>,
+    /// Native failure fragment.
+    error_contains: Option<String>,
+    /// Object key sequences indexed by JSON Pointer.
+    body_keys: Option<IndexMap<String, Vec<String>>>,
     /// Start of the Authorization header.
     authorization: Option<String>,
 }
@@ -432,6 +436,19 @@ fn check_sent(
     }
     let body: Value = serde_json::from_slice(&request.body)?;
     assert_eq!(Some(&body), expected.body.as_ref(), "{id}: body");
+    if let Some(objects) = &expected.body_keys {
+        for (pointer, keys) in objects {
+            let object = body
+                .pointer(pointer)
+                .and_then(Value::as_object)
+                .ok_or("expected an object at the key-order pointer")?;
+            assert_eq!(
+                object.keys().collect::<Vec<_>>(),
+                keys.iter().collect::<Vec<_>>(),
+                "{id}: body keys"
+            );
+        }
+    }
     let authorization = request.headers.get("authorization").map(String::as_str);
     match &expected.authorization {
         Some(prefix) => assert!(
@@ -454,6 +471,15 @@ fn check_failed(row: &Row, message: &AssistantMessage) -> TestResult {
         expected.stop_reason.as_deref(),
         "{id}: stop reason"
     );
+    if let Some(fragment) = &expected.error_contains {
+        assert!(
+            message
+                .error_message
+                .as_deref()
+                .is_some_and(|text| text.contains(fragment)),
+            "{id}: error fragment"
+        );
+    }
     match &expected.error {
         Some(error) => assert_eq!(message.error_message.as_ref(), Some(error), "{id}: error"),
         None => assert!(

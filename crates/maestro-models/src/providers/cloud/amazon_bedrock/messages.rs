@@ -69,10 +69,12 @@ pub(super) fn system_blocks(
     let mut blocks = vec![SystemContentBlock {
         text: Some(prompt),
         cache_point: None,
+        ..SystemContentBlock::default()
     }];
     blocks.extend(cache.map(|cache| SystemContentBlock {
         text: None,
         cache_point: Some(cache.clone()),
+        ..SystemContentBlock::default()
     }));
     Some(blocks)
 }
@@ -106,13 +108,15 @@ pub(super) fn tool_config(
             tools
                 .into_iter()
                 .map(|tool| Tool {
-                    tool_spec: Some(ToolSpecification {
+                    spec: Some(ToolSpecification {
                         name: Some(tool.name),
                         description: Some(tool.description),
                         input_schema: Some(ToolInputSchema {
                             json: Some(tool.parameters),
                         }),
+                        ..ToolSpecification::default()
                     }),
+                    ..Tool::default()
                 })
                 .collect(),
         ),
@@ -172,6 +176,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<ContentBlock
                 text: Some(text),
                 signature,
             }),
+            ..ReasoningContentBlock::default()
         }),
         ..ContentBlock::default()
     };
@@ -184,6 +189,7 @@ fn assistant_block(block: AssistantContent, claude: bool) -> Option<ContentBlock
                 tool_use_id: Some(call.id),
                 name: Some(call.name),
                 input: Some(Value::Object(call.arguments)),
+                ..ToolUseBlock::default()
             }),
             ..ContentBlock::default()
         }),
@@ -227,7 +233,11 @@ fn tool_result(result: ToolResultMessage) -> Result<ContentBlock, RequestFailure
         .into_iter()
         .map(|block| {
             let (text, image) = media(block)?;
-            Ok(ToolResultContentBlock { text, image })
+            Ok(ToolResultContentBlock {
+                text,
+                image,
+                ..ToolResultContentBlock::default()
+            })
         })
         .collect::<Result<_, RequestFailure>>()?;
     Ok(ContentBlock {
@@ -235,6 +245,7 @@ fn tool_result(result: ToolResultMessage) -> Result<ContentBlock, RequestFailure
             tool_use_id: Some(result.tool_call_id),
             content: Some(content),
             status: Some(if result.is_error { "error" } else { "success" }.to_owned()),
+            ..ToolResultBlock::default()
         }),
         ..ContentBlock::default()
     })
@@ -269,7 +280,9 @@ fn image_block(mime_type: &str, data: &str) -> Result<ImageBlock, RequestFailure
     Ok(ImageBlock {
         source: Some(ImageSource {
             bytes: Some(Blob::Bytes(bytes)),
+            ..ImageSource::default()
         }),
         format: Some(format.to_owned()),
+        ..ImageBlock::default()
     })
 }
