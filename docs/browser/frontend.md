@@ -36,12 +36,14 @@ rounding use `ryu-js`; token text uses `k`, never `M`.
 
 ## Icons
 
-`icons()` loads 27 used glyphs. `icon_svg` constructs their ordered primitive
-nodes, binding qualified primitive prefixes to the SVG namespace;
+`icons()` loads 27 used glyphs. `icon_svg` serializes ordered primitive nodes
+with literal names and attributes, adding no namespace bindings;
 [`markup`](../../crates/maestro-text/src/markup.rs) owns XML attribute escaping.
 `icon` renders the SVG through usvg/resvg into an egui image, accepting caller
-color and device density. `icon_dom` parses the same SVG into a browser SVG
-element. Custom and empty primitive lists are also accepted.
+color and device density. Native custom prefixes require caller-declared
+namespace bindings; undeclared prefixes return `IconError`. `icon_dom` creates
+SVG-namespaced browser elements directly and sets literal attributes without
+XML parsing. Custom and empty primitive lists are also accepted.
 
 Sizes xs/sm/md/lg/xl are 12/16/20/24/32 pixels at a 16px root; md is the default.
 DOM callers install `ICON_STYLES` and supply their class suffix/color. Canvas

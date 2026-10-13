@@ -20,14 +20,15 @@ font bundle or application launcher.
 | web-sys | 0.3.106 | wasm-only browser platform operations | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
-Document, Node, Element, SvgElement, DomParser and SupportedType. Storage and
-reload errors remain fallible. Legacy locale access uses the platform property
+Document, Node, Element and SvgElement. Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
 
-Native rendering uses the same constructed SVG as DOM parsing. Tests inspect
-real XML literals and native raster dimensions, alpha and supplied colors;
-controlled language hosts cover selection, lazy reads and effect order.
+Native rendering parses serialized SVG; browser rendering creates SVG DOM
+nodes directly. They share root defaults, size classes and numeric attribute
+formatting. Tests inspect real XML literals and native raster dimensions,
+alpha and supplied colors; controlled language hosts cover selection, lazy reads
+and effect order.
 They do not claim browser attachment, computed CSS or browser pixel identity.
 
 The workspace lock retains its existing smallvec 1.16.2, syn 3.0.6,

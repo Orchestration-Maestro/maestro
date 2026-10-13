@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 use maestro_app::markup::{EscapeMode, escape_into};
 use num_traits::ToPrimitive;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 /// Literal SVG attribute value.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -14,6 +14,29 @@ pub enum SvgValue {
     /// Numeric attribute.
     Number(f64),
 }
+impl SvgValue {
+    /// Format a literal attribute for either rendering boundary.
+    fn text(&self) -> Cow<'_, str> {
+        match self {
+            Self::Text(text) => Cow::Borrowed(text),
+            Self::Number(number) => Cow::Owned(ryu_js::Buffer::new().format(*number).into()),
+        }
+    }
+}
+/// SVG namespace used by the root and browser primitives.
+const SVG_NS: &str = "http://www.w3.org/2000/svg";
+/// Default root attributes in declaration order.
+const ROOT_ATTRIBUTES: [(&str, &str); 9] = [
+    ("xmlns", SVG_NS),
+    ("width", "24"),
+    ("height", "24"),
+    ("viewBox", "0 0 24 24"),
+    ("fill", "none"),
+    ("stroke", "currentColor"),
+    ("stroke-width", "2"),
+    ("stroke-linecap", "round"),
+    ("stroke-linejoin", "round"),
+];
 /// Ordered primitive names with their ordered attributes.
 pub type IconNode = Vec<(String, IndexMap<String, SvgValue>)>;
 /// Decode the used glyph catalog.
@@ -60,37 +83,30 @@ fn attribute(svg: &mut String, key: &str, value: &str) {
     escape_into(value, svg, EscapeMode::XmlAttribute);
     svg.push('"');
 }
-/// Build the SVG shared by DOM parsing and native rasterization.
-#[must_use]
-pub fn icon_svg(node: &IconNode, size: IconSize, class_name: Option<&str>) -> String {
-    let mut svg = String::from(
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"",
-    );
+/// Size classes with the caller's optional suffix.
+fn classes(size: IconSize, class_name: Option<&str>) -> String {
     let (_, suffix) = size.dimensions();
     let mut classes = format!("w-{suffix} h-{suffix}");
     if let Some(class) = class_name.filter(|s| !s.is_empty()) {
         classes.push(' ');
         classes.push_str(class);
     }
-    attribute(&mut svg, "class", &classes);
+    classes
+}
+/// Serialize literal SVG names and attributes without inventing namespace bindings.
+#[must_use]
+pub fn icon_svg(node: &IconNode, size: IconSize, class_name: Option<&str>) -> String {
+    let mut svg = String::from("<svg");
+    for (key, value) in ROOT_ATTRIBUTES {
+        attribute(&mut svg, key, value);
+    }
+    attribute(&mut svg, "class", &classes(size, class_name));
     svg.push('>');
     for (tag, attrs) in node {
         svg.push('<');
         escape_into(tag, &mut svg, EscapeMode::Xml);
-        if let Some((prefix, _)) = tag.split_once(':') {
-            attribute(
-                &mut svg,
-                &format!("xmlns:{prefix}"),
-                "http://www.w3.org/2000/svg",
-            );
-        }
         for (key, value) in attrs {
-            match value {
-                SvgValue::Text(text) => attribute(&mut svg, key, text),
-                SvgValue::Number(number) => {
-                    attribute(&mut svg, key, ryu_js::Buffer::new().format(*number));
-                }
-            }
+            attribute(&mut svg, key, &value.text());
         }
         svg.push_str("/>");
     }
@@ -159,9 +175,9 @@ pub fn icon(
     ))
 }
 
-/// Parse the shared SVG into a real namespaced browser element.
+/// Build namespaced browser elements with literal attributes.
 /// # Errors
-/// Propagates DOM parsing and element conversion failures.
+/// Propagates unavailable-document, DOM operation and element conversion failures.
 #[cfg(target_arch = "wasm32")]
 pub fn icon_dom(
     node: &IconNode,
@@ -169,13 +185,20 @@ pub fn icon_dom(
     class_name: Option<&str>,
 ) -> Result<web_sys::SvgElement, wasm_bindgen::JsValue> {
     use wasm_bindgen::JsCast;
-    let document = web_sys::DomParser::new()?.parse_from_string(
-        &icon_svg(node, size, class_name),
-        web_sys::SupportedType::ImageSvgXml,
-    )?;
-    document
-        .document_element()
-        .ok_or_else(|| wasm_bindgen::JsValue::from_str("SVG has no root"))?
-        .dyn_into()
-        .map_err(Into::into)
+    let document = web_sys::window()
+        .and_then(|window| window.document())
+        .ok_or_else(|| wasm_bindgen::JsValue::from_str("Document is unavailable"))?;
+    let svg = document.create_element_ns(Some(SVG_NS), "svg")?;
+    for (key, value) in ROOT_ATTRIBUTES {
+        svg.set_attribute(key, value)?;
+    }
+    svg.set_attribute("class", &classes(size, class_name))?;
+    for (tag, attrs) in node {
+        let child = document.create_element_ns(Some(SVG_NS), tag)?;
+        for (key, value) in attrs {
+            child.set_attribute(key, &value.text())?;
+        }
+        svg.append_child(&child)?;
+    }
+    svg.dyn_into().map_err(Into::into)
 }

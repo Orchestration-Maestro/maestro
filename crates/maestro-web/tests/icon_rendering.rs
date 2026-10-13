@@ -165,7 +165,7 @@ fn icon_svg_escapes_attribute_values_before_parsing() {
 }
 
 #[test]
-fn qualified_svg_primitives_keep_the_svg_namespace() {
+fn explicitly_bound_svg_primitives_rasterize() {
     use maestro_web::icons::{IconSize, SvgValue, icon, icon_svg};
     let node = vec![(
         "svg:circle".into(),
@@ -173,6 +173,10 @@ fn qualified_svg_primitives_keep_the_svg_namespace() {
             ("cx".into(), SvgValue::Number(12.0)),
             ("cy".into(), SvgValue::Number(12.0)),
             ("r".into(), SvgValue::Number(5.0)),
+            (
+                "xmlns:svg".into(),
+                SvgValue::Text("http://www.w3.org/2000/svg".into()),
+            ),
         ]),
     )];
     let svg = icon_svg(&node, IconSize::Md, None);
@@ -185,6 +189,22 @@ fn qualified_svg_primitives_keep_the_svg_namespace() {
     );
     let image = icon(&node, IconSize::Md, egui::Color32::WHITE, 1.0).unwrap();
     assert!(image.pixels.iter().any(|p| p.a() > 0));
+}
+
+#[test]
+fn undeclared_svg_prefixes_return_parser_errors() {
+    use maestro_web::icons::{IconSize, SvgValue, icon};
+    for (tag, attrs) in [
+        ("svg:circle", IndexMap::new()),
+        (
+            "use",
+            IndexMap::from([("xlink:href".into(), SvgValue::Text("#shape".into()))]),
+        ),
+    ] {
+        let node = vec![(tag.into(), attrs)];
+        let error = icon(&node, IconSize::Md, egui::Color32::WHITE, 1.0).unwrap_err();
+        assert!(std::error::Error::source(&error).is_some());
+    }
 }
 
 #[test]
