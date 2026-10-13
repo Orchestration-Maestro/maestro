@@ -1,7 +1,7 @@
 //! Public helper launch semantics.
 #![cfg(test)]
 #![cfg(unix)]
-use maestro_process::{SpawnSyncOptions, StderrMode, spawn_sync};
+use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use tokio::process::Command;
 
 #[test]
@@ -21,16 +21,17 @@ sys.exit(int(sys.argv[1]))
         };
         expected.extend_from_slice(input.unwrap_or_default());
         for (stderr, code) in [
-            (StderrMode::Capture, 0),
-            (StderrMode::Capture, 7),
-            (StderrMode::Discard, 0),
-            (StderrMode::Discard, 7),
+            (OutputMode::Capture, 0),
+            (OutputMode::Capture, 7),
+            (OutputMode::Discard, 0),
+            (OutputMode::Discard, 7),
         ] {
             let mut command = Command::new("python3");
             command.args(["-c", script, &code.to_string()]);
             let output = spawn_sync(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    stdout: OutputMode::Capture,
                     input,
                     timeout: None,
                     stderr,
@@ -40,7 +41,7 @@ sys.exit(int(sys.argv[1]))
             assert_eq!(output.stdout, expected);
             assert_eq!(
                 output.stderr,
-                if stderr == StderrMode::Capture {
+                if stderr == OutputMode::Capture {
                     &b"diag\0\xff"[..]
                 } else {
                     b""
@@ -59,9 +60,10 @@ fn sync_input_and_output_progress_concurrently() {
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
             input: Some(&input),
             timeout: None,
-            stderr: StderrMode::Capture,
+            stderr: OutputMode::Capture,
         },
     )
     .unwrap();
@@ -133,9 +135,10 @@ s.close()
         spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: Some(&input),
                 timeout: None,
-                stderr: StderrMode::Discard,
+                stderr: OutputMode::Discard,
             },
         )
     });
@@ -306,4 +309,62 @@ sys.exit(int(sys.argv[1]))
         ),
         Err(maestro_process::SpawnSyncError::Spawn(_))
     ));
+}
+
+#[test]
+fn sync_discarded_stdout_does_not_wait_for_a_descendant() {
+    use std::io::{Read, Write};
+    let script = r"
+import os, socket, sys
+assert sys.stdin.buffer.read() == b'copied'
+pid = os.getpid()
+gone, alive = os.pipe()
+if os.fork():
+    os.close(gone)
+    sys.exit(7)
+os.close(alive); os.read(gone, 1); os.close(gone)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+s.sendall(str(pid).encode() + b'\n')
+assert s.recv(1) == b'?'
+null = os.fstat(1).st_rdev == os.stat(os.devnull).st_rdev
+s.sendall(b'N' if null else b'P')
+assert s.recv(1) == b'!'
+os.write(1, b'descendant output')
+s.close(); os._exit(0)
+";
+    let (mut command, listener) = controlled(script);
+    let worker = std::thread::spawn(move || {
+        spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                stdout: OutputMode::Discard,
+                input: Some(b"copied"),
+                timeout: None,
+                stderr: OutputMode::Discard,
+            },
+        )
+    });
+    let (mut socket, pid) = ready(&listener);
+    socket.write_all(b"?").unwrap();
+    let mut descriptor = [0];
+    socket.read_exact(&mut descriptor).unwrap();
+    // Release a captured-pipe mutant before joining so it cannot strand the holder.
+    if descriptor != *b"N" {
+        socket.write_all(b"!").unwrap();
+    }
+    let output = worker.join().unwrap().unwrap();
+    if descriptor == *b"N" {
+        reaped(pid);
+        socket.write_all(b"!").unwrap();
+    }
+    let mut rest = Vec::new();
+    socket.read_to_end(&mut rest).unwrap();
+    assert_eq!(
+        descriptor, *b"N",
+        "discarded stdout must use the null device"
+    );
+    assert_eq!(output.status.code(), Some(7));
+    assert!(output.stdout.is_empty());
+    assert!(output.stderr.is_empty());
+    assert!(rest.is_empty());
 }

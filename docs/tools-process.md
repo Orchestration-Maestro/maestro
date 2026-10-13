@@ -97,8 +97,9 @@ assert_eq!(result.exit_code, Some(0.0));
 ## Helper launches
 
 The application exposes native `spawn_sync`, `spawn`, `SpawnSyncOptions`,
-`SpawnSyncError` and `StderrMode` from the
+`SpawnSyncError` and `OutputMode` from the
 [process owner](../crates/maestro-process/README.md), plus the original
 `exec_command`, `ExecOptions` and `ExecResult` above. Use capture options for
-supplied input, inherited options for a caller-prepared terminal command, or
-the background launch for startup acknowledgment without waiting for exit.
+supplied input and independent stdout/stderr capture or discard, inherited options
+for a caller-prepared terminal command, or the background launch for startup
+acknowledgment without waiting for exit.

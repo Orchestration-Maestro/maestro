@@ -4,4 +4,4 @@
 pub mod child_process;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use child_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn, spawn_sync};
+pub use child_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync};

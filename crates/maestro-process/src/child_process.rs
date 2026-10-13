@@ -43,7 +43,7 @@ pub struct CapturedChild {
 #[derive(Clone, Copy, Debug)]
 pub struct WaitOptions {
     /// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
-    pub stderr: StderrMode,
+    pub stderr: OutputMode,
     /// How long pipes may stay open after the child exits; `None` waits for both
     /// end-of-file events. On expiry retained bytes are returned and the
     /// pipes are dropped.
@@ -53,18 +53,20 @@ pub struct WaitOptions {
 impl Default for WaitOptions {
     fn default() -> Self {
         Self {
-            stderr: StderrMode::Capture,
+            stderr: OutputMode::Capture,
             post_exit_grace: None,
         }
     }
 }
 
-/// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
+/// Standard-output descriptor selection for synchronous launches; stderr retention
+/// policy for waits. See [`wait_for_child_process`] for streaming.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum StderrMode {
-    /// Retain newly consumed stderr when no streaming sink is supplied.
+pub enum OutputMode {
+    /// Pipe synchronous output; retain wait stderr when no streaming sink is supplied.
     Capture,
-    /// Drop retained stderr; synchronous capture sends it to the null device.
+    /// Use null for synchronous output; drop retained wait stderr and, without a
+    /// sink, newly consumed stderr.
     Discard,
 }
 
@@ -176,8 +178,8 @@ impl CapturedChild {
     }
 
     /// Drops retained stderr bytes when a wait discards stderr.
-    fn apply(&mut self, stderr: StderrMode) {
-        if stderr == StderrMode::Discard {
+    fn apply(&mut self, stderr: OutputMode) {
+        if stderr == OutputMode::Discard {
             self.err.clear();
         }
     }
@@ -292,13 +294,13 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
 /// [`Termination::Kill`]
 /// abandons readers that have not finished, returns once the direct child is reaped
 /// and gives empty bytes for each abandoned stream; completed streams keep retained bytes.
-/// [`StderrMode::Discard`] also drops stderr bytes retained by an earlier wait.
+/// [`OutputMode::Discard`] also drops stderr bytes retained by an earlier wait.
 /// A `post_exit_grace` ends the wait that long after the exit with retained
 /// bytes; without one the wait ends at the exit and both end-of-file
 /// events. The future is dropped when this function returns.
 ///
 /// With `on_data`, newly consumed chunks go synchronously to the sink instead of
-/// retained output, including stderr regardless of [`StderrMode`]. Earlier
+/// retained output, including stderr regardless of [`OutputMode`]. Earlier
 /// retained bytes are not replayed.
 ///
 /// # Errors
@@ -340,7 +342,7 @@ where
                 grace = timer(options.post_exit_grace);
             }
             value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value?, &mut on_data),
-            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == StderrMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data),
+            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == OutputMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data),
         }
     }
     child.stdout = None;
@@ -393,14 +395,16 @@ impl std::error::Error for SpawnSyncError {
 /// Descriptor and deadline selection for [`spawn_sync`].
 #[derive(Clone, Copy, Debug)]
 pub enum SpawnSyncOptions<'a> {
-    /// Capture raw stdout with optional input and deadline.
+    /// Select raw output descriptors with optional input and deadline.
     Capture {
+        /// Whether stdout is captured or sent to the null device.
+        stdout: OutputMode,
         /// Bytes written unchanged, followed by EOF; absence selects null stdin.
         input: Option<&'a [u8]>,
         /// Deadline for input, exit and captured EOFs; None and zero disable it.
         timeout: Option<Duration>,
         /// Whether stderr is captured or sent to the null device.
-        stderr: StderrMode,
+        stderr: OutputMode,
     },
     /// Inherit all three descriptors and return status with empty captured streams.
     Inherit,
@@ -425,7 +429,7 @@ async fn write_input(stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io::Res
 async fn complete(child: &mut CapturedChild, input: Option<&[u8]>) -> io::Result<Output> {
     settle_input(
         write_input(child.child.stdin.take(), input),
-        wait_for_child_process(child, WaitOptions::default(), std::future::pending()),
+        wait_for_child_process(child, WaitOptions::default(), std::future::pending(), None),
     )
     .await
 }
@@ -483,6 +487,7 @@ async fn capture(
             None,
         ),
         SpawnSyncOptions::Capture {
+            stdout,
             input,
             timeout,
             stderr,
@@ -493,8 +498,12 @@ async fn capture(
                 } else {
                     Stdio::null()
                 },
-                Stdio::piped(),
-                if stderr == StderrMode::Capture {
+                if stdout == OutputMode::Capture {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                },
+                if stderr == OutputMode::Capture {
                     Stdio::piped()
                 } else {
                     Stdio::null()

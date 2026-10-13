@@ -1,7 +1,7 @@
 //! Unix file-system and Git process effects.
 
 use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
-use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn_sync};
+use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
 use std::fs;
 use std::io;
 use std::os::unix::fs::MetadataExt;
@@ -84,10 +84,11 @@ impl FooterOperations for NativeFooterOperations {
                 wait_for_child_process(
                     &mut child,
                     WaitOptions {
-                        stderr: StderrMode::Discard,
+                        stderr: OutputMode::Discard,
                         post_exit_grace: None,
                     },
                     std::future::pending(),
+                    None,
                 )
                 .await
             }
@@ -138,9 +139,10 @@ impl FooterOperations for NativeFooterOperations {
         let output = spawn_sync(
             &mut symbolic_command(Path::new(repo_dir)),
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: None,
                 timeout: None,
-                stderr: StderrMode::Discard,
+                stderr: OutputMode::Discard,
             },
         )
         .map_err(|error| match error {

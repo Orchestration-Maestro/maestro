@@ -15,6 +15,8 @@ pub use maestro_tools::{
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
 pub use maestro_json::is_truthy;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync};
 pub use maestro_session::session_manager::{
     BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
     ModelChangeEntry, SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry,
@@ -22,8 +24,6 @@ pub use maestro_session::session_manager::{
 };
 pub use maestro_session::{Presence, SessionInfo};
 pub use maestro_text::is_whitespace_scalar;
-#[cfg(not(target_arch = "wasm32"))]
-pub use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn, spawn_sync};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};

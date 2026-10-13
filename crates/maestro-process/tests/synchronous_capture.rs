@@ -1,6 +1,6 @@
 //! Synchronous capture through the public native process interface.
 #![cfg(unix)]
-use maestro_process::{SpawnSyncOptions, StderrMode, spawn_sync};
+use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::{os::unix::process::ExitStatusExt, time::Duration};
 use tokio::process::Command;
 
@@ -32,9 +32,10 @@ sys.exit(int(sys.argv[1]))
         let output = spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(Duration::from_secs(5)),
-                stderr: StderrMode::Discard,
+                stderr: OutputMode::Discard,
             },
         )
         .unwrap();
@@ -56,9 +57,10 @@ sys.exit(int(sys.argv[1]))
     let output = spawn_sync(
         &mut signal,
         SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
             input: None,
             timeout: Some(Duration::from_secs(5)),
-            stderr: StderrMode::Discard,
+            stderr: OutputMode::Discard,
         },
     )
     .unwrap();
@@ -79,9 +81,10 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
                 spawn_sync(
                     &mut command,
                     SpawnSyncOptions::Capture {
+                        stdout: OutputMode::Capture,
                         input: None,
                         timeout: Some(Duration::from_secs(5)),
-                        stderr: StderrMode::Discard
+                        stderr: OutputMode::Discard
                     }
                 )
                 .unwrap()
@@ -108,9 +111,10 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
         let error = spawn_sync(
             &mut Command::new(&path),
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(Duration::from_secs(5)),
-                stderr: StderrMode::Discard,
+                stderr: OutputMode::Discard,
             },
         )
         .unwrap_err();
@@ -124,9 +128,10 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
             input: None,
             timeout: Some(Duration::from_secs(5)),
-            stderr: StderrMode::Discard,
+            stderr: OutputMode::Discard,
         },
     )
     .unwrap();

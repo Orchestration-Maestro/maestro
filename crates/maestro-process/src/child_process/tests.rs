@@ -3,7 +3,7 @@
 use super::{
     CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
 };
-use super::{SpawnSyncOptions, StderrMode};
+use super::{OutputMode, SpawnSyncOptions};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -308,7 +308,7 @@ fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
             "held pipes keep the capture wait pending"
         );
         let options = WaitOptions {
-            stderr: StderrMode::Discard,
+            stderr: OutputMode::Discard,
             post_exit_grace: Some(Duration::from_millis(10)),
         };
         let output = wait_for_child_process(&mut held.child, options, std::future::pending(), None)
@@ -646,9 +646,10 @@ fn sync_capture_uses_each_callers_timeout() {
             let mut run = Box::pin(capture(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    stdout: OutputMode::Capture,
                     input: None,
                     timeout: Some(timeout),
-                    stderr: StderrMode::Discard,
+                    stderr: OutputMode::Discard,
                 },
             ));
             assert!(is_pending(&mut run).await, "{timeout:?} started");
@@ -667,6 +668,23 @@ fn sync_capture_uses_each_callers_timeout() {
         }
     });
 }
+
+/// A descendant retains both output descriptors until the control socket releases it.
+const INHERITED_OUTPUT: &str = r"
+import os, socket, sys
+os.write(1, b'prefix'); os.write(2, b'diag')
+gone, alive = os.pipe()
+if os.fork(): os._exit(0)
+os.close(alive); os.read(gone, 1); os.close(gone)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+if s.recv(1):
+    result = b''
+    for fd in (1, 2):
+        try: os.write(fd, b'tail'); result += b'writable'
+        except BrokenPipeError: result += b'closed'
+    s.sendall(result)
+s.close(); os._exit(0)
+";
 
 #[test]
 fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
@@ -689,26 +707,12 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
         return;
     }
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let script = r"
-import os, socket, sys
-os.write(1, b'prefix'); os.write(2, b'diag')
-gone, alive = os.pipe()
-if os.fork(): os._exit(0)
-os.close(alive); os.read(gone, 1); os.close(gone)
-s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-if s.recv(1):
-    result = b''
-    for fd in (1, 2):
-        try: os.write(fd, b'tail'); result += b'writable'
-        except BrokenPipeError: result += b'closed'
-    s.sendall(result)
-s.close(); os._exit(0)
-";
+
     paused_runtime().block_on(async {
         let mut command = Command::new("python3");
         command.args([
             "-c",
-            script,
+            INHERITED_OUTPUT,
             &listener.local_addr().unwrap().port().to_string(),
         ]);
         let timeout = Duration::from_secs(5);
@@ -716,9 +720,10 @@ s.close(); os._exit(0)
         let mut run = Box::pin(capture(
             &mut command,
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(timeout),
-                stderr: StderrMode::Capture,
+                stderr: OutputMode::Capture,
             },
         ));
         assert!(is_pending(&mut run).await, "capture started");
@@ -805,9 +810,10 @@ s.recv(1)
                 let mut run = Box::pin(capture(
                     &mut command,
                     SpawnSyncOptions::Capture {
+                        stdout: OutputMode::Capture,
                         input: Some(&input),
                         timeout: Some(timeout),
-                        stderr: StderrMode::Capture,
+                        stderr: OutputMode::Capture,
                     },
                 ));
                 assert!(is_pending(&mut run).await);
@@ -850,9 +856,10 @@ fn capture_without_limit_waits_for_the_release() {
             let mut run = Box::pin(capture(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    stdout: OutputMode::Capture,
                     input: Some(b"input"),
                     timeout,
-                    stderr: StderrMode::Capture,
+                    stderr: OutputMode::Capture,
                 },
             ));
             assert!(is_pending(&mut run).await);

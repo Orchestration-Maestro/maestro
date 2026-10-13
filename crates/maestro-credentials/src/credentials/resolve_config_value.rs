@@ -129,7 +129,7 @@ pub use native::ProcessConfigValueOperations;
 #[cfg(not(target_arch = "wasm32"))]
 pub(in crate::credentials) mod native {
     use super::ConfigValueOperations;
-    use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn_sync};
+    use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn_sync};
     use std::{io, process::Output, time::Duration};
     use tokio::process::Command;
 
@@ -287,9 +287,10 @@ pub(in crate::credentials) mod native {
         attempt(spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(HELPER_TIMEOUT),
-                stderr: StderrMode::Discard,
+                stderr: OutputMode::Discard,
             },
         ))
     }

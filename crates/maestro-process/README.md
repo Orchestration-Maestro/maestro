@@ -10,11 +10,12 @@ See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-
 
 ## Synchronous capture
 
-`spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stderr })`
+`spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stdout, stderr })`
 runs a caller-built Tokio command from synchronous code, including inside a
 running runtime. Supplied bytes are written unchanged then stdin closes; absent
-input selects the null device. Stdout is captured, and `StderrMode` selects
-captured stderr or the null device. Nonzero exits remain completed outputs.
+input selects the null device. `OutputMode` independently selects capture or the
+null device for stdout and stderr. Discarded descriptors add no pipe-EOF wait.
+Nonzero exits remain completed outputs.
 
 An optional timeout covers input, exit and captured EOFs; `None` and zero disable
 it. Expiry closes unfinished pipe futures and force-kills/reaps the direct child
@@ -43,7 +44,7 @@ on native targets only.
 `wait_for_child_process` takes an optional fourth argument, a synchronous raw-byte
 sink. With `Some(&mut sink)`, newly consumed stdout and stderr chunks go to the
 sink rather than retained output; bytes retained by an earlier wait are not
-replayed. Streaming delivers new stderr even with `StderrMode::Discard`; that
+replayed. Streaming delivers new stderr even with `OutputMode::Discard`; that
 mode still drops earlier retained stderr. `None` preserves capture and
 stderr-discard behavior. The same waiter
 owns exit, EOF, selected grace and native error handling in either mode.

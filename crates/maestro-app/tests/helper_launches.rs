@@ -1,7 +1,7 @@
 //! Application exports use the original native launch interfaces.
 #![cfg(unix)]
 use maestro_app::{
-    ExecOptions, ExecResult, SpawnSyncError, SpawnSyncOptions, StderrMode, exec_command, spawn,
+    ExecOptions, ExecResult, OutputMode, SpawnSyncError, SpawnSyncOptions, exec_command, spawn,
     spawn_sync,
 };
 use tokio::process::Command;
@@ -11,9 +11,10 @@ fn application_launches_use_the_shared_process_interfaces() {
     let mut command = Command::new("sh");
     command.args(["-c", "printf out; printf err >&2; exit 7"]);
     let options: maestro_process::SpawnSyncOptions<'_> = SpawnSyncOptions::Capture {
+        stdout: OutputMode::Capture,
         input: None,
         timeout: None,
-        stderr: StderrMode::Capture,
+        stderr: OutputMode::Capture,
     };
     let result: Result<std::process::Output, SpawnSyncError> = spawn_sync(&mut command, options);
     let result: Result<std::process::Output, maestro_process::SpawnSyncError> = result;
