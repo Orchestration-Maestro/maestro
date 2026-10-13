@@ -53,7 +53,9 @@ call arms no timer. Finishing releases the signal observation.
 ## Local shell operations
 
 `create_local_bash_operations(bin_dir, shell_path)` returns replaceable
-`BashOperations`. Each `exec(command, cwd, options)` selects the supplied shell
+`BashOperations`. The application root re-exports `get_shell_config`,
+`BashOperations` and `create_local_bash_operations` on native targets; their tools
+paths remain available. Each `exec(command, cwd, options)` selects the supplied shell
 path, or discovers bash (falling back to `sh` on Unix), then checks that `cwd`
 exists before spawning with `-c` and the unchanged command. Selection checks
 existence, not file type or executable permission; native spawn errors stay native.

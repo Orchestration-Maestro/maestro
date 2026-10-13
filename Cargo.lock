@@ -2539,6 +2539,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-text",
+ "maestro-tools",
  "maestro-watch",
  "num-traits",
  "serde",

@@ -11,6 +11,9 @@ maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-tools = { path = "../maestro-tools" }
+
 [target.'cfg(unix)'.dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process"] }
 num-traits = "=0.2.19"

@@ -206,7 +206,7 @@ fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std:
     if windows {
         entries.sort_by(
             |(left, _), (right, _)| match (left.to_str(), right.to_str()) {
-                (Some(left), Some(right)) => left.encode_utf16().cmp(right.encode_utf16()),
+                (Some(left), Some(right)) => maestro_text::utf16_order(left, right),
                 (Some(_), None) => std::cmp::Ordering::Less,
                 (None, Some(_)) => std::cmp::Ordering::Greater,
                 (None, None) => left.cmp(right),
