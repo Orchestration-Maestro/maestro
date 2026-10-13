@@ -164,10 +164,17 @@ selected. The value it returns replaces the request as a whole. Before
 anything is sent, the model identifier is read for the route (one that is missing or not text
 fails at the route, whatever else is malformed), then the rest is selected into the service's
 input records: members the records do not declare are dropped, `null` members and list or map
-entries are left out, free-form tool input, tool schema and `additionalModelRequestFields` keep nested JSON nulls,
+entries are left out, free-form tool input, tool schema, structured tool-result JSON and `additionalModelRequestFields` keep nested JSON nulls,
 and numbers are written
 as doubles. The hook runs before the SDK looks up an endpoint, region or credentials, so its
 failure ends the stream with its message as it is, before any of those can fail.
+The payload hook can supply known document, audio/video, search/citation and guard-content
+shapes. Guard content is selected in both message and system blocks. Tools also select
+structured result JSON, document/video/search results, server tool/result types, strict
+selection, system tools and cache points. Blob fields take byte arrays and are sent as padded
+standard base64, including empty arrays. Declared unknown-union fallback remains tracked in
+[the follow-up](https://github.com/Orchestration-Maestro/maestro/issues/893).
+
 `on_response` receives the status and, under `x-amzn-requestid`, the first present of the
 response headers `x-amzn-requestid`, `x-amzn-request-id` and `x-amz-request-id` when that value
 is nonempty. It runs after the first event of the response has been decoded (or the response has
