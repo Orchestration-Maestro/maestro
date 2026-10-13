@@ -202,7 +202,7 @@ fn check_native_failure(root: &TempDir, case: &Case, path: &str, actual: &str) {
 }
 /// Native classification rows run only on Unix.
 #[cfg(not(unix))]
-fn check_native_failure(_: &TempDir, _: &Case, _: &str, _: String) {
+fn check_native_failure(_: &TempDir, _: &Case, _: &str, _: &str) {
     panic!("Unix fixture invoked on another platform");
 }
 /// Assert a nonempty group, with no unrecognized group or repeated invocation.
