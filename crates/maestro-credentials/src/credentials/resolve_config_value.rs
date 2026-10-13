@@ -129,7 +129,7 @@ pub use native::ProcessConfigValueOperations;
 #[cfg(not(target_arch = "wasm32"))]
 pub(in crate::credentials) mod native {
     use super::ConfigValueOperations;
-    use maestro_process::{SpawnSyncError, spawn_sync};
+    use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn_sync};
     use std::{io, process::Output, time::Duration};
     use tokio::process::Command;
 
@@ -284,7 +284,14 @@ pub(in crate::credentials) mod native {
         }
         #[cfg(not(windows))]
         command.args(launch.args);
-        attempt(spawn_sync(&mut command, HELPER_TIMEOUT))
+        attempt(spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                input: None,
+                timeout: Some(HELPER_TIMEOUT),
+                stderr: StderrMode::Discard,
+            },
+        ))
     }
     /// Missing executables and unavailable capture infrastructure permit fallback;
     /// every other outcome completes the attempt, with stdout only on success.

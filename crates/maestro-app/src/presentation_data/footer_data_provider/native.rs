@@ -1,11 +1,13 @@
 //! Unix file-system and Git process effects.
 
+use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn_sync};
 use std::fs;
 use std::io;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
 use std::{rc::Rc, time::Duration};
+use tokio::process::Command;
 
 use super::operations::{FooterFileKind, FooterFileStats, FooterOperations};
 use maestro_watch::fs_watch::{FsWatcher, NativeWatchOperations, WatchOperations, WatchTimer};
@@ -76,14 +78,20 @@ impl FooterOperations for NativeFooterOperations {
     ) {
         let repo_dir = anchor(repo_dir);
         self.local.spawn_local(async move {
-            let output = tokio::process::Command::new("git")
-                .arg("--no-optional-locks")
-                .args(["symbolic-ref", "--quiet", "--short", "HEAD"])
-                .current_dir(repo_dir)
-                .stdin(Stdio::null())
-                .stderr(Stdio::null())
-                .output()
-                .await;
+            let mut command = symbolic_command(&repo_dir);
+            let output = async {
+                let mut child = CapturedChild::spawn(&mut command)?;
+                wait_for_child_process(
+                    &mut child,
+                    WaitOptions {
+                        stderr: StderrMode::Discard,
+                        post_exit_grace: None,
+                    },
+                    std::future::pending(),
+                )
+                .await
+            }
+            .await;
             callback(output.map(|output| {
                 output
                     .status
@@ -127,18 +135,35 @@ impl FooterOperations for NativeFooterOperations {
     }
 
     fn symbolic_ref_sync(&self, repo_dir: &str) -> io::Result<Option<String>> {
-        let output = Command::new("git")
-            .arg("--no-optional-locks")
-            .args(["symbolic-ref", "--quiet", "--short", "HEAD"])
-            .current_dir(repo_dir)
-            .stdin(Stdio::null())
-            .stderr(Stdio::null())
-            .output()?;
+        let output = spawn_sync(
+            &mut symbolic_command(Path::new(repo_dir)),
+            SpawnSyncOptions::Capture {
+                input: None,
+                timeout: None,
+                stderr: StderrMode::Discard,
+            },
+        )
+        .map_err(|error| match error {
+            SpawnSyncError::Infrastructure(error)
+            | SpawnSyncError::Spawn(error)
+            | SpawnSyncError::Wait(error) => error,
+            SpawnSyncError::Timeout => io::Error::other("Git lookup timed out"),
+        })?;
         Ok(output
             .status
             .success()
             .then(|| String::from_utf8_lossy(&output.stdout).into_owned()))
     }
+}
+
+/// Prepare the exact Git operands on the caller-selected directory.
+fn symbolic_command(repo_dir: &Path) -> Command {
+    let mut command = Command::new("git");
+    command
+        .arg("--no-optional-locks")
+        .args(["symbolic-ref", "--quiet", "--short", "HEAD"])
+        .current_dir(repo_dir);
+    command
 }
 
 /// Bind an effect's path now, retaining lexical fallback when resolution fails.

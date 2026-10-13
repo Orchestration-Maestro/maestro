@@ -1093,3 +1093,115 @@ fn footer_pending_refresh_after_leaving_repository_keeps_branch_absent() {
     assert!(e.active().is_empty());
     p.dispose();
 }
+
+#[cfg(unix)]
+#[test]
+fn footer_async_lookup_keeps_output_until_pipe_eof() {
+    if std::env::var_os("MAESTRO_FOOTER_HOLDER").is_some() {
+        footer_pipe_child();
+        return;
+    }
+    let root = native::Scratch::new();
+    std::fs::create_dir(root.join("bin")).unwrap();
+    let python = std::process::Command::new("sh")
+        .args(["-c", "command -v python3"])
+        .output()
+        .unwrap();
+    let python = String::from_utf8(python.stdout).unwrap();
+    let script = format!(
+        "#!{}\n{}",
+        python.trim(),
+        r"
+import os, socket
+os.write(1, b' prefix')
+pid = os.getpid()
+gone, alive = os.pipe()
+if os.fork(): os._exit(0)
+os.close(alive); os.read(gone, 1); os.close(gone)
+s = socket.create_connection(('127.0.0.1', int(open('holder-port').read())))
+s.sendall(str(pid).encode() + b'\n')
+assert s.recv(1) == b'!'
+os.write(1, b' tail\n')
+s.close()
+os._exit(0)
+"
+    );
+    std::fs::write(root.join("git.py"), script).unwrap();
+    native::install_executable(
+        std::path::Path::new(&root.join("git.py")),
+        std::path::Path::new(&root.join("bin/git")),
+    );
+    assert!(
+        native::probe(
+            "footer_async_lookup_keeps_output_until_pipe_eof",
+            &root.0,
+            &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")]
+        )
+        .is_empty()
+    );
+}
+
+#[cfg(unix)]
+/// Drive the isolated native query while its inherited pipe is held.
+fn footer_pipe_child() {
+    use std::io::{BufRead, BufReader, Read, Write};
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .start_paused(true)
+        .build()
+        .unwrap();
+    let local = Rc::new(tokio::task::LocalSet::new());
+    runtime.block_on(local.run_until(async {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let mut address = std::fs::File::create_new("holder-port").unwrap();
+        write!(address, "{}", listener.local_addr().unwrap().port()).unwrap();
+        drop(address);
+        let ops = NativeFooterOperations::new(Rc::clone(&local));
+        let (sender, mut receiver) = tokio::sync::oneshot::channel();
+        ops.symbolic_ref_async(
+            ".",
+            Box::new(move |result| {
+                sender.send(result).unwrap();
+            }),
+        );
+        tokio::task::yield_now().await;
+        let (mut holder, _) = listener.accept().unwrap();
+        let mut pid = String::new();
+        BufReader::new(&holder).read_line(&mut pid).unwrap();
+        let pid = rustix::process::Pid::from_raw(pid.trim().parse().unwrap()).unwrap();
+        footer_reaping_barrier(pid).await;
+        tokio::time::advance(Duration::from_secs(1)).await;
+        tokio::task::yield_now().await;
+        assert!(
+            matches!(
+                receiver.try_recv(),
+                Err(tokio::sync::oneshot::error::TryRecvError::Empty)
+            ),
+            "footer still awaits EOF after exit grace"
+        );
+        holder.write_all(b"!").unwrap();
+        assert_eq!(
+            receiver.await.unwrap().unwrap().as_deref(),
+            Some(" prefix tail\n")
+        );
+        let mut done = Vec::new();
+        holder.read_to_end(&mut done).unwrap();
+        assert!(done.is_empty());
+    }));
+}
+
+#[cfg(unix)]
+/// Yield until the process owner has reaped the selected child, without consuming status.
+async fn footer_reaping_barrier(pid: rustix::process::Pid) {
+    use rustix::process::{WaitId, WaitIdOptions, waitid};
+    loop {
+        match waitid(
+            WaitId::Pid(pid),
+            WaitIdOptions::NOWAIT | WaitIdOptions::NOHANG | WaitIdOptions::EXITED,
+        ) {
+            Err(rustix::io::Errno::CHILD) => return,
+            Ok(_) => tokio::task::yield_now().await,
+            Err(error) => panic!("native reaping observation failed: {error}"),
+        }
+    }
+}

@@ -22,4 +22,8 @@ pub use maestro_session::session_manager::{
 };
 pub use maestro_session::{Presence, SessionInfo};
 pub use maestro_text::is_whitespace_scalar;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_process::{SpawnSyncError, SpawnSyncOptions, StderrMode, spawn, spawn_sync};
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};

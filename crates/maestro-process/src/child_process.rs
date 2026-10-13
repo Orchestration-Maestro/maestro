@@ -8,8 +8,8 @@ use std::io;
 use std::pin::Pin;
 use std::process::{ExitStatus, Output, Stdio};
 use std::time::Duration;
-use tokio::io::{AsyncRead, AsyncReadExt};
-use tokio::process::{Child, ChildStderr, ChildStdout, Command};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
+use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 use tokio::time::Sleep;
 
 mod native;
@@ -24,7 +24,7 @@ pub const EXIT_STDIO_GRACE_MS: u64 = 100;
 /// A synchronous raw-byte sink for a streaming wait.
 pub type OutputSink<'a> = &'a mut (dyn FnMut(&[u8]) + Send);
 
-/// A spawned child whose stdout and stderr are captured and whose stdin is closed.
+/// A spawned child with selected standard descriptors.
 pub struct CapturedChild {
     /// The native child, reaped once [`CapturedChild::terminate`] with [`Termination::Kill`]
     /// or [`wait_for_child_process`] returns successfully.
@@ -64,7 +64,7 @@ impl Default for WaitOptions {
 pub enum StderrMode {
     /// Retain newly consumed stderr when no streaming sink is supplied.
     Capture,
-    /// Drop retained stderr and, without a sink, discard newly consumed stderr.
+    /// Drop retained stderr; synchronous capture sends it to the null device.
     Discard,
 }
 
@@ -89,7 +89,7 @@ impl CapturedChild {
     /// # Errors
     /// Returns the native spawn error unchanged.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
-        Self::spawn_with(command, Stdio::piped())
+        Self::spawn_with(command, [Stdio::null(), Stdio::piped(), Stdio::piped()])
     }
 
     /// Returns the native PID while the child has not been reaped.
@@ -120,12 +120,9 @@ impl CapturedChild {
         Self::spawn(&mut command)
     }
 
-    /// Spawns `command` with ignored stdin, captured stdout and the selected stderr.
-    fn spawn_with(command: &mut Command, stderr: Stdio) -> io::Result<Self> {
-        command
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(stderr);
+    /// Spawns `command` with the selected descriptors.
+    fn spawn_with(command: &mut Command, [stdin, stdout, stderr]: [Stdio; 3]) -> io::Result<Self> {
+        command.stdin(stdin).stdout(stdout).stderr(stderr);
         let mut child = command.spawn()?;
         Ok(Self {
             stdout: child.stdout.take(),
@@ -367,9 +364,9 @@ pub enum SpawnSyncError {
     Infrastructure(io::Error),
     /// The native spawn failed.
     Spawn(io::Error),
-    /// Reading stdout or the exit status failed after the spawn.
+    /// Input transfer, pipe collection or exit observation failed after the spawn.
     Wait(io::Error),
-    /// The timeout expired before the exit and the stdout end of file.
+    /// The deadline expired before input, exit and captured pipe EOFs completed.
     Timeout,
 }
 
@@ -393,28 +390,68 @@ impl std::error::Error for SpawnSyncError {
     }
 }
 
-/// Runs a caller-built `command` from synchronous code, including inside a runtime.
+/// Descriptor and deadline selection for [`spawn_sync`].
+#[derive(Clone, Copy, Debug)]
+pub enum SpawnSyncOptions<'a> {
+    /// Capture raw stdout with optional input and deadline.
+    Capture {
+        /// Bytes written unchanged, followed by EOF; absence selects null stdin.
+        input: Option<&'a [u8]>,
+        /// Deadline for input, exit and captured EOFs; None and zero disable it.
+        timeout: Option<Duration>,
+        /// Whether stderr is captured or sent to the null device.
+        stderr: StderrMode,
+    },
+    /// Inherit all three descriptors and return status with empty captured streams.
+    Inherit,
+}
+
+/// Constructs the current-thread runtime shared by blocking launch bridges.
+fn runtime() -> io::Result<tokio::runtime::Runtime> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+}
+
+/// Writes supplied bytes and closes the owned pipe, including on failure.
+async fn write_input(stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io::Result<()> {
+    if let (Some(mut stdin), Some(input)) = (stdin, input) {
+        stdin.write_all(input).await?;
+    }
+    Ok(())
+}
+
+/// Collects input and output concurrently, retaining write failures until exit/EOF.
+async fn complete(child: &mut CapturedChild, input: Option<&[u8]>) -> io::Result<Output> {
+    let stdin = child.child.stdin.take();
+    let (written, output) = tokio::join!(
+        write_input(stdin, input),
+        wait_for_child_process(child, WaitOptions::default(), std::future::pending())
+    );
+    written?;
+    output
+}
+
+/// Runs a caller-built command from synchronous code, including inside a runtime.
 ///
-/// Keeps its program, arguments, directory, environment and platform flags. Stdin
-/// and stderr use the null device; output contains raw stdout and the actual status.
-/// The timeout covers exit and stdout EOF. On expiry, unfinished readers close and
-/// the direct child is force-killed if still running, then reaped unless killing
-/// fails. Descendants are not signalled, and the result is [`SpawnSyncError::Timeout`].
+/// Preserves command operands and platform settings. No shell is selected.
+/// A capture deadline covers input, exit and captured EOFs; on expiry unfinished
+/// pipe futures close and the direct child is force-killed/reaped unless cleanup fails.
+/// Descendants are not signalled. See [`SpawnSyncOptions`] for descriptor choices.
 ///
 /// # Errors
-/// Returns [`SpawnSyncError::Infrastructure`] for thread/runtime failure,
-/// [`SpawnSyncError::Spawn`] for native spawn failure, or [`SpawnSyncError::Wait`]
-/// for an error from [`wait_for_child_process`]. Expiry returns
-/// [`SpawnSyncError::Timeout`]; an unsuccessful exit status is not an error.
-pub fn spawn_sync(command: &mut Command, timeout: Duration) -> Result<Output, SpawnSyncError> {
+/// Returns native spawn/wait failures or bridge failures in [`SpawnSyncError`].
+/// Expiry returns [`SpawnSyncError::Timeout`]; nonzero exit is a completed output.
+pub fn spawn_sync(
+    command: &mut Command,
+    options: SpawnSyncOptions<'_>,
+) -> Result<Output, SpawnSyncError> {
     std::thread::scope(|scope| {
         std::thread::Builder::new()
             .spawn_scoped(scope, || {
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
+                runtime()
                     .map_err(SpawnSyncError::Infrastructure)?
-                    .block_on(capture(command, timeout))
+                    .block_on(capture(command, options))
             })
             .map_err(SpawnSyncError::Infrastructure)?
             .join()
@@ -426,27 +463,104 @@ pub fn spawn_sync(command: &mut Command, timeout: Duration) -> Result<Output, Sp
     })
 }
 
-/// Captures one child on the current runtime until exit and stdout end of file or `timeout`.
-async fn capture(command: &mut Command, timeout: Duration) -> Result<Output, SpawnSyncError> {
+/// Captures one child with the selected descriptors and combined deadline.
+async fn capture(
+    command: &mut Command,
+    options: SpawnSyncOptions<'_>,
+) -> Result<Output, SpawnSyncError> {
+    let (descriptors, input, timeout) = match options {
+        SpawnSyncOptions::Inherit => (
+            [Stdio::inherit(), Stdio::inherit(), Stdio::inherit()],
+            None,
+            None,
+        ),
+        SpawnSyncOptions::Capture {
+            input,
+            timeout,
+            stderr,
+        } => (
+            [
+                if input.is_some() {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                },
+                Stdio::piped(),
+                if stderr == StderrMode::Capture {
+                    Stdio::piped()
+                } else {
+                    Stdio::null()
+                },
+            ],
+            input,
+            timeout.filter(|duration| !duration.is_zero()),
+        ),
+    };
     command.kill_on_drop(true);
     let mut child =
-        CapturedChild::spawn_with(command, Stdio::null()).map_err(SpawnSyncError::Spawn)?;
-    let mut expired = false;
-    let output = wait_for_child_process(
-        &mut child,
-        WaitOptions::default(),
-        async {
-            tokio::time::sleep(timeout).await;
-            expired = true;
-            Termination::Kill
-        },
-        None,
-    )
-    .await;
-    if expired {
-        return Err(SpawnSyncError::Timeout);
+        CapturedChild::spawn_with(command, descriptors).map_err(SpawnSyncError::Spawn)?;
+    let mut deadline = timer(timeout);
+    tokio::select! {
+        biased;
+        () = fires(&mut deadline) => {}
+        result = complete(&mut child, input) => return result.map_err(SpawnSyncError::Wait),
     }
-    output.map_err(SpawnSyncError::Wait)
+    child.take_output();
+    child
+        .terminate(Termination::Kill)
+        .await
+        .map_err(SpawnSyncError::Wait)?;
+    Err(SpawnSyncError::Timeout)
+}
+
+/// Starts a caller-built command, then transfers input and waits in an owned worker.
+///
+/// Stdout/stderr use the null device. Input errors are ignored; normal waiting
+/// reaps the direct child. Dropping the handle neither joins nor cancels the worker.
+///
+/// # Errors
+/// Returns native startup or worker/runtime construction errors unchanged.
+pub fn spawn(
+    mut command: Command,
+    input: Option<Vec<u8>>,
+) -> io::Result<std::thread::JoinHandle<()>> {
+    let (sender, receiver) = std::sync::mpsc::sync_channel(0);
+    let worker = std::thread::Builder::new().spawn(move || {
+        let started = runtime().and_then(|runtime| {
+            let guard = runtime.enter();
+            let child = CapturedChild::spawn_with(
+                &mut command,
+                [
+                    if input.is_some() {
+                        Stdio::piped()
+                    } else {
+                        Stdio::null()
+                    },
+                    Stdio::null(),
+                    Stdio::null(),
+                ],
+            )?;
+            drop(guard);
+            Ok((runtime, child))
+        });
+        match started {
+            Ok((runtime, mut child)) => {
+                if sender.send(Ok(())).is_ok() {
+                    let _ = runtime.block_on(complete(&mut child, input.as_deref()));
+                }
+            }
+            Err(error) => {
+                let _ = sender.send(Err(error));
+            }
+        }
+    })?;
+    match receiver.recv().map_err(io::Error::other)? {
+        Ok(()) => Ok(worker),
+        Err(error) => {
+            let _ = worker.join();
+            Err(error)
+        }
+    }
 }
 
 #[cfg(test)]

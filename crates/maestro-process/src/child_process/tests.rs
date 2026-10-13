@@ -1,9 +1,9 @@
 //! Private collector, grace and escalation behaviour.
 #![cfg(unix)]
-use super::StderrMode;
 use super::{
     CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
 };
+use super::{SpawnSyncOptions, StderrMode};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -614,7 +614,14 @@ fn sync_capture_uses_each_callers_timeout() {
         for timeout in [Duration::from_millis(5000), Duration::from_millis(10_000)] {
             let (mut command, listener) = stubborn_command();
             let started = tokio::time::Instant::now();
-            let mut run = Box::pin(capture(&mut command, timeout));
+            let mut run = Box::pin(capture(
+                &mut command,
+                SpawnSyncOptions::Capture {
+                    input: None,
+                    timeout: Some(timeout),
+                    stderr: StderrMode::Discard,
+                },
+            ));
             assert!(is_pending(&mut run).await, "{timeout:?} started");
             let mut socket = stubborn_ready(&listener);
             assert!(
@@ -655,14 +662,16 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let script = r"
 import os, socket, sys
-os.write(1, b'prefix')
+os.write(1, b'prefix'); os.write(2, b'diag')
 gone, alive = os.pipe()
 if os.fork(): os._exit(0)
 os.close(alive); os.read(gone, 1); os.close(gone)
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 if s.recv(1):
-    try: os.write(1, b'tail'); result = b'writable'
-    except BrokenPipeError: result = b'closed'
+    result = b''
+    for fd in (1, 2):
+        try: os.write(fd, b'tail'); result += b'writable'
+        except BrokenPipeError: result += b'closed'
     s.sendall(result)
 s.close(); os._exit(0)
 ";
@@ -675,7 +684,14 @@ s.close(); os._exit(0)
         ]);
         let timeout = Duration::from_secs(5);
         let started = tokio::time::Instant::now();
-        let mut run = Box::pin(capture(&mut command, timeout));
+        let mut run = Box::pin(capture(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                input: None,
+                timeout: Some(timeout),
+                stderr: StderrMode::Capture,
+            },
+        ));
         assert!(is_pending(&mut run).await, "capture started");
         // The holder connects only after the exit pipe reaches EOF. This blocking
         // accept keeps the paused runtime from advancing during either startup.
@@ -692,7 +708,7 @@ s.close(); os._exit(0)
         assert!(matches!(error, SpawnSyncError::Timeout));
         assert!(error.source().is_none());
         assert_eq!(error.to_string(), "The process timed out");
-        assert_eq!(report, b"closed");
+        assert_eq!(report, b"closedclosed");
         assert_eq!(started.elapsed(), timeout);
     });
 }
@@ -728,4 +744,105 @@ fn stream_callback_can_abort_the_same_wait() {
         assert!(!output.status.success());
         assert!(output.stdout.is_empty());
     });
+}
+
+#[test]
+fn capture_input_deadline_reaps_the_ready_child() {
+    paused_runtime().block_on(async {
+        for (exited, operand) in [(false, "False"), (true, "True")] {
+            for timeout in [Duration::from_secs(5), Duration::from_secs(10)] {
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+                let script = r"
+import os, socket, sys
+exited = sys.argv[2] == 'True'
+pid = os.getpid()
+if exited:
+    gone, alive = os.pipe()
+    if os.fork(): os._exit(0)
+    os.close(alive); os.read(gone, 1); os.close(gone)
+    os.close(1); os.close(2)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+s.sendall(str(pid).encode() + b'\n')
+s.recv(1)
+";
+                let mut command = Command::new("python3");
+                command.args([
+                    "-c",
+                    script,
+                    &listener.local_addr().unwrap().port().to_string(),
+                    operand,
+                ]);
+                let input = vec![b'x'; 4_194_304];
+                let mut run = Box::pin(capture(
+                    &mut command,
+                    SpawnSyncOptions::Capture {
+                        input: Some(&input),
+                        timeout: Some(timeout),
+                        stderr: StderrMode::Capture,
+                    },
+                ));
+                assert!(is_pending(&mut run).await);
+                let (mut socket, _) = listener.accept().unwrap();
+                let mut pid = String::new();
+                std::io::BufRead::read_line(&mut std::io::BufReader::new(&socket), &mut pid)
+                    .unwrap();
+                let pid = rustix::process::Pid::from_raw(pid.trim().parse().unwrap()).unwrap();
+                tokio::task::yield_now().await;
+                assert!(
+                    is_pending(&mut run).await,
+                    "input remains incomplete before deadline"
+                );
+                tokio::time::advance(timeout).await;
+                let result = run.await;
+                release_exited_holder(&mut socket, exited);
+                assert!(matches!(result, Err(SpawnSyncError::Timeout)));
+                assert_eq!(
+                    rustix::process::waitpid(Some(pid), rustix::process::WaitOptions::NOHANG)
+                        .unwrap_err(),
+                    rustix::io::Errno::CHILD
+                );
+                let mut rest = Vec::new();
+                socket.read_to_end(&mut rest).unwrap();
+                assert!(rest.is_empty());
+            }
+        }
+    });
+}
+
+#[test]
+fn capture_without_limit_waits_for_the_release() {
+    use std::io::Write;
+    paused_runtime().block_on(async {
+        for timeout in [None, Some(Duration::ZERO)] {
+            let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+            let mut command = Command::new("python3");
+            let script = format!("{STUBBORN}\nimport os\nos.write(1, sys.stdin.buffer.read() + b' complete')\nos.write(2, b'diag')");
+            command.args(["-c", &script, &listener.local_addr().unwrap().port().to_string()]);
+            let mut run = Box::pin(capture(
+                &mut command,
+                SpawnSyncOptions::Capture {
+                    input: Some(b"input"),
+                    timeout,
+                    stderr: StderrMode::Capture,
+                },
+            ));
+            assert!(is_pending(&mut run).await);
+            let mut socket = stubborn_ready(&listener);
+            tokio::time::advance(Duration::from_secs(100)).await;
+            assert!(is_pending(&mut run).await, "no deadline before release");
+            socket.write_all(b"!").unwrap();
+            let output = run.await.unwrap();
+            assert!(output.status.success());
+            assert_eq!(output.stdout, b"input complete");
+            assert_eq!(output.stderr, b"diag");
+        }
+    });
+}
+
+/// Release a surviving descendant; live direct children have already been killed.
+fn release_exited_holder(socket: &mut std::net::TcpStream, exited: bool) {
+    use std::io::Write;
+    if exited {
+        socket.write_all(b"!").unwrap();
+    }
 }

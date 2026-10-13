@@ -10,18 +10,33 @@ See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-
 
 ## Synchronous capture
 
-`spawn_sync(&mut command, timeout)` runs a caller-built Tokio command from
-synchronous code, including inside a running runtime. It keeps the caller's
-program, arguments, directory, environment and platform flags. Stdin and stderr
-use the null device; the result contains raw stdout, the actual exit status and
-empty stderr. An unsuccessful status is still a completed output.
+`spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stderr })`
+runs a caller-built Tokio command from synchronous code, including inside a
+running runtime. Supplied bytes are written unchanged then stdin closes; absent
+input selects the null device. Stdout is captured, and `StderrMode` selects
+captured stderr or the null device. Nonzero exits remain completed outputs.
 
-The caller's timeout covers both child exit and stdout EOF, without a post-exit
-grace. On expiry, unfinished readers close; the direct child is force-killed only
-if still running and reaped unless killing fails. Descendants are not signalled.
-The result is `SpawnSyncError::Timeout`. The non-timeout variants
-`Infrastructure`, `Spawn` and `Wait` expose an `io::Error` source; see
-[`wait_for_child_process`](src/child_process.rs) for wait errors.
+An optional timeout covers input, exit and captured EOFs; `None` and zero disable
+it. Expiry closes unfinished pipe futures and force-kills/reaps the direct child
+unless cleanup fails. Descendants are not signalled. Native failures retain their
+`io::Error` sources through `SpawnSyncError`; input failures wait for completion
+unless a deadline wins.
+
+`SpawnSyncOptions::Inherit` instead inherits all three descriptors, waits without
+a deadline, and returns the native status with empty captured streams. No shell is
+selected; callers prepare their platform commands.
+
+## Background launch
+
+`spawn(command, input)` acknowledges native startup before returning a standard
+thread handle. Its worker writes optional owned bytes, closes stdin, ignores
+input errors and waits for the direct child. Stdout/stderr use the null device.
+Joining observes completion after normal reaping; dropping the handle does not
+cancel or join it. Startup errors return before a handle is delivered.
+
+The application re-exports these original launch interfaces plus the tools
+owner's [asynchronous execution](../../docs/tools-process.md#running-a-command),
+on native targets only.
 
 ## Streaming and sessions
 
