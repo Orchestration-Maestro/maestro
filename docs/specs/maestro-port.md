@@ -282,8 +282,11 @@ terminal toolkit may depend on it, and only on native targets; callers keep thei
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. Its synchronous capture takes a caller-supplied timeout and force-kills the direct
-child on expiry. It adds no general background runtime or default deadline. The
+with their feature owners. Its synchronous capture takes a caller-supplied timeout.
+On expiry, it attempts to force-kill and reap the direct child if it is still running;
+native errors can prevent this. If the direct child has already exited, it closes
+unfinished readers without signalling that child. It adds no general background
+runtime or default deadline. The
 conventions test checks dependency ownership across declaration forms, not target
 predicates; native-only manifests and the existing wasm and browser builds are
 qualified when the crate is extracted through

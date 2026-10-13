@@ -75,10 +75,9 @@ dependencies, including path and cancellation. Only tools, packages, credentials
 may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
-Synchronous capture takes a caller-supplied timeout, with no default deadline, and
-force-kills the direct child on expiry. The checker verifies
-dependency ownership, not target predicates; see the
-[contract](specs/maestro-port.md#crates-and-delivery-order).
+Synchronous capture follows the timeout handling in the
+[contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
+dependency ownership, not target predicates.
 
 ## Authored paths and the foundation utility
 
