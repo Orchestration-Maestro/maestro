@@ -439,7 +439,7 @@ fn callbacks_run_without_history_or_tool_locks() {
     let weak = Arc::downgrade(&tool);
     tool.write().unwrap().prepare_arguments = Some(Arc::new(move |args| {
         assert!(weak.upgrade().unwrap().try_write().is_ok());
-        Ok(args)
+        Ok(args.clone())
     }));
     let weak = Arc::downgrade(&tool);
     tool.write().unwrap().execute = Arc::new(move |_, _, _, _| {

@@ -240,6 +240,32 @@ fn maestro_preparation_runs_before_validation() {
     assert_eq!(text(&recorded.messages[1]), "edited");
 }
 
+/// Preparation mutations stay in history even when the callback fails.
+#[test]
+fn preparation_mutation_survives_callback_failure() {
+    let echo = tool(
+        "echo",
+        Arc::new(|_, _, _, _| unreachable!("failed preparation executed")),
+    );
+    echo.write().unwrap().prepare_arguments = Some(Arc::new(|args| {
+        args["value"] = serde_json::json!(8);
+        Err(maestro_models::DiagnosticErrorInfo::error("prepare failed"))
+    }));
+    let response = calls(&["echo"], &serde_json::json!({"value":"raw"}));
+    let recorded = observe(
+        vec![],
+        tools(vec![echo]),
+        config(),
+        responses(vec![Arc::clone(&response), assistant("done")]),
+    );
+    let maestro_models::AssistantContent::ToolCall(call) = &response.read().unwrap().content[0]
+    else {
+        panic!("missing call");
+    };
+    assert_eq!(call.arguments["value"], 8);
+    assert_eq!(text(&recorded.messages[1]), "prepare failed");
+}
+
 /// Completion order differs from artifact and turn-result source order.
 #[test]
 fn maestro_tool_events_follow_completion_results_follow_source() {

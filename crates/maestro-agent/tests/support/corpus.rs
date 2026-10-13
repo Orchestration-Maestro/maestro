@@ -544,11 +544,11 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
     } else {
         let input = Arc::clone(&input);
         let observed = Arc::clone(&observed);
-        Some(Arc::new(move |args| {
+        Some(Arc::new(move |args: &mut Value| {
             observed.lock().unwrap().trace.push("prepare".into());
             match input.prepare.as_str() {
                 "error" => Err(error("prepare failed")),
-                "identity" => Ok(args),
+                "identity" => Ok(args.clone()),
                 _ => Ok(json!({"value":"8"})),
             }
         }) as PrepareArguments)

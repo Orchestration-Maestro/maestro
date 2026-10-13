@@ -296,11 +296,11 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             }))
         }),
     );
-    tool.prepare_arguments = Some(Arc::new(|mut raw| {
+    tool.prepare_arguments = Some(Arc::new(|raw| {
         if let Some(message) = raw.get("message").cloned() {
             raw["text"] = message;
         }
-        Ok(raw)
+        Ok(raw.clone())
     }));
     Arc::new(RwLock::new(tool))
 }

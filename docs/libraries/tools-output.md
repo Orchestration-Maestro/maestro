@@ -30,7 +30,8 @@ crates, workspace `serde_json` (now also a normal dependency) and workspace
 `rt`, `fs` and `sync` supplies file reads, file writes, blocking probes and the
 one-shot wake-ups of the [file mutation queue](../tools-edit.md#file-mutation-queue)
 (`sync` adds no package and was already enabled in the workspace), and on Unix
-`rustix =1.1.5` with `std` and `fs` checks readability without opening the file.
+`rustix =1.1.5` with `std` and `fs` checks readability for reads/previews and
+read/write access for edits without opening the file.
 Other targets open the file. The write family is native-only as well. No package
 or version beyond the existing lockfile is added.
 Read selection spells floating-point line numbers with `ryu-js`.

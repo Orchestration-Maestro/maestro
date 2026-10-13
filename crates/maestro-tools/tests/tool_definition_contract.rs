@@ -81,7 +81,7 @@ fn definition(name: &str, log: &Arc<Mutex<Vec<Seen>>>) -> ToolDefinition<u32, Ar
         prompt_snippet: Some("snippet".into()),
         prompt_guidelines: Some(vec!["guideline".into()]),
         render_shell: Some(ToolRenderShell::SelfRendered),
-        prepare_arguments: Some(Arc::new(Ok)),
+        prepare_arguments: Some(Arc::new(|args| Ok(args.clone()))),
         execution_mode: Some(ToolExecutionMode::Parallel),
         execute: Arc::new(move |id, args, signal, update, context| {
             let aborted = signal.map(|signal| signal.is_aborted());
@@ -272,7 +272,7 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
 #[test]
 fn agent_tool_conversion_forwards_execution_without_render_metadata() {
     let log = Arc::new(Mutex::new(Vec::new()));
-    let prepare: PrepareArguments = Arc::new(Ok);
+    let prepare: PrepareArguments = Arc::new(|args| Ok(args.clone()));
     let tool = agent_tool(&log, &prepare);
     let converted = create_tool_definition_from_agent_tool::<u32>(tool);
     assert_eq!(converted.definition.name, "transform");
@@ -324,7 +324,7 @@ fn wrapper_preserves_transforming_preparation() {
     let mut source = definition("transform", &log);
     source.prepare_arguments = Some(add_ten());
     let tool = wrap_tool_definition(source, None);
-    let prepared = (tool.prepare_arguments.as_ref().unwrap())(json!({"value": 3})).unwrap();
+    let prepared = (tool.prepare_arguments.as_ref().unwrap())(&mut json!({"value": 3})).unwrap();
     assert_eq!(prepared, json!({"value": 13}));
     assert!(log.lock().unwrap().is_empty());
     (tool.execute)("id".into(), prepared, None, None)
@@ -338,7 +338,8 @@ fn wrapper_preserves_transforming_preparation() {
 fn agent_tool_conversion_preserves_transforming_preparation() {
     let log = Arc::new(Mutex::new(Vec::new()));
     let converted = create_tool_definition_from_agent_tool::<u32>(agent_tool(&log, &add_ten()));
-    let prepared = (converted.prepare_arguments.as_ref().unwrap())(json!({"value": 8})).unwrap();
+    let prepared =
+        (converted.prepare_arguments.as_ref().unwrap())(&mut json!({"value": 8})).unwrap();
     assert_eq!(prepared, json!({"value": 18}));
     assert!(log.lock().unwrap().is_empty());
     (converted.execute)("id".into(), prepared, None, None, None)

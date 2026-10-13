@@ -8,12 +8,33 @@ use crate::utils::{
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use std::{io, path::PathBuf};
 
-/// Check readability without opening the file where the platform allows it.
-fn readable(path: &PathBuf) -> io::Result<()> {
+/// Check read access and optionally write access without creating or truncating a file.
+pub(crate) fn access_file(
+    absolute_path: String,
+    write: bool,
+) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
+    Box::pin(blocking(move || {
+        probe(&PathBuf::from(absolute_path), write)
+    }))
+}
+
+/// Probe the caller-selected access mode.
+fn probe(path: &PathBuf, write: bool) -> io::Result<()> {
     #[cfg(unix)]
-    return Ok(rustix::fs::access(path, rustix::fs::Access::READ_OK)?);
+    {
+        let mode = if write {
+            rustix::fs::Access::READ_OK | rustix::fs::Access::WRITE_OK
+        } else {
+            rustix::fs::Access::READ_OK
+        };
+        Ok(rustix::fs::access(path, mode)?)
+    }
     #[cfg(not(unix))]
-    return std::fs::File::open(path).map(drop);
+    std::fs::OpenOptions::new()
+        .read(true)
+        .write(write)
+        .open(path)
+        .map(drop)
 }
 
 /// The default operations: read, probe and sniff the local filesystem.
@@ -29,7 +50,7 @@ impl ReadOperations for NativeReadOperations {
     }
 
     fn access(&self, absolute_path: String) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        Box::pin(blocking(move || readable(&PathBuf::from(absolute_path))))
+        access_file(absolute_path, false)
     }
 
     fn detect_image_mime_type(

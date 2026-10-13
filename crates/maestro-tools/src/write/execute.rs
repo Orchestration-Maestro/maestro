@@ -10,7 +10,7 @@ use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use std::sync::Arc;
 
 /// The default operations: write the local filesystem.
-pub(super) struct NativeWriteOperations;
+pub(crate) struct NativeWriteOperations;
 
 impl WriteOperations for NativeWriteOperations {
     fn write_file(

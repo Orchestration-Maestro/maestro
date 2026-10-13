@@ -8,6 +8,7 @@ mod preview;
 mod text_diff;
 
 pub use numbered::{EditDiffResult, generate_diff_string};
+pub(crate) use preview::access_failure;
 pub use preview::{EditDiffError, compute_edit_diff, compute_edits_diff};
 
 use crate::utils::diagnostics::failure;
@@ -82,7 +83,8 @@ pub fn strip_bom(content: &str) -> (&str, &str) {
 }
 
 /// One authored replacement.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Edit {
     /// Text to find.
     pub old_text: String,

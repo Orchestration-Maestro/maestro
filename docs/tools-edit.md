@@ -1,12 +1,11 @@
 # File-changing tools
 
-`maestro-tools` delivers the native `write` tool, the file mutation queue,
+`maestro-tools` delivers the native `write` and `edit` tools, the file mutation queue,
 original-snapshot edit matching, numbered diffs and read-only edit previews.
-The `edit` tool execution and rendering continue in
-[#691](https://github.com/Orchestration-Maestro/maestro/issues/691) and
+Edit rendering continues in
 [#692](https://github.com/Orchestration-Maestro/maestro/issues/692).
 
-All three items are native-only: the `write` module, the queue and `edit_diff` are
+The `write` and `edit` modules, the queue and `edit_diff` are native-only and
 excluded from browser builds, which still build the portable tool definitions.
 
 ## Write tool
@@ -80,6 +79,45 @@ nothing, and complete arguments or any other change highlight it all again. A pa
 with no recognized language is not highlighted. The result renderer draws nothing for a success and the error
 text for a failure. Display strings, tab expansion and key hints follow the
 [display helpers](tools-read.md#display-helpers). Rendering never writes a file.
+
+## Edit tool
+
+[`create_edit_tool_definition`](../crates/maestro-tools/src/edit/mod.rs) builds the
+native definition; `create_edit_tool` wraps it without caller context. Required
+arguments are `path` and `edits`, an array of `{ "oldText": "…", "newText": "…" }`
+replacements. Both object levels reject additional properties during shared
+validation. There are no rendering callbacks yet.
+
+Preparation parses string-valued `edits` in the retained call only when the JSON
+result is an array. A complete top-level string pair `oldText`/`newText` is
+appended to the returned array (or a new array), removing those two keys only
+from the returned arguments and retaining other members. Partial
+pairs remain unchanged after array parsing. Hooks and progress observe this
+in-place normalization, as described in [conversation operations](loop.md).
+Preparation runs before the
+[shared argument validation](models/arguments.md) in the agent loop and performs
+no file operations. Direct execution takes already prepared arguments.
+
+Empty lists fail before path resolution or queue admission. Other calls use
+[`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs); successful resolution
+enters the [file mutation queue](#file-mutation-queue) before polling.
+Execution checks read/write access, reads bytes lossily as UTF-8 and uses the
+[matching owner](#original-snapshot-matching) against one original snapshot.
+After restoring the retained prefix BOM and detected line endings, it writes
+and returns one text block, `Successfully replaced N block(s) in <path>.`, using
+the requested count and authored path. Present `EditToolDetails` holds the LF
+numbered diff and optional `firstChangedLine`; no progress or termination is
+requested. Matching failures do not write.
+
+`EditToolOptions::operations` selects an `EditOperations` implementation with
+`access`, raw-byte `read_file` and UTF-8 `write_file`. Omission selects the existing
+native adapters. Supplied operations use the same execution callback; no image
+sniffing, filename fallback or parent-directory creation is added.
+
+Access, read and write each follow the [cancellation policy](#cancellation):
+pending supplied futures are dropped, admission is released and completed
+effects are not undone. Native work already submitted may finish. A cancelled
+waiting call observes cancellation only after its predecessor finishes.
 
 ## Original-snapshot matching
 

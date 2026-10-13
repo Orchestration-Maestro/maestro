@@ -249,7 +249,7 @@ impl ScriptedWrite {
     }
 
     /// Record the call and apply `mode`.
-    fn step(
+    pub fn step(
         &self,
         name: &str,
         operands: &[&str],
