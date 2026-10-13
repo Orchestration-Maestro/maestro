@@ -385,6 +385,13 @@ fn assert_common(
         actual.fetch.as_ref().ok_or_else(|| error("fetch"))?,
         expected.fetch.as_ref().ok_or_else(|| error("fetch"))?
     ));
+    assert!(
+        !expected
+            .signal
+            .as_ref()
+            .ok_or_else(|| error("signal"))?
+            .is_aborted()
+    );
     actual
         .signal
         .as_ref()
@@ -407,11 +414,12 @@ fn bedrock_overrides_receive_open_options_unchanged() -> TestResult {
     block_on(false, async {
         let scripted = bedrock::serve(vec![]);
         let common = open_options(&scripted);
+        let simple_common = open_options(&scripted);
         let object = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let nested = json!({"region":42,"future":{"z":[2,1,2],"a":null}});
         maestro_models::set_bedrock_provider_module(maestro_models::BedrockProviderModule {
             stream_bedrock: raw_override(common.clone(), object.clone(), nested.clone()),
-            stream_simple_bedrock: simple_override(common.clone()),
+            stream_simple_bedrock: simple_override(simple_common.clone()),
         });
         let mut raw = ProviderStreamOptions {
             common: common.clone(),
@@ -420,7 +428,7 @@ fn bedrock_overrides_receive_open_options_unchanged() -> TestResult {
         };
         raw.objects.insert(object.clone());
         let simple = SimpleStreamOptions {
-            common,
+            common: simple_common,
             reasoning: Some(maestro_models::ThinkingLevel::Low),
             thinking_budgets: Some(maestro_models::ThinkingBudgets {
                 low: Some(1234.0),
@@ -527,7 +535,10 @@ async fn absent_options() -> TestResult {
         };
         let (_, message) = transport::drain(&call).await?;
         assert_eq!(message.stop_reason, maestro_models::StopReason::Error);
-        assert!(message.error_message.is_some());
+        assert_eq!(
+            message.error_message.as_deref(),
+            Some("relative URL without a base")
+        );
     }
     Ok(())
 }
@@ -572,12 +583,7 @@ fn raw_override(
     expected: Value,
 ) -> maestro_models::ApiStreamFunction {
     std::sync::Arc::new(move |model, context, options| {
-        assert_eq!(model, bedrock::model(ENDPOINT).map_err(|_| error("model"))?);
-        assert_eq!(
-            serde_json::to_value(context).map_err(|_| error("context"))?,
-            serde_json::to_value(bedrock::context("kept").map_err(|_| error("context"))?)
-                .map_err(|_| error("context"))?
-        );
+        assert_override_inputs(&model, &context)?;
         if let Some(options) = options {
             assert_common(&options.common, &common)?;
             assert_eq!(
@@ -605,7 +611,8 @@ fn raw_override(
 
 /// Replacement simple callback observes the requested level and independent budget slots.
 fn simple_override(common: StreamOptions) -> maestro_models::ApiStreamSimpleFunction {
-    std::sync::Arc::new(move |_, _, options| {
+    std::sync::Arc::new(move |model, context, options| {
+        assert_override_inputs(&model, &context)?;
         if let Some(options) = options {
             assert_common(&options.common, &common)?;
             assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
@@ -616,6 +623,23 @@ fn simple_override(common: StreamOptions) -> maestro_models::ApiStreamSimpleFunc
             Err(error("simple absent"))
         }
     })
+}
+
+/// Check the model and context forwarded to either replacement route.
+fn assert_override_inputs(
+    model: &maestro_models::Model,
+    context: &maestro_models::Context,
+) -> Result<(), maestro_models::DiagnosticErrorInfo> {
+    assert_eq!(
+        model,
+        &bedrock::model(ENDPOINT).map_err(|_| error("model"))?
+    );
+    assert_eq!(
+        serde_json::to_value(context).map_err(|_| error("context"))?,
+        serde_json::to_value(bedrock::context("kept").map_err(|_| error("context"))?)
+            .map_err(|_| error("context"))?
+    );
+    Ok(())
 }
 
 /// Distinguishable common settings and effect handles supplied to replacement callbacks.

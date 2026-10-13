@@ -221,8 +221,22 @@
       },
       "stopReason": "aborted"
     },
-    "response_hooks": 1,
-    "pre_abort": true
+    "response_hooks": 0,
+    "pre_abort": true,
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    }
   },
   {
     "name": "after_aborted_call",

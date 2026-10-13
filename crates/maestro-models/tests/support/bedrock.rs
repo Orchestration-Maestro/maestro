@@ -347,6 +347,18 @@ fn observed_options(
     let payloads = Arc::new(std::sync::Mutex::new(Vec::new()));
     let seen = Arc::clone(&payloads);
     let mut options = options(scripted);
+    let fetch = scripted.fetch.clone();
+    options.common.fetch = Some(Arc::new(move |request| {
+        if request
+            .signal
+            .as_ref()
+            .is_some_and(maestro_models::Cancellation::is_aborted)
+        {
+            Box::pin(std::future::ready(Err(maestro_models::FetchError::Aborted)))
+        } else {
+            fetch(request)
+        }
+    }));
     options.common = common(&case.options, options.common)?;
     options.common.on_payload = Some(Arc::new(move |payload, _| {
         seen.lock()
@@ -463,6 +475,7 @@ fn check_requests(case: &Case, scripted: &Transport, seen: &Observations) -> Tes
     if let Some(payload) = &case.payload {
         let seen = seen.payloads.lock().map_err(|e| e.to_string())?;
         assert_eq!(seen.len(), 1, "{}", case.name);
+        check_metadata_keys(&seen[0], payload)?;
         assert_eq!(&json::canonical(seen[0].clone()), payload, "{}", case.name);
     }
     let requests = scripted.seen()?;
@@ -495,12 +508,9 @@ fn check_requests(case: &Case, scripted: &Transport, seen: &Observations) -> Tes
     }
     if let Some(wire) = &case.wire {
         assert_eq!(requests.len(), 1, "{}", case.name);
-        assert_eq!(
-            &json::canonical(serde_json::from_slice(&requests[0].body)?),
-            wire,
-            "{}",
-            case.name
-        );
+        let body = serde_json::from_slice(&requests[0].body)?;
+        check_metadata_keys(&body, wire)?;
+        assert_eq!(&json::canonical(body), wire, "{}", case.name);
     }
     if let Some(destination) = &case.destination {
         assert_eq!(
@@ -508,6 +518,21 @@ fn check_requests(case: &Case, scripted: &Transport, seen: &Observations) -> Tes
             Some(destination.as_str()),
             "{}",
             case.name
+        );
+    }
+    Ok(())
+}
+
+/// Compare metadata insertion order independently of JSON object equality.
+fn check_metadata_keys(actual: &Value, expected: &Value) -> TestResult {
+    if let Some(metadata) = expected.get("requestMetadata") {
+        let expected = metadata.as_object().ok_or("expected metadata object")?;
+        let actual = actual["requestMetadata"]
+            .as_object()
+            .ok_or("metadata object")?;
+        assert_eq!(
+            actual.keys().collect::<Vec<_>>(),
+            expected.keys().collect::<Vec<_>>()
         );
     }
     Ok(())
