@@ -2,14 +2,18 @@
 #![cfg(not(target_arch = "wasm32"))]
 use super::resolve_config_value::{
     ConfigValueOperations, clear_config_value_cache,
-    native::{Attempt, Launch, Platform, default_shell, routed, spawn_failure},
+    native::{Attempt, Launch, Platform, attempt, default_shell, routed},
     resolve_config_value, resolve_config_value_uncached,
 };
+use maestro_process::SpawnSyncError;
 use std::{
     cell::{Cell, RefCell},
     collections::VecDeque,
     io,
+    process::Output,
 };
+#[cfg(unix)]
+use std::{os::unix::process::ExitStatusExt, process::ExitStatus};
 
 /// Route a controlled configured attempt through the shared value resolver.
 struct Controlled {
@@ -71,17 +75,48 @@ fn controlled(windows: bool, attempts: Vec<Attempt>) -> Controlled {
         windows,
     }
 }
+/// Capture outcomes that permit fallback or complete without a value.
+fn fallback_outcomes() -> Vec<(Result<Output, SpawnSyncError>, bool)> {
+    #[cfg(unix)]
+    let completed = |raw| {
+        Ok(Output {
+            status: ExitStatus::from_raw(raw),
+            stdout: b"discard".to_vec(),
+            stderr: Vec::new(),
+        })
+    };
+    [
+        (
+            Err(SpawnSyncError::Spawn(io::ErrorKind::NotFound.into())),
+            true,
+        ),
+        (
+            Err(SpawnSyncError::Infrastructure(io::Error::other("thread"))),
+            true,
+        ),
+        (
+            Err(SpawnSyncError::Spawn(
+                io::ErrorKind::PermissionDenied.into(),
+            )),
+            false,
+        ),
+        (Err(SpawnSyncError::Wait(io::Error::other("pipe"))), false),
+        (Err(SpawnSyncError::Timeout), false),
+        #[cfg(unix)]
+        (completed(7 << 8), false),
+        #[cfg(unix)]
+        (completed(15), false),
+    ]
+    .into_iter()
+    .collect()
+}
 #[test]
 fn configured_shell_fallback_is_selective() {
-    for (kind, fallback) in [
-        (io::ErrorKind::NotFound, true),
-        (io::ErrorKind::PermissionDenied, false),
-        (io::ErrorKind::TimedOut, false),
-    ] {
+    for (result, fallback) in fallback_outcomes() {
         let operations = controlled(
             true,
             vec![
-                spawn_failure(&io::Error::from(kind)),
+                attempt(result),
                 Attempt::Completed(Some(b"fallback".to_vec())),
             ],
         );

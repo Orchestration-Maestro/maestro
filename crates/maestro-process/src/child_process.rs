@@ -1,8 +1,8 @@
 //! Captured child processes: spawn, raw pipe collection, exit and EOF observation,
 //! termination and reaping.
 //!
-//! Callers keep cancellation, deadlines, output decoding and error text; a wait
-//! applies only the exit grace and termination action its caller selects.
+//! Callers keep cancellation, output decoding and error text and choose deadlines;
+//! waits apply the selected exit grace and termination action.
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
@@ -77,10 +77,15 @@ impl CapturedChild {
     /// # Errors
     /// Returns the native spawn error unchanged.
     pub fn spawn(command: &mut Command) -> io::Result<Self> {
+        Self::spawn_with(command, Stdio::piped())
+    }
+
+    /// Spawns `command` with ignored stdin, captured stdout and the selected stderr.
+    fn spawn_with(command: &mut Command, stderr: Stdio) -> io::Result<Self> {
         command
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+            .stderr(stderr);
         let mut child = command.spawn()?;
         Ok(Self {
             stdout: child.stdout.take(),
@@ -305,6 +310,90 @@ where
         stdout,
         stderr,
     })
+}
+
+/// Why a synchronous capture produced no completed output.
+#[derive(Debug)]
+pub enum SpawnSyncError {
+    /// The helper thread or its runtime failed.
+    Infrastructure(io::Error),
+    /// The native spawn failed.
+    Spawn(io::Error),
+    /// Reading stdout or the exit status failed after the spawn.
+    Wait(io::Error),
+    /// The timeout expired before the exit and the stdout end of file.
+    Timeout,
+}
+
+impl std::fmt::Display for SpawnSyncError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Infrastructure(_) => "Cannot start the synchronous capture",
+            Self::Spawn(_) => "Cannot start the process",
+            Self::Wait(_) => "Cannot wait for the process",
+            Self::Timeout => "The process timed out",
+        })
+    }
+}
+
+impl std::error::Error for SpawnSyncError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Infrastructure(error) | Self::Spawn(error) | Self::Wait(error) => Some(error),
+            Self::Timeout => None,
+        }
+    }
+}
+
+/// Runs a caller-built `command` from synchronous code, including inside a runtime.
+///
+/// Keeps its program, arguments, directory, environment and platform flags. Stdin
+/// and stderr use the null device; output contains raw stdout and the actual status.
+/// The timeout covers exit and stdout EOF. On expiry, unfinished readers close and
+/// the direct child is force-killed if still running, then reaped unless killing
+/// fails. Descendants are not signalled, and the result is [`SpawnSyncError::Timeout`].
+///
+/// # Errors
+/// Returns [`SpawnSyncError::Infrastructure`] for thread/runtime failure,
+/// [`SpawnSyncError::Spawn`] for native spawn failure, or [`SpawnSyncError::Wait`]
+/// for an error from [`wait_for_child_process`]. Expiry returns
+/// [`SpawnSyncError::Timeout`]; an unsuccessful exit status is not an error.
+pub fn spawn_sync(command: &mut Command, timeout: Duration) -> Result<Output, SpawnSyncError> {
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .spawn_scoped(scope, || {
+                tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .map_err(SpawnSyncError::Infrastructure)?
+                    .block_on(capture(command, timeout))
+            })
+            .map_err(SpawnSyncError::Infrastructure)?
+            .join()
+            .unwrap_or_else(|_| {
+                Err(SpawnSyncError::Infrastructure(io::Error::other(
+                    "synchronous capture thread panicked",
+                )))
+            })
+    })
+}
+
+/// Captures one child on the current runtime until exit and stdout end of file or `timeout`.
+async fn capture(command: &mut Command, timeout: Duration) -> Result<Output, SpawnSyncError> {
+    command.kill_on_drop(true);
+    let mut child =
+        CapturedChild::spawn_with(command, Stdio::null()).map_err(SpawnSyncError::Spawn)?;
+    let mut expired = false;
+    let output = wait_for_child_process(&mut child, WaitOptions::default(), async {
+        tokio::time::sleep(timeout).await;
+        expired = true;
+        Termination::Kill
+    })
+    .await;
+    if expired {
+        return Err(SpawnSyncError::Timeout);
+    }
+    output.map_err(SpawnSyncError::Wait)
 }
 
 #[cfg(test)]

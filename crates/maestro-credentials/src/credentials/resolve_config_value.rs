@@ -129,8 +129,12 @@ pub use native::ProcessConfigValueOperations;
 #[cfg(not(target_arch = "wasm32"))]
 pub(in crate::credentials) mod native {
     use super::ConfigValueOperations;
-    use std::{io, process::Stdio};
-    use tokio::{io::AsyncReadExt, process::Command};
+    use maestro_process::{SpawnSyncError, spawn_sync};
+    use std::{io, process::Output, time::Duration};
+    use tokio::process::Command;
+
+    /// How long one helper may run before it is stopped without a value.
+    const HELPER_TIMEOUT: Duration = Duration::from_millis(10_000);
 
     /// Lazily supplied configured executable and ordered arguments.
     type ShellSelector = dyn Fn() -> io::Result<(String, Vec<String>)> + Send + Sync;
@@ -263,77 +267,35 @@ pub(in crate::credentials) mod native {
             verbatim: cmd,
         }
     }
-    /// Run a current-thread runtime away from any caller runtime.
+    /// Run one launch through the shared synchronous capture.
     fn run(launch: Launch) -> Attempt {
-        std::thread::scope(|scope| {
-            let worker =
-                std::thread::Builder::new().spawn_scoped(scope, move || run_runtime(launch));
-            worker
-                .ok()
-                .and_then(|worker| worker.join().ok())
-                .unwrap_or(Attempt::Unavailable)
-        })
-    }
-    /// Build the local runtime on the helper thread.
-    fn run_runtime(launch: Launch) -> Attempt {
-        match tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-        {
-            Ok(runtime) => runtime.block_on(collect(launch)),
-            Err(_) => Attempt::Unavailable,
-        }
-    }
-    /// Missing executables permit fallback; other launch errors complete the attempt.
-    pub(in crate::credentials) fn spawn_failure(error: &io::Error) -> Attempt {
-        if error.kind() == io::ErrorKind::NotFound {
-            Attempt::Unavailable
-        } else {
-            Attempt::Completed(None)
-        }
-    }
-    /// Capture stdout and exit concurrently, retaining the child for timeout cleanup.
-    async fn collect(launch: Launch) -> Attempt {
         let mut command = Command::new(&launch.executable);
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
             command.creation_flags(0x0800_0000);
             if launch.verbatim {
-                for arg in &launch.args {
+                for arg in launch.args {
                     command.as_std_mut().raw_arg(arg);
                 }
             } else {
-                command.args(&launch.args);
+                command.args(launch.args);
             }
         }
         #[cfg(not(windows))]
-        command.args(&launch.args);
-        command
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .kill_on_drop(true);
-        let mut child = match command.spawn() {
-            Ok(child) => child,
-            Err(error) => return spawn_failure(&error),
-        };
-        let Some(mut stdout) = child.stdout.take() else {
-            return Attempt::Completed(None);
-        };
-        let mut bytes = Vec::new();
-        let completion = tokio::time::timeout(std::time::Duration::from_millis(10_000), async {
-            tokio::try_join!(stdout.read_to_end(&mut bytes), child.wait())
-        })
-        .await;
-        match completion {
-            Ok(Ok((_, status))) if status.success() => Attempt::Completed(Some(bytes)),
-            Ok(_) => Attempt::Completed(None),
-            Err(_) => {
-                let _ = child.kill().await;
-                let _ = child.wait().await;
-                Attempt::Completed(None)
+        command.args(launch.args);
+        attempt(spawn_sync(&mut command, HELPER_TIMEOUT))
+    }
+    /// Missing executables and unavailable capture infrastructure permit fallback;
+    /// every other outcome completes the attempt, with stdout only on success.
+    pub(in crate::credentials) fn attempt(result: Result<Output, SpawnSyncError>) -> Attempt {
+        match result {
+            Ok(output) if output.status.success() => Attempt::Completed(Some(output.stdout)),
+            Err(SpawnSyncError::Infrastructure(_)) => Attempt::Unavailable,
+            Err(SpawnSyncError::Spawn(error)) if error.kind() == io::ErrorKind::NotFound => {
+                Attempt::Unavailable
             }
+            _ => Attempt::Completed(None),
         }
     }
 }
