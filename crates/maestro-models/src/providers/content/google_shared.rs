@@ -13,10 +13,12 @@ use crate::{
     transform_messages,
 };
 
+mod projection;
 mod request;
 mod stream;
 mod wire;
 
+pub use projection::{ProjectedContentRequest, project_content_request};
 pub use request::{
     FunctionCallingConfig, GenerateContentConfig, GenerateContentParameters, ThinkingConfig,
     ToolConfig,
