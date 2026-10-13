@@ -85,6 +85,25 @@ fn paused_runtime() -> tokio::runtime::Runtime {
 }
 
 #[test]
+fn native_kill_rejects_nonpositive_and_unrepresentable_process_ids() {
+    for pid in [0, u32::MAX] {
+        for error in [super::kill_process(pid), super::kill_process_group(pid)] {
+            assert_eq!(error.unwrap_err().kind(), io::ErrorKind::InvalidInput);
+        }
+    }
+}
+
+#[test]
+fn windows_tree_kill_keeps_taskkill_operands() {
+    let command = super::native::tree_kill_command(4_294_967_295);
+    assert_eq!(command.get_program(), "taskkill");
+    assert_eq!(
+        command.get_args().collect::<Vec<_>>(),
+        ["/F", "/T", "/PID", "4294967295"]
+    );
+}
+
+#[test]
 fn bytes_split_across_consumed_reads_decode_as_one_character() {
     let scalar = "\u{10348}".as_bytes();
     for split in 1..scalar.len() {
@@ -228,6 +247,7 @@ fn grace_deadline_begins_after_child_exit() {
                 &mut held.child,
                 options,
                 std::future::pending(),
+                None,
             ));
             assert!(is_pending(&mut wait).await, "{grace:?} before the exit");
             tokio::time::advance(grace * 10).await;
@@ -250,6 +270,7 @@ fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
             &mut held.child,
             WaitOptions::default(),
             std::future::pending(),
+            None,
         );
         assert!(
             tokio::time::timeout(Duration::from_secs(1), capture)
@@ -261,7 +282,7 @@ fn discard_drops_stderr_retained_by_an_earlier_dropped_wait() {
             stderr: StderrMode::Discard,
             post_exit_grace: Some(Duration::from_millis(10)),
         };
-        let output = wait_for_child_process(&mut held.child, options, std::future::pending())
+        let output = wait_for_child_process(&mut held.child, options, std::future::pending(), None)
             .await
             .unwrap();
         assert_eq!(output.stderr, b"");
@@ -282,7 +303,7 @@ fn ready_termination_is_observed_even_when_the_child_already_finished() {
             seen.set(true);
             Termination::Terminate
         };
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop, None)
             .await
             .unwrap();
         assert!(polled.get(), "termination polled before completion");
@@ -310,7 +331,7 @@ fn termination_is_polled_while_a_stream_stays_ready() {
                 Poll::Ready(Termination::Kill)
             }
         });
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop, None)
             .await
             .unwrap();
         assert_eq!(output.status.signal(), Some(9));
@@ -342,6 +363,7 @@ fn settled_wait_releases_timers_and_stop_future() {
             &mut child,
             WaitOptions::default(),
             Observed(dropped.clone()),
+            None,
         )
         .await
         .unwrap();
@@ -353,7 +375,7 @@ fn settled_wait_releases_timers_and_stop_future() {
             post_exit_grace: Some(Duration::from_millis(100)),
             ..WaitOptions::default()
         };
-        wait_for_child_process(&mut held.child, options, Observed(dropped.clone()))
+        wait_for_child_process(&mut held.child, options, Observed(dropped.clone()), None)
             .await
             .unwrap();
         assert!(dropped.get(), "grace expiry");
@@ -367,6 +389,7 @@ fn settled_wait_releases_timers_and_stop_future() {
             &mut child,
             WaitOptions::default(),
             Observed(dropped.clone()),
+            None,
         )
         .await
         .unwrap_err();
@@ -396,14 +419,53 @@ fn failed_wait_leaves_consumed_bytes_available() {
         let mut child = CapturedChild::spawn(&mut command).unwrap();
         child.child.wait().await.unwrap();
         child.stderr = Some(unreadable_stderr().await);
-        let error =
-            wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
-                .await
-                .unwrap_err();
+        let error = wait_for_child_process(
+            &mut child,
+            WaitOptions::default(),
+            std::future::pending(),
+            None,
+        )
+        .await
+        .unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);
         assert!(child.stderr.is_none(), "failed pipe closed");
         assert_eq!(child.take_output(), (b"prefix".to_vec(), vec![]));
         assert_eq!(child.take_output(), (vec![], vec![]));
+    });
+}
+
+#[test]
+fn streamed_failure_preserves_prior_bytes_without_replay() {
+    runtime().block_on(async {
+        let mut command = Command::new("printf");
+        command.arg("new-bytes");
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        child.child.wait().await.unwrap();
+        child.out.extend_from_slice(b"prior-out");
+        child.err.extend_from_slice(b"prior-err");
+        child.stderr = Some(unreadable_stderr().await);
+        let mut delivered = Vec::new();
+        let mut sink = |data: &[u8]| delivered.extend_from_slice(data);
+        let error = wait_for_child_process(
+            &mut child,
+            WaitOptions::default(),
+            std::future::pending(),
+            Some(&mut sink),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::ConnectionReset);
+        let output = wait_for_child_process(
+            &mut child,
+            WaitOptions::default(),
+            std::future::pending(),
+            Some(&mut sink),
+        )
+        .await
+        .unwrap();
+        assert_eq!(delivered, b"new-bytes");
+        assert_eq!(output.stdout, b"prior-out");
+        assert_eq!(output.stderr, b"prior-err");
     });
 }
 
@@ -516,7 +578,7 @@ fn wait_escalation_timer_kills_exactly_after_the_selected_delay() {
         let after = Duration::from_secs(5);
         let started = tokio::time::Instant::now();
         let stop = std::future::ready(Termination::TerminateThenKill { after });
-        let output = wait_for_child_process(&mut live, WaitOptions::default(), stop)
+        let output = wait_for_child_process(&mut live, WaitOptions::default(), stop, None)
             .await
             .unwrap();
         assert_eq!(output.status.signal(), Some(9));
@@ -536,7 +598,7 @@ fn wait_consumes_the_termination_decision_once() {
             assert!(!seen.replace(true), "decision polled after it was consumed");
             Poll::Ready(Termination::Terminate)
         });
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop, None)
             .await
             .unwrap();
         assert_eq!(output.status.signal(), Some(15));
@@ -615,5 +677,38 @@ s.close(); os._exit(0)
         assert_eq!(error.to_string(), "The process timed out");
         assert_eq!(report, b"closed");
         assert_eq!(started.elapsed(), timeout);
+    });
+}
+
+#[test]
+fn stream_callback_can_abort_the_same_wait() {
+    runtime().block_on(async {
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            "import os,signal; os.write(1,b'prefix'); signal.pause()",
+        ]);
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        let mut tx = Some(tx);
+        let mut bytes = Vec::new();
+        let mut sink = |chunk: &[u8]| {
+            bytes.extend_from_slice(chunk);
+            tx.take().unwrap().send(()).unwrap();
+        };
+        let output = wait_for_child_process(
+            &mut child,
+            WaitOptions::default(),
+            async {
+                rx.await.unwrap();
+                Termination::Terminate
+            },
+            Some(&mut sink),
+        )
+        .await
+        .unwrap();
+        assert_eq!(bytes, b"prefix");
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
     });
 }

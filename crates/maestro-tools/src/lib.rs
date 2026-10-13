@@ -58,6 +58,9 @@ pub use output::truncate::{
 pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::{
+    bash::{
+        BashError, BashExecOptions, BashExecResult, BashOperations, create_local_bash_operations,
+    },
     exec::{ExecOptions, ExecResult, exec_command},
     sleep::{SleepError, sleep},
 };

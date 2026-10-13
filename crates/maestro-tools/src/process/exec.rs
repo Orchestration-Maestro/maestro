@@ -5,13 +5,13 @@
 //! escalation delay and maps the outcome to an [`ExecResult`].
 use maestro_models::Cancellation;
 use maestro_process::child_process::{
-    CapturedChild, Termination, WaitOptions, wait_for_child_process,
+    CapturedChild, EXIT_STDIO_GRACE_MS, Termination, WaitOptions, wait_for_child_process,
 };
 use std::{cell::Cell, io, process::Output, time::Duration};
 use tokio::process::Command;
 
 /// How long pipes may stay open after the command exits.
-const EXIT_GRACE: Duration = Duration::from_millis(100);
+const EXIT_GRACE: Duration = Duration::from_millis(EXIT_STDIO_GRACE_MS);
 /// How long a terminated command may keep running before it is killed.
 const KILL_AFTER: Duration = Duration::from_secs(5);
 
@@ -95,7 +95,7 @@ pub async fn exec_command(
         post_exit_grace: Some(EXIT_GRACE),
         ..WaitOptions::default()
     };
-    let waited = wait_for_child_process(&mut child, wait, stop).await;
+    let waited = wait_for_child_process(&mut child, wait, stop, None).await;
     Ok(project(waited, child.take_output(), killed.get()))
 }
 

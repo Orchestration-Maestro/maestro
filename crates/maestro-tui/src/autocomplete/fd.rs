@@ -24,7 +24,7 @@ pub(super) async fn run(
         stderr: StderrMode::Discard,
         ..WaitOptions::default()
     };
-    let result = wait_for_child_process(&mut child, options, kill).await;
+    let result = wait_for_child_process(&mut child, options, kill, None).await;
     if result.is_err() {
         child.terminate(Termination::Kill).await?;
     }
