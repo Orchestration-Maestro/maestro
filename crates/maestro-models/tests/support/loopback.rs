@@ -1,5 +1,6 @@
 //! A one-connection HTTP server on the loopback interface.
 
+use std::fmt::Write as _;
 use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc::{Receiver, channel};
@@ -171,5 +172,132 @@ pub fn serve(response_head: &str, steps: Vec<Step>) -> TestResult<Loopback> {
         url,
         received,
         worker,
+    })
+}
+
+/// What a routed server answers to one request.
+pub struct Reply {
+    /// Status code.
+    pub status: u16,
+    /// Content type.
+    pub content_type: &'static str,
+    /// Extra response headers.
+    pub headers: &'static [(&'static str, &'static str)],
+    /// Response body.
+    pub body: Vec<u8>,
+}
+
+/// A loopback server that answers every request through one handler until it is finished or
+/// dropped.
+pub struct Routed {
+    /// Base URL of the server.
+    pub url: String,
+    address: std::net::SocketAddr,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    worker: Option<JoinHandle<std::io::Result<()>>>,
+}
+
+impl Routed {
+    /// Make the accept loop notice the stop flag; a loop that already ended has closed the
+    /// listener, which is the same outcome.
+    fn stop_accepting(&self) -> std::io::Result<()> {
+        self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+        match TcpStream::connect(self.address) {
+            Err(error) if error.kind() == std::io::ErrorKind::ConnectionRefused => Ok(()),
+            other => other.map(drop),
+        }
+    }
+
+    /// Stop accepting connections and wait until every admitted request was answered.
+    pub fn finish(mut self) -> TestResult {
+        self.stop_accepting()?;
+        let worker = self.worker.take().ok_or("server already finished")?;
+        worker.join().map_err(|_| "server thread panicked")??;
+        Ok(())
+    }
+}
+
+impl Drop for Routed {
+    fn drop(&mut self) {
+        if let Some(worker) = self.worker.take() {
+            self.stop_accepting().ok();
+            worker.join().ok();
+        }
+    }
+}
+
+/// Read one request from `connection`, answer it with `handler` and close.
+fn answer_connection(
+    mut connection: TcpStream,
+    handler: &dyn Fn(&Received) -> Reply,
+) -> std::io::Result<()> {
+    let Some(request) = read_request(&mut connection)? else {
+        return Ok(());
+    };
+    let reply = handler(&request);
+    let mut head = format!(
+        "HTTP/1.1 {} Controlled\r\ncontent-type: {}\r\ncontent-length: {}\r\nconnection: close\r\n",
+        reply.status,
+        reply.content_type,
+        reply.body.len()
+    );
+    for (name, value) in reply.headers {
+        let _ = write!(head, "{name}: {value}\r\n");
+    }
+    head.push_str("\r\n");
+    connection.write_all(head.as_bytes())?;
+    connection.write_all(&reply.body)?;
+    connection.flush()
+}
+
+type Handler = std::sync::Arc<dyn Fn(&Received) -> Reply + Send + Sync>;
+
+/// Accept connections until `stopped` is set, then wait for every admitted request; the result
+/// is the first failure, after all of them were waited for.
+fn serve_until_stopped(
+    listener: &TcpListener,
+    stopped: &std::sync::atomic::AtomicBool,
+    handler: &Handler,
+) -> std::io::Result<()> {
+    let mut connections = Vec::new();
+    let mut accepted = Ok(());
+    while !stopped.load(std::sync::atomic::Ordering::SeqCst) {
+        let connection = match listener.accept() {
+            Ok((connection, _)) => connection,
+            Err(error) => {
+                accepted = Err(error);
+                break;
+            }
+        };
+        let handler = std::sync::Arc::clone(handler);
+        connections.push(std::thread::spawn(move || {
+            answer_connection(connection, &*handler)
+        }));
+    }
+    connections
+        .into_iter()
+        .map(|connection| {
+            connection
+                .join()
+                .unwrap_or_else(|_| Err(std::io::Error::other("connection thread panicked")))
+        })
+        .fold(accepted, Result::and)
+}
+
+/// Answer each request on its own connection with `handler`, and close the connection after it.
+pub fn serve_routed(
+    handler: impl Fn(&Received) -> Reply + Send + Sync + 'static,
+) -> TestResult<Routed> {
+    let handler: Handler = std::sync::Arc::new(handler);
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let address = listener.local_addr()?;
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let stopped = std::sync::Arc::clone(&stop);
+    let worker = std::thread::spawn(move || serve_until_stopped(&listener, &stopped, &handler));
+    Ok(Routed {
+        url: format!("http://{address}"),
+        address,
+        stop,
+        worker: Some(worker),
     })
 }
