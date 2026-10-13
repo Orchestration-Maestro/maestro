@@ -263,7 +263,7 @@ fn absolute(path: &str) -> io::Result<String> {
         },
         || std::env::current_dir().map(|cwd| cwd.to_string_lossy().into_owned()),
     )
-    .map(|paths| paths.concat())
+    .map(|paths| paths.into_iter().collect::<String>())
 }
 
 /// Rewrite retained records in order, leaving native partial writes in place.

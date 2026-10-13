@@ -230,7 +230,7 @@ pub(super) fn resolve_entry_path(
         || operations.drive_directories(),
         || operations.current_directory(),
     )
-    .map(|paths| paths.concat())
+    .map(|paths| paths.into_iter().collect::<String>())
 }
 
 /// Collects files and resource directories from already-resolved literal paths.

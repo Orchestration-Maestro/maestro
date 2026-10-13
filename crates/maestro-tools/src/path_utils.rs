@@ -85,7 +85,7 @@ pub(crate) fn resolve_path(parts: &[&str]) -> io::Result<String> {
         || &directories,
         || utf8(std::env::current_dir()?, "working directory"),
     )
-    .map(|resolved| resolved.concat())
+    .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Insert the narrow no-break space before a case-insensitive ` AM.` or ` PM.`.

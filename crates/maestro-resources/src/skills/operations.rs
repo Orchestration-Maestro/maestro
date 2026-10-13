@@ -141,7 +141,7 @@ impl<'a> ProcessContext<'a> {
             || self.snapshot().1,
             || self.snapshot().0.map_err(io::Error::from),
         )
-        .map(|resolved| resolved.concat())
+        .map(|resolved| resolved.into_iter().collect::<String>())
     }
 }
 

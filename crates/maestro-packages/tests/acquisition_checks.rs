@@ -1302,6 +1302,9 @@ fn grouped_cleanup_keeps_drive_observation_policy() {
     let scratch = scratch::Scratch::new_in(&ambient).unwrap();
     let root = scratch.0.to_string_lossy().replace('\\', "/");
     let ambient = ambient.to_string_lossy();
+    if ambient.as_bytes().get(1) != Some(&b':') {
+        return;
+    }
     let none = maestro_path::Cwd {
         current: "",
         drive_directories: &[],

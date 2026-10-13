@@ -35,7 +35,7 @@ fn resolve_path(operations: &dyn FooterOperations, paths: &[&str]) -> io::Result
         })
         .collect();
     resolve_with(&[paths], || &drives, || operations.current_dir())
-        .map(|resolved| resolved.concat())
+        .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Walk from `cwd` towards its root for the nearest directory with a `.git`
