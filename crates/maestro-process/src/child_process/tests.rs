@@ -573,6 +573,23 @@ fn sync_capture_uses_each_callers_timeout() {
 #[test]
 fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
     use std::{error::Error, io::Write};
+    const CASE: &str =
+        "child_process::tests::capture_timeout_closes_inherited_stdout_after_direct_child_exit";
+    if std::env::var_os("MAESTRO_INHERITED_STDOUT_CHILD").is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", CASE, "--nocapture"])
+            .env("MAESTRO_INHERITED_STDOUT_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let script = r"
 import os, socket, sys
