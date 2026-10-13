@@ -2536,10 +2536,13 @@ dependencies = [
 name = "maestro-app"
 version = "0.1.0"
 dependencies = [
+ "maestro-json",
  "maestro-models",
  "maestro-path",
+ "maestro-session",
  "maestro-text",
  "maestro-tools",
+ "maestro-tui",
  "maestro-watch",
  "num-traits",
  "serde",

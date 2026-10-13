@@ -7,3 +7,5 @@ pub mod countdown_timer;
 pub mod bordered_loader;
 
 pub mod custom_editor;
+
+pub mod tree_selector;

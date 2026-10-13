@@ -13,4 +13,11 @@ pub use maestro_tools::{
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
+pub use maestro_json::is_truthy;
+pub use maestro_session::session_manager::{
+    BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
+    ModelChangeEntry, SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry,
+    SessionTreeNode, ThinkingLevelChangeEntry,
+};
+pub use maestro_text::is_whitespace_scalar;
 pub use maestro_tools::{key_hint, key_text, raw_key_hint};
