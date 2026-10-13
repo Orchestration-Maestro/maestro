@@ -12,6 +12,18 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 use tokio::process::{Child, ChildStderr, ChildStdout, Command};
 use tokio::time::Sleep;
 
+mod native;
+#[cfg(windows)]
+pub use native::request_tree_kill;
+#[cfg(unix)]
+pub use native::{kill_process, kill_process_group};
+
+/// Default post-exit pipe grace for local shells, in milliseconds.
+pub const EXIT_STDIO_GRACE_MS: u64 = 100;
+
+/// A synchronous raw-byte sink for a streaming wait.
+pub type OutputSink<'a> = &'a mut (dyn FnMut(&[u8]) + Send);
+
 /// A spawned child whose stdout and stderr are captured and whose stdin is closed.
 pub struct CapturedChild {
     /// The native child, reaped once [`CapturedChild::terminate`] with [`Termination::Kill`]
@@ -30,10 +42,10 @@ pub struct CapturedChild {
 /// Selections for one [`wait_for_child_process`] call.
 #[derive(Clone, Copy, Debug)]
 pub struct WaitOptions {
-    /// Whether stderr bytes are returned or consumed and dropped.
+    /// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
     pub stderr: StderrMode,
     /// How long pipes may stay open after the child exits; `None` waits for both
-    /// end-of-file events. On expiry the bytes consumed so far are returned and the
+    /// end-of-file events. On expiry retained bytes are returned and the
     /// pipes are dropped.
     pub post_exit_grace: Option<Duration>,
 }
@@ -47,12 +59,12 @@ impl Default for WaitOptions {
     }
 }
 
-/// Whether stderr bytes are returned or consumed and dropped.
+/// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StderrMode {
-    /// Return the stderr bytes the wait collects.
+    /// Retain newly consumed stderr when no streaming sink is supplied.
     Capture,
-    /// Read stderr and return nothing.
+    /// Drop retained stderr and, without a sink, discard newly consumed stderr.
     Discard,
 }
 
@@ -80,6 +92,34 @@ impl CapturedChild {
         Self::spawn_with(command, Stdio::piped())
     }
 
+    /// Returns the native PID while the child has not been reaped.
+    #[must_use]
+    pub fn id(&self) -> Option<u32> {
+        self.child.id()
+    }
+
+    /// Consumes `command` and spawns with a new Unix session; other platforms
+    /// use ordinary spawning. The session hook cannot affect a later spawn.
+    ///
+    /// ```compile_fail,E0382
+    /// use maestro_process::child_process::CapturedChild;
+    /// let command = tokio::process::Command::new("sh");
+    /// let first = CapturedChild::spawn_detached(command);
+    /// let second = CapturedChild::spawn_detached(command);
+    /// ```
+    ///
+    /// # Errors
+    /// Returns the native session configuration or spawn error.
+    pub fn spawn_detached(mut command: Command) -> io::Result<Self> {
+        #[cfg(unix)]
+        {
+            use process_wrap::tokio::{CommandWrap, CommandWrapper, ProcessSession};
+            let context = CommandWrap::from(Command::new(""));
+            ProcessSession.pre_spawn(&mut command, &context)?;
+        }
+        Self::spawn(&mut command)
+    }
+
     /// Spawns `command` with ignored stdin, captured stdout and the selected stderr.
     fn spawn_with(command: &mut Command, stderr: Stdio) -> io::Result<Self> {
         command
@@ -96,9 +136,9 @@ impl CapturedChild {
         })
     }
 
-    /// Moves out the bytes consumed so far and drops any open pipes.
+    /// Moves out retained bytes and drops any open pipes.
     ///
-    /// A failed wait leaves what it consumed here; a successful wait has already
+    /// A failed wait leaves retained bytes here; a successful wait has already
     /// returned its bytes in the [`Output`].
     pub fn take_output(&mut self) -> (Vec<u8>, Vec<u8>) {
         self.stdout = None;
@@ -183,13 +223,8 @@ impl CapturedChild {
             return false;
         }
         #[cfg(unix)]
-        if let Some(pid) = self
-            .child
-            .id()
-            .and_then(|pid| i32::try_from(pid).ok())
-            .and_then(rustix::process::Pid::from_raw)
-        {
-            let _ = rustix::process::kill_process(pid, rustix::process::Signal::TERM);
+        if let Some(pid) = self.child.id() {
+            let _ = native::signal(pid, rustix::process::Signal::TERM, false);
         }
         #[cfg(not(unix))]
         let _ = self.child.start_kill();
@@ -212,7 +247,7 @@ async fn fill(
     pipe: &mut Option<impl AsyncRead + Unpin>,
     buf: &mut Vec<u8>,
     keep: bool,
-) -> io::Result<()> {
+) -> io::Result<Option<usize>> {
     let Some(reader) = pipe.as_mut() else {
         return std::future::pending().await;
     };
@@ -220,13 +255,21 @@ async fn fill(
     match reader.read_buf(buf).await {
         Ok(0) => *pipe = None,
         Ok(_) if !keep => buf.truncate(start),
-        Ok(_) => {}
+        Ok(_) => return Ok(Some(start)),
         Err(error) => {
             *pipe = None;
             return Err(error);
         }
     }
-    Ok(())
+    Ok(None)
+}
+
+/// Delivers newly read bytes and removes only those bytes from retained output.
+fn deliver(buf: &mut Vec<u8>, start: Option<usize>, sink: &mut Option<OutputSink<'_>>) {
+    if let (Some(start), Some(sink)) = (start, sink) {
+        sink(&buf[start..]);
+        buf.truncate(start);
+    }
 }
 
 /// A timer for `after`, if one is selected.
@@ -251,19 +294,24 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
 /// until exit and both EOFs, the latter killing a child still running after its delay.
 /// [`Termination::Kill`]
 /// abandons readers that have not finished, returns once the direct child is reaped
-/// and gives empty bytes for each abandoned stream; completed streams keep theirs.
+/// and gives empty bytes for each abandoned stream; completed streams keep retained bytes.
 /// [`StderrMode::Discard`] also drops stderr bytes retained by an earlier wait.
-/// A `post_exit_grace` ends the wait that long after the exit with the bytes
-/// consumed so far; without one the wait ends at the exit and both end-of-file
+/// A `post_exit_grace` ends the wait that long after the exit with retained
+/// bytes; without one the wait ends at the exit and both end-of-file
 /// events. The future is dropped when this function returns.
+///
+/// With `on_data`, newly consumed chunks go synchronously to the sink instead of
+/// retained output, including stderr regardless of [`StderrMode`]. Earlier
+/// retained bytes are not replayed.
 ///
 /// # Errors
 /// Returns the first native pipe, status or termination error unchanged; bytes
-/// consumed before it stay available through [`CapturedChild::take_output`].
+/// retained before it stay available through [`CapturedChild::take_output`].
 pub async fn wait_for_child_process<F>(
     child: &mut CapturedChild,
     options: WaitOptions,
     termination: F,
+    mut on_data: Option<OutputSink<'_>>,
 ) -> io::Result<Output>
 where
     F: Future<Output = Termination>,
@@ -294,8 +342,8 @@ where
                 escalation = None;
                 grace = timer(options.post_exit_grace);
             }
-            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => value?,
-            value = fill(&mut child.stderr, &mut child.err, options.stderr == StderrMode::Capture), if child.stderr.is_some() => value?,
+            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value?, &mut on_data),
+            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == StderrMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data),
         }
     }
     child.stdout = None;
@@ -384,11 +432,16 @@ async fn capture(command: &mut Command, timeout: Duration) -> Result<Output, Spa
     let mut child =
         CapturedChild::spawn_with(command, Stdio::null()).map_err(SpawnSyncError::Spawn)?;
     let mut expired = false;
-    let output = wait_for_child_process(&mut child, WaitOptions::default(), async {
-        tokio::time::sleep(timeout).await;
-        expired = true;
-        Termination::Kill
-    })
+    let output = wait_for_child_process(
+        &mut child,
+        WaitOptions::default(),
+        async {
+            tokio::time::sleep(timeout).await;
+            expired = true;
+            Termination::Kill
+        },
+        None,
+    )
     .await;
     if expired {
         return Err(SpawnSyncError::Timeout);

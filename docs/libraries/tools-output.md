@@ -144,3 +144,10 @@ through zip's fuzzing-only arbitrary edge. Existing `arbitrary`, `crc32fast`,
 `flate2`, `indexmap`, `memchr` and their closures are reused. These retain their
 existing MIT/Apache-2.0 terms (memchr under MIT), and the derive closure retains
 unicode-ident's Unicode-3.0 notice.
+
+## Local shell operations
+
+Native [local shell operations](../tools-process.md#local-shell-operations) use
+`indexmap =2.14.2` with default features for ordered native environment entries
+and detached process IDs. Use its MIT or Apache-2.0 license option. Native process
+effects reuse [the process owner](process.md).

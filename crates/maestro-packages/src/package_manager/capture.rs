@@ -29,7 +29,8 @@ impl NativePackageOperations {
             timed_out.set(true);
             Termination::Terminate
         };
-        let output = wait_for_child_process(&mut child, WaitOptions::default(), deadline).await?;
+        let output =
+            wait_for_child_process(&mut child, WaitOptions::default(), deadline, None).await?;
         let prefix = format!("{command} {}", args.join(" "));
         if timed_out.get() {
             return Err(io::Error::other(format!(

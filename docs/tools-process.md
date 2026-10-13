@@ -1,9 +1,9 @@
 # Command execution and delays
 
 `maestro-tools` runs an explicit program with `exec_command` and waits with `sleep`.
-Both are native-only, like the [read tool](tools-read.md#read-tool); the crate still
-builds for browser targets without them. Shell commands, the agent `bash` tool and
-their rendering are not delivered here.
+These operations and local shell operations are native-only, like the
+[read tool](tools-read.md#read-tool); the crate still builds for browser targets
+without them. The agent `bash` tool and its rendering are separate capabilities.
 
 ## Running a command
 
@@ -48,3 +48,49 @@ by [`maestro-process`](../crates/maestro-process/README.md).
 `sleep(duration, signal)` waits for `duration`. If `signal` is aborted first, including
 before the call, it fails with `SleepError`, displayed as `Aborted`; a pre-aborted
 call arms no timer. Finishing releases the signal observation.
+
+
+## Local shell operations
+
+`create_local_bash_operations(bin_dir, shell_path)` returns replaceable
+`BashOperations`. The application root re-exports `get_shell_config`,
+`BashOperations` and `create_local_bash_operations` on native targets; their tools
+paths remain available. Each `exec(command, cwd, options)` selects the supplied shell
+path, or discovers bash (falling back to `sh` on Unix), then checks that `cwd`
+exists before spawning with `-c` and the unchanged command. Selection checks
+existence, not file type or executable permission; native spawn errors stay native.
+The factory observes neither the filesystem nor inherited environment until a run.
+
+`BashExecOptions::on_data` receives raw output chunks, without sanitization,
+decoding or truncation. Stdin is closed. `env: Some(...)`, including an empty map,
+replaces inheritance; omission reads fresh native entries and prepends the caller's
+binary directory when absent from the first case-insensitive PATH entry. On
+Windows, native insertion selects the first UTF-16-sorted spelling of each
+Unicode-uppercase key identity; the supplied environment map stays unchanged.
+
+`signal` is optional; `timeout` is optional positive seconds, with no default.
+Zero, negative and unrepresentable durations arm no timer. Abort and timeout request
+forced tree cleanup while the shared waiter continues draining. At successful
+settlement an aborted signal wins over timeout; native spawn/wait errors win over
+both. `BashError` preserves these categories and the original other error source.
+`BashExecResult::exit_code` is absent for signal termination and otherwise numeric.
+
+Unix local shells start a new session. The exported tracking helpers allow a
+caller to request cleanup of tracked detached children; this library installs no
+shutdown handlers. See [shared lifecycle behavior](../crates/maestro-process/README.md#streaming-and-sessions)
+for streamed waits and exit grace.
+
+```rust,no_run
+use maestro_tools::{BashExecOptions, create_local_bash_operations};
+
+# async fn run() -> Result<(), maestro_tools::BashError> {
+let operations = create_local_bash_operations("/tool-bin".into(), None);
+let mut output = Vec::new();
+let mut sink = |chunk: &[u8]| output.extend_from_slice(chunk);
+let result = operations.exec("printf hello", "/repo", BashExecOptions {
+    on_data: &mut sink, signal: None, timeout: None, env: None,
+}).await?;
+assert_eq!(result.exit_code, Some(0.0));
+# Ok(())
+# }
+```

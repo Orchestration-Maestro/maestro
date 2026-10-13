@@ -360,9 +360,14 @@ async fn command_exists(name: &str) -> bool {
     let Ok(mut child) = CapturedChild::spawn(&mut command) else {
         return false;
     };
-    wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
-        .await
-        .is_ok()
+    wait_for_child_process(
+        &mut child,
+        WaitOptions::default(),
+        std::future::pending(),
+        None,
+    )
+    .await
+    .is_ok()
 }
 
 /// Whether `MAESTRO_OFFLINE` disables downloads.
@@ -431,9 +436,14 @@ async fn extract_tar(asset: &str, archive: &str, dir: &str) -> io::Result<()> {
     let mut command = Command::new("tar");
     command.args(["xzf", archive, "-C", dir]).kill_on_drop(true);
     let mut child = CapturedChild::spawn(&mut command).map_err(context)?;
-    let output = wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
-        .await
-        .map_err(context)?;
+    let output = wait_for_child_process(
+        &mut child,
+        WaitOptions::default(),
+        std::future::pending(),
+        None,
+    )
+    .await
+    .map_err(context)?;
     if output.status.success() {
         return Ok(());
     }
