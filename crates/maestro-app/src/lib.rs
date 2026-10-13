@@ -28,8 +28,6 @@ pub use maestro_text::is_whitespace_scalar;
 pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};
 
-/// Browser application records and attachment policy.
-pub mod browser;
 pub use maestro_agent::{AgentMessage, CustomAgentMessages};
 pub use maestro_models::{
     Fetch, FetchError, ImageContent, Message, TextContent, UserBlock, UserContent, default_fetch,

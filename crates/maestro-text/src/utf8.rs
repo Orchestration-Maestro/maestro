@@ -11,7 +11,6 @@ pub fn decode_utf8(bytes: &[u8]) -> Cow<'_, str> {
     String::from_utf8_lossy(bytes.strip_prefix(&BYTE_ORDER_MARK).unwrap_or(bytes))
 }
 
-
 /// Decodes complete scalars while retaining an incomplete trailing scalar.
 #[derive(Debug, Default)]
 pub struct Utf8Stream {

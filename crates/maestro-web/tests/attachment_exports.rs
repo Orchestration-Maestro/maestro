@@ -23,7 +23,7 @@ fn web_attachment_exports_use_application_records() {
     let user = UserMessageWithAttachments {
         content: maestro_app::UserContent::Text("hello".into()),
         timestamp: 1.0,
-        attachments: Some(vec![attachment]),
+        attachments: Some(vec![attachment.clone()]),
     };
     let artifact = ArtifactMessage {
         action: ArtifactAction::Create,
@@ -42,8 +42,36 @@ fn web_attachment_exports_use_application_records() {
     ];
     assert!(is_user_message_with_attachments(&history[0]));
     assert!(is_artifact_message(&history[1]));
-    assert_eq!(default_convert_to_llm(&history).len(), 1);
+    let text: maestro_app::TextContent = maestro_app::TextContent {
+        text: "hello".into(),
+        text_signature: None,
+    };
+    let image: maestro_app::ImageContent = maestro_app::ImageContent {
+        data: String::new(),
+        mime_type: "image/png".into(),
+    };
+    let blocks: Vec<maestro_app::UserBlock> = vec![
+        maestro_app::UserBlock::Text(text),
+        maestro_app::UserBlock::Image(image.clone()),
+    ];
+    let converted: Vec<maestro_app::Message> = default_convert_to_llm(&history);
+    let [maestro_app::Message::User(user)] = converted.as_slice() else {
+        panic!("expected one user message");
+    };
+    assert_eq!(user.content, maestro_app::UserContent::Blocks(blocks));
+    assert_eq!(user.timestamp.to_bits(), 1.0_f64.to_bits());
+    assert_eq!(
+        convert_attachments(&[attachment]),
+        vec![maestro_app::UserBlock::Image(image)]
+    );
     assert!(convert_attachments(&[]).is_empty());
+    let _: maestro_app::Fetch = maestro_app::default_fetch();
+    let error: maestro_app::FetchError = maestro_app::FetchError::Aborted;
+    assert_eq!(error.to_string(), "Request was aborted.");
+}
+
+#[test]
+fn web_local_attachment_loading_does_not_fetch() {
     let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
     let mut future = std::pin::pin!(load_attachment(
         AttachmentSource::Buffer(b"hi"),

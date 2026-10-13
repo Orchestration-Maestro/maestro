@@ -2,7 +2,7 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::Serialize;
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 /// Model-facing attachment classification.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -151,11 +151,11 @@ pub async fn load_attachment(
     })
 }
 /// Resolve bytes and metadata without applying format policy.
-async fn resolve_source(
-    source: AttachmentSource<'_>,
+async fn resolve_source<'a>(
+    source: AttachmentSource<'a>,
     name: Option<&str>,
     fetch: &Fetch,
-) -> Result<(Vec<u8>, String, String), AttachmentError> {
+) -> Result<(Cow<'a, [u8]>, String, String), AttachmentError> {
     use futures_util::TryStreamExt;
     let (bytes, detected, mime) = match source {
         AttachmentSource::Url(url) => {
@@ -182,7 +182,7 @@ async fn resolve_source(
                 .filter(|part| !part.is_empty())
                 .unwrap_or("document");
             (
-                bytes,
+                Cow::Owned(bytes),
                 detected,
                 response
                     .headers
@@ -195,11 +195,11 @@ async fn resolve_source(
             bytes,
             name,
             mime_type,
-        } => (bytes.to_vec(), name, mime_type.into()),
+        } => (Cow::Borrowed(bytes), name, mime_type.into()),
         AttachmentSource::Blob { bytes, mime_type } => {
-            (bytes.to_vec(), "unnamed", mime_type.into())
+            (Cow::Borrowed(bytes), "unnamed", mime_type.into())
         }
-        AttachmentSource::Buffer(bytes) => (bytes.to_vec(), "unnamed", String::new()),
+        AttachmentSource::Buffer(bytes) => (Cow::Borrowed(bytes), "unnamed", String::new()),
     };
     Ok((
         bytes,

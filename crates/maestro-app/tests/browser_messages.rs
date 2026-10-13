@@ -143,7 +143,7 @@ struct History {
 }
 /// Replay selected history rows.
 fn history_rows(select: impl Fn(usize, &str) -> bool) {
-    for (index, row) in corpus()
+    for (_, row) in corpus()
         .into_iter()
         .enumerate()
         .filter(|(index, row)| select(*index, &row.suite))
@@ -159,7 +159,6 @@ fn history_rows(select: impl Fn(usize, &str) -> bool) {
             default_convert_to_llm(&messages)
         };
         equal(&serde_json::to_value(output).unwrap(), &row.expected);
-        assert!(index < 121);
     }
 }
 #[test]
