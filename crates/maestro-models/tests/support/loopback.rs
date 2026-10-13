@@ -185,6 +185,8 @@ pub struct Reply {
     pub headers: &'static [(&'static str, &'static str)],
     /// Response body.
     pub body: Vec<u8>,
+    /// Whether to close the connection without answering.
+    pub close: bool,
 }
 
 /// A loopback server that answers every request through one handler until it is finished or
@@ -235,6 +237,9 @@ fn answer_connection(
         return Ok(());
     };
     let reply = handler(&request);
+    if reply.close {
+        return Ok(());
+    }
     let mut head = format!(
         "HTTP/1.1 {} Controlled\r\ncontent-type: {}\r\ncontent-length: {}\r\nconnection: close\r\n",
         reply.status,

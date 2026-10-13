@@ -7,7 +7,8 @@ use aws_config::SdkConfig;
 use aws_config::ecs::EcsCredentialsProvider;
 use aws_config::environment::EnvironmentVariableCredentialsProvider;
 use aws_config::imds::credentials::ImdsCredentialsProvider;
-use aws_config::profile::{Profile, ProfileFileCredentialsProvider, ProfileSet};
+use aws_config::login::LoginCredentialsProvider;
+use aws_config::profile::{Profile, ProfileSet};
 use aws_config::provider_config::ProviderConfig;
 use aws_config::sso::SsoCredentialsProvider;
 use aws_config::web_identity_token::{StaticConfiguration, WebIdentityTokenCredentialsProvider};
@@ -15,6 +16,7 @@ use aws_credential_types::Credentials;
 use aws_credential_types::provider::error::CredentialsError;
 use aws_credential_types::provider::{self, ProvideCredentials};
 use aws_sdk_bedrockruntime::config::Region;
+use aws_sdk_signin::operation::create_o_auth2_token::CreateOAuth2TokenError;
 
 use super::{process, role};
 
@@ -101,6 +103,30 @@ fn stop(error: CredentialsError) -> CredentialsError {
     }
 }
 
+/// The region the login token refresh goes to: the profile's own, otherwise the request's.
+fn login_region(profile: Option<&str>, request: Option<&Region>) -> Option<Region> {
+    profile
+        .map(|region| Region::new(region.to_owned()))
+        .or_else(|| request.cloned())
+}
+
+/// A failed login refresh decided by its token-operation error: access denied stays final and
+/// any other refresh failure counts as a source that did not apply. Other errors are unchanged.
+fn login_failure(error: CredentialsError) -> CredentialsError {
+    let mut cause = std::error::Error::source(&error);
+    while let Some(next) = cause {
+        if let Some(token) = next.downcast_ref::<CreateOAuth2TokenError>() {
+            return if token.is_access_denied_exception() {
+                error
+            } else {
+                CredentialsError::not_loaded(error)
+            };
+        }
+        cause = next.source();
+    }
+    error
+}
+
 /// What a walk has collected so far.
 #[derive(Default)]
 struct State<'a> {
@@ -137,8 +163,9 @@ impl<'a> Walk<'a> {
     ///
     /// # Errors
     /// A missing profile, incomplete keys, a missing or unsupported source and a source cycle
-    /// are missing-credentials errors, and so is a failed credential process. The error of a
-    /// native source or role provider is otherwise returned as it is, except that SSO turns a
+    /// are missing-credentials errors, and so is a failed credential process. A failed login
+    /// refresh is one too unless the sign-in service denied access. The error of a native source
+    /// or role provider is otherwise returned as it is, except that SSO turns a
     /// missing-credentials error into a final one.
     pub(super) async fn resolve(&self, root: &'a str) -> provider::Result {
         let mut state = State::default();
@@ -259,17 +286,29 @@ impl<'a> Walk<'a> {
         if SSO_FIELDS.iter().any(|key| field(profile, key).is_some()) {
             return self.sso(profile).await;
         }
-        if field(profile, "login_session").is_some() {
-            return ProfileFileCredentialsProvider::builder()
-                .configure(self.conf)
-                .profile_name(name)
-                .build()
-                .provide_credentials()
-                .await;
+        if let Some(session) = field(profile, "login_session") {
+            return self.login(profile, session).await;
         }
         Err(CredentialsError::not_loaded(format!(
             "Could not resolve credentials using profile: [{name}]."
         )))
+    }
+
+    /// Login credentials of a session, refreshed natively when its cached token is about to
+    /// expire, with the retry settings of the shared configuration. Only the refresh failure is
+    /// classified here; the native provider owns the cache.
+    async fn login(&self, profile: &Profile, session: &str) -> provider::Result {
+        let region = login_region(field(profile, "region"), self.shared.region());
+        let mut conf = self.conf.clone().with_region(region);
+        if let Some(retry) = self.shared.retry_config() {
+            conf = conf.with_retry_config(retry.clone());
+        }
+        LoginCredentialsProvider::builder(session)
+            .configure(&conf)
+            .build()
+            .provide_credentials()
+            .await
+            .map_err(login_failure)
     }
 
     /// Web identity credentials; a failed token read or exchange is final.
@@ -340,3 +379,6 @@ impl<'a> Walk<'a> {
         builder.build().provide_credentials().await.map_err(stop)
     }
 }
+
+#[cfg(test)]
+mod tests;

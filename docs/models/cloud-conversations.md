@@ -36,7 +36,9 @@ after the payload hook ran.
 
 The SDK's credential chain signs the request unless a bearer token is selected. Without a nonempty
 explicit `profile` option, an empty `AWS_PROFILE` selects nothing, so the environment's keys come
-first and the `default` profile is the fallback.
+first and the `default` profile is the fallback: the `default` profile then runs the same sources
+as a selected profile, from its own source to container or instance credentials. A profile named
+by the option or by `AWS_PROFILE` replaces the environment's keys.
 
 When a profile is selected the standalone environment-keys step is skipped (a profile may still
 name the environment as the credential source of a role) and these sources run in order, the next
@@ -46,8 +48,9 @@ one only after a source that did not apply:
    named `credential_source` (`Environment`, `EcsContainer` or `Ec2InstanceMetadata`) and each role
    is assumed from the source toward the selected profile; a source profile with complete static
    keys ends that walk. A profile that assumes no role uses, in this order, complete static keys,
-   web identity (`web_identity_token_file` with `role_arn`), `credential_process`, then SSO. A
-   chained role therefore wins over the static keys of the profile that names it.
+   web identity (`web_identity_token_file` with `role_arn`), `credential_process`, SSO, then login
+   (`login_session`). A chained role therefore wins over the static keys of the profile that
+   names it, and a login profile can be the source of a role.
 2. The selected profile's own `credential_process`, once more.
 3. Web identity from `AWS_WEB_IDENTITY_TOKEN_FILE` and `AWS_ROLE_ARN`.
 4. Container credentials when `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` or
@@ -63,7 +66,17 @@ was selected and fails ends it, as does a role that
 needs a multi-factor code (`Profile <name> requires multi-factor authentication, but no MFA code
 callback was provided.`), an SSO profile with a missing field (`Missing required SSO field:
 <field>.`) or session (`Missing SSO session: <session>.`), and a container or instance source
-whose own error is not a missing-credentials one. Login-session profiles are not supported yet (issue #728).
+whose own error is not a missing-credentials one.
+
+A login profile signs with the token the AWS CLI cached for its session, in
+`~/.aws/login/cache` or the directory named by `AWS_LOGIN_CACHE_DIRECTORY`. The native provider
+reads the cache and refreshes a token that is about to expire; the refresh goes to the profile's
+`region` when it sets one, otherwise to the request's region, and follows the retry settings of the
+shared configuration. A refresh the sign-in service refuses as access denied, whatever its reason,
+ends the chain, and so does a cache that is missing or incomplete. Any other refresh failure
+(validation, server, throttling or transport) lets the chain go on to the next source, decided
+from the error type and never from its text. A refreshed token is used even when saving it back to
+the cache fails.
 
 A named SSO session supplies only the start URL and region (a session without them leaves the
 field missing, whatever the profile says); the account and role come from the profile. A profile

@@ -14,7 +14,7 @@ use crate::bedrock;
 use crate::chat::block_on;
 use crate::child_process;
 use crate::profile_files::Workdir;
-use crate::profile_services::{Log, RoleRequest, Sent, SsoRequest, serve};
+use crate::profile_services::{Log, RoleRequest, Sent, SigninRequest, SsoRequest, serve};
 use crate::transport;
 
 const FIXTURE: &str = include_str!("../fixtures/cloud_profile_credentials.json");
@@ -59,26 +59,32 @@ impl Toggle {
 pub struct Input {
     pub absent: Option<On>,
     pub base: Option<String>,
+    pub cache_override: Option<On>,
     pub container: Option<On>,
     pub container_fail: Option<On>,
     pub deny: Option<On>,
     pub disabled: Option<String>,
     pub duration: Option<String>,
     pub env_keys: Option<On>,
+    pub error_code: Option<String>,
     pub env_partial: Option<On>,
     pub env_web: Option<Toggle>,
     pub external_id: Option<String>,
+    pub failure: Option<String>,
     pub inline_sso: Option<On>,
     pub instance: Option<On>,
     pub keys: Option<On>,
-    pub login: Option<On>,
+    pub login: Option<Toggle>,
+    pub message: Option<String>,
     pub mfa: Option<On>,
     pub omit_sso: Option<String>,
     #[serde(rename = "override")]
     pub credentials_override: Option<On>,
     pub partial: Option<String>,
     pub process: Option<String>,
+    pub read_only: Option<On>,
     pub role: Option<On>,
+    pub route: Option<String>,
     pub session_decoy: Option<On>,
     pub session_omit: Option<String>,
     pub session_token: Option<On>,
@@ -88,6 +94,16 @@ pub struct Input {
     pub sso: Option<String>,
     pub sso_cache: Option<On>,
     pub web: Option<Toggle>,
+}
+
+/// How a row's login token cache ends.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum LoginCache {
+    /// The cache keeps the bytes the row wrote.
+    Unchanged,
+    /// The cache holds the refreshed token.
+    Renewed,
 }
 
 /// What a row expects.
@@ -100,6 +116,8 @@ struct Expected {
     sequence: Vec<String>,
     roles: Vec<RoleRequest>,
     sso: Option<Vec<SsoRequest>>,
+    signin: Option<Vec<SigninRequest>>,
+    login_cache: Option<LoginCache>,
     events: Vec<String>,
     error: Option<bool>,
     stop_reason: String,
@@ -133,6 +151,15 @@ fn cause(id: &str) -> Option<&'static str> {
         "sso_session_missing" => "Missing SSO session: controlled.",
         "web_sts_denied" | "role_denied" => "AccessDenied",
         "sso_denied" => "controlled SSO denial",
+        "denied_token_expired" | "role_login_denied" => {
+            "Your session has expired. Please reauthenticate."
+        }
+        "denied_user_credentials_changed" => {
+            "Unable to refresh credentials because of a change in your password. Please reauthenticate with your new password."
+        }
+        "denied_insufficient_permissions" => {
+            "Unable to refresh credentials due to insufficient permissions. You may be missing permission for the 'CreateOAuth2Token' action."
+        }
         "sso_expired" | "sso_refreshable_cache" => "controlled SSO expiry",
         "web_missing_file" | "env_web_missing_file" | "sso_token_missing" => {
             "No such file or directory (os error 2)"
@@ -175,7 +202,8 @@ async fn converse(row: &Row) -> TestResult {
             ..StreamOptions::default()
         },
         region: Some("us-east-1".to_owned()),
-        profile: Some("selected".to_owned()),
+        profile: (row.input.route.as_deref().unwrap_or("explicit") == "explicit")
+            .then(|| "selected".to_owned()),
         ..BedrockOptions::default()
     };
     let stream = stream_bedrock(
@@ -237,6 +265,16 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
     assert_eq!(log.roles, expected.roles, "{id}: role requests");
     if let Some(sso) = &expected.sso {
         assert_eq!(&log.sso, sso, "{id}: sso requests");
+    }
+    if let Some(signin) = &expected.signin {
+        assert_eq!(&log.signin, signin, "{id}: sign-in requests");
+    }
+    if let Some(cache) = expected.login_cache {
+        assert_eq!(
+            work.login_cache_effect(&row.input)?,
+            cache,
+            "{id}: login cache"
+        );
     }
     let sent = log.sent.as_ref();
     let want = (

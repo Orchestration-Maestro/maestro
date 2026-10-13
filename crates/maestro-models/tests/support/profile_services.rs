@@ -40,6 +40,28 @@ pub struct SsoRequest {
     pub role: Option<String>,
 }
 
+/// The body of a token refresh request.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct SigninInput {
+    /// Client the cached token belongs to.
+    pub client_id: String,
+    /// Grant requested.
+    pub grant_type: String,
+    /// Refresh token presented.
+    pub refresh_token: String,
+}
+
+/// One token refresh request as the sign-in service saw it.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SigninRequest {
+    /// The request body.
+    pub input: SigninInput,
+    /// The request method.
+    pub method: String,
+}
+
 /// The Bedrock request the conversation finally sent.
 #[derive(Debug, PartialEq)]
 pub struct Sent {
@@ -58,6 +80,8 @@ pub struct Log {
     pub roles: Vec<RoleRequest>,
     /// SSO role-credentials requests in arrival order.
     pub sso: Vec<SsoRequest>,
+    /// Token refresh requests in arrival order.
+    pub signin: Vec<SigninRequest>,
     /// The Bedrock request, when one was sent.
     pub sent: Option<Sent>,
 }
@@ -69,6 +93,7 @@ fn json(status: u16, body: &str) -> Reply {
         content_type: "application/json",
         headers: &[],
         body: body.as_bytes().to_vec(),
+        close: false,
     }
 }
 
@@ -79,6 +104,7 @@ fn text(status: u16, body: &str) -> Reply {
         content_type: "text/plain",
         headers: &[],
         body: body.as_bytes().to_vec(),
+        close: false,
     }
 }
 
@@ -122,6 +148,7 @@ fn role_token(input: &Input, request: &Received, log: &mut Log) -> Reply {
         content_type: "text/xml",
         headers: &[],
         body: body.into_bytes(),
+        close: false,
     };
     if input.deny.is_some() {
         return xml(
@@ -172,6 +199,54 @@ fn sso_credentials(input: &Input, request: &Received, query: &str, log: &mut Log
     }
 }
 
+/// A token refresh request: record it and answer with renewed credentials, the failure the row
+/// names, or by closing the connection.
+fn token_refresh(input: &Input, request: &Received, log: &mut Log) -> Reply {
+    log.sequence.push("signin".to_owned());
+    if let (Ok(body), Some(method)) = (
+        serde_json::from_slice(&request.body),
+        request.request_line.split(' ').next(),
+    ) {
+        log.signin.push(SigninRequest {
+            input: body,
+            method: method.to_owned(),
+        });
+    }
+    let (code, message) = (
+        input.error_code.as_deref().unwrap_or("INVALID_REQUEST"),
+        input
+            .message
+            .as_deref()
+            .unwrap_or("controlled sign-in failure"),
+    );
+    let status = match input.failure.as_deref() {
+        None => {
+            return json(
+                200,
+                r#"{"accessToken":{"accessKeyId":"renewed-key","secretAccessKey":"renewed-secret","sessionToken":"renewed-token"},"refreshToken":"renewed-refresh","tokenType":"aws_sigv4","expiresIn":900}"#,
+            );
+        }
+        Some("transport") => {
+            return Reply {
+                close: true,
+                ..text(200, "")
+            };
+        }
+        Some("AccessDeniedException") if matches!(code, "TOKEN_EXPIRED" | "AUTHCODE_EXPIRED") => {
+            401
+        }
+        Some("AccessDeniedException") => 403,
+        Some("InternalServerException") => 500,
+        Some("TooManyRequestsError") => 429,
+        Some(_) => 400,
+    };
+    let failure = input.failure.as_deref().unwrap_or_default();
+    json(
+        status,
+        &serde_json::json!({"__type": failure, "error": code, "message": message}).to_string(),
+    )
+}
+
 /// Answer one request and record it.
 fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
     let target = request.request_line.split(' ').nth(1).unwrap_or_default();
@@ -204,6 +279,7 @@ fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
         _ if path.starts_with("/federation/credentials") => {
             sso_credentials(input, request, query, log)
         }
+        "/v1/token" => token_refresh(input, request, log),
         "/token" => {
             log.sequence.push("oidc".to_owned());
             json(400, r#"{"error":"invalid_grant"}"#)

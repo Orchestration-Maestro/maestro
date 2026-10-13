@@ -18,12 +18,14 @@ for the exercised inputs and service-qualification limits.
 
 Native Amazon Bedrock conversations in `maestro-models` use `aws-sdk-bedrockruntime =1.148.0`
 (features `default-https-client` and `rt-tokio`, no legacy `rustls` stack) and `aws-config =1.12.0`
-(features `behavior-version-latest`, `default-https-client`, `rt-tokio`, `credentials-process` and
-`sso`) for credential lookup, signing, retries and event decoding, plus `aws-smithy-runtime-api
+(features `behavior-version-latest`, `default-https-client`, `rt-tokio`, `credentials-process`,
+`sso` and `credentials-login`) for credential lookup, signing, retries and event decoding, plus
+`aws-sdk-signin =1.22.0` (default features off) only for the typed token-refresh error that
+decides whether a failed login refresh ends the chain, plus `aws-smithy-runtime-api
 =1.19.0` (`client`, `http-1x`) and `aws-smithy-types =1.8.1` (`http-body-1-x`) for the transport
 bridge that sends through the shared HTTP seam, and `aws-credential-types =1.3.0` (default
 features off) for the typed credential errors and futures that compose the selected-profile
-sources. All five are Apache-2.0 and are declared only for non-browser targets; the browser
+sources. All six are Apache-2.0 and are declared only for non-browser targets; the browser
 dependency set gains nothing. `aws-credential-types` was already resolved for `aws-config`, so it
 adds no package to the lockfile.
 
@@ -31,3 +33,11 @@ The resolved lockfile gains 42 packages: 22 under Apache-2.0, 19 under MIT or Ap
 expressions (or MIT alone) and `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under
 Apache-2.0. No unapproved crate beyond these AWS packages is added: the byte and frame types
 come from the existing `hyper` dependency, and tests encode their own event-stream frames.
+
+The login source adds 24 packages to the lockfile. `aws-sdk-signin =1.22.0` is Apache-2.0. Under
+MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base64ct =1.8.3`,
+`const-oid =0.9.6`, `crypto-bigint =0.5.5`, `der =0.7.10`, `ecdsa =0.16.9`, `elliptic-curve
+=0.13.8`, `ff =0.13.1`, `group =0.13.0`, `hmac =0.12.1`, `http =0.2.12`, `p256 =0.13.2`,
+`pem-rfc7468 =0.7.0`, `pkcs8 =0.10.2`, `ppv-lite86 =0.2.21`, `primeorder =0.13.6`, `rand =0.8.8`,
+`rand_chacha =0.3.1`, `rand_core =0.6.4`, `rfc6979 =0.4.0`, `sec1 =0.7.3`, `signature =2.2.0` and
+`spki =0.7.3`; no direct dependency on them is declared.

@@ -25,7 +25,7 @@ use hyper::body::{Body, Bytes, Frame};
 use url::Url;
 
 use super::BedrockOptions;
-use super::credentials::selected_profile;
+use super::credentials::default_provider;
 use super::proxy::Environment;
 use super::request::Prepared;
 use crate::providers::http::{
@@ -286,10 +286,9 @@ pub(super) async fn connect(
         config = config.endpoint_url(endpoint);
     }
     config = match &settings.auth {
-        Auth::Chain => match &settings.profile {
-            Some(profile) => config.credentials_provider(selected_profile(profile, &shared)),
-            None => config,
-        },
+        Auth::Chain => {
+            config.credentials_provider(default_provider(settings.profile.as_deref(), &shared))
+        }
         Auth::Bearer(token) => config
             .token_provider(Token::new(token, None))
             .auth_scheme_preference([HTTP_BEARER_AUTH_SCHEME_ID]),
