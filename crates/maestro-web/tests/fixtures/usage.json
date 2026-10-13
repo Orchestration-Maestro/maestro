@@ -1,0 +1,574 @@
+[
+  {
+    "input": null,
+    "expected": ""
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": ""
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↓2.6k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k ↓2.6k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "R10k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k R10k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↓2.6k R10k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k ↓2.6k R10k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "W22k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k W22k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↓2.6k W22k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k ↓2.6k W22k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "R10k W22k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k R10k W22k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↓2.6k R10k W22k"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0
+      }
+    },
+    "expected": "↑1.1k ↓2.6k R10k W22k"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "$0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↓2.6k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k ↓2.6k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "R10k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k R10k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↓2.6k R10k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 0,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k ↓2.6k R10k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↓2.6k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 0,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k ↓2.6k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "R10k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 0,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k R10k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 0,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↓2.6k R10k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": 1050,
+      "output": 2650,
+      "cacheRead": 10150,
+      "cacheWrite": 21500,
+      "totalTokens": 999999,
+      "cost": {
+        "input": 3,
+        "output": 4,
+        "cacheRead": 5,
+        "cacheWrite": 6,
+        "total": 0.03125
+      }
+    },
+    "expected": "↑1.1k ↓2.6k R10k W22k $0.0313"
+  },
+  {
+    "input": {
+      "input": "NaN",
+      "output": "-0",
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "cost": {
+        "total": "NaN"
+      }
+    },
+    "expected": ""
+  },
+  {
+    "input": {
+      "input": -1,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "cost": {
+        "total": -0.03125
+      }
+    },
+    "expected": "↑-1 $-0.0313"
+  }
+]

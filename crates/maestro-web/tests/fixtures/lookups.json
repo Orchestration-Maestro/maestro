@@ -1,0 +1,225 @@
+[
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "known": "English",
+          "blank": ""
+        },
+        "de": {}
+      },
+      "language": "de",
+      "args": [
+        "known"
+      ]
+    },
+    "expected": {
+      "value": "known"
+    },
+    "diagnostics": [
+      "Unknown i18n key: known"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "blank": ""
+        }
+      },
+      "language": "en",
+      "args": [
+        "blank"
+      ]
+    },
+    "expected": {
+      "value": "blank"
+    },
+    "diagnostics": [
+      "Unknown i18n key: blank"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {}
+      },
+      "language": "en",
+      "args": [
+        "missing"
+      ]
+    },
+    "expected": {
+      "value": "missing"
+    },
+    "diagnostics": [
+      "Unknown i18n key: missing"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "group": {
+            "key": "nested",
+            "blank": ""
+          },
+          "scalar": "text"
+        }
+      },
+      "language": "en",
+      "args": [
+        "group",
+        "key"
+      ]
+    },
+    "expected": {
+      "value": "nested"
+    },
+    "diagnostics": []
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "group": {
+            "key": "nested",
+            "blank": ""
+          },
+          "scalar": "text"
+        }
+      },
+      "language": "en",
+      "args": [
+        "group",
+        "blank"
+      ]
+    },
+    "expected": {
+      "value": "blank"
+    },
+    "diagnostics": [
+      "Unknown i18n key: group.blank"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "group": {
+            "key": "nested"
+          },
+          "scalar": "text"
+        }
+      },
+      "language": "en",
+      "args": [
+        "group",
+        "missing"
+      ]
+    },
+    "expected": {
+      "value": "missing"
+    },
+    "diagnostics": [
+      "Unknown i18n key: group.missing"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "group": {
+            "key": "nested"
+          },
+          "scalar": "text"
+        }
+      },
+      "language": "en",
+      "args": [
+        "scalar",
+        "key"
+      ]
+    },
+    "expected": {
+      "value": "key"
+    },
+    "diagnostics": [
+      "Unknown i18n category: scalar"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "group": {
+            "key": "nested"
+          },
+          "scalar": "text"
+        }
+      },
+      "language": "en",
+      "args": [
+        "absent",
+        "key"
+      ]
+    },
+    "expected": {
+      "value": "key"
+    },
+    "diagnostics": [
+      "Unknown i18n category: absent"
+    ]
+  },
+  {
+    "input": {
+      "tables": {
+        "fr": {
+          "hello": "Bonjour"
+        }
+      },
+      "language": "fr",
+      "args": [
+        "hello"
+      ]
+    },
+    "expected": {
+      "value": "Bonjour"
+    },
+    "diagnostics": []
+  },
+  {
+    "input": {
+      "tables": {
+        "fr": {
+          "hello": "Bonjour"
+        }
+      },
+      "language": null,
+      "args": [
+        "hello"
+      ]
+    },
+    "expected": {
+      "error": "missing_language"
+    },
+    "diagnostics": []
+  },
+  {
+    "input": {
+      "tables": {
+        "en": {
+          "{days} days ago": "{days} days ago"
+        }
+      },
+      "language": "en",
+      "args": [
+        "{days} days ago"
+      ]
+    },
+    "expected": {
+      "value": "{days} days ago"
+    },
+    "diagnostics": []
+  }
+]

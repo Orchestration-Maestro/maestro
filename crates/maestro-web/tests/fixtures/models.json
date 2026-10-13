@@ -1,0 +1,492 @@
+[
+  {
+    "language": "en",
+    "input": null,
+    "expected": "Free",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "en",
+    "input": {},
+    "expected": "Free",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": "NaN",
+      "output": 0
+    },
+    "expected": "Free",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 0,
+      "output": 2.5
+    },
+    "expected": "$0/$2.5",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 3.75,
+      "output": 0
+    },
+    "expected": "$3.75/$0",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1e-05,
+      "output": 2e-05
+    },
+    "expected": "$0/$0",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 0.0005,
+      "output": 0.001
+    },
+    "expected": "$0.001/$0.001",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 0.03125,
+      "output": 0.0625
+    },
+    "expected": "$0.031/$0.063",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 0.9994,
+      "output": 1.9988
+    },
+    "expected": "$0.999/$2",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 0.9995,
+      "output": 1.999
+    },
+    "expected": "$1/$2",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1,
+      "output": 2
+    },
+    "expected": "$1/$2",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1.005,
+      "output": 2.01
+    },
+    "expected": "$1/$2.01",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1.015,
+      "output": 2.03
+    },
+    "expected": "$1.01/$2.03",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 9.995,
+      "output": 19.99
+    },
+    "expected": "$9.99/$20",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 10,
+      "output": 20
+    },
+    "expected": "$10/$20",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 10.05,
+      "output": 20.1
+    },
+    "expected": "$10.1/$20.1",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 10.5,
+      "output": 21
+    },
+    "expected": "$10.5/$21",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 99.95,
+      "output": 199.9
+    },
+    "expected": "$100/$200",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 100,
+      "output": 200
+    },
+    "expected": "$100/$200",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 100.5,
+      "output": 201
+    },
+    "expected": "$101/$201",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1000,
+      "output": 2000
+    },
+    "expected": "$1000/$2000",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": 1e+21,
+      "output": 2e+21
+    },
+    "expected": "$1e+21/$2e+21",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": -1e-05,
+      "output": -2e-05
+    },
+    "expected": "$-0/$-0",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": -0.1,
+      "output": -0.2
+    },
+    "expected": "$-0.1/$-0.2",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": -1,
+      "output": -2
+    },
+    "expected": "$-1/$-2",
+    "effects": []
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": "NaN",
+      "output": "NaN"
+    },
+    "expected": "Free",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "en",
+    "input": {
+      "input": "Infinity",
+      "output": "Infinity"
+    },
+    "expected": "$Infinity/$Infinity",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": null,
+    "expected": "Kostenlos",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "de",
+    "input": {},
+    "expected": "Kostenlos",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": "NaN",
+      "output": 0
+    },
+    "expected": "Kostenlos",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 0,
+      "output": 2.5
+    },
+    "expected": "$0/$2.5",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 3.75,
+      "output": 0
+    },
+    "expected": "$3.75/$0",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1e-05,
+      "output": 2e-05
+    },
+    "expected": "$0/$0",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 0.0005,
+      "output": 0.001
+    },
+    "expected": "$0.001/$0.001",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 0.03125,
+      "output": 0.0625
+    },
+    "expected": "$0.031/$0.063",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 0.9994,
+      "output": 1.9988
+    },
+    "expected": "$0.999/$2",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 0.9995,
+      "output": 1.999
+    },
+    "expected": "$1/$2",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1,
+      "output": 2
+    },
+    "expected": "$1/$2",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1.005,
+      "output": 2.01
+    },
+    "expected": "$1/$2.01",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1.015,
+      "output": 2.03
+    },
+    "expected": "$1.01/$2.03",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 9.995,
+      "output": 19.99
+    },
+    "expected": "$9.99/$20",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 10,
+      "output": 20
+    },
+    "expected": "$10/$20",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 10.05,
+      "output": 20.1
+    },
+    "expected": "$10.1/$20.1",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 10.5,
+      "output": 21
+    },
+    "expected": "$10.5/$21",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 99.95,
+      "output": 199.9
+    },
+    "expected": "$100/$200",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 100,
+      "output": 200
+    },
+    "expected": "$100/$200",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 100.5,
+      "output": 201
+    },
+    "expected": "$101/$201",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1000,
+      "output": 2000
+    },
+    "expected": "$1000/$2000",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": 1e+21,
+      "output": 2e+21
+    },
+    "expected": "$1e+21/$2e+21",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": -1e-05,
+      "output": -2e-05
+    },
+    "expected": "$-0/$-0",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": -0.1,
+      "output": -0.2
+    },
+    "expected": "$-0.1/$-0.2",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": -1,
+      "output": -2
+    },
+    "expected": "$-1/$-2",
+    "effects": []
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": "NaN",
+      "output": "NaN"
+    },
+    "expected": "Kostenlos",
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "language": "de",
+    "input": {
+      "input": "Infinity",
+      "output": "Infinity"
+    },
+    "expected": "$Infinity/$Infinity",
+    "effects": []
+  }
+]

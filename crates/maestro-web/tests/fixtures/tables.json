@@ -1,0 +1,1702 @@
+{
+  "en": [
+    {
+      "key": "*",
+      "expected": "*"
+    },
+    {
+      "key": "Copy",
+      "expected": "Copy"
+    },
+    {
+      "key": "Copy code",
+      "expected": "Copy code"
+    },
+    {
+      "key": "Copied!",
+      "expected": "Copied!"
+    },
+    {
+      "key": "Download",
+      "expected": "Download"
+    },
+    {
+      "key": "Close",
+      "expected": "Close"
+    },
+    {
+      "key": "Preview",
+      "expected": "Preview"
+    },
+    {
+      "key": "Code",
+      "expected": "Code"
+    },
+    {
+      "key": "Loading...",
+      "expected": "Loading..."
+    },
+    {
+      "key": "Select an option",
+      "expected": "Select an option"
+    },
+    {
+      "key": "Mode 1",
+      "expected": "Mode 1"
+    },
+    {
+      "key": "Mode 2",
+      "expected": "Mode 2"
+    },
+    {
+      "key": "Required",
+      "expected": "Required"
+    },
+    {
+      "key": "Optional",
+      "expected": "Optional"
+    },
+    {
+      "key": "Input Required",
+      "expected": "Input Required"
+    },
+    {
+      "key": "Cancel",
+      "expected": "Cancel"
+    },
+    {
+      "key": "Confirm",
+      "expected": "Confirm"
+    },
+    {
+      "key": "Free",
+      "expected": "Free"
+    },
+    {
+      "key": "Select Model",
+      "expected": "Select Model"
+    },
+    {
+      "key": "Search models...",
+      "expected": "Search models..."
+    },
+    {
+      "key": "Format",
+      "expected": "Format"
+    },
+    {
+      "key": "Thinking",
+      "expected": "Thinking"
+    },
+    {
+      "key": "Vision",
+      "expected": "Vision"
+    },
+    {
+      "key": "You",
+      "expected": "You"
+    },
+    {
+      "key": "Assistant",
+      "expected": "Assistant"
+    },
+    {
+      "key": "Thinking...",
+      "expected": "Thinking..."
+    },
+    {
+      "key": "Type your message...",
+      "expected": "Type your message..."
+    },
+    {
+      "key": "API Keys Configuration",
+      "expected": "API Keys Configuration"
+    },
+    {
+      "key": "Configure API keys for LLM providers. Keys are stored locally in your browser.",
+      "expected": "Configure API keys for LLM providers. Keys are stored locally in your browser."
+    },
+    {
+      "key": "Configured",
+      "expected": "Configured"
+    },
+    {
+      "key": "Not configured",
+      "expected": "Not configured"
+    },
+    {
+      "key": "✓ Valid",
+      "expected": "✓ Valid"
+    },
+    {
+      "key": "✗ Invalid",
+      "expected": "✗ Invalid"
+    },
+    {
+      "key": "Testing...",
+      "expected": "Testing..."
+    },
+    {
+      "key": "Update",
+      "expected": "Update"
+    },
+    {
+      "key": "Test",
+      "expected": "Test"
+    },
+    {
+      "key": "Remove",
+      "expected": "Remove"
+    },
+    {
+      "key": "Save",
+      "expected": "Save"
+    },
+    {
+      "key": "Update API key",
+      "expected": "Update API key"
+    },
+    {
+      "key": "Enter API key",
+      "expected": "Enter API key"
+    },
+    {
+      "key": "Type a message...",
+      "expected": "Type a message..."
+    },
+    {
+      "key": "Failed to fetch file",
+      "expected": "Failed to fetch file"
+    },
+    {
+      "key": "Invalid source type",
+      "expected": "Invalid source type"
+    },
+    {
+      "key": "PDF",
+      "expected": "PDF"
+    },
+    {
+      "key": "Document",
+      "expected": "Document"
+    },
+    {
+      "key": "Presentation",
+      "expected": "Presentation"
+    },
+    {
+      "key": "Spreadsheet",
+      "expected": "Spreadsheet"
+    },
+    {
+      "key": "Text",
+      "expected": "Text"
+    },
+    {
+      "key": "Error loading file",
+      "expected": "Error loading file"
+    },
+    {
+      "key": "No text content available",
+      "expected": "No text content available"
+    },
+    {
+      "key": "Failed to load PDF",
+      "expected": "Failed to load PDF"
+    },
+    {
+      "key": "Failed to load document",
+      "expected": "Failed to load document"
+    },
+    {
+      "key": "Failed to load spreadsheet",
+      "expected": "Failed to load spreadsheet"
+    },
+    {
+      "key": "Error loading PDF",
+      "expected": "Error loading PDF"
+    },
+    {
+      "key": "Error loading document",
+      "expected": "Error loading document"
+    },
+    {
+      "key": "Error loading spreadsheet",
+      "expected": "Error loading spreadsheet"
+    },
+    {
+      "key": "Preview not available for this file type.",
+      "expected": "Preview not available for this file type."
+    },
+    {
+      "key": "Click the download button above to view it on your computer.",
+      "expected": "Click the download button above to view it on your computer."
+    },
+    {
+      "key": "No content available",
+      "expected": "No content available"
+    },
+    {
+      "key": "Failed to display text content",
+      "expected": "Failed to display text content"
+    },
+    {
+      "key": "API keys are required to use AI models. Get your keys from the provider's website.",
+      "expected": "API keys are required to use AI models. Get your keys from the provider's website."
+    },
+    {
+      "key": "console",
+      "expected": "console"
+    },
+    {
+      "key": "Copy output",
+      "expected": "Copy output"
+    },
+    {
+      "key": "Error:",
+      "expected": "Error:"
+    },
+    {
+      "key": "Request aborted",
+      "expected": "Request aborted"
+    },
+    {
+      "key": "Call",
+      "expected": "Call"
+    },
+    {
+      "key": "Result",
+      "expected": "Result"
+    },
+    {
+      "key": "(no result)",
+      "expected": "(no result)"
+    },
+    {
+      "key": "Waiting for tool result…",
+      "expected": "Waiting for tool result…"
+    },
+    {
+      "key": "Call was aborted; no result.",
+      "expected": "Call was aborted; no result."
+    },
+    {
+      "key": "No session available",
+      "expected": "No session available"
+    },
+    {
+      "key": "No session set",
+      "expected": "No session set"
+    },
+    {
+      "key": "Preparing tool parameters...",
+      "expected": "Preparing tool parameters..."
+    },
+    {
+      "key": "(no output)",
+      "expected": "(no output)"
+    },
+    {
+      "key": "Input",
+      "expected": "Input"
+    },
+    {
+      "key": "Output",
+      "expected": "Output"
+    },
+    {
+      "key": "Waiting for expression...",
+      "expected": "Waiting for expression..."
+    },
+    {
+      "key": "Writing expression...",
+      "expected": "Writing expression..."
+    },
+    {
+      "key": "Calculating",
+      "expected": "Calculating"
+    },
+    {
+      "key": "Getting current time in",
+      "expected": "Getting current time in"
+    },
+    {
+      "key": "Getting current date and time",
+      "expected": "Getting current date and time"
+    },
+    {
+      "key": "Waiting for command...",
+      "expected": "Waiting for command..."
+    },
+    {
+      "key": "Writing command...",
+      "expected": "Writing command..."
+    },
+    {
+      "key": "Running command...",
+      "expected": "Running command..."
+    },
+    {
+      "key": "Command failed",
+      "expected": "Command failed"
+    },
+    {
+      "key": "Enter Auth Token",
+      "expected": "Enter Auth Token"
+    },
+    {
+      "key": "Please enter your auth token.",
+      "expected": "Please enter your auth token."
+    },
+    {
+      "key": "Auth token is required for proxy transport",
+      "expected": "Auth token is required for proxy transport"
+    },
+    {
+      "key": "Execution aborted",
+      "expected": "Execution aborted"
+    },
+    {
+      "key": "Code parameter is required",
+      "expected": "Code parameter is required"
+    },
+    {
+      "key": "Unknown error",
+      "expected": "Unknown error"
+    },
+    {
+      "key": "Code executed successfully (no output)",
+      "expected": "Code executed successfully (no output)"
+    },
+    {
+      "key": "Execution failed",
+      "expected": "Execution failed"
+    },
+    {
+      "key": "JavaScript REPL",
+      "expected": "JavaScript REPL"
+    },
+    {
+      "key": "JavaScript code to execute",
+      "expected": "JavaScript code to execute"
+    },
+    {
+      "key": "Writing JavaScript code...",
+      "expected": "Writing JavaScript code..."
+    },
+    {
+      "key": "Executing JavaScript",
+      "expected": "Executing JavaScript"
+    },
+    {
+      "key": "Preparing JavaScript...",
+      "expected": "Preparing JavaScript..."
+    },
+    {
+      "key": "Preparing command...",
+      "expected": "Preparing command..."
+    },
+    {
+      "key": "Preparing calculation...",
+      "expected": "Preparing calculation..."
+    },
+    {
+      "key": "Preparing tool...",
+      "expected": "Preparing tool..."
+    },
+    {
+      "key": "Getting time...",
+      "expected": "Getting time..."
+    },
+    {
+      "key": "Processing artifact...",
+      "expected": "Processing artifact..."
+    },
+    {
+      "key": "Preparing artifact...",
+      "expected": "Preparing artifact..."
+    },
+    {
+      "key": "Processing artifact",
+      "expected": "Processing artifact"
+    },
+    {
+      "key": "Processed artifact",
+      "expected": "Processed artifact"
+    },
+    {
+      "key": "Creating artifact",
+      "expected": "Creating artifact"
+    },
+    {
+      "key": "Created artifact",
+      "expected": "Created artifact"
+    },
+    {
+      "key": "Updating artifact",
+      "expected": "Updating artifact"
+    },
+    {
+      "key": "Updated artifact",
+      "expected": "Updated artifact"
+    },
+    {
+      "key": "Rewriting artifact",
+      "expected": "Rewriting artifact"
+    },
+    {
+      "key": "Rewrote artifact",
+      "expected": "Rewrote artifact"
+    },
+    {
+      "key": "Getting artifact",
+      "expected": "Getting artifact"
+    },
+    {
+      "key": "Got artifact",
+      "expected": "Got artifact"
+    },
+    {
+      "key": "Deleting artifact",
+      "expected": "Deleting artifact"
+    },
+    {
+      "key": "Deleted artifact",
+      "expected": "Deleted artifact"
+    },
+    {
+      "key": "Getting logs",
+      "expected": "Getting logs"
+    },
+    {
+      "key": "Got logs",
+      "expected": "Got logs"
+    },
+    {
+      "key": "An error occurred",
+      "expected": "An error occurred"
+    },
+    {
+      "key": "Copy logs",
+      "expected": "Copy logs"
+    },
+    {
+      "key": "Autoscroll enabled",
+      "expected": "Autoscroll enabled"
+    },
+    {
+      "key": "Autoscroll disabled",
+      "expected": "Autoscroll disabled"
+    },
+    {
+      "key": "Processing",
+      "expected": "Processing"
+    },
+    {
+      "key": "Create",
+      "expected": "Create"
+    },
+    {
+      "key": "Rewrite",
+      "expected": "Rewrite"
+    },
+    {
+      "key": "Get",
+      "expected": "Get"
+    },
+    {
+      "key": "Get logs",
+      "expected": "Get logs"
+    },
+    {
+      "key": "Show artifacts",
+      "expected": "Show artifacts"
+    },
+    {
+      "key": "Close artifacts",
+      "expected": "Close artifacts"
+    },
+    {
+      "key": "Artifacts",
+      "expected": "Artifacts"
+    },
+    {
+      "key": "Copy HTML",
+      "expected": "Copy HTML"
+    },
+    {
+      "key": "Download HTML",
+      "expected": "Download HTML"
+    },
+    {
+      "key": "Reload HTML",
+      "expected": "Reload HTML"
+    },
+    {
+      "key": "Copy SVG",
+      "expected": "Copy SVG"
+    },
+    {
+      "key": "Download SVG",
+      "expected": "Download SVG"
+    },
+    {
+      "key": "Copy Markdown",
+      "expected": "Copy Markdown"
+    },
+    {
+      "key": "Download Markdown",
+      "expected": "Download Markdown"
+    },
+    {
+      "key": "No logs for {filename}",
+      "expected": "No logs for {filename}"
+    },
+    {
+      "key": "API Keys Settings",
+      "expected": "API Keys Settings"
+    },
+    {
+      "key": "Settings",
+      "expected": "Settings"
+    },
+    {
+      "key": "API Keys",
+      "expected": "API Keys"
+    },
+    {
+      "key": "Proxy",
+      "expected": "Proxy"
+    },
+    {
+      "key": "Use CORS Proxy",
+      "expected": "Use CORS Proxy"
+    },
+    {
+      "key": "Proxy URL",
+      "expected": "Proxy URL"
+    },
+    {
+      "key": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>",
+      "expected": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>"
+    },
+    {
+      "key": "Settings are stored locally in your browser",
+      "expected": "Settings are stored locally in your browser"
+    },
+    {
+      "key": "Clear",
+      "expected": "Clear"
+    },
+    {
+      "key": "API Key Required",
+      "expected": "API Key Required"
+    },
+    {
+      "key": "Enter your API key for {provider}",
+      "expected": "Enter your API key for {provider}"
+    },
+    {
+      "key": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token.",
+      "expected": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token."
+    },
+    {
+      "key": "Off",
+      "expected": "Off"
+    },
+    {
+      "key": "Minimal",
+      "expected": "Minimal"
+    },
+    {
+      "key": "Low",
+      "expected": "Low"
+    },
+    {
+      "key": "Medium",
+      "expected": "Medium"
+    },
+    {
+      "key": "High",
+      "expected": "High"
+    },
+    {
+      "key": "Storage Permission Required",
+      "expected": "Storage Permission Required"
+    },
+    {
+      "key": "This app needs persistent storage to save your conversations",
+      "expected": "This app needs persistent storage to save your conversations"
+    },
+    {
+      "key": "Why is this needed?",
+      "expected": "Why is this needed?"
+    },
+    {
+      "key": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved.",
+      "expected": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved."
+    },
+    {
+      "key": "What this means:",
+      "expected": "What this means:"
+    },
+    {
+      "key": "Your conversations will be saved locally in your browser",
+      "expected": "Your conversations will be saved locally in your browser"
+    },
+    {
+      "key": "Data will not be deleted automatically to free up space",
+      "expected": "Data will not be deleted automatically to free up space"
+    },
+    {
+      "key": "You can still manually clear data at any time",
+      "expected": "You can still manually clear data at any time"
+    },
+    {
+      "key": "No data is sent to external servers",
+      "expected": "No data is sent to external servers"
+    },
+    {
+      "key": "Continue Anyway",
+      "expected": "Continue Anyway"
+    },
+    {
+      "key": "Requesting...",
+      "expected": "Requesting..."
+    },
+    {
+      "key": "Grant Permission",
+      "expected": "Grant Permission"
+    },
+    {
+      "key": "Sessions",
+      "expected": "Sessions"
+    },
+    {
+      "key": "Load a previous conversation",
+      "expected": "Load a previous conversation"
+    },
+    {
+      "key": "No sessions yet",
+      "expected": "No sessions yet"
+    },
+    {
+      "key": "Delete this session?",
+      "expected": "Delete this session?"
+    },
+    {
+      "key": "Today",
+      "expected": "Today"
+    },
+    {
+      "key": "Yesterday",
+      "expected": "Yesterday"
+    },
+    {
+      "key": "{days} days ago",
+      "expected": "{days} days ago"
+    },
+    {
+      "key": "messages",
+      "expected": "messages"
+    },
+    {
+      "key": "tokens",
+      "expected": "tokens"
+    },
+    {
+      "key": "Delete",
+      "expected": "Delete"
+    },
+    {
+      "key": "Drop files here",
+      "expected": "Drop files here"
+    },
+    {
+      "key": "Command failed:",
+      "expected": "Command failed:"
+    },
+    {
+      "key": "Providers & Models",
+      "expected": "Providers & Models"
+    },
+    {
+      "key": "Cloud Providers",
+      "expected": "Cloud Providers"
+    },
+    {
+      "key": "Cloud LLM providers with predefined models. API keys are stored locally in your browser.",
+      "expected": "Cloud LLM providers with predefined models. API keys are stored locally in your browser."
+    },
+    {
+      "key": "Custom Providers",
+      "expected": "Custom Providers"
+    },
+    {
+      "key": "User-configured servers with auto-discovered or manually defined models.",
+      "expected": "User-configured servers with auto-discovered or manually defined models."
+    },
+    {
+      "key": "Add Provider",
+      "expected": "Add Provider"
+    },
+    {
+      "key": "No custom providers configured. Click 'Add Provider' to get started.",
+      "expected": "No custom providers configured. Click 'Add Provider' to get started."
+    },
+    {
+      "key": "auto-discovered",
+      "expected": "auto-discovered"
+    },
+    {
+      "key": "Refresh",
+      "expected": "Refresh"
+    },
+    {
+      "key": "Edit",
+      "expected": "Edit"
+    },
+    {
+      "key": "Are you sure you want to delete this provider?",
+      "expected": "Are you sure you want to delete this provider?"
+    },
+    {
+      "key": "Edit Provider",
+      "expected": "Edit Provider"
+    },
+    {
+      "key": "Provider Name",
+      "expected": "Provider Name"
+    },
+    {
+      "key": "e.g., My Ollama Server",
+      "expected": "e.g., My Ollama Server"
+    },
+    {
+      "key": "Provider Type",
+      "expected": "Provider Type"
+    },
+    {
+      "key": "Base URL",
+      "expected": "Base URL"
+    },
+    {
+      "key": "e.g., http://localhost:11434",
+      "expected": "e.g., http://localhost:11434"
+    },
+    {
+      "key": "API Key (Optional)",
+      "expected": "API Key (Optional)"
+    },
+    {
+      "key": "Leave empty if not required",
+      "expected": "Leave empty if not required"
+    },
+    {
+      "key": "Test Connection",
+      "expected": "Test Connection"
+    },
+    {
+      "key": "Discovered",
+      "expected": "Discovered"
+    },
+    {
+      "key": "Models",
+      "expected": "Models"
+    },
+    {
+      "key": "models",
+      "expected": "models"
+    },
+    {
+      "key": "and",
+      "expected": "and"
+    },
+    {
+      "key": "more",
+      "expected": "more"
+    },
+    {
+      "key": "For manual provider types, add models after saving the provider.",
+      "expected": "For manual provider types, add models after saving the provider."
+    },
+    {
+      "key": "Please fill in all required fields",
+      "expected": "Please fill in all required fields"
+    },
+    {
+      "key": "Failed to save provider",
+      "expected": "Failed to save provider"
+    },
+    {
+      "key": "OpenAI Completions Compatible",
+      "expected": "OpenAI Completions Compatible"
+    },
+    {
+      "key": "OpenAI Responses Compatible",
+      "expected": "OpenAI Responses Compatible"
+    },
+    {
+      "key": "Anthropic Messages Compatible",
+      "expected": "Anthropic Messages Compatible"
+    },
+    {
+      "key": "Checking...",
+      "expected": "Checking..."
+    },
+    {
+      "key": "Disconnected",
+      "expected": "Disconnected"
+    }
+  ],
+  "de": [
+    {
+      "key": "*",
+      "expected": "*"
+    },
+    {
+      "key": "Copy",
+      "expected": "Kopieren"
+    },
+    {
+      "key": "Copy code",
+      "expected": "Code kopieren"
+    },
+    {
+      "key": "Copied!",
+      "expected": "Kopiert!"
+    },
+    {
+      "key": "Download",
+      "expected": "Herunterladen"
+    },
+    {
+      "key": "Close",
+      "expected": "Schließen"
+    },
+    {
+      "key": "Preview",
+      "expected": "Vorschau"
+    },
+    {
+      "key": "Code",
+      "expected": "Code"
+    },
+    {
+      "key": "Loading...",
+      "expected": "Laden..."
+    },
+    {
+      "key": "Select an option",
+      "expected": "Option auswählen"
+    },
+    {
+      "key": "Mode 1",
+      "expected": "Modus 1"
+    },
+    {
+      "key": "Mode 2",
+      "expected": "Modus 2"
+    },
+    {
+      "key": "Required",
+      "expected": "Erforderlich"
+    },
+    {
+      "key": "Optional",
+      "expected": "Optional"
+    },
+    {
+      "key": "Input Required",
+      "expected": "Eingabe erforderlich"
+    },
+    {
+      "key": "Cancel",
+      "expected": "Abbrechen"
+    },
+    {
+      "key": "Confirm",
+      "expected": "Bestätigen"
+    },
+    {
+      "key": "Free",
+      "expected": "Kostenlos"
+    },
+    {
+      "key": "Select Model",
+      "expected": "Modell auswählen"
+    },
+    {
+      "key": "Search models...",
+      "expected": "Modelle suchen..."
+    },
+    {
+      "key": "Format",
+      "expected": "Formatieren"
+    },
+    {
+      "key": "Thinking",
+      "expected": "Thinking"
+    },
+    {
+      "key": "Vision",
+      "expected": "Vision"
+    },
+    {
+      "key": "You",
+      "expected": "Sie"
+    },
+    {
+      "key": "Assistant",
+      "expected": "Assistent"
+    },
+    {
+      "key": "Thinking...",
+      "expected": "Denkt nach..."
+    },
+    {
+      "key": "Type your message...",
+      "expected": "Geben Sie Ihre Nachricht ein..."
+    },
+    {
+      "key": "API Keys Configuration",
+      "expected": "API-Schlüssel-Konfiguration"
+    },
+    {
+      "key": "Configure API keys for LLM providers. Keys are stored locally in your browser.",
+      "expected": "Konfigurieren Sie API-Schlüssel für LLM-Anbieter. Schlüssel werden lokal in Ihrem Browser gespeichert."
+    },
+    {
+      "key": "Configured",
+      "expected": "Konfiguriert"
+    },
+    {
+      "key": "Not configured",
+      "expected": "Nicht konfiguriert"
+    },
+    {
+      "key": "✓ Valid",
+      "expected": "✓ Gültig"
+    },
+    {
+      "key": "✗ Invalid",
+      "expected": "✗ Ungültig"
+    },
+    {
+      "key": "Testing...",
+      "expected": "Teste..."
+    },
+    {
+      "key": "Update",
+      "expected": "Aktualisieren"
+    },
+    {
+      "key": "Test",
+      "expected": "Testen"
+    },
+    {
+      "key": "Remove",
+      "expected": "Entfernen"
+    },
+    {
+      "key": "Save",
+      "expected": "Speichern"
+    },
+    {
+      "key": "Update API key",
+      "expected": "API-Schlüssel aktualisieren"
+    },
+    {
+      "key": "Enter API key",
+      "expected": "API-Schlüssel eingeben"
+    },
+    {
+      "key": "Type a message...",
+      "expected": "Nachricht eingeben..."
+    },
+    {
+      "key": "Failed to fetch file",
+      "expected": "Datei konnte nicht abgerufen werden"
+    },
+    {
+      "key": "Invalid source type",
+      "expected": "Ungültiger Quellentyp"
+    },
+    {
+      "key": "PDF",
+      "expected": "PDF"
+    },
+    {
+      "key": "Document",
+      "expected": "Dokument"
+    },
+    {
+      "key": "Presentation",
+      "expected": "Präsentation"
+    },
+    {
+      "key": "Spreadsheet",
+      "expected": "Tabelle"
+    },
+    {
+      "key": "Text",
+      "expected": "Text"
+    },
+    {
+      "key": "Error loading file",
+      "expected": "Fehler beim Laden der Datei"
+    },
+    {
+      "key": "No text content available",
+      "expected": "Kein Textinhalt verfügbar"
+    },
+    {
+      "key": "Failed to load PDF",
+      "expected": "PDF konnte nicht geladen werden"
+    },
+    {
+      "key": "Failed to load document",
+      "expected": "Dokument konnte nicht geladen werden"
+    },
+    {
+      "key": "Failed to load spreadsheet",
+      "expected": "Tabelle konnte nicht geladen werden"
+    },
+    {
+      "key": "Error loading PDF",
+      "expected": "Fehler beim Laden des PDFs"
+    },
+    {
+      "key": "Error loading document",
+      "expected": "Fehler beim Laden des Dokuments"
+    },
+    {
+      "key": "Error loading spreadsheet",
+      "expected": "Fehler beim Laden der Tabelle"
+    },
+    {
+      "key": "Preview not available for this file type.",
+      "expected": "Vorschau für diesen Dateityp nicht verfügbar."
+    },
+    {
+      "key": "Click the download button above to view it on your computer.",
+      "expected": "Klicken Sie oben auf die Download-Schaltfläche, um die Datei auf Ihrem Computer anzuzeigen."
+    },
+    {
+      "key": "No content available",
+      "expected": "Kein Inhalt verfügbar"
+    },
+    {
+      "key": "Failed to display text content",
+      "expected": "Textinhalt konnte nicht angezeigt werden"
+    },
+    {
+      "key": "API keys are required to use AI models. Get your keys from the provider's website.",
+      "expected": "API-Schlüssel sind erforderlich, um KI-Modelle zu verwenden. Holen Sie sich Ihre Schlüssel von der Website des Anbieters."
+    },
+    {
+      "key": "console",
+      "expected": "Konsole"
+    },
+    {
+      "key": "Copy output",
+      "expected": "Ausgabe kopieren"
+    },
+    {
+      "key": "Error:",
+      "expected": "Fehler:"
+    },
+    {
+      "key": "Request aborted",
+      "expected": "Anfrage abgebrochen"
+    },
+    {
+      "key": "Call",
+      "expected": "Aufruf"
+    },
+    {
+      "key": "Result",
+      "expected": "Ergebnis"
+    },
+    {
+      "key": "(no result)",
+      "expected": "(kein Ergebnis)"
+    },
+    {
+      "key": "Waiting for tool result…",
+      "expected": "Warte auf Tool-Ergebnis…"
+    },
+    {
+      "key": "Call was aborted; no result.",
+      "expected": "Aufruf wurde abgebrochen; kein Ergebnis."
+    },
+    {
+      "key": "No session available",
+      "expected": "Keine Sitzung verfügbar"
+    },
+    {
+      "key": "No session set",
+      "expected": "Keine Sitzung gesetzt"
+    },
+    {
+      "key": "Preparing tool parameters...",
+      "expected": "Bereite Tool-Parameter vor..."
+    },
+    {
+      "key": "(no output)",
+      "expected": "(keine Ausgabe)"
+    },
+    {
+      "key": "Input",
+      "expected": "Eingabe"
+    },
+    {
+      "key": "Output",
+      "expected": "Ausgabe"
+    },
+    {
+      "key": "Waiting for expression...",
+      "expected": "Warte auf Ausdruck"
+    },
+    {
+      "key": "Writing expression...",
+      "expected": "Schreibe Ausdruck..."
+    },
+    {
+      "key": "Calculating",
+      "expected": "Berechne"
+    },
+    {
+      "key": "Getting current time in",
+      "expected": "Hole aktuelle Zeit in"
+    },
+    {
+      "key": "Getting current date and time",
+      "expected": "Hole aktuelles Datum und Uhrzeit"
+    },
+    {
+      "key": "Waiting for command...",
+      "expected": "Warte auf Befehl..."
+    },
+    {
+      "key": "Writing command...",
+      "expected": "Schreibe Befehl..."
+    },
+    {
+      "key": "Running command...",
+      "expected": "Führe Befehl aus..."
+    },
+    {
+      "key": "Command failed",
+      "expected": "Befehl fehlgeschlagen"
+    },
+    {
+      "key": "Enter Auth Token",
+      "expected": "Auth-Token eingeben"
+    },
+    {
+      "key": "Please enter your auth token.",
+      "expected": "Bitte geben Sie Ihr Auth-Token ein."
+    },
+    {
+      "key": "Auth token is required for proxy transport",
+      "expected": "Auth-Token ist für Proxy-Transport erforderlich"
+    },
+    {
+      "key": "Execution aborted",
+      "expected": "Ausführung abgebrochen"
+    },
+    {
+      "key": "Code parameter is required",
+      "expected": "Code-Parameter ist erforderlich"
+    },
+    {
+      "key": "Unknown error",
+      "expected": "Unbekannter Fehler"
+    },
+    {
+      "key": "Code executed successfully (no output)",
+      "expected": "Code erfolgreich ausgeführt (keine Ausgabe)"
+    },
+    {
+      "key": "Execution failed",
+      "expected": "Ausführung fehlgeschlagen"
+    },
+    {
+      "key": "JavaScript REPL",
+      "expected": "JavaScript REPL"
+    },
+    {
+      "key": "JavaScript code to execute",
+      "expected": "Auszuführender JavaScript-Code"
+    },
+    {
+      "key": "Writing JavaScript code...",
+      "expected": "Schreibe JavaScript-Code..."
+    },
+    {
+      "key": "Executing JavaScript",
+      "expected": "Führe JavaScript aus"
+    },
+    {
+      "key": "Preparing JavaScript...",
+      "expected": "Bereite JavaScript vor..."
+    },
+    {
+      "key": "Preparing command...",
+      "expected": "Bereite Befehl vor..."
+    },
+    {
+      "key": "Preparing calculation...",
+      "expected": "Bereite Berechnung vor..."
+    },
+    {
+      "key": "Preparing tool...",
+      "expected": "Bereite Tool vor..."
+    },
+    {
+      "key": "Getting time...",
+      "expected": "Hole Zeit..."
+    },
+    {
+      "key": "Processing artifact...",
+      "expected": "Verarbeite Artefakt..."
+    },
+    {
+      "key": "Preparing artifact...",
+      "expected": "Bereite Artefakt vor..."
+    },
+    {
+      "key": "Processing artifact",
+      "expected": "Verarbeite Artefakt"
+    },
+    {
+      "key": "Processed artifact",
+      "expected": "Artefakt verarbeitet"
+    },
+    {
+      "key": "Creating artifact",
+      "expected": "Erstelle Artefakt"
+    },
+    {
+      "key": "Created artifact",
+      "expected": "Artefakt erstellt"
+    },
+    {
+      "key": "Updating artifact",
+      "expected": "Aktualisiere Artefakt"
+    },
+    {
+      "key": "Updated artifact",
+      "expected": "Artefakt aktualisiert"
+    },
+    {
+      "key": "Rewriting artifact",
+      "expected": "Überschreibe Artefakt"
+    },
+    {
+      "key": "Rewrote artifact",
+      "expected": "Artefakt überschrieben"
+    },
+    {
+      "key": "Getting artifact",
+      "expected": "Hole Artefakt"
+    },
+    {
+      "key": "Got artifact",
+      "expected": "Artefakt geholt"
+    },
+    {
+      "key": "Deleting artifact",
+      "expected": "Lösche Artefakt"
+    },
+    {
+      "key": "Deleted artifact",
+      "expected": "Artefakt gelöscht"
+    },
+    {
+      "key": "Getting logs",
+      "expected": "Hole Logs"
+    },
+    {
+      "key": "Got logs",
+      "expected": "Logs geholt"
+    },
+    {
+      "key": "An error occurred",
+      "expected": "Ein Fehler ist aufgetreten"
+    },
+    {
+      "key": "Copy logs",
+      "expected": "Logs kopieren"
+    },
+    {
+      "key": "Autoscroll enabled",
+      "expected": "Automatisches Scrollen aktiviert"
+    },
+    {
+      "key": "Autoscroll disabled",
+      "expected": "Automatisches Scrollen deaktiviert"
+    },
+    {
+      "key": "Processing",
+      "expected": "Verarbeitung"
+    },
+    {
+      "key": "Create",
+      "expected": "Erstellen"
+    },
+    {
+      "key": "Rewrite",
+      "expected": "Überschreiben"
+    },
+    {
+      "key": "Get",
+      "expected": "Abrufen"
+    },
+    {
+      "key": "Get logs",
+      "expected": "Logs abrufen"
+    },
+    {
+      "key": "Show artifacts",
+      "expected": "Artefakte anzeigen"
+    },
+    {
+      "key": "Close artifacts",
+      "expected": "Artefakte schließen"
+    },
+    {
+      "key": "Artifacts",
+      "expected": "Artefakte"
+    },
+    {
+      "key": "Copy HTML",
+      "expected": "HTML kopieren"
+    },
+    {
+      "key": "Download HTML",
+      "expected": "HTML herunterladen"
+    },
+    {
+      "key": "Reload HTML",
+      "expected": "HTML neu laden"
+    },
+    {
+      "key": "Copy SVG",
+      "expected": "SVG kopieren"
+    },
+    {
+      "key": "Download SVG",
+      "expected": "SVG herunterladen"
+    },
+    {
+      "key": "Copy Markdown",
+      "expected": "Markdown kopieren"
+    },
+    {
+      "key": "Download Markdown",
+      "expected": "Markdown herunterladen"
+    },
+    {
+      "key": "No logs for {filename}",
+      "expected": "Keine Logs für {filename}"
+    },
+    {
+      "key": "API Keys Settings",
+      "expected": "API-Schlüssel Einstellungen"
+    },
+    {
+      "key": "Settings",
+      "expected": "Einstellungen"
+    },
+    {
+      "key": "API Keys",
+      "expected": "API-Schlüssel"
+    },
+    {
+      "key": "Proxy",
+      "expected": "Proxy"
+    },
+    {
+      "key": "Use CORS Proxy",
+      "expected": "CORS-Proxy verwenden"
+    },
+    {
+      "key": "Proxy URL",
+      "expected": "Proxy-URL"
+    },
+    {
+      "key": "Format: The proxy must accept requests as <proxy-url>/?url=<target-url>",
+      "expected": "Format: Der Proxy muss Anfragen als <proxy-url>/?url=<ziel-url> akzeptieren"
+    },
+    {
+      "key": "Settings are stored locally in your browser",
+      "expected": "Einstellungen werden lokal in Ihrem Browser gespeichert"
+    },
+    {
+      "key": "Clear",
+      "expected": "Löschen"
+    },
+    {
+      "key": "API Key Required",
+      "expected": "API-Schlüssel erforderlich"
+    },
+    {
+      "key": "Enter your API key for {provider}",
+      "expected": "Geben Sie Ihren API-Schlüssel für {provider} ein"
+    },
+    {
+      "key": "Allows browser-based apps to bypass CORS restrictions when calling LLM providers. Required for Z-AI and Anthropic with OAuth token.",
+      "expected": "Ermöglicht browserbasierten Anwendungen, CORS-Einschränkungen beim Aufruf von LLM-Anbietern zu umgehen. Erforderlich für Z-AI und Anthropic mit OAuth-Token."
+    },
+    {
+      "key": "Off",
+      "expected": "Aus"
+    },
+    {
+      "key": "Minimal",
+      "expected": "Minimal"
+    },
+    {
+      "key": "Low",
+      "expected": "Niedrig"
+    },
+    {
+      "key": "Medium",
+      "expected": "Mittel"
+    },
+    {
+      "key": "High",
+      "expected": "Hoch"
+    },
+    {
+      "key": "Storage Permission Required",
+      "expected": "Speicherberechtigung erforderlich"
+    },
+    {
+      "key": "This app needs persistent storage to save your conversations",
+      "expected": "Diese App benötigt dauerhaften Speicher, um Ihre Konversationen zu speichern"
+    },
+    {
+      "key": "Why is this needed?",
+      "expected": "Warum wird das benötigt?"
+    },
+    {
+      "key": "Without persistent storage, your browser may delete saved conversations when it needs disk space. Granting this permission ensures your chat history is preserved.",
+      "expected": "Ohne dauerhaften Speicher kann Ihr Browser gespeicherte Konversationen löschen, wenn Speicherplatz benötigt wird. Diese Berechtigung stellt sicher, dass Ihr Chatverlauf erhalten bleibt."
+    },
+    {
+      "key": "What this means:",
+      "expected": "Was das bedeutet:"
+    },
+    {
+      "key": "Your conversations will be saved locally in your browser",
+      "expected": "Ihre Konversationen werden lokal in Ihrem Browser gespeichert"
+    },
+    {
+      "key": "Data will not be deleted automatically to free up space",
+      "expected": "Daten werden nicht automatisch gelöscht, um Speicherplatz freizugeben"
+    },
+    {
+      "key": "You can still manually clear data at any time",
+      "expected": "Sie können Daten jederzeit manuell löschen"
+    },
+    {
+      "key": "No data is sent to external servers",
+      "expected": "Keine Daten werden an externe Server gesendet"
+    },
+    {
+      "key": "Continue Anyway",
+      "expected": "Trotzdem fortfahren"
+    },
+    {
+      "key": "Requesting...",
+      "expected": "Anfrage läuft..."
+    },
+    {
+      "key": "Grant Permission",
+      "expected": "Berechtigung erteilen"
+    },
+    {
+      "key": "Sessions",
+      "expected": "Sitzungen"
+    },
+    {
+      "key": "Load a previous conversation",
+      "expected": "Frühere Konversation laden"
+    },
+    {
+      "key": "No sessions yet",
+      "expected": "Noch keine Sitzungen"
+    },
+    {
+      "key": "Delete this session?",
+      "expected": "Diese Sitzung löschen?"
+    },
+    {
+      "key": "Today",
+      "expected": "Heute"
+    },
+    {
+      "key": "Yesterday",
+      "expected": "Gestern"
+    },
+    {
+      "key": "{days} days ago",
+      "expected": "vor {days} Tagen"
+    },
+    {
+      "key": "messages",
+      "expected": "Nachrichten"
+    },
+    {
+      "key": "tokens",
+      "expected": "Tokens"
+    },
+    {
+      "key": "Delete",
+      "expected": "Löschen"
+    },
+    {
+      "key": "Drop files here",
+      "expected": "Dateien hier ablegen"
+    },
+    {
+      "key": "Command failed:",
+      "expected": "Befehl fehlgeschlagen:"
+    },
+    {
+      "key": "Providers & Models",
+      "expected": "Anbieter & Modelle"
+    },
+    {
+      "key": "Cloud Providers",
+      "expected": "Cloud-Anbieter"
+    },
+    {
+      "key": "Cloud LLM providers with predefined models. API keys are stored locally in your browser.",
+      "expected": "Cloud-LLM-Anbieter mit vordefinierten Modellen. API-Schlüssel werden lokal in Ihrem Browser gespeichert."
+    },
+    {
+      "key": "Custom Providers",
+      "expected": "Benutzerdefinierte Anbieter"
+    },
+    {
+      "key": "User-configured servers with auto-discovered or manually defined models.",
+      "expected": "Benutzerkonfigurierte Server mit automatisch erkannten oder manuell definierten Modellen."
+    },
+    {
+      "key": "Add Provider",
+      "expected": "Anbieter hinzufügen"
+    },
+    {
+      "key": "No custom providers configured. Click 'Add Provider' to get started.",
+      "expected": "Keine benutzerdefinierten Anbieter konfiguriert. Klicken Sie auf 'Anbieter hinzufügen', um zu beginnen."
+    },
+    {
+      "key": "auto-discovered",
+      "expected": "automatisch erkannt"
+    },
+    {
+      "key": "Refresh",
+      "expected": "Aktualisieren"
+    },
+    {
+      "key": "Edit",
+      "expected": "Bearbeiten"
+    },
+    {
+      "key": "Are you sure you want to delete this provider?",
+      "expected": "Sind Sie sicher, dass Sie diesen Anbieter löschen möchten?"
+    },
+    {
+      "key": "Edit Provider",
+      "expected": "Anbieter bearbeiten"
+    },
+    {
+      "key": "Provider Name",
+      "expected": "Anbietername"
+    },
+    {
+      "key": "e.g., My Ollama Server",
+      "expected": "z.B. Mein Ollama Server"
+    },
+    {
+      "key": "Provider Type",
+      "expected": "Anbietertyp"
+    },
+    {
+      "key": "Base URL",
+      "expected": "Basis-URL"
+    },
+    {
+      "key": "e.g., http://localhost:11434",
+      "expected": "z.B. http://localhost:11434"
+    },
+    {
+      "key": "API Key (Optional)",
+      "expected": "API-Schlüssel (Optional)"
+    },
+    {
+      "key": "Leave empty if not required",
+      "expected": "Leer lassen, falls nicht erforderlich"
+    },
+    {
+      "key": "Test Connection",
+      "expected": "Verbindung testen"
+    },
+    {
+      "key": "Discovered",
+      "expected": "Erkannt"
+    },
+    {
+      "key": "Models",
+      "expected": "Modelle"
+    },
+    {
+      "key": "models",
+      "expected": "Modelle"
+    },
+    {
+      "key": "and",
+      "expected": "und"
+    },
+    {
+      "key": "more",
+      "expected": "mehr"
+    },
+    {
+      "key": "For manual provider types, add models after saving the provider.",
+      "expected": "Für manuelle Anbietertypen fügen Sie Modelle nach dem Speichern des Anbieters hinzu."
+    },
+    {
+      "key": "Please fill in all required fields",
+      "expected": "Bitte füllen Sie alle erforderlichen Felder aus"
+    },
+    {
+      "key": "Failed to save provider",
+      "expected": "Fehler beim Speichern des Anbieters"
+    },
+    {
+      "key": "OpenAI Completions Compatible",
+      "expected": "OpenAI Completions Kompatibel"
+    },
+    {
+      "key": "OpenAI Responses Compatible",
+      "expected": "OpenAI Responses Kompatibel"
+    },
+    {
+      "key": "Anthropic Messages Compatible",
+      "expected": "Anthropic Messages Kompatibel"
+    },
+    {
+      "key": "Checking...",
+      "expected": "Überprüfe..."
+    },
+    {
+      "key": "Disconnected",
+      "expected": "Getrennt"
+    }
+  ]
+}

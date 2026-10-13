@@ -1,10 +1,12 @@
-//! One-pass markup escaping; the modes differ only in how the apostrophe is spelled.
+//! One-pass markup escaping for text and XML attribute literals.
 
-/// How an apostrophe is written; ampersand, angle brackets and double quote are shared.
+/// Entity spelling and XML attribute whitespace preservation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EscapeMode {
     /// Apostrophe as the named entity `&apos;`.
     Xml,
+    /// XML entities with character references for tab, LF and CR in attributes.
+    XmlAttribute,
     /// Apostrophe as a decimal numeric character reference.
     HtmlDecimal,
     /// Apostrophe as a hexadecimal numeric character reference.
@@ -28,10 +30,13 @@ pub fn escape_into(text: &str, out: &mut String, mode: EscapeMode) {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str(match mode {
-                EscapeMode::Xml => "&apos;",
+                EscapeMode::Xml | EscapeMode::XmlAttribute => "&apos;",
                 EscapeMode::HtmlDecimal => "&#39;",
                 EscapeMode::HtmlHex => "&#x27;",
             }),
+            '\t' if mode == EscapeMode::XmlAttribute => out.push_str("&#9;"),
+            '\n' if mode == EscapeMode::XmlAttribute => out.push_str("&#10;"),
+            '\r' if mode == EscapeMode::XmlAttribute => out.push_str("&#13;"),
             c => out.push(c),
         }
     }

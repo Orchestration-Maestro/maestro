@@ -1,0 +1,162 @@
+[
+  {
+    "input": {
+      "code": "de",
+      "fail": ""
+    },
+    "expected": {
+      "stored": "de"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "de",
+      "fail": "set"
+    },
+    "expected": {
+      "stored": "en",
+      "error": "set failed"
+    },
+    "effects": [
+      "set"
+    ]
+  },
+  {
+    "input": {
+      "code": "de",
+      "fail": "reload"
+    },
+    "expected": {
+      "stored": "de",
+      "error": "reload failed"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "fr",
+      "fail": ""
+    },
+    "expected": {
+      "stored": "fr"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "fr",
+      "fail": "set"
+    },
+    "expected": {
+      "stored": "en",
+      "error": "set failed"
+    },
+    "effects": [
+      "set"
+    ]
+  },
+  {
+    "input": {
+      "code": "fr",
+      "fail": "reload"
+    },
+    "expected": {
+      "stored": "fr",
+      "error": "reload failed"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "",
+      "fail": ""
+    },
+    "expected": {
+      "stored": ""
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "",
+      "fail": "set"
+    },
+    "expected": {
+      "stored": "en",
+      "error": "set failed"
+    },
+    "effects": [
+      "set"
+    ]
+  },
+  {
+    "input": {
+      "code": "",
+      "fail": "reload"
+    },
+    "expected": {
+      "stored": "",
+      "error": "reload failed"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "de-DE",
+      "fail": ""
+    },
+    "expected": {
+      "stored": "de-DE"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  },
+  {
+    "input": {
+      "code": "de-DE",
+      "fail": "set"
+    },
+    "expected": {
+      "stored": "en",
+      "error": "set failed"
+    },
+    "effects": [
+      "set"
+    ]
+  },
+  {
+    "input": {
+      "code": "de-DE",
+      "fail": "reload"
+    },
+    "expected": {
+      "stored": "de-DE",
+      "error": "reload failed"
+    },
+    "effects": [
+      "set",
+      "reload"
+    ]
+  }
+]
