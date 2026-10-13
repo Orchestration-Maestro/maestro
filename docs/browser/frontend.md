@@ -50,6 +50,7 @@ DOM callers install `ICON_STYLES` and supply their class suffix/color. Canvas
 callers resolve colors from the [brand presentation](../theme.md); this library
 has no hover, focus, busy, disabled or selected state, font, mark or animation.
 
-The library is compiled for WebAssembly by `just check`. Controlled native tests
-prove utility results and host decision ordering, not browser interaction.
+Shared CI compiles the library for WebAssembly through its wasm crate registration.
+Controlled native tests prove utility results and host decision ordering, not
+browser interaction.
 Application launch and browser interaction remain separate delivery work.

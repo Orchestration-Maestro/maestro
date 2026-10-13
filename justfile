@@ -8,7 +8,6 @@ setup:
 # Formatting, lint, public documentation and workspace conventions.
 check:
     cargo fmt --all
-    cargo build -p maestro-web --lib --target wasm32-unknown-unknown --locked
     cargo clippy --workspace --all-targets --locked -- -D warnings
     RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc --workspace --no-deps --locked
     cargo test -p maestro-test-conventions --locked
