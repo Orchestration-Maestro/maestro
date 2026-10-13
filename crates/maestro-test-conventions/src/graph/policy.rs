@@ -111,6 +111,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-theme",
             "maestro-tool",
+            "maestro-text",
             "maestro-process",
         ],
     ),
