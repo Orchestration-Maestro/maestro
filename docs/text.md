@@ -9,8 +9,8 @@ stable sorting and comparator lifetime.
   whitespace and JSON token whitespace are different rules and stay with their owners.
   The model overflow pattern builds its character class from `WHITESPACE`.
 - **Newlines.** `normalize_to_lf` converts every CRLF pair and lone CR to LF and touches
-  nothing else. Frontmatter parsing, the editor's stored text (which then expands tabs
-  itself) and edit matching all call it.
+  nothing else. Frontmatter parsing, the editor's stored text, Markdown parsing and
+  edit matching all call it; each keeps its own tab policy.
 - **Lexical order.** `utf16_order` compares UTF-16 code units, so supplementary
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`

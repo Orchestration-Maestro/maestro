@@ -50,8 +50,7 @@ fn fold_scalar(scalar: char) -> char {
 
 /// NFKC, then per-LF-line trailing whitespace removal, then quote, dash and space folding.
 ///
-/// Trailing whitespace is the shared whitespace scalar set, so U+FEFF is trimmed and
-/// U+0085, U+180E and U+200B are kept.
+/// Trailing whitespace follows [`maestro_text::is_whitespace_scalar`].
 #[must_use]
 pub fn normalize_for_fuzzy_match(text: &str) -> String {
     let composed = ComposingNormalizer::new_nfkc().normalize(text);
@@ -343,7 +342,7 @@ fn locate<'a>(
 ///
 /// `normalized_content` must already use LF endings; it is not converted here. If any
 /// edit needs fuzzy matching, every edit is matched against the fuzzy-normalized content,
-/// which is returned as the base. Replacement text is inserted literally.
+/// which is returned as the base. Each `new_text` is converted to LF, then inserted as is.
 ///
 /// # Errors
 /// Returns a diagnostic for an empty needle, a missing or repeated needle, overlapping

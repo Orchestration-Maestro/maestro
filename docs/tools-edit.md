@@ -103,13 +103,13 @@ diagnostic.
   when the chosen match is exact. A nonempty `old_text` that normalization erases
   matches and counts literally only; it is never an empty insertion point.
 - Positions and lengths are UTF-8 byte offsets into the text they describe.
-- Trailing whitespace is the shared set of [text](text.md) (U+FEFF trimmed; U+0085,
-  U+180E and U+200B kept).
+- Trailing whitespace follows the shared set of [text](text.md).
 - `detect_line_ending` follows the first LF, `restore_line_endings` turns each LF into
   CR LF in CRLF mode, and `strip_bom` removes one leading BOM.
 
 The nine failure messages are the exact texts in the module; single-edit calls use
-the unnumbered wording and multi-edit calls name `edits[n]`.
+the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
+failure, which names no edit.
 
 ## File mutation queue
 

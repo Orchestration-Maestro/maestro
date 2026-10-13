@@ -141,11 +141,8 @@ fn strip_quote(line: &str) -> &str {
 }
 /// Normalizes text before native parsing.
 pub(super) fn parse(text: &str) -> Vec<Node> {
-    let source = text
-        .replace('\t', "   ")
-        .replace("\r\n", "\n")
-        .replace('\r', "\n")
-        .replace('\0', "\u{fffd}");
+    let source =
+        maestro_text::normalize_to_lf(&text.replace('\t', "   ")).replace('\0', "\u{fffd}");
     let parser = Parser::new_ext(
         &source,
         Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS | Options::ENABLE_TABLES,
