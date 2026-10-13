@@ -1140,6 +1140,44 @@
           "user_agent": null
         }
       ]
+    },
+    {
+      "id": "linux-ripgrep-prefix-free",
+      "tool": "rg",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "14.1.1",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-ripgrep.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/rg",
+      "binary": {
+        "contents": "ripgrep binary",
+        "mode": 493
+      },
+      "remaining": [
+        "rg"
+      ],
+      "lines": [
+        "ripgrep not found. Downloading...",
+        "ripgrep installed to <BIN>/rg"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz",
+          "user_agent": null
+        }
+      ]
     }
   ],
   "windows_archives_publish_the_exe_unchanged": [

@@ -14,6 +14,7 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
 };
+use tokio::io::AsyncReadExt;
 
 /// Transport which counts unexpected acquisition attempts.
 fn counting_fetch(calls: &Arc<AtomicUsize>) -> Fetch {
@@ -277,4 +278,48 @@ fn probe_scripts(root: &Path, mode: &str) {
         "rg" => script(root, "rg", 9),
         _ => {}
     }
+}
+
+#[test]
+fn dropping_discovery_kills_the_running_probe() {
+    run(async {
+        if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+            let scripts = TempDir::new();
+            let source = scripts.file("probe.source", b"#!/usr/bin/python3\nimport os, socket\ns = socket.socket(socket.AF_UNIX)\ns.connect(os.environ['MAESTRO_SEARCH_ROOT'] + '/probe.sock')\ns.sendall(b'ready')\ns.recv(1)\n");
+            assert!(
+                std::process::Command::new("install")
+                    .args(["-m", "0700", &source])
+                    .arg(scripts.0.join("fd"))
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+            assert!(!child(
+                "dropping_discovery_kills_the_running_probe",
+                "drop",
+                &scripts.0,
+                "1"
+            ));
+            return;
+        }
+        let root = child_root();
+        let listener = tokio::net::UnixListener::bind(root.join("probe.sock")).unwrap();
+        let bin = TempDir::new();
+        let manager = ToolsManager::new(bin.text(), None);
+        let mut discovery = Box::pin(manager.get_tool_path(SearchTool::Fd));
+        let (mut socket, _) = tokio::select! {
+            () = async { discovery.as_mut().await; } => panic!("probe exited before readiness"),
+            connection = listener.accept() => connection.unwrap(),
+        };
+        let mut ready = [0; 5];
+        socket.read_exact(&mut ready).await.unwrap();
+        assert_eq!(&ready, b"ready");
+        // Drop the future itself, not merely a pinned reference to it.
+        drop(discovery);
+        assert_eq!(
+            socket.read(&mut [0]).await.unwrap(),
+            0,
+            "dropped probe must close its socket"
+        );
+    });
 }

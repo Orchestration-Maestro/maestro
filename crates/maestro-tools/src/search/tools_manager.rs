@@ -2,13 +2,13 @@
 
 use futures_util::TryStreamExt;
 use maestro_models::{Fetch, FetchError, HttpRequest, default_fetch};
+use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
 use maestro_text::is_whitespace_scalar;
 use owo_colors::OwoColorize;
 use serde_json::Value;
 use std::{
     io::{self, Write},
     path::{Path, PathBuf},
-    process::Stdio,
     time::Duration,
 };
 use tokio::process::Command;
@@ -355,12 +355,12 @@ fn get(url: String, headers: &[(&str, &str)]) -> HttpRequest {
 
 /// Whether `name --version` starts, whatever its exit status.
 async fn command_exists(name: &str) -> bool {
-    Command::new(name)
-        .arg("--version")
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
+    let mut command = Command::new(name);
+    command.arg("--version").kill_on_drop(true);
+    let Ok(mut child) = CapturedChild::spawn(&mut command) else {
+        return false;
+    };
+    wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
         .await
         .is_ok()
 }
@@ -422,18 +422,18 @@ impl std::error::Error for ExtractionError {
 /// Unpack a gzip-compressed tar `archive` into `dir` with the `tar` command.
 async fn extract_tar(asset: &str, archive: &str, dir: &str) -> io::Result<()> {
     let failed = |detail: &str| io::Error::other(format!("Failed to extract {asset}: {detail}"));
-    let output = Command::new("tar")
-        .args(["xzf", archive, "-C", dir])
-        .stdin(Stdio::null())
-        .kill_on_drop(true)
-        .output()
+    let context = |source| {
+        io::Error::other(ExtractionError {
+            asset: asset.to_owned(),
+            source,
+        })
+    };
+    let mut command = Command::new("tar");
+    command.args(["xzf", archive, "-C", dir]).kill_on_drop(true);
+    let mut child = CapturedChild::spawn(&mut command).map_err(context)?;
+    let output = wait_for_child_process(&mut child, WaitOptions::default(), std::future::pending())
         .await
-        .map_err(|source| {
-            io::Error::other(ExtractionError {
-                asset: asset.to_owned(),
-                source,
-            })
-        })?;
+        .map_err(context)?;
     if output.status.success() {
         return Ok(());
     }

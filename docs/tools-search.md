@@ -76,12 +76,14 @@ the row and leave it unchanged when a theme color is missing.
 [`ToolsManager`](../crates/maestro-tools/src/search/tools_manager.rs) is native-only.
 Its constructor takes a binary-directory string and an optional replacement HTTP
 transport. `get_tool_path` checks that directory first, then probes `fd`, `fdfind`
-(in that order) or `rg` on `PATH` with `--version`. An existing directory entry
+(in that order) or `rg` on `PATH` with `--version`. A candidate passing
+[`Path::exists`](https://doc.rust-lang.org/std/path/struct.Path.html#method.exists)
 wins even when it is not executable; a started probe counts regardless of exit status.
+Dropping discovery kills its running probe.
 
 `ensure_tool` returns an existing result without advice. Otherwise it reads
-`MAESTRO_OFFLINE` at the call through the [environment flag helper](text.md):
-`1`, ASCII-case-insensitive `true` or `yes` skips acquisition without trimming.
+`MAESTRO_OFFLINE` at the call through the [environment flag helper](text.md);
+an enabled flag skips acquisition.
 Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
 
 Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`
