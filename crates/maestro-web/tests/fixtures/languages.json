@@ -1,0 +1,203 @@
+[
+  {
+    "input": {
+      "stored": "de",
+      "locale": "en-US"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "input": {
+      "stored": "en",
+      "locale": "de-DE"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "input": {
+      "stored": "fr",
+      "locale": "de-DE"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "stored": "de-DE",
+      "locale": "en-US"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "stored": "",
+      "locale": "de-AT"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "de-DE"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "fr-FR"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "DE-de"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "de_DE"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "-de"
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "",
+      "legacy": "de-DE"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get",
+      "locale",
+      "legacy"
+    ]
+  },
+  {
+    "input": {
+      "locale": ""
+    },
+    "expected": {
+      "value": "en"
+    },
+    "effects": [
+      "get",
+      "locale",
+      "legacy"
+    ]
+  },
+  {
+    "input": {
+      "stored": "de",
+      "fail": "locale"
+    },
+    "expected": {
+      "value": "de"
+    },
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "input": {
+      "locale": "en",
+      "fail": "get"
+    },
+    "expected": {
+      "error": "get failed"
+    },
+    "effects": [
+      "get"
+    ]
+  },
+  {
+    "input": {
+      "locale": "de",
+      "fail": "locale"
+    },
+    "expected": {
+      "error": "locale failed"
+    },
+    "effects": [
+      "get",
+      "locale"
+    ]
+  },
+  {
+    "input": {
+      "locale": "",
+      "fail": "legacy"
+    },
+    "expected": {
+      "error": "legacy failed"
+    },
+    "effects": [
+      "get",
+      "locale",
+      "legacy"
+    ]
+  }
+]

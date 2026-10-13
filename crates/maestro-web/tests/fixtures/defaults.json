@@ -1,0 +1,40 @@
+{
+  "en": {
+    "*": "*",
+    "Copy": "Copy",
+    "Copy code": "Copy code",
+    "Copied!": "Copied!",
+    "Download": "Download",
+    "Close": "Close",
+    "Preview": "Preview",
+    "Code": "Code",
+    "Loading...": "Loading...",
+    "Select an option": "Select an option",
+    "Mode 1": "Mode 1",
+    "Mode 2": "Mode 2",
+    "Required": "Required",
+    "Optional": "Optional",
+    "Input Required": "Input Required",
+    "Cancel": "Cancel",
+    "Confirm": "Confirm"
+  },
+  "de": {
+    "*": "*",
+    "Copy": "Kopieren",
+    "Copy code": "Code kopieren",
+    "Copied!": "Kopiert!",
+    "Download": "Herunterladen",
+    "Close": "Schließen",
+    "Preview": "Vorschau",
+    "Code": "Code",
+    "Loading...": "Laden...",
+    "Select an option": "Option auswählen",
+    "Mode 1": "Modus 1",
+    "Mode 2": "Modus 2",
+    "Required": "Erforderlich",
+    "Optional": "Optional",
+    "Input Required": "Eingabe erforderlich",
+    "Cancel": "Abbrechen",
+    "Confirm": "Bestätigen"
+  }
+}

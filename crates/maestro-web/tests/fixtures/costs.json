@@ -1,0 +1,70 @@
+[
+  {
+    "input": 0,
+    "expected": "$0.0000"
+  },
+  {
+    "input": "-0",
+    "expected": "$0.0000"
+  },
+  {
+    "input": 1e-05,
+    "expected": "$0.0000"
+  },
+  {
+    "input": 5e-05,
+    "expected": "$0.0001"
+  },
+  {
+    "input": 0.00015,
+    "expected": "$0.0001"
+  },
+  {
+    "input": 0.00025,
+    "expected": "$0.0003"
+  },
+  {
+    "input": 0.03125,
+    "expected": "$0.0313"
+  },
+  {
+    "input": 1.23445,
+    "expected": "$1.2345"
+  },
+  {
+    "input": 1.23455,
+    "expected": "$1.2346"
+  },
+  {
+    "input": -1e-05,
+    "expected": "$-0.0000"
+  },
+  {
+    "input": -0.03125,
+    "expected": "$-0.0313"
+  },
+  {
+    "input": 999.99999,
+    "expected": "$1000.0000"
+  },
+  {
+    "input": 100000000000000000000,
+    "expected": "$100000000000000000000.0000"
+  },
+  {
+    "input": 1e+21,
+    "expected": "$1e+21"
+  },
+  {
+    "input": "NaN",
+    "expected": "$NaN"
+  },
+  {
+    "input": "Infinity",
+    "expected": "$Infinity"
+  },
+  {
+    "input": "-Infinity",
+    "expected": "$-Infinity"
+  }
+]
