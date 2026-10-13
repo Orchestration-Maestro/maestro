@@ -256,6 +256,39 @@ fn schedule_variant(variant: &str) -> (Vec<Event>, usize) {
 }
 
 #[test]
+fn resize_requests_are_weak_and_nonforcing() {
+    let (tui, terminal, runtime) = writer(None);
+    let probe = Probe::shared(&["old"]);
+    tui.add_child(probe.clone());
+    let weak = Rc::downgrade(&probe);
+    succeeds(tui.start());
+    succeeds(runtime.settle());
+    let (renders, redraws) = (probe.renders.get(), tui.full_redraws());
+
+    let survivor = tui.clone();
+    drop(tui);
+    probe.set_lines(&["new".to_owned()]);
+    terminal.clear_writes();
+    terminal.notify_resize();
+    terminal.notify_resize();
+    assert_eq!(runtime.pending(), 1);
+    succeeds(runtime.settle());
+    assert_eq!(probe.renders.get(), renders + 1);
+    assert_eq!(survivor.full_redraws(), redraws);
+    assert!(terminal.writes().concat().contains("new"));
+
+    drop(probe);
+    drop(survivor);
+    assert!(weak.upgrade().is_none());
+    terminal.clear_writes();
+    terminal.notify_resize();
+    terminal.notify_resize();
+    assert_eq!(runtime.pending(), 0);
+    succeeds(runtime.settle());
+    assert!(terminal.writes().is_empty());
+}
+
+#[test]
 fn render_requests_coalesce_cancel_and_survive_reentry() {
     use Event::{Observed, Render};
     let cases = [

@@ -3,6 +3,7 @@
 mod editing;
 mod render;
 
+use super::editing::LastAction;
 use crate::{
     get_keybindings,
     kill_ring::KillRing,
@@ -34,20 +35,6 @@ pub struct Input {
     focus: FocusFlag,
     /// Current cancellation callback.
     escape: RefCell<Option<Rc<dyn Fn()>>>,
-}
-
-/// Most recent coalescing transition.
-#[derive(Default, PartialEq, Eq)]
-enum LastAction {
-    /// No active chain.
-    #[default]
-    None,
-    /// Consecutive deleted-text operations.
-    Kill,
-    /// Typing coalescence after an inserted chunk.
-    TypeWord,
-    /// A yank or rotation.
-    Yank,
 }
 
 /// Private editing storage.

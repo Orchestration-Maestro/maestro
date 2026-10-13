@@ -103,8 +103,7 @@ impl Box {
 
     /// Drops the composed rows and keeps a render that is running from caching its rows.
     fn drop_cache(&self) {
-        self.generation.set(self.generation.get().wrapping_add(1));
-        self.cache.take();
+        super::invalidate_cache(&self.generation, &self.cache);
     }
 
     /// The background in effect now, cloned so that no borrow is held while it runs.

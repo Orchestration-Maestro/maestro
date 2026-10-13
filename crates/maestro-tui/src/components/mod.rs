@@ -1,6 +1,15 @@
 #![doc = include_str!("../../../../docs/terminal/widgets.md")]
 
 mod background;
+mod editing;
+
+use std::cell::{Cell, RefCell};
+
+/// Advances `generation` and then drops `cache`, so a render in progress cannot store its rows.
+fn invalidate_cache<T>(generation: &Cell<u64>, cache: &RefCell<Option<T>>) {
+    generation.set(generation.get().wrapping_add(1));
+    cache.take();
+}
 mod r#box;
 mod image;
 mod input;

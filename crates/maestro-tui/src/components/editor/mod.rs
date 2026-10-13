@@ -10,6 +10,7 @@ mod paste;
 mod render;
 mod text;
 mod wrapping;
+use super::editing::LastAction;
 use crate::{
     Component, FocusFlag, Focusable, SelectListTheme, TUI,
     autocomplete::{AutocompleteProvider, CursorPosition},
@@ -97,19 +98,6 @@ impl Default for Buffer {
             cursor: CursorPosition { line: 0, col: 0 },
         }
     }
-}
-/// Previous editing action used for coalescing and replacement eligibility.
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
-enum LastAction {
-    /// No coalescing action.
-    #[default]
-    None,
-    /// Consecutive typed word.
-    TypeWord,
-    /// Accumulating deleted text.
-    Kill,
-    /// Eligible inserted ring text.
-    Yank,
 }
 /// Mutable editing transitions.
 #[derive(Default)]
