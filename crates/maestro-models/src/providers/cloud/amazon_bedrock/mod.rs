@@ -46,8 +46,9 @@ pub struct BedrockOptions {
     pub region: Option<String>,
     /// Shared-config profile to read; an empty value counts as absent.
     pub profile: Option<String>,
-    /// `Auto` sends `auto`, `Required` sends `any`, `Function` sends `tool` with its name and
-    /// `None` sends no tool configuration; unset sends the tools without a choice.
+    /// With nonempty tools, `Auto` sends `auto`, `Required` sends `any` and `Function` sends
+    /// `tool` with its name; unset sends the tools without a choice. `None` sends no tool
+    /// configuration, as do absent or empty tools.
     pub tool_choice: Option<ToolChoice>,
     /// Thinking level; it takes effect on a reasoning Claude model.
     pub reasoning: Option<ThinkingLevel>,
@@ -109,8 +110,8 @@ pub fn stream_simple_bedrock(
     stream_bedrock(model, context, Some(raw))
 }
 
-/// Raise the token limit by the level's budget and store the budget that fits in that level's
-/// slot, leaving the other slots as given.
+/// Store [`adjust_max_tokens_for_thinking`]'s returned token limit and budget in the selected
+/// level's slot, leaving the other budget slots as given.
 fn fit_budget(model: &Model, raw: &mut BedrockOptions, level: ThinkingLevel) {
     let adjusted = adjust_max_tokens_for_thinking(
         token_base(raw.common.max_tokens),

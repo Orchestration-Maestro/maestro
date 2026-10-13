@@ -19,11 +19,12 @@ trimmed. Claude thinking without a nonblank signature becomes plain text; other 
 reasoning text without a signature. Consecutive tool results become one user turn, preserving
 result order and error or success status.
 
-Images accept `image/jpeg`, `image/jpg`, `image/png`, `image/gif` and `image/webp`. The payload
-hook sees decoded byte arrays; the sent body carries padded standard base64. An unsupported
-MIME type or invalid base64 ends the stream before the payload hook. Tool declarations keep
-their descriptions and schema values. `tool_choice` selects automatic, required or named tool
-use; `ToolChoice::None` omits the tool configuration.
+Images remaining after [shared projection](../conversation-projection.md) accept `image/jpeg`,
+`image/jpg`, `image/png`, `image/gif` and `image/webp`. The payload hook sees decoded byte arrays;
+the sent body carries padded standard base64. An unsupported MIME type or invalid base64 in a
+remaining image ends the stream before the payload hook. Tool declarations keep their
+descriptions and schema values. With nonempty tools, `tool_choice` selects automatic, required
+or named tool use; `ToolChoice::None`, absent tools or empty tools omit the tool configuration.
 
 Cache retention uses the explicit common option, otherwise `MAESTRO_CACHE_RETENTION=long`
 selects long retention and other values select short. None disables cache points. Supported

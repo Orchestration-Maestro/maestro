@@ -67,8 +67,9 @@ pub(super) fn supports_adaptive_thinking(model: &Model) -> bool {
         .any(|version| mentions(model, version))
 }
 
-/// Whether prompt-cache points are sent: Claude 3.5 Haiku, 3.7 Sonnet and 4.x, and any model
-/// without `claude` in its candidates when `AWS_BEDROCK_FORCE_CACHE` is exactly `1`.
+/// Whether prompt caching is supported: candidates containing `claude` also need `-4-`,
+/// `claude-3-7-sonnet` or `claude-3-5-haiku`; without `claude`, support instead requires
+/// `AWS_BEDROCK_FORCE_CACHE` to be exactly `1`.
 #[cfg(not(target_arch = "wasm32"))]
 fn supports_prompt_caching(model: &Model, env: &Environment) -> bool {
     if !mentions(model, "claude") {

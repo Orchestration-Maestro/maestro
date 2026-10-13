@@ -202,7 +202,8 @@ pub(super) struct Prepared {
 /// The input the payload hook sees: the model identifier first, then the conversation.
 ///
 /// # Errors
-/// Fails when the conversation cannot be written as JSON.
+/// Propagates [`messages`] conversion failures or fails when the conversation cannot be
+/// written as JSON.
 pub(super) fn payload(
     model: &Model,
     context: Context,

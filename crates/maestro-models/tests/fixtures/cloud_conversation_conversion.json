@@ -22166,6 +22166,7 @@
         }
       },
       "expected": {
+        "path": "/model/new%2Fmodel/converse-stream",
         "sequence": [
           "hook",
           "transport",

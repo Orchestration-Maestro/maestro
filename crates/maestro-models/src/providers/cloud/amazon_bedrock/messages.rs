@@ -28,7 +28,8 @@ use crate::{
 /// last block of the final turn when that turn is the user's.
 ///
 /// # Errors
-/// Fails when an image has an unsupported type or undecodable data.
+/// Fails when an image remaining after [`transform_messages`] projection has an unsupported
+/// type or undecodable data.
 pub(super) fn messages(
     model: &Model,
     history: &[Turn],
