@@ -79,11 +79,7 @@ fn assemble(feeds: [Vec<Model>; 3]) -> Catalog {
 use maestro_text::utf16_order;
 /// Count unique winners with canonical integer providers before encounter-ordered names.
 fn provider_counts(catalog: &Catalog) -> Vec<(String, usize)> {
-    let mut providers: Vec<_> = catalog.iter().collect();
-    providers.sort_by_key(|(name, _)| {
-        crate::providers::json_text::array_index(name).map_or((1, 0), |index| (0, index))
-    });
-    providers
+    maestro_json::canonical_entries(catalog)
         .into_iter()
         .map(|(name, models)| (name.clone(), models.len()))
         .collect()

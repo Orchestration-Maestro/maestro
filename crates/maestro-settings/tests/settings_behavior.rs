@@ -1691,11 +1691,11 @@ mod tests {
         block_on(settings.flush());
         let expected = [
             "{",
-            "  \"10\": 1,",
             "  \"2\": 2,",
+            "  \"10\": 1,",
             "  \"a\": 1,",
-            "  \"huge\": 9007199254740993,",
-            "  \"max\": 18446744073709551615,",
+            "  \"huge\": 9007199254740992,",
+            "  \"max\": 18446744073709552000,",
             "  \"__proto__\": {",
             "    \"theme\": \"fallback\"",
             "  },",
@@ -1711,6 +1711,32 @@ mod tests {
     }
 
     #[test]
+    fn settings_save_uses_canonical_keys_and_binary64_numbers() {
+        let seed = r#"{"outer":{"10":"ten","2":"two","z":9007199254740993,"a":-0.0},"zero":-0.0}"#;
+        let text = saved_text_after(seed, |settings| settings.set_theme("x".into()));
+        let expected = [
+            "{",
+            "  \"outer\": {",
+            "    \"2\": \"two\",",
+            "    \"10\": \"ten\",",
+            "    \"z\": 9007199254740992,",
+            "    \"a\": 0",
+            "  },",
+            "  \"zero\": 0,",
+            "  \"theme\": \"x\"",
+            "}",
+        ]
+        .join("\n");
+        assert_eq!(text, expected);
+
+        let manager = SettingsManager::in_memory(settings(serde_json::from_str(seed).unwrap()));
+        let global = manager.get_global_settings().0;
+        let outer = global["outer"].as_object().unwrap();
+        assert_eq!(outer.keys().collect::<Vec<_>>(), ["2", "10", "z", "a"]);
+        assert_eq!(outer["z"].as_u64(), Some(9_007_199_254_740_992));
+    }
+
+    #[test]
     fn integers_beyond_64_bits_become_doubles_and_i64_min_survives() {
         let seed = concat!(
             r#"{"min":-9223372036854775808,"over":18446744073709551617,"#,
@@ -1719,7 +1745,7 @@ mod tests {
         let text = saved_text_after(seed, |settings| settings.set_theme("x".into()));
         let expected = [
             "{",
-            "  \"min\": -9223372036854775808,",
+            "  \"min\": -9223372036854776000,",
             "  \"over\": 18446744073709552000,",
             "  \"under\": -9223372036854776000,",
             "  \"theme\": \"x\"",

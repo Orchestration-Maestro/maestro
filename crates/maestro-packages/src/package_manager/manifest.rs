@@ -1,4 +1,5 @@
 //! Raw package branding selection with deferred resource-list decoding.
+pub(super) use maestro_json::is_raw_truthy as truthy;
 use maestro_resources::skills::ResourceOperations;
 use serde_json::value::RawValue;
 use std::{collections::BTreeMap, io, path::Path};
@@ -35,19 +36,6 @@ pub(super) fn read_maestro_manifest_file(
         BTreeMap::new()
     };
     Some(Manifest { fields })
-}
-/// Distinguishes absent-like JSON scalars from present lists and records.
-pub(super) fn truthy(raw: &RawValue) -> bool {
-    match raw.get() {
-        "null" | "false" => false,
-        text if text.starts_with('"') => {
-            serde_json::from_str::<String>(text).is_ok_and(|text| !text.is_empty())
-        }
-        text if text.starts_with('-') || text.starts_with(|c: char| c.is_ascii_digit()) => {
-            text.parse::<f64>() != Ok(0.0)
-        }
-        _ => true,
-    }
 }
 
 /// Expands positive operands before collecting their resource kinds.

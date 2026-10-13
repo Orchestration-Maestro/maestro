@@ -1,6 +1,7 @@
 //! Projection of caller-supplied entries without session-file reads or writes.
 //! Stored timestamp conversion uses the existing [`crate::messages`] owner.
 use super::types::{SessionContext, SessionContextModel, SessionEntry};
+pub(super) use maestro_json::is_truthy as truthy;
 use maestro_request::presence::Presence;
 use serde::de::Error as _;
 use serde_json::Value;
@@ -205,17 +206,6 @@ fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
         .map_or(f64::NAN, crate::messages::timestamp_millis);
     message.insert("timestamp".into(), Value::from(timestamp));
     Value::Object(message)
-}
-
-/// Decide whether a raw branch summary contributes a message.
-pub(super) fn truthy(value: &Value) -> bool {
-    match value {
-        Value::Null => false,
-        Value::Bool(value) => *value,
-        Value::Number(value) => value.as_f64().is_some_and(|value| value != 0.0),
-        Value::String(value) => !value.is_empty(),
-        Value::Array(_) | Value::Object(_) => true,
-    }
 }
 
 /// Parse independent JSONL lines without validating a header or entry schema.

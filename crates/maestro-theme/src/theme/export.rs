@@ -1,6 +1,7 @@
 //! Resolved colors for export: palette expansion, ordered records and optional fields.
 use super::loading::resolve;
 use super::{ColorValue, ThemeError, ThemeState};
+use maestro_json::canonical_entries;
 use serde_json::Value;
 use std::borrow::Cow;
 
@@ -92,23 +93,6 @@ fn export_color(value: Option<&Value>, vars: &Value) -> Result<Option<String>, T
         return Ok(None);
     };
     Ok(Some(hex(resolve(value, vars)?)).filter(|color| !color.is_empty()))
-}
-
-/// Entries in enumeration order: canonical array-index keys ascending, then other keys in authored order.
-pub(super) fn canonical_entries(colors: &serde_json::Map<String, Value>) -> Vec<(&String, &Value)> {
-    let mut entries: Vec<_> = colors.iter().collect();
-    entries.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
-    entries
-}
-
-/// Parse a canonical array index: no sign, no leading zero, below 2^32 - 1.
-fn array_index(key: &str) -> Option<u32> {
-    let canonical =
-        key == "0" || (!key.starts_with('0') && key.bytes().all(|b| b.is_ascii_digit()));
-    canonical
-        .then(|| key.parse().ok())
-        .flatten()
-        .filter(|index| *index < u32::MAX)
 }
 
 /// Basic palette entries, which terminals render approximately.

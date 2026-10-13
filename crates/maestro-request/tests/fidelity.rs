@@ -185,3 +185,39 @@ fn optional_fields_keep_the_host_missing_null_rules() -> Result<(), Box<dyn std:
     }
     Ok(())
 }
+
+/// Fields read through the public optional-field helper.
+#[derive(Debug, serde::Deserialize, PartialEq)]
+struct Optional {
+    #[serde(default, deserialize_with = "maestro_request::types::present")]
+    flag: Option<bool>,
+    #[serde(default, deserialize_with = "maestro_request::types::present")]
+    open: Option<serde_json::Value>,
+}
+
+#[test]
+fn present_helper_keeps_type_specific_null_rules() -> Result<(), serde_json::Error> {
+    assert_eq!(
+        from_str::<Optional>("{}")?,
+        Optional {
+            flag: None,
+            open: None
+        }
+    );
+    assert_eq!(
+        from_str::<Optional>(r#"{"flag":false,"open":null}"#)?,
+        Optional {
+            flag: Some(false),
+            open: Some(serde_json::Value::Null)
+        }
+    );
+    assert_eq!(
+        from_str::<Optional>(r#"{"open":7}"#)?,
+        Optional {
+            flag: None,
+            open: Some(serde_json::json!(7))
+        }
+    );
+    assert!(from_str::<Optional>(r#"{"flag":null}"#).is_err());
+    Ok(())
+}

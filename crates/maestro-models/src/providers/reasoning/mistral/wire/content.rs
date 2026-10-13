@@ -1,6 +1,6 @@
 //! Typed content transport records.
 
-use super::{Nullable, Object, SafeInteger, nullable, optional, optional_literal};
+use super::{Nullable, Object, SafeInteger, nullable, optional_literal, present};
 use serde::{Deserialize, Serialize};
 
 /// Transport fields for `TextChunk`.
@@ -33,7 +33,7 @@ pub(super) struct ThinkChunk {
     /// The `closed` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     closed: Option<bool>,

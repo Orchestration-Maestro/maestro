@@ -7,6 +7,7 @@ repository.workspace = true
 
 [dependencies]
 maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }
 maestro-request = { path = "../maestro-request" }
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }

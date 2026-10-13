@@ -13,8 +13,13 @@ pub type KnownProvider = Provider;
 /// Open JSON object for schemas, arguments and metadata.
 pub type JsonObject = serde_json::Map<String, serde_json::Value>;
 
-/// Preserve an explicitly present value, including null, as an outer option.
-pub(super) fn present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+/// Wrap a successfully decoded value in `Some`; with `serde(default)` an absent field is
+/// `None`. `T` alone decides whether null is accepted: a `T` that admits it, such as a JSON
+/// value, gives `Some` of that null, and `bool` rejects it.
+///
+/// # Errors
+/// Returns the error of decoding `T`.
+pub fn present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: serde::Deserialize<'de>,

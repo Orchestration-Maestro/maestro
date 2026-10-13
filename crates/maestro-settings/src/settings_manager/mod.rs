@@ -17,7 +17,8 @@ use std::future::Future;
 
 use serde_json::{Map, Value};
 
-use conversion::{convert, merge_one_level, parse_document, to_text};
+use conversion::{convert, merge_one_level, parse_document};
+use maestro_json::pretty_object;
 use persistence::{Edit, Queue};
 
 pub use entries::{FilteredPackage, PackageSource, SettingsListEntry};
@@ -174,7 +175,7 @@ impl SettingsManager {
     pub fn in_memory(settings: Settings) -> Self {
         let mut seed = settings.0;
         convert(&mut seed);
-        let (storage, failure) = match to_text(&seed) {
+        let (storage, failure) = match pretty_object(&seed) {
             Ok(text) => (InMemorySettingsStorage::seeded(text), None),
             Err(error) => (InMemorySettingsStorage::new(), Some(error)),
         };

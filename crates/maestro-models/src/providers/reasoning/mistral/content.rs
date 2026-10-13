@@ -58,7 +58,11 @@ struct Thinking {
     #[serde(default, rename = "signature", deserialize_with = "nullable")]
     _signature: Option<Nullable<String>>,
     /// Optional nonnullable closed flag.
-    #[serde(default, rename = "closed", deserialize_with = "super::wire::optional")]
+    #[serde(
+        default,
+        rename = "closed",
+        deserialize_with = "maestro_request::types::present"
+    )]
     _closed: Option<bool>,
 }
 /// Tool-reference shape and its presence-bearing fields.

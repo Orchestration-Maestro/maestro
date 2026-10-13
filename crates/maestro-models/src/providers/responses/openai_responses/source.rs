@@ -9,6 +9,7 @@ use crate::providers::http::{
 use crate::providers::json_text::{is_truthy, member, raw_json};
 use crate::{Cancellation, DiagnosticErrorInfo, FetchError, ProviderResponse};
 use futures_util::StreamExt;
+pub(in crate::providers::responses) use maestro_json::is_truthy as streaming;
 use std::collections::VecDeque;
 
 /// Framing state for one body.
@@ -93,17 +94,6 @@ pub(in crate::providers::responses) enum Prepared {
     Stream(HttpBody),
     /// A consumed non-event response cannot feed the event reducer.
     Nonstream,
-}
-
-/// The edited stream flag's truthiness.
-pub(in crate::providers::responses) fn streaming(value: &serde_json::Value) -> bool {
-    match value {
-        serde_json::Value::Null => false,
-        serde_json::Value::Bool(flag) => *flag,
-        serde_json::Value::Number(number) => number.as_f64() != Some(0.0),
-        serde_json::Value::String(text) => !text.is_empty(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
-    }
 }
 
 /// Consume non-event responses before exposing them to the response hook.

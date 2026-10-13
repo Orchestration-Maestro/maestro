@@ -1,0 +1,416 @@
+{
+  "truth": [
+    {
+      "input": null,
+      "expected": false
+    },
+    {
+      "input": "null",
+      "expected": false
+    },
+    {
+      "input": "false",
+      "expected": false
+    },
+    {
+      "input": "true",
+      "expected": true
+    },
+    {
+      "input": "0",
+      "expected": false
+    },
+    {
+      "input": "-0",
+      "expected": false
+    },
+    {
+      "input": "0.0",
+      "expected": false
+    },
+    {
+      "input": "-0.0",
+      "expected": false
+    },
+    {
+      "input": "0e20",
+      "expected": false
+    },
+    {
+      "input": "-0e20",
+      "expected": false
+    },
+    {
+      "input": "1",
+      "expected": true
+    },
+    {
+      "input": "-1",
+      "expected": true
+    },
+    {
+      "input": "1e-400",
+      "expected": false
+    },
+    {
+      "input": "-1e-400",
+      "expected": false
+    },
+    {
+      "input": "5e-324",
+      "expected": true
+    },
+    {
+      "input": "1e400",
+      "expected": true
+    },
+    {
+      "input": "-1e400",
+      "expected": true
+    },
+    {
+      "input": "\"\"",
+      "expected": false
+    },
+    {
+      "input": "\"0\"",
+      "expected": true
+    },
+    {
+      "input": "\"false\"",
+      "expected": true
+    },
+    {
+      "input": "\" \"",
+      "expected": true
+    },
+    {
+      "input": "\"\\u0000\"",
+      "expected": true
+    },
+    {
+      "input": "\"\\ufeff\\u0085\"",
+      "expected": true
+    },
+    {
+      "input": "[]",
+      "expected": true
+    },
+    {
+      "input": "[0]",
+      "expected": true
+    },
+    {
+      "input": "{}",
+      "expected": true
+    },
+    {
+      "input": "{\"x\":0}",
+      "expected": true
+    }
+  ],
+  "index": [
+    {
+      "input": "4294967295",
+      "expected": null
+    },
+    {
+      "input": "10",
+      "expected": 10
+    },
+    {
+      "input": "01",
+      "expected": null
+    },
+    {
+      "input": "2",
+      "expected": 2
+    },
+    {
+      "input": "+1",
+      "expected": null
+    },
+    {
+      "input": "0",
+      "expected": 0
+    },
+    {
+      "input": "-0",
+      "expected": null
+    },
+    {
+      "input": "4294967294",
+      "expected": 4294967294
+    },
+    {
+      "input": "4294967296",
+      "expected": null
+    },
+    {
+      "input": "",
+      "expected": null
+    },
+    {
+      "input": "1e0",
+      "expected": null
+    },
+    {
+      "input": "1.0",
+      "expected": null
+    },
+    {
+      "input": " 1",
+      "expected": null
+    },
+    {
+      "input": "1 ",
+      "expected": null
+    },
+    {
+      "input": "\u0661",
+      "expected": null
+    },
+    {
+      "input": "\uff12",
+      "expected": null
+    },
+    {
+      "input": "z",
+      "expected": null
+    },
+    {
+      "input": "a",
+      "expected": null
+    },
+    {
+      "input": "__proto__",
+      "expected": null
+    },
+    {
+      "input": "constructor",
+      "expected": null
+    },
+    {
+      "input": "toString",
+      "expected": null
+    },
+    {
+      "input": "\ud83d\ude00",
+      "expected": null
+    },
+    {
+      "input": "\u00e9",
+      "expected": null
+    }
+  ],
+  "keys": [
+    {
+      "input": [
+        "4294967295",
+        "10",
+        "01",
+        "2",
+        "+1",
+        "0",
+        "-0",
+        "4294967294",
+        "4294967296",
+        "",
+        "1e0",
+        "1.0",
+        " 1",
+        "1 ",
+        "\u0661",
+        "\uff12",
+        "z",
+        "a",
+        "__proto__",
+        "constructor",
+        "toString",
+        "\ud83d\ude00",
+        "\u00e9"
+      ],
+      "expected": [
+        "0",
+        "2",
+        "10",
+        "4294967294",
+        "4294967295",
+        "01",
+        "+1",
+        "-0",
+        "4294967296",
+        "",
+        "1e0",
+        "1.0",
+        " 1",
+        "1 ",
+        "\u0661",
+        "\uff12",
+        "z",
+        "a",
+        "__proto__",
+        "constructor",
+        "toString",
+        "\ud83d\ude00",
+        "\u00e9"
+      ]
+    }
+  ],
+  "text": [
+    {
+      "input": "null",
+      "compact": "null",
+      "pretty": null
+    },
+    {
+      "input": "true",
+      "compact": "true",
+      "pretty": null
+    },
+    {
+      "input": "false",
+      "compact": "false",
+      "pretty": null
+    },
+    {
+      "input": "-0",
+      "compact": "0",
+      "pretty": null
+    },
+    {
+      "input": "-0.0",
+      "compact": "0",
+      "pretty": null
+    },
+    {
+      "input": "1.0",
+      "compact": "1",
+      "pretty": null
+    },
+    {
+      "input": "1e-7",
+      "compact": "1e-7",
+      "pretty": null
+    },
+    {
+      "input": "1e-6",
+      "compact": "0.000001",
+      "pretty": null
+    },
+    {
+      "input": "1e20",
+      "compact": "100000000000000000000",
+      "pretty": null
+    },
+    {
+      "input": "1e21",
+      "compact": "1e+21",
+      "pretty": null
+    },
+    {
+      "input": "-1e21",
+      "compact": "-1e+21",
+      "pretty": null
+    },
+    {
+      "input": "5e-324",
+      "compact": "5e-324",
+      "pretty": null
+    },
+    {
+      "input": "1.7976931348623157e308",
+      "compact": "1.7976931348623157e+308",
+      "pretty": null
+    },
+    {
+      "input": "9007199254740993",
+      "compact": "9007199254740992",
+      "pretty": null
+    },
+    {
+      "input": "18446744073709551615",
+      "compact": "18446744073709552000",
+      "pretty": null
+    },
+    {
+      "input": "-9223372036854775808",
+      "compact": "-9223372036854776000",
+      "pretty": null
+    },
+    {
+      "input": "18446744073709551617",
+      "compact": "18446744073709552000",
+      "pretty": null
+    },
+    {
+      "input": "-9223372036854775809",
+      "compact": "-9223372036854776000",
+      "pretty": null
+    },
+    {
+      "input": "51.248178375505404",
+      "compact": "51.248178375505404",
+      "pretty": null
+    },
+    {
+      "input": "0.30000000000000004",
+      "compact": "0.30000000000000004",
+      "pretty": null
+    },
+    {
+      "input": "\"\\\"\\\\\\b\\f\\n\\r\\t\\u0000\\u001f/\u00e9\ud83d\ude00\\u2028\\u2029\\ufeff\\u0085\"",
+      "compact": "\"\\\"\\\\\\b\\f\\n\\r\\t\\u0000\\u001f/\u00e9\ud83d\ude00\u2028\u2029\ufeff\u0085\"",
+      "pretty": null
+    },
+    {
+      "input": "[]",
+      "compact": "[]",
+      "pretty": null
+    },
+    {
+      "input": "{}",
+      "compact": "{}",
+      "pretty": "{}"
+    },
+    {
+      "input": "{\"z\":1,\"10\":\"ten\",\"2\":\"two\",\"01\":\"leading\",\"+1\":\"plus\",\"4294967295\":\"reserved\",\"a\":2}",
+      "compact": "{\"2\":\"two\",\"10\":\"ten\",\"z\":1,\"01\":\"leading\",\"+1\":\"plus\",\"4294967295\":\"reserved\",\"a\":2}",
+      "pretty": "{\n  \"2\": \"two\",\n  \"10\": \"ten\",\n  \"z\": 1,\n  \"01\": \"leading\",\n  \"+1\": \"plus\",\n  \"4294967295\": \"reserved\",\n  \"a\": 2\n}"
+    },
+    {
+      "input": "{\"outer\":[{\"10\":-0,\"2\":1e21,\"z\":[],\"a\":{}},[\"x\",null]],\"tail\":true}",
+      "compact": "{\"outer\":[{\"2\":1e+21,\"10\":0,\"z\":[],\"a\":{}},[\"x\",null]],\"tail\":true}",
+      "pretty": "{\n  \"outer\": [\n    {\n      \"2\": 1e+21,\n      \"10\": 0,\n      \"z\": [],\n      \"a\": {}\n    },\n    [\n      \"x\",\n      null\n    ]\n  ],\n  \"tail\": true\n}"
+    },
+    {
+      "input": "{\"a\":1,\"b\":2,\"\\u0061\":3}",
+      "compact": "{\"a\":3,\"b\":2}",
+      "pretty": "{\n  \"a\": 3,\n  \"b\": 2\n}"
+    },
+    {
+      "input": "{\"negative\":-0,\"null\":null,\"underflow\":1e-400}",
+      "compact": "{\"negative\":0,\"null\":null,\"underflow\":0}",
+      "pretty": "{\n  \"negative\": 0,\n  \"null\": null,\n  \"underflow\": 0\n}"
+    },
+    {
+      "input": "{\"__proto__\":{\"literal\":true},\"constructor\":2,\"toString\":3}",
+      "compact": "{\"__proto__\":{\"literal\":true},\"constructor\":2,\"toString\":3}",
+      "pretty": "{\n  \"__proto__\": {\n    \"literal\": true\n  },\n  \"constructor\": 2,\n  \"toString\": 3\n}"
+    }
+  ],
+  "nonfinite": [
+    {
+      "input": "NaN",
+      "expected": "[null,{\"n\":null}]"
+    },
+    {
+      "input": "Infinity",
+      "expected": "[null,{\"n\":null}]"
+    },
+    {
+      "input": "-Infinity",
+      "expected": "[null,{\"n\":null}]"
+    }
+  ]
+}

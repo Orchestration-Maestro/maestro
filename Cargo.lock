@@ -2179,6 +2179,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "maestro-credentials",
+ "maestro-json",
  "maestro-models",
  "maestro-pattern",
  "maestro-text",
@@ -2215,6 +2216,7 @@ name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-json",
  "maestro-request",
  "serde",
  "serde_json",
@@ -2222,6 +2224,15 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen 0.62.0",
+]
+
+[[package]]
+name = "maestro-json"
+version = "0.1.0"
+dependencies = [
+ "ryu-js",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2251,6 +2262,7 @@ dependencies = [
  "indexmap",
  "js-sys",
  "maestro-cancellation",
+ "maestro-json",
  "maestro-request",
  "maestro-text",
  "num-bigint",
@@ -2280,6 +2292,7 @@ name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
  "git-url-parse",
+ "maestro-json",
  "maestro-path",
  "maestro-pattern",
  "maestro-process",
@@ -2353,6 +2366,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "maestro-agent",
+ "maestro-json",
  "maestro-models",
  "maestro-path",
  "maestro-request",
@@ -2368,9 +2382,9 @@ dependencies = [
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [
+ "maestro-json",
  "maestro-lock",
  "maestro-path",
- "ryu-js",
  "serde",
  "serde_json",
  "tokio",
@@ -2417,6 +2431,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "jsonschema",
+ "maestro-json",
  "maestro-path",
  "maestro-request",
  "maestro-text",

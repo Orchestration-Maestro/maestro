@@ -1,5 +1,6 @@
 //! Typed model selection and ordered descriptor composition.
 use indexmap::IndexMap;
+use maestro_json::{canonical_entries, is_truthy};
 use maestro_models::{
     Model, ModelCompat, ModelCost, ModelInput, ModelThinkingLevel, ThinkingLevelMap,
 };
@@ -141,31 +142,20 @@ pub(super) fn providers(value: Value) -> Result<Vec<(String, ProviderConfig)>, s
         Value::Object(root) => root,
         value => serde_json::from_value(value)?,
     };
-    let mut entries: Vec<_> = match root.swap_remove("providers") {
-        Some(Value::Object(providers)) => providers.into_iter().collect(),
+    let entries = match root.swap_remove("providers") {
+        Some(Value::Object(providers)) => canonical_entries(providers),
         _ => Vec::new(),
     };
-    entries.sort_by_key(|(key, _)| enumeration_key(key));
     entries
         .into_iter()
         .map(|(key, value)| serde_json::from_value(value).map(|config| (key, config)))
         .collect()
 }
-/// Canonical numeric member ordering followed by stable authored order.
-pub(super) fn enumeration_key(key: &str) -> (u8, u32) {
-    key.parse::<u32>()
-        .ok()
-        .filter(|n| *n < u32::MAX && n.to_string() == key)
-        .map_or((1, 0), |n| (0, n))
-}
 /// Order a checked header record at its retained boundary.
 pub(super) fn ordered(
     headers: Option<IndexMap<String, String>>,
 ) -> Option<IndexMap<String, String>> {
-    headers.map(|mut headers| {
-        headers.sort_by_cached_key(|key, _| enumeration_key(key));
-        headers
-    })
+    headers.map(|headers| canonical_entries(headers).into_iter().collect())
 }
 /// Apply custom defaults and replace exact identities without moving their first slot.
 pub(super) fn compose(
@@ -309,7 +299,7 @@ fn merge_compat(base: Option<ModelCompat>, overlay: Option<ModelCompat>) -> Opti
     let mut base = base.unwrap_or_default();
     for (key, value) in overlay.0 {
         let routing = matches!(key.as_str(), "openRouterRouting" | "vercelGatewayRouting");
-        if routing && (truthy(base.0.get(&key)) || truthy(Some(&value))) {
+        if routing && (base.0.get(&key).is_some_and(is_truthy) || is_truthy(&value)) {
             let slot = base.0.entry(key).or_insert(Value::Null);
             let mut merged = match std::mem::take(slot) {
                 Value::Object(object) => object,
@@ -324,14 +314,4 @@ fn merge_compat(base: Option<ModelCompat>, overlay: Option<ModelCompat>) -> Opti
         }
     }
     Some(base)
-}
-/// Whether a JSON value is truthy.
-fn truthy(value: Option<&Value>) -> bool {
-    match value {
-        None | Some(Value::Null) => false,
-        Some(Value::Bool(flag)) => *flag,
-        Some(Value::Number(number)) => number.as_f64() != Some(0.0),
-        Some(Value::String(text)) => !text.is_empty(),
-        Some(_) => true,
-    }
 }

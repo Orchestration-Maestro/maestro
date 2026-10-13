@@ -46,7 +46,8 @@ below, which rename or remove legacy keys.
   the stored object. A getter reads one member with its own fallback. A setter
   replaces a member where it stands, appends a new member at the end or removes it
   for `None`. Every other member keeps its value and its position, so reading a
-  record and writing it back saves the same member order.
+  record and writing it back saves the same member order, except that a save writes
+  canonical array-index keys first (see [saved text](#saved-text)).
 - Lists keep every member. Non-string members of a list, and package entries whose
   shape cannot be typed, are returned as `Unknown` values and written back unchanged.
   A package object whose `source` is a string and whose resource lists are arrays is a
@@ -141,15 +142,20 @@ join results, then works in place:
 
 Writes are not atomic: there is no rename, rollback or sync step.
 
-## Stored numbers
+## Saved text
 
-Decimal numbers are read to the nearest double and saved in their shortest spelling
-that reads back to the same double (`1e+21` for large magnitudes, no fraction for
-whole values). Integers from `-9223372036854775808` up to `18446744073709551615` are
-kept digit for digit. An integer beyond that range is read as a double and saved
-with the double's spelling, so `18446744073709551617` is saved as
-`18446744073709552000`. This is a deliberate representation limit: keeping integers
-of any size would change how numbers compare in every crate that reads JSON.
+A save writes the document with [the canonical pretty writer](json.md): two-space
+indentation, no final newline, keys that are canonical array indices first in
+ascending numeric order at every depth and every other key in its stored order.
+Every number is saved as the double it names, in its shortest spelling that reads
+back to the same double (`1e+21` for large magnitudes, no fraction for whole
+values), so `9007199254740993` is saved as `9007199254740992`, `18446744073709551615`
+as `18446744073709552000` and `-9223372036854775808` as `-9223372036854776000`. A
+loaded document keeps integers from `-9223372036854775808` up to
+`18446744073709551615` digit for digit in memory until it is saved; an integer
+beyond that range is read as a double. This is a deliberate representation limit:
+keeping integers of any size would change how numbers compare in every crate that
+reads JSON.
 
 ## Stored-format conversions
 
