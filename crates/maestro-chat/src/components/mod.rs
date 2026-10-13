@@ -8,5 +8,5 @@ pub mod bordered_loader;
 
 pub mod custom_editor;
 
-pub mod tree_selector;
 pub mod session_selector_search;
+pub mod tree_selector;

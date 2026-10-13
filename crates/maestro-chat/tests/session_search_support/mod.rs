@@ -123,7 +123,7 @@ struct Score {
 /// Compare one named group's public operations with its oracle observations.
 pub fn run_group(name: &str) {
     let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../../fixtures/session_search.json")).unwrap();
+        serde_json::from_str(include_str!("../fixtures/session_search.json")).unwrap();
     let mut count = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         count += 1;

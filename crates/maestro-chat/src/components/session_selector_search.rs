@@ -7,7 +7,7 @@ use maestro_app::is_whitespace_scalar;
 pub enum SearchToken {
     /// An ordered-character search.
     Fuzzy(String),
-    /// A contiguous normalized phrase.
+    /// A phrase matched contiguously after normalization.
     Phrase(String),
 }
 
@@ -15,7 +15,7 @@ pub enum SearchToken {
 pub enum ParsedSearchQuery {
     /// Terms in their authored order.
     Tokens(Vec<SearchToken>),
-    /// A case-insensitive expression or its diagnostic.
+    /// A compiled expression or its diagnostic.
     Regex(Result<regress::Regex, String>),
 }
 

@@ -362,6 +362,3 @@ pub fn group(name: &str) {
         replay(case);
     }
 }
-
-/// Session-search fixture replay.
-pub mod session_search;
