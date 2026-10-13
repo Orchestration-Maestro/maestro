@@ -423,11 +423,19 @@ async fn write_input(stdin: Option<ChildStdin>, input: Option<&[u8]>) -> io::Res
 
 /// Collects input and output concurrently, retaining write failures until exit/EOF.
 async fn complete(child: &mut CapturedChild, input: Option<&[u8]>) -> io::Result<Output> {
-    let stdin = child.child.stdin.take();
-    let (written, output) = tokio::join!(
-        write_input(stdin, input),
-        wait_for_child_process(child, WaitOptions::default(), std::future::pending())
-    );
+    settle_input(
+        write_input(child.child.stdin.take(), input),
+        wait_for_child_process(child, WaitOptions::default(), std::future::pending()),
+    )
+    .await
+}
+
+/// Retains input failure until output collection settles.
+async fn settle_input(
+    written: impl Future<Output = io::Result<()>>,
+    output: impl Future<Output = io::Result<Output>>,
+) -> io::Result<Output> {
+    let (written, output) = tokio::join!(written, output);
     written?;
     output
 }

@@ -140,7 +140,6 @@ s.close()
         )
     });
     let (mut socket, pid) = ready(&listener);
-    assert!(!worker.is_finished(), "child has not completed its effect");
     socket.write_all(b"!").unwrap();
     let error = worker.join().unwrap().unwrap_err();
     assert!(

@@ -232,6 +232,35 @@ async fn is_pending<F: Future + Unpin>(future: &mut F) -> bool {
 }
 
 #[test]
+fn input_failure_remains_pending_until_output_settles() {
+    runtime().block_on(async {
+        let observed = Cell::new(false);
+        let written = async {
+            observed.set(true);
+            Err(io::Error::from(io::ErrorKind::BrokenPipe))
+        };
+        let (release, held) = tokio::sync::oneshot::channel();
+        let output = async {
+            held.await.unwrap();
+            Ok(std::process::Output {
+                status: std::process::ExitStatus::from_raw(0),
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            })
+        };
+        let mut settlement = Box::pin(super::settle_input(written, output));
+        let pending = is_pending(&mut settlement).await;
+        assert!(observed.get(), "input write has failed");
+        assert!(pending, "input failure must wait for output completion");
+        release.send(()).unwrap();
+        assert_eq!(
+            settlement.await.unwrap_err().kind(),
+            io::ErrorKind::BrokenPipe
+        );
+    });
+}
+
+#[test]
 fn grace_deadline_begins_after_child_exit() {
     // Idle paused-clock runtime jumps to the next armed timer: the wait ends exactly
     // when its grace timer, armed by the exit, fires.
