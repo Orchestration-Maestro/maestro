@@ -12,7 +12,7 @@ message and model-request records, and it has no workspace dependencies.
 No reverse dependency or internal dev edge is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
-owners; `maestro-text` and `maestro-json` exist, and the other three are policy only with no crate
+owners; `maestro-text`, `maestro-json` and `maestro-entry` exist, and tool and brand are policy only with no crate
 directory until their extraction issues: `maestro-text` and `maestro-json` are leaves, `maestro-entry` and `maestro-tool` depend
 only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
 only on text, so it is no longer a leaf. Tools may also depend directly on text for shared newline

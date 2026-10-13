@@ -2366,6 +2366,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-entry"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
+ "maestro-request",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
@@ -2378,6 +2388,7 @@ name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-entry",
  "maestro-json",
  "maestro-request",
  "serde",
@@ -2532,6 +2543,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "maestro-agent",
+ "maestro-entry",
  "maestro-json",
  "maestro-models",
  "maestro-path",

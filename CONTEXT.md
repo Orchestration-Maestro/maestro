@@ -63,7 +63,7 @@ are later scope, not active foundation concepts.
 - **SessionManager:** The owner of session entries, branch position, labels, resolved context and JSONL persistence.
 - **Session:** A conversation history with a selected branch, backed by a native JSONL file or explicit memory storage.
 - **AgentSession:** The application session coordinating agent execution, prompt delivery, events, selection, compaction, retries and navigation.
-- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record. The declared `maestro-entry` library, which depends only on `maestro-request`, owns the session interchange records; `maestro-session` keeps history and storage.
+- **Entry:** An append-only item in the session tree, such as a message, label, model/thinking change or compaction record. The [maestro-entry library](docs/entry.md), which depends only on `maestro-request`, owns the session interchange records; `maestro-session` keeps history and storage.
 - **Active branch:** The path from the root to the selected position.
 - **Context projection:** The selected-ancestry message and setting values produced from supplied session entries; persistence remains with the session owner.
 - **Compaction:** Reduction of model context without deleting raw history.
