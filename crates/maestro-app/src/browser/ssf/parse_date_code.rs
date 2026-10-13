@@ -76,15 +76,7 @@ fn normalize_serial(value: f64) -> Option<f64> {
         .split_once('e')
         .map_or((text.as_str(), None), |(m, e)| (m, Some(e)));
     let length = if mantissa.starts_with("0.") { 17 } else { 16 };
-    let truncated = if mantissa.contains('.') {
-        mantissa.chars().take(length).collect::<String>()
-    } else {
-        format!(
-            "{}{}",
-            &mantissa[..mantissa.len().min(15)],
-            "0".repeat(mantissa.len().saturating_sub(15))
-        )
-    };
+    let truncated = mantissa.chars().take(length).collect::<String>();
     match exponent {
         Some(exp) => format!("{truncated}e{exp}").parse().ok(),
         None => truncated.parse().ok(),

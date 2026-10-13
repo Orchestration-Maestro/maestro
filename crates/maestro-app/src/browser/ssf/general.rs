@@ -1,5 +1,7 @@
 //! General scalar and numeric formatting.
 
+use super::super::strip_decimal;
+
 /// Borrowed scalar input to General formatting.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GeneralValue<'a> {
@@ -22,15 +24,6 @@ pub fn general(value: GeneralValue<'_>) -> String {
         GeneralValue::Boolean(false) => "FALSE".to_owned(),
         GeneralValue::Empty => String::new(),
         GeneralValue::Number(value) => general_number(value),
-    }
-}
-
-/// Remove trailing fractional zeros without changing integer digits.
-fn strip_decimal(text: &str) -> &str {
-    if text.contains('.') && !text.contains(['e', 'E']) {
-        text.trim_end_matches('0').trim_end_matches('.')
-    } else {
-        text
     }
 }
 

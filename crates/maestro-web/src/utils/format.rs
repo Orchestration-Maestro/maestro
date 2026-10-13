@@ -1,6 +1,6 @@
 //! Numeric display text for browser consumers.
 use super::i18n::{I18n, I18nError, TranslationValue};
-use maestro_app::ModelCost;
+use maestro_app::{ModelCost, browser::strip_decimal};
 
 /// Render a currency amount using four-place fixed number formatting.
 #[must_use]
@@ -40,11 +40,7 @@ fn model_price(number: f64) -> String {
     };
     let mut buffer = ryu_js::Buffer::new();
     let text = buffer.format_to_fixed(number, precision);
-    if text.contains('.') && !text.contains('e') {
-        text.trim_end_matches('0').trim_end_matches('.').to_owned()
-    } else {
-        text.to_owned()
-    }
+    strip_decimal(text).to_owned()
 }
 
 /// Render a count with the thousand suffix and tier-specific rounding.
