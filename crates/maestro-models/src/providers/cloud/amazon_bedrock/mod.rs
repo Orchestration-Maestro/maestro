@@ -12,6 +12,9 @@ mod messages;
 mod proxy;
 #[cfg(not(target_arch = "wasm32"))]
 mod request;
+mod thinking;
+#[cfg(not(target_arch = "wasm32"))]
+mod wire;
 
 #[cfg(test)]
 mod tests;
@@ -20,9 +23,19 @@ use std::sync::{Arc, RwLock};
 
 use indexmap::IndexMap;
 
+use crate::options::token_base;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::http::RequestFailure;
-use crate::{AssistantMessageEventStream, Context, Model, SharedAssistantMessage, StreamOptions};
+use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
+use crate::{
+    AssistantMessageEventStream, Context, Model, SharedAssistantMessage, SimpleStreamOptions,
+    StreamOptions, ThinkingBudgets, ThinkingLevel, ToolChoice, adjust_max_tokens_for_thinking,
+    build_base_options,
+};
+use thinking::{is_anthropic_claude_model, supports_adaptive_thinking};
+
+/// Thinking display of a Claude request; the same values as the message protocol's display.
+pub type BedrockThinkingDisplay = AnthropicThinkingDisplay;
 
 /// Options for a direct Bedrock conversation.
 #[derive(Clone, Default)]
@@ -33,6 +46,17 @@ pub struct BedrockOptions {
     pub region: Option<String>,
     /// Shared-config profile to read; an empty value counts as absent.
     pub profile: Option<String>,
+    /// `Auto` sends `auto`, `Required` sends `any`, `Function` sends `tool` with its name and
+    /// `None` sends no tool configuration; unset sends the tools without a choice.
+    pub tool_choice: Option<ToolChoice>,
+    /// Thinking level; it takes effect on a reasoning Claude model.
+    pub reasoning: Option<ThinkingLevel>,
+    /// Token budgets by level for fixed-budget thinking.
+    pub thinking_budgets: Option<ThinkingBudgets>,
+    /// Absent means the interleaved beta is requested for fixed-budget thinking.
+    pub interleaved_thinking: Option<bool>,
+    /// Absent means summarized, except where the government target omits the display.
+    pub thinking_display: Option<BedrockThinkingDisplay>,
     /// Tags attached to the request for cost allocation, sent as written.
     pub request_metadata: Option<IndexMap<String, String>>,
     /// Bearer token that replaces request signing; an empty value counts as absent.
@@ -56,6 +80,55 @@ pub fn stream_bedrock(
     let options = options.unwrap_or_default();
     start(model, context, options, &stream, &output);
     stream
+}
+
+/// Resolve simple options, give a fixed-budget Claude model a budget that fits its token limit,
+/// then start [`stream_bedrock`]. Only the common options, the level and the budgets are read.
+#[must_use]
+pub fn stream_simple_bedrock(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> AssistantMessageEventStream {
+    let mut raw = BedrockOptions {
+        common: build_base_options(&model, options.as_ref(), None),
+        ..BedrockOptions::default()
+    };
+    if let Some(SimpleStreamOptions {
+        reasoning: Some(level),
+        thinking_budgets,
+        ..
+    }) = options
+    {
+        raw.reasoning = Some(level);
+        raw.thinking_budgets = thinking_budgets;
+        if is_anthropic_claude_model(&model) && !supports_adaptive_thinking(&model) {
+            fit_budget(&model, &mut raw, level);
+        }
+    }
+    stream_bedrock(model, context, Some(raw))
+}
+
+/// Raise the token limit by the level's budget and store the budget that fits in that level's
+/// slot, leaving the other slots as given.
+fn fit_budget(model: &Model, raw: &mut BedrockOptions, level: ThinkingLevel) {
+    let adjusted = adjust_max_tokens_for_thinking(
+        token_base(raw.common.max_tokens),
+        model.max_tokens,
+        level,
+        raw.thinking_budgets.as_ref(),
+    );
+    raw.common.max_tokens = Some(adjusted.max_tokens);
+    let budgets = raw
+        .thinking_budgets
+        .get_or_insert_with(ThinkingBudgets::default);
+    let slot = match level {
+        ThinkingLevel::Minimal => &mut budgets.minimal,
+        ThinkingLevel::Low => &mut budgets.low,
+        ThinkingLevel::Medium => &mut budgets.medium,
+        ThinkingLevel::High | ThinkingLevel::Xhigh => &mut budgets.high,
+    };
+    *slot = Some(adjusted.thinking_budget);
 }
 
 /// End the stream with the browser failure.
@@ -177,7 +250,7 @@ mod native {
         } = call;
         let model = &model;
         let signal = options.common.signal.as_ref();
-        let mut input = payload(model, &context, &options)?;
+        let mut input = payload(model, context, &options, &env)?;
         if let Some(hook) = &options.common.on_payload {
             input = hook(input, Arc::clone(model))
                 .await

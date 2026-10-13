@@ -48,9 +48,11 @@ settled error streams.
 
 ## Direct-only protocols
 
-`stream_bedrock` (see [cloud conversations](cloud-conversations.md)) is not in the registry
-above. Until built-in registration covers it, it is reachable only by calling it directly from
-`maestro_models::providers::cloud::amazon_bedrock`, and `stream`, `stream_simple`, `complete` and
+`stream_bedrock` and `stream_simple_bedrock` (see [cloud conversations](cloud-conversations.md))
+are not in the registry above. `BedrockOptions` and `BedrockThinkingDisplay` are exported at
+the crate root; the stream functions are called directly from
+`maestro_models::providers::cloud::amazon_bedrock`. Until built-in registration covers them,
+`stream`, `stream_simple`, `complete` and
 `complete_simple` answer `bedrock-converse-stream` with `No API provider registered for api:
 bedrock-converse-stream`.
 

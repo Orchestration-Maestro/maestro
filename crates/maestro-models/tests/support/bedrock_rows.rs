@@ -4,17 +4,22 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use indexmap::IndexMap;
-use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-use maestro_models::{AssistantMessage, DiagnosticErrorInfo, StreamOptions};
+use maestro_models::providers::cloud::amazon_bedrock::{stream_bedrock, stream_simple_bedrock};
+use maestro_models::{
+    AssistantMessage, AssistantMessageEventStream, BedrockOptions, BedrockThinkingDisplay,
+    CacheRetention, DiagnosticErrorInfo, SimpleStreamOptions, StreamOptions, ThinkingBudgets,
+    ThinkingLevel, ToolChoice,
+};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 use url::Url;
 
 use crate::bedrock;
-use crate::chat::TestResult;
+use crate::chat::{TestResult, block_on};
+use crate::child_process;
+use crate::json::canonical;
 use crate::transport;
 
-const FIXTURE: &str = include_str!("../fixtures/cloud_conversation_requests.json");
 const ENDPOINT: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
 /// A step of one request, in the order the conversation reaches it.
@@ -27,6 +32,80 @@ pub enum Phase {
     Transport,
     /// The response hook ran.
     Response,
+}
+
+/// A tool choice spelled as the service does.
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+enum ChoiceRow {
+    /// `auto`, `any` or `none`.
+    Mode(String),
+    /// `{"type": "tool", "name": ...}`.
+    Tool {
+        /// Always `tool`.
+        r#type: String,
+        /// Tool name.
+        name: String,
+    },
+}
+
+/// Options a row gives the call, in the spellings of the fixture.
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct OptionsRow {
+    /// Cache lifetime selection.
+    cache_retention: Option<CacheRetention>,
+    /// Requested thinking level.
+    reasoning: Option<ThinkingLevel>,
+    /// Thinking display selection.
+    thinking_display: Option<BedrockThinkingDisplay>,
+    /// Per-level thinking token budgets.
+    thinking_budgets: Option<ThinkingBudgets>,
+    /// Tool selection policy.
+    tool_choice: Option<ChoiceRow>,
+    /// Fixed-budget interleaving override.
+    interleaved_thinking: Option<bool>,
+    /// Requested output token limit.
+    max_tokens: Option<f64>,
+    /// Sampling temperature.
+    temperature: Option<f64>,
+    /// Configured service region.
+    region: Option<String>,
+    /// Common session identifier.
+    session_id: Option<String>,
+    /// Common metadata.
+    metadata: Option<Map<String, Value>>,
+}
+
+impl OptionsRow {
+    /// The common options the row names.
+    fn common(&self, common: StreamOptions) -> StreamOptions {
+        StreamOptions {
+            cache_retention: self.cache_retention,
+            max_tokens: self.max_tokens,
+            temperature: self.temperature,
+            session_id: self.session_id.clone(),
+            metadata: self.metadata.clone(),
+            ..common
+        }
+    }
+
+    /// The choice as the option type holds it.
+    fn choice(&self) -> TestResult<Option<ToolChoice>> {
+        Ok(match &self.tool_choice {
+            None => None,
+            Some(ChoiceRow::Mode(mode)) => Some(match mode.as_str() {
+                "auto" => ToolChoice::Auto,
+                "any" => ToolChoice::Required,
+                "none" => ToolChoice::None,
+                other => return Err(format!("unknown tool choice {other}").into()),
+            }),
+            Some(ChoiceRow::Tool { r#type, name }) => {
+                assert_eq!(r#type, "tool");
+                Some(ToolChoice::Function { name: name.clone() })
+            }
+        })
+    }
 }
 
 /// How a row changes the request or its setup.
@@ -50,6 +129,13 @@ pub struct Change {
     request_metadata: Option<IndexMap<String, String>>,
     /// Endpoint of the model.
     base_url: Option<String>,
+    /// Members written over the fixture's base model.
+    model: Option<Map<String, Value>>,
+    /// Options given to the call.
+    #[serde(default)]
+    options: OptionsRow,
+    /// Entry to call: `simple` for the simple entry, otherwise the direct one.
+    entry: Option<String>,
 }
 
 /// What a row expects to observe.
@@ -87,12 +173,89 @@ pub struct Row {
     pub env: BTreeMap<String, String>,
     /// Observations expected.
     expected: Expected,
+    /// Model of the fixture the row belongs to.
+    #[serde(skip)]
+    base_model: Option<Value>,
+    /// Conversation of the fixture the row belongs to.
+    #[serde(skip)]
+    base_context: Option<Value>,
 }
 
-/// The rows a test owns.
-pub fn rows(test: &str) -> TestResult<Vec<Row>> {
-    let all: Vec<Row> = serde_json::from_str(FIXTURE)?;
-    Ok(all.into_iter().filter(|row| row.test == test).collect())
+/// A fixture: bare rows, or rows with the model and conversation they start from.
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+enum Fixture {
+    /// Rows that bring their own setup.
+    Rows(Vec<Row>),
+    /// Rows that change a shared model and conversation.
+    Based {
+        /// Shared model descriptor.
+        model: Value,
+        /// Shared conversation.
+        context: Value,
+        /// Owned test rows.
+        rows: Vec<Row>,
+    },
+}
+
+/// The rows of `fixture` that `test` owns.
+fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
+    let (base, all) = match serde_json::from_str(fixture)? {
+        Fixture::Rows(rows) => (None, rows),
+        Fixture::Based {
+            model,
+            context,
+            rows,
+        } => (Some((model, context)), rows),
+    };
+    Ok(all
+        .into_iter()
+        .filter(|row| row.test == test)
+        .map(|mut row| {
+            if let Some((model, context)) = &base {
+                row.base_model = Some(model.clone());
+                row.base_context = Some(context.clone());
+            }
+            row
+        })
+        .collect())
+}
+
+/// Run every row `test` owns in `fixture`, in a child with the row's environment when it has one.
+pub fn check_rows(fixture: &str, test: &str) -> TestResult {
+    let owned = rows(fixture, test)?;
+    assert!(!owned.is_empty(), "{test} owns no rows");
+    if let Some(case) = child_process::child_case() {
+        let row = owned
+            .iter()
+            .find(|row| row.id == case)
+            .ok_or("unknown row")?;
+        return block_on(true, check(row));
+    }
+    for row in &owned {
+        let env = environment(row);
+        if env.is_empty() {
+            block_on(true, check(row))?;
+        } else {
+            let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
+            child_process::rerun(test, &row.id, &env)?;
+        }
+    }
+    Ok(())
+}
+
+/// The variables a row's child runs with. The simple entry takes no token option, so its rows
+/// get the token through the environment.
+fn environment(row: &Row) -> BTreeMap<&str, &str> {
+    let mut env: BTreeMap<&str, &str> = row
+        .env
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    if row.change.entry.is_some() {
+        env.insert("AWS_BEARER_TOKEN_BEDROCK", "fixture-token");
+    }
+    env
 }
 
 /// What one run observed.
@@ -178,22 +341,7 @@ async fn observe(row: &Row) -> TestResult<Observed> {
         }
         Box::pin(std::future::ready(Ok(())))
     }));
-    let options = BedrockOptions {
-        common,
-        bearer_token: row
-            .change
-            .bearer_token
-            .clone()
-            .or_else(|| row.env.is_empty().then(|| "fixture-token".to_owned())),
-        request_metadata: row.change.request_metadata.clone(),
-        ..BedrockOptions::default()
-    };
-    let context = match &row.change.context {
-        Some(context) => serde_json::from_value(context.clone())?,
-        None => bedrock::context("question")?,
-    };
-    let base_url = row.change.base_url.as_deref().unwrap_or(ENDPOINT);
-    let stream = stream_bedrock(bedrock::model(base_url)?, context, Some(options));
+    let stream = start(row, common)?;
     let (_, message) = transport::drain(&stream).await?;
     let phases = phases.lock().map_err(|e| e.to_string())?.clone();
     let hook = seen.lock().map_err(|e| e.to_string())?.clone();
@@ -205,15 +353,70 @@ async fn observe(row: &Row) -> TestResult<Observed> {
     })
 }
 
+/// Build the fixture's model and options, then invoke its selected entry.
+fn start(row: &Row, common: StreamOptions) -> TestResult<AssistantMessageEventStream> {
+    let change = &row.change;
+    let common = change.options.common(common);
+    let bearer_token = change
+        .bearer_token
+        .clone()
+        .or_else(|| row.env.is_empty().then(|| "fixture-token".to_owned()));
+    let context = match change.context.as_ref().or(row.base_context.as_ref()) {
+        Some(context) => serde_json::from_value(context.clone())?,
+        None => bedrock::context("question")?,
+    };
+    let base_url = change.base_url.as_deref().unwrap_or(ENDPOINT);
+    let model = match &row.base_model {
+        Some(base) => {
+            let mut model = base.clone();
+            if let (Some(members), Some(changes)) = (model.as_object_mut(), &change.model) {
+                members.extend(changes.clone());
+            }
+            serde_json::from_value(model)?
+        }
+        None => bedrock::model(base_url)?,
+    };
+    Ok(if change.entry.as_deref() == Some("simple") {
+        let simple = SimpleStreamOptions {
+            common: StreamOptions {
+                api_key: None,
+                ..common
+            },
+            reasoning: change.options.reasoning,
+            thinking_budgets: change.options.thinking_budgets.clone(),
+            ..SimpleStreamOptions::default()
+        };
+        stream_simple_bedrock(model, context, Some(simple))
+    } else {
+        let options = BedrockOptions {
+            common,
+            region: change.options.region.clone(),
+            bearer_token,
+            request_metadata: change.request_metadata.clone(),
+            tool_choice: change.options.choice()?,
+            reasoning: change.options.reasoning,
+            thinking_budgets: change.options.thinking_budgets.clone(),
+            interleaved_thinking: change.options.interleaved_thinking,
+            thinking_display: change.options.thinking_display,
+            ..BedrockOptions::default()
+        };
+        stream_bedrock(model, context, Some(options))
+    })
+}
+
 /// Run a row and check every member it expects.
 pub async fn check(row: &Row) -> TestResult {
     let observed = observe(row).await?;
     let id = &row.id;
     let expected = &row.expected;
-    assert_eq!(observed.phases, expected.sequence, "{id}: steps");
     if let Some(hook) = &expected.hook {
-        assert_eq!(observed.hook.as_ref(), Some(hook), "{id}: hook input");
+        assert_eq!(
+            observed.hook.clone().map(canonical).as_ref(),
+            Some(hook),
+            "{id}: hook input"
+        );
     }
+    assert_eq!(observed.phases, expected.sequence, "{id}: steps");
     match &observed.request {
         Some(request) => check_sent(row, request, &observed.message),
         None => check_failed(row, &observed.message),
@@ -228,11 +431,9 @@ fn check_sent(
 ) -> TestResult {
     let id = &row.id;
     let expected = &row.expected;
-    assert_eq!(
-        Some(Url::parse(&request.url)?.path()),
-        expected.path.as_deref(),
-        "{id}: path"
-    );
+    if let Some(path) = &expected.path {
+        assert_eq!(Url::parse(&request.url)?.path(), path, "{id}: path");
+    }
     let body: Value = serde_json::from_slice(&request.body)?;
     assert_eq!(Some(&body), expected.body.as_ref(), "{id}: body");
     let authorization = request.headers.get("authorization").map(String::as_str);

@@ -1,11 +1,9 @@
 //! Account selection from request credentials.
 
 use crate::DiagnosticErrorInfo;
+use crate::providers::base64_text::FORGIVING;
 use crate::providers::json_text::{member, raw_json};
-use base64::{
-    Engine as _, alphabet,
-    engine::{GeneralPurpose, GeneralPurposeConfig},
-};
+use base64::Engine as _;
 
 /// Read the account claim without signature verification.
 pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorInfo> {
@@ -14,12 +12,7 @@ pub(super) fn extract_account_id(token: &str) -> Result<String, DiagnosticErrorI
     let [_, payload, _] = parts.as_slice() else {
         return Err(failure());
     };
-    let config = GeneralPurposeConfig::new()
-        .with_decode_padding_mode(base64::engine::DecodePaddingMode::Indifferent)
-        .with_decode_allow_trailing_bits(true);
-    let bytes = GeneralPurpose::new(&alphabet::STANDARD, config)
-        .decode(payload)
-        .map_err(|_| failure())?;
+    let bytes = FORGIVING.decode(payload).map_err(|_| failure())?;
     let text: String = bytes.into_iter().map(char::from).collect();
     let raw = raw_json(&text).map_err(|_| failure())?;
     let account = member(raw, "https://api.openai.com/auth")

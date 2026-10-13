@@ -1,45 +1,25 @@
 //! The conversation request as the service input records spell it, and its one encoding.
 
 use indexmap::IndexMap;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::BedrockOptions;
-use super::messages::{system_blocks, user_messages};
+use super::messages::{messages, system_blocks, tool_config};
+use super::proxy::Environment;
+use super::thinking::{additional_model_request_fields, cache_point};
+use super::wire::{ContentBlock, SystemContentBlock, ToolConfiguration, list, map};
+use crate::providers::chat::openai_completions::resolve_cache_retention;
 use crate::providers::http::RequestFailure;
 use crate::providers::json_text::compact_json;
 use crate::{Context, Model};
-
-/// A list that keeps its present entries, whatever a `null` entry stood for.
-fn list<'de, D, T>(deserializer: D) -> Result<Option<Vec<T>>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    let items = Option::<Vec<Option<T>>>::deserialize(deserializer)?;
-    Ok(items.map(|items| items.into_iter().flatten().collect()))
-}
-
-/// A map that keeps its present entries, whatever a `null` value stood for.
-fn map<'de, D, T>(deserializer: D) -> Result<Option<IndexMap<String, T>>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    let items = Option::<IndexMap<String, Option<T>>>::deserialize(deserializer)?;
-    Ok(items.map(|items| {
-        items
-            .into_iter()
-            .filter_map(|(name, value)| Some((name, value?)))
-            .collect()
-    }))
-}
 
 /// One text member of a content, system or prompt-variable union.
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(super) struct TextBlock {
     /// The text.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) text: Option<String>,
 }
 
@@ -48,10 +28,11 @@ pub(super) struct TextBlock {
 #[serde(default)]
 pub(super) struct Message {
     /// Who spoke.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) role: Option<String>,
     /// What was said.
-    #[serde(deserialize_with = "list")]
-    pub(super) content: Option<Vec<TextBlock>>,
+    #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
+    pub(super) content: Option<Vec<ContentBlock>>,
 }
 
 /// Sampling and length settings.
@@ -59,13 +40,16 @@ pub(super) struct Message {
 #[serde(default, rename_all = "camelCase")]
 pub(super) struct Inference {
     /// Most tokens the answer may use.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) max_tokens: Option<f64>,
     /// Sampling temperature.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) temperature: Option<f64>,
     /// Nucleus sampling mass.
+    #[serde(skip_serializing_if = "Option::is_none")]
     top_p: Option<f64>,
     /// Sequences that end the answer.
-    #[serde(deserialize_with = "list")]
+    #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
     stop_sequences: Option<Vec<String>>,
 }
 
@@ -74,14 +58,19 @@ pub(super) struct Inference {
 #[serde(default, rename_all = "camelCase")]
 struct Guardrail {
     /// Guardrail identifier.
-    #[serde(rename = "guardrailIdentifier")]
+    #[serde(
+        rename = "guardrailIdentifier",
+        skip_serializing_if = "Option::is_none"
+    )]
     identifier: Option<String>,
     /// Guardrail version.
-    #[serde(rename = "guardrailVersion")]
+    #[serde(rename = "guardrailVersion", skip_serializing_if = "Option::is_none")]
     version: Option<String>,
     /// Trace setting.
+    #[serde(skip_serializing_if = "Option::is_none")]
     trace: Option<String>,
     /// Stream processing mode.
+    #[serde(skip_serializing_if = "Option::is_none")]
     stream_processing_mode: Option<String>,
 }
 
@@ -90,6 +79,7 @@ struct Guardrail {
 #[serde(default)]
 struct Performance {
     /// Latency mode.
+    #[serde(skip_serializing_if = "Option::is_none")]
     latency: Option<String>,
 }
 
@@ -98,7 +88,7 @@ struct Performance {
 #[serde(default)]
 struct ServiceTier {
     /// Tier name.
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     kind: Option<String>,
 }
 
@@ -107,10 +97,13 @@ struct ServiceTier {
 #[serde(default)]
 struct JsonSchema {
     /// Schema text, passed through as written.
+    #[serde(skip_serializing_if = "Option::is_none")]
     schema: Option<String>,
     /// Schema name.
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     /// Schema description.
+    #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
 }
 
@@ -119,6 +112,7 @@ struct JsonSchema {
 #[serde(default, rename_all = "camelCase")]
 struct Structure {
     /// JSON schema structure.
+    #[serde(skip_serializing_if = "Option::is_none")]
     json_schema: Option<JsonSchema>,
 }
 
@@ -127,9 +121,10 @@ struct Structure {
 #[serde(default)]
 struct TextFormat {
     /// Format kind.
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     kind: Option<String>,
     /// Format structure.
+    #[serde(skip_serializing_if = "Option::is_none")]
     structure: Option<Structure>,
 }
 
@@ -138,6 +133,7 @@ struct TextFormat {
 #[serde(default, rename_all = "camelCase")]
 struct OutputConfig {
     /// Answer text format.
+    #[serde(skip_serializing_if = "Option::is_none")]
     text_format: Option<TextFormat>,
 }
 
@@ -147,61 +143,51 @@ struct OutputConfig {
 #[serde(default, rename_all = "camelCase")]
 pub(super) struct Converse {
     /// Conversation turns.
-    #[serde(deserialize_with = "list")]
+    #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
     pub(super) messages: Option<Vec<Message>>,
     /// System prompt blocks.
-    #[serde(deserialize_with = "list")]
-    pub(super) system: Option<Vec<TextBlock>>,
+    #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
+    pub(super) system: Option<Vec<SystemContentBlock>>,
     /// Sampling and length settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) inference_config: Option<Inference>,
+    /// Tool declarations and choice.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_config: Option<ToolConfiguration>,
     /// Guardrail selection.
+    #[serde(skip_serializing_if = "Option::is_none")]
     guardrail_config: Option<Guardrail>,
     /// Model-specific request members, any JSON.
+    #[serde(skip_serializing_if = "Option::is_none")]
     additional_model_request_fields: Option<Value>,
     /// Paths of model-specific response members to return.
-    #[serde(deserialize_with = "list")]
+    #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
     additional_model_response_field_paths: Option<Vec<String>>,
     /// Prompt-variable values by name.
-    #[serde(deserialize_with = "map")]
+    #[serde(deserialize_with = "map", skip_serializing_if = "Option::is_none")]
     prompt_variables: Option<IndexMap<String, TextBlock>>,
     /// Latency preference.
+    #[serde(skip_serializing_if = "Option::is_none")]
     performance_config: Option<Performance>,
     /// Service tier.
+    #[serde(skip_serializing_if = "Option::is_none")]
     service_tier: Option<ServiceTier>,
     /// Answer format.
+    #[serde(skip_serializing_if = "Option::is_none")]
     output_config: Option<OutputConfig>,
     /// Tags for cost allocation.
-    #[serde(deserialize_with = "map")]
+    #[serde(deserialize_with = "map", skip_serializing_if = "Option::is_none")]
     pub(super) request_metadata: Option<IndexMap<String, String>>,
 }
 
-/// Remove the members that hold `null`, which a record writes for each absent member.
-fn strip_absent(value: &mut Value) {
-    match value {
-        Value::Object(members) => {
-            members.retain(|_, member| !member.is_null());
-            members.values_mut().for_each(strip_absent);
-        }
-        Value::Array(items) => items.iter_mut().for_each(strip_absent),
-        _ => {}
-    }
-}
-
 impl Converse {
-    /// Write the records as JSON with absent members left out; the open document is kept as is,
-    /// including any `null` inside it.
-    fn encode(mut self) -> Result<Map<String, Value>, serde_json::Error> {
-        let document = self.additional_model_request_fields.take();
-        let mut value = serde_json::to_value(self)?;
-        strip_absent(&mut value);
-        let mut members = match value {
+    /// Write the records as JSON with absent members left out; open documents are kept as they
+    /// are, including any `null` inside them.
+    fn encode(self) -> Result<Map<String, Value>, serde_json::Error> {
+        Ok(match serde_json::to_value(self)? {
             Value::Object(members) => members,
             _ => Map::new(),
-        };
-        if let Some(document) = document {
-            members.insert("additionalModelRequestFields".to_owned(), document);
-        }
-        Ok(members)
+        })
     }
 }
 
@@ -219,17 +205,30 @@ pub(super) struct Prepared {
 /// Fails when the conversation cannot be written as JSON.
 pub(super) fn payload(
     model: &Model,
-    context: &Context,
+    context: Context,
     options: &BedrockOptions,
+    env: &Environment,
 ) -> Result<Value, RequestFailure> {
+    let cache = cache_point(
+        model,
+        resolve_cache_retention(options.common.cache_retention),
+        env,
+    );
+    let Context {
+        system_prompt,
+        messages: history,
+        tools,
+    } = context;
     let converse = Converse {
-        messages: Some(user_messages(context)),
-        system: system_blocks(context),
+        messages: Some(messages(model, &history, cache.as_ref())?),
+        system: system_blocks(system_prompt, cache.as_ref()),
         inference_config: Some(Inference {
             max_tokens: options.common.max_tokens,
             temperature: options.common.temperature,
             ..Inference::default()
         }),
+        tool_config: tool_config(tools, options.tool_choice.as_ref()),
+        additional_model_request_fields: additional_model_request_fields(model, options, env),
         request_metadata: options.request_metadata.clone(),
         ..Converse::default()
     };

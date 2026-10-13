@@ -44,6 +44,25 @@ pub fn clamp_reasoning(effort: Option<ThinkingLevel>) -> Option<ThinkingLevel> {
     }
 }
 
+/// The token base thinking budgets are added to: absent, zero and NaN limits count as zero.
+pub(crate) fn token_base(max_tokens: Option<f64>) -> f64 {
+    max_tokens
+        .filter(|n| *n != 0.0 && !n.is_nan())
+        .unwrap_or(0.0)
+}
+
+/// The budget of a level: the caller's slot when set (zero included), otherwise 1,024, 2,048,
+/// 8,192 or 16,384 for minimal through high. Extra-high uses the high slot.
+pub(crate) fn thinking_budget(level: ThinkingLevel, custom: Option<&ThinkingBudgets>) -> f64 {
+    let (slot, default) = match level {
+        ThinkingLevel::Minimal => (custom.and_then(|b| b.minimal), 1024.0),
+        ThinkingLevel::Low => (custom.and_then(|b| b.low), 2048.0),
+        ThinkingLevel::Medium => (custom.and_then(|b| b.medium), 8192.0),
+        ThinkingLevel::High | ThinkingLevel::Xhigh => (custom.and_then(|b| b.high), 16384.0),
+    };
+    slot.unwrap_or(default)
+}
+
 /// Combined token limit and the thinking budget it can accommodate.
 pub struct AdjustedMaxTokens {
     /// Maximum combined output and thinking tokens.
@@ -66,15 +85,7 @@ pub fn adjust_max_tokens_for_thinking(
     reasoning_level: ThinkingLevel,
     custom_budgets: Option<&ThinkingBudgets>,
 ) -> AdjustedMaxTokens {
-    let (custom, default) = match reasoning_level {
-        ThinkingLevel::Minimal => (custom_budgets.and_then(|b| b.minimal), 1024.0),
-        ThinkingLevel::Low => (custom_budgets.and_then(|b| b.low), 2048.0),
-        ThinkingLevel::Medium => (custom_budgets.and_then(|b| b.medium), 8192.0),
-        ThinkingLevel::High | ThinkingLevel::Xhigh => {
-            (custom_budgets.and_then(|b| b.high), 16384.0)
-        }
-    };
-    let budget = custom.unwrap_or(default);
+    let budget = thinking_budget(reasoning_level, custom_budgets);
     let combined = base_max_tokens + budget;
     let max_tokens = if combined.is_nan() || model_max_tokens.is_nan() {
         f64::NAN

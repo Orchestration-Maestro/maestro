@@ -76,6 +76,20 @@ fn standard_region(endpoint: &str) -> Option<String> {
     valid.then(|| region.to_owned())
 }
 
+/// The nonempty `region` option, otherwise nonempty `AWS_REGION`, otherwise nonempty
+/// `AWS_DEFAULT_REGION`.
+pub(super) fn configured_region<'a>(
+    options: &'a BedrockOptions,
+    env: &'a Environment,
+) -> Option<&'a str> {
+    options
+        .region
+        .as_deref()
+        .filter(|region| !region.is_empty())
+        .or_else(|| env.get("AWS_REGION"))
+        .or_else(|| env.get("AWS_DEFAULT_REGION"))
+}
+
 impl Settings {
     /// Decide configuration from the model, the options and the environment.
     ///
@@ -86,13 +100,7 @@ impl Settings {
         options: &BedrockOptions,
         env: &Environment,
     ) -> Result<Self, RequestFailure> {
-        let region = options
-            .region
-            .as_deref()
-            .filter(|region| !region.is_empty())
-            .or_else(|| env.get("AWS_REGION"))
-            .or_else(|| env.get("AWS_DEFAULT_REGION"))
-            .map(str::to_owned);
+        let region = configured_region(options, env).map(str::to_owned);
         let profile = options
             .profile
             .as_deref()
