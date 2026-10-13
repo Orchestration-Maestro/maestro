@@ -23,6 +23,7 @@ use std::{
 /// Complete the future on a test-owned runtime.
 pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
     tokio::runtime::Builder::new_current_thread()
+        .enable_all()
         .build()
         .unwrap()
         .block_on(future)

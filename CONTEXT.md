@@ -120,6 +120,7 @@ are later scope, not active foundation concepts.
 - **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, depending directly only on the toolkit, the text leaf and, optionally, the foundation utility; it requires both direct dependencies.
 - **File mutation queue:** The native per-file ordering in `maestro-tools` that runs file-changing tool operations on one file one at a time, in call order, while different files proceed independently; files are identified by canonical path, or by lexical absolute path when canonicalization fails.
 - **OutputAccumulator:** A native tool-output stream that owns decoded snapshot accounting and an optional raw overflow artifact.
+- **ToolsManager:** The native owner of the fd and rg search programs in maestro-tools: it looks in the supplied binary directory and on PATH, then applies call-time offline and Android policy before attempting a missing program's latest-release installation.
 - **Grapheme:** A user-perceived character cluster, indivisible when terminal text is wrapped, truncated or sliced; escapes inside it never split it. Tool-output line clipping instead counts Unicode scalars.
 - **Cell column:** One terminal cell of width; text widths count cells, and a tab counts three in measured text but none in column selection.
 - **Image protocol:** The terminal's Kitty or iTerm2 inline image transport, distinct from image file format.

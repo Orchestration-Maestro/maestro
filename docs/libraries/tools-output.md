@@ -129,3 +129,17 @@ The native [numbered edit diff](../tools-edit.md#numbered-diffs-and-read-only-pr
 uses one owned line-token and sequence-selection core, derived from diff 8.0.4.
 It adds no runtime dependency. The BSD-3-Clause attribution is retained in
 [the third-party notices](../../THIRD-PARTY-NOTICES.md#edit-line-diff).
+
+## Search program acquisition
+
+Native `maestro-tools` uses `zip =6.0.0` (MIT), default features disabled,
+with `deflate-flate2`, and `owo-colors =4.2.1` (MIT, no optional features).
+The existing image/png edge enables flate2's default Rust backend;
+`deflate-flate2-zlib-rs` is not enabled. Tar extraction stays the system `tar` command.
+HTTP uses the existing models transport rather than a second client.
+
+The lockfile adds zip and lock-only `derive_arbitrary =1.5.0` (MIT OR Apache-2.0)
+through zip's fuzzing-only arbitrary edge. Existing `arbitrary`, `crc32fast`,
+`flate2`, `indexmap`, `memchr` and their closures are reused. These retain their
+existing MIT/Apache-2.0 terms (memchr under MIT), and the derive closure retains
+unicode-ident's Unicode-3.0 notice.

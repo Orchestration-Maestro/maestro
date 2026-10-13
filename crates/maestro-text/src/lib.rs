@@ -1,5 +1,5 @@
 //! Stateless text decisions shared by Maestro crates: whitespace membership, UTF-16
-//! lexical order, markup escaping and, with the `collation` feature, locale comparison.
+//! lexical order, markup escaping, environment flag truth and, with the `collation` feature, locale comparison.
 //!
 //! ```
 //! use maestro_text::{is_whitespace_scalar, markup::{EscapeMode, escape}, utf16_order};
@@ -13,11 +13,13 @@
 //! ```
 #[cfg(feature = "collation")]
 pub mod collation;
+mod flags;
 mod lexical;
 pub mod markup;
 mod newlines;
 mod whitespace;
 
+pub use flags::is_truthy_env_flag;
 pub use lexical::utf16_order;
 pub use newlines::normalize_to_lf;
 pub use whitespace::{WHITESPACE, is_whitespace_scalar};

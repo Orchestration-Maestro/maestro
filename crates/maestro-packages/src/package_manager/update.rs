@@ -71,9 +71,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     }
     /// Reads offline mode without trimming the environment value.
     pub(super) fn offline(&self) -> bool {
-        self.operations.offline_value().is_some_and(|value| {
-            value == "1" || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("yes")
-        })
+        maestro_text::is_truthy_env_flag(self.operations.offline_value().as_deref())
     }
     /// Applies pin admission before inspecting installed contents.
     pub(super) async fn check_candidate(

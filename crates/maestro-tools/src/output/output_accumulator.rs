@@ -268,13 +268,7 @@ impl OutputAccumulator {
         if self.path.is_some() || self.writer.is_some() {
             return Ok(());
         }
-        let mut random = [0_u8; 8];
-        getrandom::fill(&mut random).map_err(io::Error::other)?;
-        let id: String = random
-            .iter()
-            .flat_map(|byte| [byte >> 4, byte & 0xf])
-            .map(|digit| char::from(b"0123456789abcdef"[usize::from(digit)]))
-            .collect();
+        let id = random_id()?;
         let root = std::env::temp_dir();
         let root = root.to_string_lossy();
         let path = maestro_path::join(&[&root, &format!("{}-{id}.log", self.prefix)]);
@@ -289,6 +283,18 @@ impl OutputAccumulator {
         self.writer = Some(writer);
         Ok(())
     }
+}
+
+/// Generate eight random bytes as sixteen lowercase hexadecimal digits.
+pub(crate) fn random_id() -> io::Result<String> {
+    let mut random = [0_u8; 8];
+    getrandom::fill(&mut random).map_err(io::Error::other)?;
+    let id: String = random
+        .iter()
+        .flat_map(|byte| [byte >> 4, byte & 0xf])
+        .map(|digit| char::from(b"0123456789abcdef"[usize::from(digit)]))
+        .collect();
+    Ok(id)
 }
 
 #[cfg(test)]
