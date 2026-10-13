@@ -28,7 +28,7 @@ fn counting_fetch(calls: &Arc<AtomicUsize>) -> Fetch {
 fn script(root: &Path, name: &str, code: i32) {
     let source = root.join(format!("{name}.source"));
     let body = format!(
-        "#!/bin/sh\nprintf '%s\\n' '{name} --version' >> '{}'\n[ \"$#\" = 1 ] && [ \"$1\" = --version ] || exit 99\nexit {code}\n",
+        "#!/bin/sh\nprintf '%s %s\\n' '{name}' \"$*\" >> '{}'\n[ \"$#\" = 1 ] && [ \"$1\" = --version ] || exit 99\nexit {code}\n",
         root.join("probes.log").display()
     );
     std::fs::write(&source, body).unwrap();
