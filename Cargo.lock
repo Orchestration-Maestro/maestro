@@ -2593,6 +2593,7 @@ dependencies = [
  "maestro-app",
  "maestro-theme",
  "maestro-tui",
+ "regress",
  "serde",
  "serde_json",
 ]

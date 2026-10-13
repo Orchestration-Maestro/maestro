@@ -20,5 +20,6 @@ pub use maestro_session::session_manager::{
     ModelChangeEntry, SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry,
     SessionTreeNode, ThinkingLevelChangeEntry,
 };
+pub use maestro_session::{Presence, SessionInfo};
 pub use maestro_text::is_whitespace_scalar;
 pub use maestro_tools::{key_hint, key_text, raw_key_hint};

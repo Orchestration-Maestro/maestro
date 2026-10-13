@@ -1,0 +1,3208 @@
+[
+  {
+    "test": "phrases_collapse_whitespace",
+    "input": {
+      "op": "filter",
+      "query": "\"node cve\"",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "a",
+          "modified": 1767225600000,
+          "allMessagesText": "node\n\n   cve was discussed"
+        },
+        {
+          "id": "b",
+          "modified": 1767312000000,
+          "allMessagesText": "node something else"
+        }
+      ]
+    },
+    "expected": [
+      0
+    ]
+  },
+  {
+    "test": "regex_matches_case_insensitive_words",
+    "input": {
+      "op": "filter",
+      "query": "re:\\bbrave\\b",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "a",
+          "modified": 1767312000000,
+          "allMessagesText": "Brave is great"
+        },
+        {
+          "id": "b",
+          "modified": 1767398400000,
+          "allMessagesText": "bravery is not the same"
+        }
+      ]
+    },
+    "expected": [
+      0
+    ]
+  },
+  {
+    "test": "recent_results_retain_incoming_order",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "newer",
+          "modified": 1767398400000,
+          "allMessagesText": "brave"
+        },
+        {
+          "id": "older",
+          "modified": 1767225600000,
+          "allMessagesText": "brave"
+        },
+        {
+          "id": "nomatch",
+          "modified": 1767484800000,
+          "allMessagesText": "something else"
+        }
+      ]
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "relevance_uses_score_then_newest",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "late",
+          "modified": 1767398400000,
+          "allMessagesText": "xxxx brave"
+        },
+        {
+          "id": "early",
+          "modified": 1767225600000,
+          "allMessagesText": "brave xxxx"
+        }
+      ]
+    },
+    "expected": [
+      1,
+      0
+    ]
+  },
+  {
+    "test": "relevance_uses_score_then_newest",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "newer",
+          "modified": 1767398400000,
+          "allMessagesText": "brave"
+        },
+        {
+          "id": "older",
+          "modified": 1767225600000,
+          "allMessagesText": "brave"
+        }
+      ]
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "invalid_regex_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "re:(",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "a",
+          "modified": 1767225600000,
+          "allMessagesText": "brave"
+        }
+      ]
+    },
+    "expected": []
+  },
+  {
+    "test": "all_names_keeps_unnamed_sessions",
+    "input": {
+      "op": "filter",
+      "query": "",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "all"
+    },
+    "expected": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "test": "named_sessions_only",
+    "input": {
+      "op": "filter",
+      "query": "",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "names_are_filtered_before_matching",
+    "input": {
+      "op": "filter",
+      "query": "blueberry",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "blank_names_are_not_named",
+    "input": {
+      "op": "filter",
+      "query": "",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "whitespace",
+          "name": "   ",
+          "modified": 1767225600000,
+          "allMessagesText": "test"
+        },
+        {
+          "id": "empty",
+          "name": "",
+          "modified": 1767312000000,
+          "allMessagesText": "test"
+        },
+        {
+          "id": "named",
+          "name": "Real Name",
+          "modified": 1767398400000,
+          "allMessagesText": "test"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      2
+    ]
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": ""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": " \t\n﻿"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": ""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": ""
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "​"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "​"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "᠎"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "᠎"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "foo \"node cve\" bar"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "foo"
+        },
+        {
+          "kind": "phrase",
+          "value": "node cve"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "bar"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "foo\"bar baz\"qux"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "foo"
+        },
+        {
+          "kind": "phrase",
+          "value": "bar baz"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "qux"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "\"\" \" \t \""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "\"a\"\"b\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "phrase",
+          "value": "a"
+        },
+        {
+          "kind": "phrase",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "\"two\nwords\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "phrase",
+          "value": "two\nwords"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "a\\b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a\\b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "\"a\\\"b\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "\"a\\\"b\""
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "quotes_split_adjacent_fuzzy_and_phrase_terms",
+    "input": {
+      "op": "parse",
+      "query": "tail\\"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "tail\\"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "unclosed_quotes_restore_plain_tokens",
+    "input": {
+      "op": "parse",
+      "query": "\"node cve"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "\"node"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "cve"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "unclosed_quotes_restore_plain_tokens",
+    "input": {
+      "op": "parse",
+      "query": "foo \"a b\" \"tail"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "foo"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "\"a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b\""
+        },
+        {
+          "kind": "fuzzy",
+          "value": "\"tail"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "unclosed_quotes_restore_plain_tokens",
+    "input": {
+      "op": "parse",
+      "query": "a\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a\""
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "unclosed_quotes_restore_plain_tokens",
+    "input": {
+      "op": "parse",
+      "query": "\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "\""
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": "re: foo"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": true,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": " ﻿re:  foo \t"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": true,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": "RE:foo"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "RE:foo"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": "Re:foo"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "Re:foo"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": "prefix re:foo"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "prefix"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "re:foo"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_prefix_is_lowercase_only",
+    "input": {
+      "op": "parse",
+      "query": "\"re:foo\""
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "phrase",
+          "value": "re:foo"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re:"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": null,
+      "error": "Empty regex"
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re: ﻿"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": null,
+      "error": "Empty regex"
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re:("
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": null,
+      "error": "invalid-regex"
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re:["
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": null,
+      "error": "invalid-regex"
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re:*"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": null,
+      "error": "invalid-regex"
+    }
+  },
+  {
+    "test": "regex_parse_reports_failure_or_compiled_pattern",
+    "input": {
+      "op": "parse",
+      "query": "re:(?<x>a)\\k<x>"
+    },
+    "expected": {
+      "mode": "regex",
+      "tokens": [],
+      "regex": true,
+      "error": null
+    }
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a\tb"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "\t"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a\nb"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "\n"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a\u000bb"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "\u000b"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a\fb"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "\f"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a\rb"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "\r"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " "
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a　b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "　"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "query_whitespace_uses_shared_scalar_set",
+    "input": {
+      "op": "parse",
+      "query": "a﻿b"
+    },
+    "expected": {
+      "mode": "tokens",
+      "tokens": [
+        {
+          "kind": "fuzzy",
+          "value": "a"
+        },
+        {
+          "kind": "fuzzy",
+          "value": "b"
+        }
+      ],
+      "regex": null,
+      "error": null
+    }
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "﻿"
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": null
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": ""
+      }
+    },
+    "expected": false
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": ""
+      }
+    },
+    "expected": true
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "​"
+      }
+    },
+    "expected": true
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "᠎"
+      }
+    },
+    "expected": true
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": " x "
+      }
+    },
+    "expected": true
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {
+        "name": "﻿x﻿"
+      }
+    },
+    "expected": true
+  },
+  {
+    "test": "names_use_shared_whitespace",
+    "input": {
+      "op": "name",
+      "session": {}
+    },
+    "expected": false
+  },
+  {
+    "test": "search_text_uses_four_fields",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "id": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_uses_four_fields",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "name": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "search_text_uses_four_fields",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "search_text_uses_four_fields",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "cwd": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "search_text_ignores_other_metadata",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "path": "needle"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_ignores_other_metadata",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "parentSessionPath": "needle"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_ignores_other_metadata",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "firstMessage": "needle"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_ignores_other_metadata",
+    "input": {
+      "op": "match",
+      "query": "\"12345\"",
+      "session": {
+        "created": 12345,
+        "messageCount": 12345,
+        "modified": 12345
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_uses_four_fields",
+    "input": {
+      "op": "match",
+      "query": "\"id name msg cwd\"",
+      "session": {
+        "id": "id",
+        "name": "name",
+        "allMessagesText": "msg",
+        "cwd": "cwd"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "search_text_preserves_empty_field_separators",
+    "input": {
+      "op": "match",
+      "query": "re:^s  msg cwd$",
+      "session": {
+        "allMessagesText": "msg",
+        "cwd": "cwd"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "\"BRAVE TEST\"",
+      "session": {
+        "allMessagesText": "brave\n\tTEST"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "re:brave test",
+      "session": {
+        "allMessagesText": "brave\n\tTEST"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "\"ΟΣ\"",
+      "session": {
+        "allMessagesText": "ος"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "\"İ\"",
+      "session": {
+        "allMessagesText": "i̇"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "\"a b\"",
+      "session": {
+        "allMessagesText": "a﻿b"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.2
+    }
+  },
+  {
+    "test": "phrase_search_normalizes_but_regex_keeps_raw_text",
+    "input": {
+      "op": "match",
+      "query": "\"a b\"",
+      "session": {
+        "allMessagesText": "ab"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "ab",
+      "session": {
+        "allMessagesText": "a---b"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -13
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "ab",
+      "session": {
+        "allMessagesText": "b---a"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "5sonnet",
+      "session": {
+        "allMessagesText": "sonnet5"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -75.1
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "abc9",
+      "session": {
+        "allMessagesText": "9abc"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -33.199999999999996
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "zz",
+      "session": {
+        "allMessagesText": "z"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "fuzzy_terms_delegate_to_toolkit",
+    "input": {
+      "op": "match",
+      "query": "AbC",
+      "session": {
+        "allMessagesText": "abc"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -23.799999999999997
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "\"alpha\" beta",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -35.599999999999994
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "beta \"alpha\"",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -35.599999999999994
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "alpha missing",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "\"missing\" alpha",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "alpha \"missing\"",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "alpha alpha",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -114.99999999999999
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "\"alpha\" \"alpha\"",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.4
+    }
+  },
+  {
+    "test": "tokens_require_all_matches_and_add_scores",
+    "input": {
+      "op": "match",
+      "query": "\"alpha\" beta \"alpha\"",
+      "session": {
+        "allMessagesText": "alpha beta"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": -35.39999999999999
+    }
+  },
+  {
+    "test": "empty_query_matches_with_zero_score",
+    "input": {
+      "op": "match",
+      "query": "",
+      "session": {
+        "allMessagesText": "anything"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "blank_manual_phrase_adds_no_score",
+    "input": {
+      "op": "match",
+      "session": {
+        "allMessagesText": "anything"
+      },
+      "parsed": {
+        "mode": "tokens",
+        "tokens": [
+          {
+            "kind": "phrase",
+            "value": " ﻿ "
+          }
+        ],
+        "regex": null
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "absent_regex_never_matches",
+    "input": {
+      "op": "match",
+      "session": {
+        "allMessagesText": "anything"
+      },
+      "parsed": {
+        "mode": "regex",
+        "tokens": [],
+        "regex": null
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:(?<=br)ave",
+      "session": {
+        "allMessagesText": "brave"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.5
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:br(?=ave)",
+      "session": {
+        "allMessagesText": "brave"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.30000000000000004
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:(br)\\1",
+      "session": {
+        "allMessagesText": "BRbr"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.30000000000000004
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:(?<x>br)\\k<x>",
+      "session": {
+        "allMessagesText": "brBR"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.30000000000000004
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:a.b",
+      "session": {
+        "allMessagesText": "a\nb"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:foo$",
+      "session": {
+        "allMessagesText": "FOO"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:\\s",
+      "session": {
+        "allMessagesText": "﻿"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.1
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:^s  \\s $",
+      "session": {
+        "allMessagesText": "﻿"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:^s  \\s $",
+      "session": {
+        "allMessagesText": ""
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:\\bbrave\\b",
+      "session": {
+        "allMessagesText": "bravery"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:k",
+      "session": {
+        "allMessagesText": "K"
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:σ",
+      "session": {
+        "allMessagesText": "Σ"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.30000000000000004
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:(?:)",
+      "session": {
+        "allMessagesText": "anything"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "regex_uses_ecmascript_patterns",
+    "input": {
+      "op": "match",
+      "query": "re:[^x]+",
+      "session": {
+        "allMessagesText": "xxx"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "phrase_and_regex_scores_use_first_utf16_offset",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "id": "é😀",
+        "allMessagesText": "needle needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.4
+    }
+  },
+  {
+    "test": "phrase_and_regex_scores_use_first_utf16_offset",
+    "input": {
+      "op": "match",
+      "query": "re:needle",
+      "session": {
+        "id": "é😀",
+        "allMessagesText": "needle needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0.5
+    }
+  },
+  {
+    "test": "phrase_and_regex_scores_use_first_utf16_offset",
+    "input": {
+      "op": "match",
+      "query": "\"s\"",
+      "session": {
+        "id": "s",
+        "allMessagesText": "s"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "phrase_and_regex_scores_use_first_utf16_offset",
+    "input": {
+      "op": "match",
+      "query": "re:^s",
+      "session": {
+        "id": "s"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "relevance_uses_score_then_newest",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "aa",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "bb",
+          "allMessagesText": "brave",
+          "modified": 300
+        },
+        {
+          "id": "cc",
+          "allMessagesText": "brave",
+          "modified": 200
+        }
+      ]
+    },
+    "expected": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "test": "threaded_search_uses_relevance_order",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "threaded",
+      "sessions": [
+        {
+          "id": "aa",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "bb",
+          "allMessagesText": "brave",
+          "modified": 300
+        },
+        {
+          "id": "cc",
+          "allMessagesText": "brave",
+          "modified": 200
+        }
+      ]
+    },
+    "expected": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "test": "recent_results_retain_incoming_order",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "aa",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "bb",
+          "allMessagesText": "brave",
+          "modified": 300
+        },
+        {
+          "id": "cc",
+          "allMessagesText": "brave",
+          "modified": 200
+        }
+      ]
+    },
+    "expected": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "test": "equal_ranks_keep_order_and_duplicates",
+    "input": {
+      "op": "filter",
+      "query": "\"brave\"",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "zz",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "aa",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "zz",
+          "allMessagesText": "brave",
+          "modified": 100
+        }
+      ]
+    },
+    "expected": [
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "all"
+    },
+    "expected": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "recent",
+      "sessions": [],
+      "filter": "all"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "recent",
+      "sessions": [],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "threaded",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "all"
+    },
+    "expected": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "threaded",
+      "sessions": [],
+      "filter": "all"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "threaded",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "threaded",
+      "sessions": [],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "all"
+    },
+    "expected": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "relevance",
+      "sessions": [],
+      "filter": "all"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_query_keeps_order_in_every_mode",
+    "input": {
+      "op": "filter",
+      "query": " ﻿",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "empty_input_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "\"needle\"",
+      "sort": "relevance",
+      "sessions": [],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "omitted_name_filter_means_all",
+    "input": {
+      "op": "filter",
+      "query": "",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ]
+    },
+    "expected": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "test": "names_are_filtered_before_matching",
+    "input": {
+      "op": "filter",
+      "query": "re:blueberry",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "test": "invalid_regex_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "re:[",
+      "sort": "recent",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "invalid_regex_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "re:[",
+      "sort": "threaded",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "invalid_regex_has_no_results",
+    "input": {
+      "op": "filter",
+      "query": "re:[",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "named1",
+          "name": "My Project",
+          "modified": 1767398400000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "named2",
+          "name": "Another Named",
+          "modified": 1767312000000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other1",
+          "modified": 1767484800000,
+          "allMessagesText": "blueberry"
+        },
+        {
+          "id": "other2",
+          "modified": 1767225600000,
+          "allMessagesText": "blueberry"
+        }
+      ],
+      "filter": "named"
+    },
+    "expected": []
+  },
+  {
+    "test": "empty_quotes_are_not_an_empty_query",
+    "input": {
+      "op": "filter",
+      "query": "\"\"",
+      "sort": "relevance",
+      "sessions": [
+        {
+          "id": "aa",
+          "allMessagesText": "brave",
+          "modified": 100
+        },
+        {
+          "id": "bb",
+          "allMessagesText": "brave",
+          "modified": 300
+        },
+        {
+          "id": "cc",
+          "allMessagesText": "brave",
+          "modified": 200
+        }
+      ]
+    },
+    "expected": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "re:^.*  needle $",
+      "session": {
+        "id": null,
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "re:^.*  needle $",
+      "session": {
+        "id": 42,
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "re:^.*  needle $",
+      "session": {
+        "id": true,
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "re:^.*  needle $",
+      "session": {
+        "id": {},
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "re:^.*  needle $",
+      "session": {
+        "id": [
+          "x",
+          "y"
+        ],
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"null\"",
+      "session": {
+        "id": null
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"42\"",
+      "session": {
+        "id": 42
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"true\"",
+      "session": {
+        "id": true
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"[object Object]\"",
+      "session": {
+        "id": {}
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"x,y\"",
+      "session": {
+        "id": [
+          "x",
+          "y"
+        ]
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_do_not_invent_search_text",
+    "input": {
+      "op": "match",
+      "query": "\"undefined\"",
+      "session": {
+        "idMissing": true
+      }
+    },
+    "expected": {
+      "matches": false,
+      "score": 0
+    }
+  },
+  {
+    "test": "malformed_ids_keep_other_searchable_fields",
+    "input": {
+      "op": "match",
+      "query": "\"needle\"",
+      "session": {
+        "idMissing": true,
+        "allMessagesText": "needle"
+      }
+    },
+    "expected": {
+      "matches": true,
+      "score": 0
+    }
+  }
+]
