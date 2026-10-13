@@ -15,7 +15,8 @@ use super::profile::field;
 /// Session length used when the profile names none.
 const DEFAULT_SESSION_SECONDS: u32 = 3600;
 
-/// Assume the role `profile` names, authorized by `source`.
+/// Assume the role `profile` names, authorized by `source`, through the service in `region`
+/// (the shared configuration's region when none).
 ///
 /// # Errors
 /// Fails with an invalid configuration when `duration_seconds` is not a whole number, and
@@ -25,6 +26,7 @@ pub(super) async fn assume(
     role_arn: &str,
     source: Credentials,
     shared: &SdkConfig,
+    region: Option<&str>,
 ) -> provider::Result {
     let seconds = match field(profile, "duration_seconds") {
         None => DEFAULT_SESSION_SECONDS,
@@ -44,7 +46,7 @@ pub(super) async fn assume(
     if let Some(id) = field(profile, "external_id") {
         builder = builder.external_id(id);
     }
-    if let Some(region) = field(profile, "region") {
+    if let Some(region) = region {
         builder = builder.region(Region::new(region.to_owned()));
     }
     builder

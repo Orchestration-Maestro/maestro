@@ -55,15 +55,23 @@ one only after a source that did not apply:
    the container lookup fails; otherwise instance metadata, unless `AWS_EC2_METADATA_DISABLED`
    is nonempty and not `false`.
 
-A missing profile, incomplete static keys, absent environment keys for a role source, a missing
-or unsupported source profile or credential source, a source cycle, and a credential process that
-fails, prints unusable output or returns expired credentials all let the chain go on. A web
-identity, role-assumption or SSO source that was selected and fails ends it, as does a role that
+These let the chain go on when no other source of the profile decides first: a missing profile,
+incomplete static keys, absent environment keys for a role source, a missing or unsupported
+source profile or credential source, a source cycle, and a credential process that fails, prints
+unusable output or returns expired credentials. A web identity, role-assumption or SSO source that
+was selected and fails ends it, as does a role that
 needs a multi-factor code (`Profile <name> requires multi-factor authentication, but no MFA code
 callback was provided.`), an SSO profile with a missing field (`Missing required SSO field:
 <field>.`) or session (`Missing SSO session: <session>.`), and a container or instance source
 whose own error is not a missing-credentials one. Login-session profiles are not supported yet (issue #728).
-Retries, token caches and role-session names belong to the SDK.
+
+A named SSO session supplies only the start URL and region (a session without them leaves the
+field missing, whatever the profile says); the account and role come from the profile. A cached
+token read by start URL that has expired fails before the SSO service is contacted. Every role of
+a walk is assumed in the region of the first role profile when it sets one, so a later role
+profile's own `region` has no effect. Retries and token caches belong to the SDK, as do the
+session names of assumed roles, except that a web identity source without `role_session_name`
+gets a name generated here.
 
 The bearer token is the nonempty `bearer_token` option, otherwise nonempty `AWS_BEARER_TOKEN_BEDROCK`, and replaces
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs

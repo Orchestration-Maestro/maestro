@@ -2,8 +2,10 @@
 //! process once more, web identity from the environment, then container or instance metadata.
 //!
 //! The environment's own keys are not a step: selecting a profile replaces them. A profile may
-//! still name the environment as the source of a role. Only a source that did not apply (a
-//! missing-credentials error) lets the next one run; a selected source that fails ends the walk.
+//! still name the environment as the source of a role. A step that fails with a
+//! missing-credentials error lets the next one run and any other error ends the chain; the
+//! profile walk and the process step decide which of their failures are missing-credentials
+//! errors.
 
 mod profile;
 mod role;

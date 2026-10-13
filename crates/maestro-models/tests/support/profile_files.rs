@@ -13,8 +13,6 @@ use crate::profile_credentials::Input;
 const SESSION_CACHE: &str = "547ff52d6c8b5cc815ced9a661d370a81cedfca5";
 /// SHA-1 of the SSO start URL, the name of its token cache file.
 const START_URL_CACHE: &str = "75567da3b6824c56ac2533fa2ad4a97a99c10974";
-/// The cached access token of an expired SSO session, which the SSO service refuses.
-pub const EXPIRED_TOKEN: &str = "expired-sso-token";
 const ROLE_ARN: &str = "arn:aws:iam::123456789012:role";
 
 /// The credential process: counts each run, then answers as its first argument says.
@@ -110,7 +108,7 @@ impl Workdir {
             START_URL_CACHE
         };
         let (token, expires) = if input.sso.as_deref() == Some("expired") {
-            (EXPIRED_TOKEN, "2000-01-01T00:00:00Z")
+            ("expired-sso-token", "2000-01-01T00:00:00Z")
         } else {
             ("controlled-sso-token", "2099-01-01T00:00:00Z")
         };
@@ -149,7 +147,7 @@ impl Workdir {
             let _ = write!(config, "[profile base]\n{}", self.base_fields(base));
         }
         if input.sso.as_deref() == Some("session") {
-            config += "[sso-session controlled]\nsso_start_url = https://controlled.awsapps.com/start\nsso_region = us-east-1\n";
+            config += &Self::session_section(input);
         }
         match &input.omit_sso {
             Some(field) => config
@@ -158,6 +156,25 @@ impl Workdir {
                 .fold(String::new(), |text, line| text + line + "\n"),
             None => config,
         }
+    }
+
+    fn session_section(input: &Input) -> String {
+        let mut lines = vec![
+            "sso_start_url = https://controlled.awsapps.com/start",
+            "sso_region = us-east-1",
+        ];
+        if input.session_decoy.is_some() {
+            lines.extend(["sso_account_id = 999999999999", "sso_role_name = decoy"]);
+        }
+        let kept = lines.into_iter().filter(|line| {
+            input
+                .session_omit
+                .as_ref()
+                .is_none_or(|field| !line.starts_with(&format!("{field} =")))
+        });
+        kept.fold("[sso-session controlled]\n".to_owned(), |text, line| {
+            text + line + "\n"
+        })
     }
 
     fn selected_fields(&self, input: &Input) -> String {
@@ -245,9 +262,16 @@ impl Workdir {
             ),
             "sso" => "sso_account_id = 123456789012\nsso_role_name = selected\nsso_start_url = https://controlled.awsapps.com/start\nsso_region = us-east-1\n".to_owned(),
             "static_role" => format!("{keys}role_arn = {ROLE_ARN}/base\nsource_profile = absent\n"),
-            "role" => format!(
-                "role_arn = {ROLE_ARN}/base\nsource_profile = bottom\nrole_session_name = base-session\n[profile bottom]\n{keys}"
-            ),
+            "role" | "role_region" => {
+                let region = if base == "role_region" {
+                    "region = eu-west-1\n"
+                } else {
+                    ""
+                };
+                format!(
+                    "role_arn = {ROLE_ARN}/base\nsource_profile = bottom\nrole_session_name = base-session\n{region}[profile bottom]\n{keys}"
+                )
+            }
             _ => String::new(),
         }
     }
@@ -294,9 +318,6 @@ impl Workdir {
                 "AWS_CONTAINER_CREDENTIALS_FULL_URI",
                 format!("{endpoint}/container"),
             );
-        }
-        if input.env_profile.is_some() {
-            set("AWS_PROFILE", "selected".to_owned());
         }
         if let Some(web) = &input.env_web {
             set("AWS_WEB_IDENTITY_TOKEN_FILE", self.token_file(web.mode()));

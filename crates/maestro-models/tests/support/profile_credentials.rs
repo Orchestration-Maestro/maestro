@@ -14,7 +14,7 @@ use crate::bedrock;
 use crate::chat::block_on;
 use crate::child_process;
 use crate::profile_files::Workdir;
-use crate::profile_services::{Log, RoleRequest, Sent, serve};
+use crate::profile_services::{Log, RoleRequest, Sent, SsoRequest, serve};
 use crate::transport;
 
 const FIXTURE: &str = include_str!("../fixtures/cloud_profile_credentials.json");
@@ -66,7 +66,6 @@ pub struct Input {
     pub duration: Option<String>,
     pub env_keys: Option<On>,
     pub env_partial: Option<On>,
-    pub env_profile: Option<On>,
     pub env_web: Option<Toggle>,
     pub external_id: Option<String>,
     pub inline_sso: Option<On>,
@@ -80,6 +79,8 @@ pub struct Input {
     pub partial: Option<String>,
     pub process: Option<String>,
     pub role: Option<On>,
+    pub session_decoy: Option<On>,
+    pub session_omit: Option<String>,
     pub session_token: Option<On>,
     pub source: Option<String>,
     pub source_profile: Option<String>,
@@ -98,6 +99,7 @@ struct Expected {
     process_calls: usize,
     sequence: Vec<String>,
     roles: Vec<RoleRequest>,
+    sso: Option<Vec<SsoRequest>>,
     events: Vec<String>,
     error: Option<bool>,
     stop_reason: String,
@@ -121,8 +123,12 @@ fn cause(id: &str) -> Option<&'static str> {
         }
         "sso_missing" | "sso_missing_sso_role_name" => "Missing required SSO field: sso_role_name.",
         "sso_missing_sso_account_id" => "Missing required SSO field: sso_account_id.",
-        "sso_missing_sso_start_url" => "Missing required SSO field: sso_start_url.",
-        "sso_missing_sso_region" => "Missing required SSO field: sso_region.",
+        "sso_missing_sso_start_url" | "sso_session_without_start_url" => {
+            "Missing required SSO field: sso_start_url."
+        }
+        "sso_missing_sso_region" | "sso_session_without_region" => {
+            "Missing required SSO field: sso_region."
+        }
         "sso_session_missing" => "Missing SSO session: controlled.",
         _ => return None,
     })
@@ -162,11 +168,7 @@ async fn converse(row: &Row) -> TestResult {
             ..StreamOptions::default()
         },
         region: Some("us-east-1".to_owned()),
-        profile: row
-            .input
-            .env_profile
-            .is_none()
-            .then(|| "selected".to_owned()),
+        profile: Some("selected".to_owned()),
         ..BedrockOptions::default()
     };
     let stream = stream_bedrock(
@@ -226,6 +228,9 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
         "{id}: sequence"
     );
     assert_eq!(log.roles, expected.roles, "{id}: role requests");
+    if let Some(sso) = &expected.sso {
+        assert_eq!(&log.sso, sso, "{id}: sso requests");
+    }
     let sent = log.sent.as_ref();
     let want = (
         expected.authorization.as_ref(),

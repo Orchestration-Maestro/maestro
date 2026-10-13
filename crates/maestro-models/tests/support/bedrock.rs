@@ -159,3 +159,16 @@ pub fn gated(
             .chain(ended),
     )
 }
+
+/// The region and access key a `SigV4` Authorization header names.
+pub fn credential_scope(authorization: &str) -> Option<(&str, &str)> {
+    let credential = authorization
+        .split("Credential=")
+        .nth(1)?
+        .split(',')
+        .next()?;
+    let mut parts = credential.split('/');
+    let key = parts.next()?;
+    let region = parts.nth(1)?;
+    Some((key, region))
+}

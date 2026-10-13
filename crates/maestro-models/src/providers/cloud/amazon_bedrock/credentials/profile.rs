@@ -9,10 +9,11 @@ use aws_config::environment::EnvironmentVariableCredentialsProvider;
 use aws_config::imds::credentials::ImdsCredentialsProvider;
 use aws_config::profile::{Profile, ProfileFileCredentialsProvider, ProfileSet};
 use aws_config::provider_config::ProviderConfig;
-use aws_config::sso::SsoCredentialsProvider;
+use aws_config::sso::{SsoCredentialsProvider, SsoTokenProvider};
 use aws_config::web_identity_token::{StaticConfiguration, WebIdentityTokenCredentialsProvider};
 use aws_credential_types::Credentials;
 use aws_credential_types::provider::error::CredentialsError;
+use aws_credential_types::provider::token::ProvideToken;
 use aws_credential_types::provider::{self, ProvideCredentials};
 use aws_sdk_bedrockruntime::config::Region;
 
@@ -108,6 +109,9 @@ struct State<'a> {
     roles: Vec<(&'a Profile, &'a str)>,
     /// Source profiles already followed.
     visited: HashSet<&'a str>,
+    /// The region of the first profile that assumes or supplies a role; every role is assumed
+    /// through one service client built for it.
+    region: Option<&'a str>,
 }
 
 /// The outcome of one step of a walk.
@@ -134,7 +138,9 @@ impl<'a> Walk<'a> {
     ///
     /// # Errors
     /// A missing profile, incomplete keys, a missing or unsupported source and a source cycle
-    /// are missing-credentials errors; a selected source or role that fails keeps its own error.
+    /// are missing-credentials errors, and so is a failed credential process. The error of a
+    /// native source or role provider is otherwise returned as it is, except that SSO turns a
+    /// missing-credentials error into a final one.
     pub(super) async fn resolve(&self, root: &'a str) -> provider::Result {
         let mut state = State::default();
         let (mut current, mut supplies_parent) = (root, false);
@@ -144,8 +150,9 @@ impl<'a> Walk<'a> {
                 Step::Next(name, supplies) => (current, supplies_parent) = (name, supplies),
             }
         };
+        let region = state.region;
         for (profile, arn) in state.roles.into_iter().rev() {
-            credentials = role::assume(profile, arn, credentials, self.shared).await?;
+            credentials = role::assume(profile, arn, credentials, self.shared, region).await?;
         }
         Ok(credentials)
     }
@@ -166,6 +173,9 @@ impl<'a> Walk<'a> {
         let Some(profile) = data.filter(|p| supplies_parent || assumes_role(p)) else {
             return self.leaf(current, data).await.map(Step::Done);
         };
+        if state.visited.is_empty() {
+            state.region = field(profile, "region");
+        }
         let source = Self::source_of(profile, &state.visited)?;
         if let Some(arn) = field(profile, "role_arn") {
             if field(profile, "mfa_serial").is_some() {
@@ -291,7 +301,9 @@ impl<'a> Walk<'a> {
             .await
     }
 
-    /// SSO credentials; every failure once SSO is selected is final.
+    /// SSO credentials; every failure once SSO is selected is final. A named session supplies
+    /// the start URL and region and nothing else; a cached token that has expired fails before
+    /// the service is contacted.
     async fn sso(&self, profile: &Profile) -> provider::Result {
         let session_name = field(profile, "sso_session");
         let session = session_name
@@ -301,10 +313,11 @@ impl<'a> Walk<'a> {
                 })
             })
             .transpose()?;
-        let value = |key: &str| {
-            session
-                .and_then(|section| section.get(key).filter(|text| !text.is_empty()))
-                .or_else(|| field(profile, key))
+        let value = |key: &str| match session {
+            Some(section) if matches!(key, "sso_start_url" | "sso_region") => {
+                section.get(key).filter(|text| !text.is_empty())
+            }
+            _ => field(profile, key),
         };
         let need = |key: &str| {
             value(key).ok_or_else(|| {
@@ -313,15 +326,41 @@ impl<'a> Walk<'a> {
                 ))
             })
         };
+        let (account, role) = (need("sso_account_id")?, need("sso_role_name")?);
+        let (start_url, region) = (need("sso_start_url")?, need("sso_region")?);
+        if session_name.is_none() {
+            self.reject_expired_token(start_url, region).await?;
+        }
         let mut builder = SsoCredentialsProvider::builder()
             .configure(self.conf)
-            .account_id(need("sso_account_id")?)
-            .role_name(need("sso_role_name")?)
-            .start_url(need("sso_start_url")?)
-            .region(Region::new(need("sso_region")?.to_owned()));
+            .account_id(account)
+            .role_name(role)
+            .start_url(start_url)
+            .region(Region::new(region.to_owned()));
         if let Some(name) = session_name {
             builder = builder.session_name(name);
         }
         builder.build().provide_credentials().await.map_err(stop)
+    }
+
+    /// Fail when the cached token of a start URL is missing or expired. The native credentials
+    /// provider reads that token without checking its expiry, so the token provider, which
+    /// names the same cache file by its session name, is asked first.
+    async fn reject_expired_token(
+        &self,
+        start_url: &str,
+        region: &str,
+    ) -> Result<(), CredentialsError> {
+        SsoTokenProvider::builder()
+            .configure(self.shared)
+            .region(Region::new(region.to_owned()))
+            .session_name(start_url)
+            .start_url(start_url)
+            .build()
+            .await
+            .provide_token()
+            .await
+            .map(drop)
+            .map_err(CredentialsError::provider_error)
     }
 }

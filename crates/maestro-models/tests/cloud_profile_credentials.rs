@@ -257,3 +257,25 @@ fn unsupported_role_source_continues_to_container() -> TestResult {
 fn web_identity_precedes_process() -> TestResult {
     check_rows("web_identity_precedes_process")
 }
+
+#[test]
+fn dropped_routed_server_closes_its_listener() -> TestResult {
+    let routed = loopback::serve_routed(|_| unreachable!("no request is sent"))?;
+    let address = routed.url.trim_start_matches("http://").to_owned();
+    drop(routed);
+    assert!(std::net::TcpStream::connect(address).is_err());
+    Ok(())
+}
+
+#[test]
+fn routed_server_reports_a_failed_connection_after_joining() -> TestResult {
+    use std::io::{Read, Write};
+    let routed = loopback::serve_routed(|_| panic!("controlled handler failure"))?;
+    let address = routed.url.trim_start_matches("http://").to_owned();
+    let mut client = std::net::TcpStream::connect(address)?;
+    client.write_all(b"GET / HTTP/1.1\r\nhost: controlled\r\n\r\n")?;
+    client.read_to_end(&mut Vec::new())?;
+    let error = routed.finish().err().ok_or("finish hid the failure")?;
+    assert!(error.to_string().contains("connection thread panicked"));
+    Ok(())
+}

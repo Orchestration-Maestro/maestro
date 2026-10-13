@@ -134,19 +134,6 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
     Ok(())
 }
 
-/// The region and access key a `SigV4` Authorization header names.
-fn credential_scope(authorization: &str) -> Option<(&str, &str)> {
-    let credential = authorization
-        .split("Credential=")
-        .nth(1)?
-        .split(',')
-        .next()?;
-    let mut parts = credential.split('/');
-    let key = parts.next()?;
-    let region = parts.nth(1)?;
-    Some((key, region))
-}
-
 /// The options of a case: the controlled sender, a counting payload hook and the case's inputs.
 fn options_of(
     case: &Case,
@@ -201,7 +188,7 @@ async fn check(case: &Case) -> TestResult {
                 request.url
             );
             assert_eq!(
-                credential_scope(authorization),
+                bedrock::credential_scope(authorization),
                 Some((*key, *region)),
                 "{id}: scope"
             );
