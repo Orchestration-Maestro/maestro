@@ -35,6 +35,7 @@ pub use catalog::models::{
 pub use providers::chat::openai_completions::{
     OpenAICompletionsOptions, stream_openai_completions,
 };
+pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::GoogleOptions;
 pub use providers::content::google_shared::GoogleThinkingLevel;
 pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};

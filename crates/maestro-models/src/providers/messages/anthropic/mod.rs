@@ -10,7 +10,7 @@ mod wire;
 use std::borrow::Cow;
 use std::sync::{Arc, PoisonError, RwLock};
 
-use crate::options::resolve_api_key;
+use crate::options::{resolve_api_key, token_base};
 use crate::providers::assistant_output::{callback_failure, fail, initial_message};
 use crate::providers::http::{
     HttpResponse, RequestFailure, envelope_failure, send_with_status_error, spawn_detached,
@@ -70,7 +70,7 @@ pub enum AnthropicThinkingDisplay {
 }
 impl AnthropicThinkingDisplay {
     /// The protocol spelling.
-    fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             Self::Summarized => "summarized",
             Self::Omitted => "omitted",
@@ -200,26 +200,11 @@ pub fn stream_simple_anthropic(
     let thinking = match options.reasoning {
         None => ThinkingInput::Raw,
         Some(level) if request::supports_adaptive_thinking(&model.id) => {
-            let mapped = model
-                .thinking_level_map
-                .as_ref()
-                .and_then(|mapping| mapping.get(&level.into()))
-                .and_then(Option::as_ref);
-            let fallback = match level {
-                ThinkingLevel::Minimal | ThinkingLevel::Low => "low",
-                ThinkingLevel::Medium => "medium",
-                ThinkingLevel::High | ThinkingLevel::Xhigh => "high",
-            };
-            ThinkingInput::Effort(mapped.map_or_else(|| fallback.to_owned(), Clone::clone))
+            ThinkingInput::Effort(map_thinking_level_to_effort(&model, level))
         }
         Some(level) => {
-            let base = raw
-                .common
-                .max_tokens
-                .filter(|n| *n != 0.0 && !n.is_nan())
-                .unwrap_or(0.0);
             let adjusted = adjust_max_tokens_for_thinking(
-                base,
+                token_base(raw.common.max_tokens),
                 model.max_tokens,
                 level,
                 options.thinking_budgets.as_ref(),
@@ -229,6 +214,26 @@ pub fn stream_simple_anthropic(
         }
     };
     Ok(start(model, context, CallOptions { raw, thinking }))
+}
+
+/// The effort the model's level map names for `level`, otherwise the level's own effort.
+pub(crate) fn map_thinking_level_to_effort(model: &Model, level: ThinkingLevel) -> String {
+    let mapped = model
+        .thinking_level_map
+        .as_ref()
+        .and_then(|mapping| mapping.get(&level.into()))
+        .and_then(Option::as_ref);
+    mapped.map_or_else(
+        || {
+            match level {
+                ThinkingLevel::Minimal | ThinkingLevel::Low => "low",
+                ThinkingLevel::Medium => "medium",
+                ThinkingLevel::High | ThinkingLevel::Xhigh => "high",
+            }
+            .to_owned()
+        },
+        Clone::clone,
+    )
 }
 
 /// Start the producer shared by raw and simple options.

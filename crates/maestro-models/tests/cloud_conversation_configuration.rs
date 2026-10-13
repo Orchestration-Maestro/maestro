@@ -24,6 +24,8 @@ mod chat;
 )]
 #[path = "support/child_process.rs"]
 mod child_process;
+#[path = "support/json.rs"]
+mod json;
 #[allow(
     dead_code,
     reason = "Shared helpers serve multiple integration targets."
@@ -50,35 +52,17 @@ mod rows;
 mod transport;
 
 use cases::{Case, Expect, run_cases};
-use chat::{TestResult, block_on};
+use chat::TestResult;
 use routes::{Refusal, Route, run_refusals, run_routes};
 
 const EU: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
 
-/// Run every row the test owns, in a child with the row's environment when it has one.
+/// Run every row the test owns in the request fixture.
 fn check_rows(test: &str) -> TestResult {
-    let owned = rows::rows(test)?;
-    assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Some(case) = child_process::child_case() {
-        let row = owned
-            .iter()
-            .find(|row| row.id == case)
-            .ok_or("unknown row")?;
-        return block_on(true, rows::check(row));
-    }
-    for row in &owned {
-        if row.env.is_empty() {
-            block_on(true, rows::check(row))?;
-        } else {
-            let env: Vec<(&str, &str)> = row
-                .env
-                .iter()
-                .map(|(k, v)| (k.as_str(), v.as_str()))
-                .collect();
-            child_process::rerun(test, &row.id, &env)?;
-        }
-    }
-    Ok(())
+    rows::check_rows(
+        include_str!("fixtures/cloud_conversation_requests.json"),
+        test,
+    )
 }
 
 #[test]

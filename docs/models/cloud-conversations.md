@@ -2,16 +2,54 @@
 
 `maestro-models` streams Amazon Bedrock conversations directly through the AWS SDK for Rust.
 `stream_bedrock(model, context, options)` takes `BedrockOptions`: the common `StreamOptions`,
-`region`, `profile`, `request_metadata` (cost-allocation tags, sent as written) and
-`bearer_token`. It returns the call's `AssistantMessageEventStream` at once, and every failure
-the call detects ends that stream with an error update. The SDK owns credential lookup, request
-signing, retries and the binary event framing; this module owns configuration, the request
-input, hook ordering and the reduction of events into the shared message. This delivery sends
-user text and the system prompt and reduces text answers. Assistant history, tool results,
-images, tool declarations, cache markers and thinking settings are not converted yet, and
-thinking and tool-call events are not reduced yet; the call is not registered with the
-built-in dispatch, so only this function reaches it. Only `max_tokens`, `temperature`, `signal`,
-`fetch` and the two hooks of the common options are read.
+`region`, `profile`, `request_metadata` (cost-allocation tags, sent as written),
+`bearer_token`, `tool_choice`, `reasoning`, `thinking_budgets`, `interleaved_thinking` and
+`thinking_display`. The option types `BedrockOptions` and `BedrockThinkingDisplay` are also
+exported at the crate root. It returns the call's `AssistantMessageEventStream` at once, and
+failures the call detects end that stream with an error update. The SDK owns credential lookup,
+request signing, retries and binary event framing; this module owns configuration, request
+input, hook ordering and event reduction. The consumed common options are `max_tokens`,
+`temperature`, `cache_retention`, `signal`, `fetch` and the two hooks.
+
+## Conversation input
+
+History first passes through the [shared projection](../conversation-projection.md). User content keeps
+its text and block order. Blank assistant text and thinking are skipped; retained text is not
+trimmed. Claude thinking without a nonblank signature becomes plain text; other models send
+reasoning text without a signature. Consecutive tool results become one user turn, preserving
+result order and error or success status.
+
+Images remaining after [shared projection](../conversation-projection.md) accept `image/jpeg`,
+`image/jpg`, `image/png`, `image/gif` and `image/webp`. The payload hook sees decoded byte arrays;
+the sent body carries padded standard base64. An unsupported MIME type or invalid base64 in a
+remaining image ends the stream before the payload hook. Tool declarations keep their
+descriptions and schema values. With nonempty tools, `tool_choice` selects automatic, required
+or named tool use; `ToolChoice::None`, absent tools or empty tools omit the tool configuration.
+
+Cache retention uses the explicit common option, otherwise `MAESTRO_CACHE_RETENTION=long`
+selects long retention and other values select short. None disables cache points. Supported
+Claude candidates receive a cache point after a nonempty system prompt and on the final
+converted turn only when it is a user turn. Long retention adds `ttl: "1h"`.
+`AWS_BEDROCK_FORCE_CACHE=1` enables cache points only when neither the identifier nor the name,
+including their separator-normalized forms, contains `claude`.
+
+Thinking settings apply only to reasoning Claude models. Opus 4.6/4.7 and Sonnet 4.6 candidates
+use adaptive thinking with mapped effort; Opus 4.7 preserves native extra-high effort before
+consulting the descriptor map. Other Claude candidates use fixed budgets from
+[`ThinkingBudgets`](../model-options.md), with interleaved thinking enabled unless explicitly
+false. Display defaults to summarized; a government region selected from the option or
+region environment variables, or a government model identifier, omits the display. The
+endpoint and profile region do not determine that display decision.
+
+`stream_simple_bedrock`, in `maestro_models::providers::cloud::amazon_bedrock`, accepts
+`SimpleStreamOptions`, resolves [base options and token budgets](../model-options.md), adjusts
+fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
+Adaptive Claude and other models do not receive that adjustment.
+
+Text answers are reduced today. Thinking and tool-call event reduction and built-in dispatch
+registration remain in [#666](https://github.com/Orchestration-Maestro/maestro/issues/666).
+Hook-only service variants beyond the delivered text, image, reasoning, tool and cache shapes
+remain in [#740](https://github.com/Orchestration-Maestro/maestro/issues/740).
 
 On native targets the call must run inside a Tokio runtime with its time and I/O drivers, and
 the request work is owned by the runtime, so dropping the returned stream does not cancel it.
@@ -112,11 +150,13 @@ a response that is not accepted.
 
 `on_payload` receives the request as the service input records spell it: `modelId`, `messages`,
 `system` when the prompt is nonempty, `inferenceConfig` (present, possibly empty) and
-`requestMetadata` when given. The value it returns replaces the request as a whole. Before
+`requestMetadata` when given, plus tool configuration and model-specific thinking fields when
+selected. The value it returns replaces the request as a whole. Before
 anything is sent, the model identifier is read for the route (one that is missing or not text
 fails at the route, whatever else is malformed), then the rest is selected into the service's
 input records: members the records do not declare are dropped, `null` members and list or map
-entries are left out, `additionalModelRequestFields` keeps any JSON, and numbers are written
+entries are left out, free-form tool input, tool schema and `additionalModelRequestFields` keep nested JSON nulls,
+and numbers are written
 as doubles. The hook runs before the SDK looks up an endpoint, region or credentials, so its
 failure ends the stream with its message as it is, before any of those can fail.
 `on_response` receives the status and, under `x-amzn-requestid`, the first present of the
