@@ -84,7 +84,7 @@ default `type`; an edited `type` or `store` from the payload hook wins, and the
 hook runs once during preparation. Member order and number spelling follow the
 shared compact JSON writer. Empty text messages are ignored, and event selection
 is shared with the SSE path, but socket text is neither trimmed nor filtered for
-`[DONE]`. Binary messages are decoded by the shared HTTP text decoder.
+`[DONE]`. Binary messages are decoded by the [shared text decoder](../text.md).
 
 `start` is published immediately before the first selected event. A terminal
 event completes the operation without waiting for the peer to close, and later

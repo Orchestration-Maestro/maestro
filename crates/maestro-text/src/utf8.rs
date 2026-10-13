@@ -1,4 +1,16 @@
-//! Incremental raw UTF-8 decoding with caller-owned framing and BOM policy.
+//! UTF-8 decoding with explicit whole-buffer and incremental BOM policies.
+
+use std::borrow::Cow;
+
+/// The bytes of a byte-order mark.
+const BYTE_ORDER_MARK: [u8; 3] = [0xEF, 0xBB, 0xBF];
+
+/// Drop one initial byte-order mark, then decode bytes with Rust's lossy UTF-8 decoder.
+#[must_use]
+pub fn decode_utf8(bytes: &[u8]) -> Cow<'_, str> {
+    String::from_utf8_lossy(bytes.strip_prefix(&BYTE_ORDER_MARK).unwrap_or(bytes))
+}
+
 
 /// Decodes complete scalars while retaining an incomplete trailing scalar.
 #[derive(Debug, Default)]

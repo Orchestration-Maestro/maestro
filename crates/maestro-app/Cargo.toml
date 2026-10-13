@@ -8,7 +8,12 @@ repository.workspace = true
 [dependencies]
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
+maestro-agent = { path = "../maestro-agent" }
+serde.workspace = true
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
+rand = "=0.10.3"
 ryu-js.workspace = true
+futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }
 maestro-tools = { path = "../maestro-tools" }
 maestro-session = { path = "../maestro-session" }
@@ -28,6 +33,9 @@ tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time
 [target.'cfg(unix)'.dev-dependencies]
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
 tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "test-util"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync"] }
 
 [dev-dependencies]
 serde.workspace = true

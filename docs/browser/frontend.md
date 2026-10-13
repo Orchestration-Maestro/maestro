@@ -1,7 +1,7 @@
 # Browser utility library
 
 `maestro-web` provides caller-owned localization, numeric display text and SVG
-icons. It is a library, not an application entry point.
+icons, plus re-exports of application-owned attachment records and conversion. It is a library, not an application entry point.
 
 ## Localization
 
@@ -54,3 +54,11 @@ Shared CI compiles the library for WebAssembly through its wasm crate registrati
 Controlled native tests prove utility results and host decision ordering, not
 browser interaction.
 Application launch and browser interaction remain separate delivery work.
+
+## Attachments and browser messages
+
+The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
+`ArtifactMessage`, `convert_attachments`, `default_convert_to_llm`,
+`is_user_message_with_attachments` and `is_artifact_message`. Input enums and
+supporting records remain in the public application modules. See
+[application attachment policy](../application/browser-attachments.md).

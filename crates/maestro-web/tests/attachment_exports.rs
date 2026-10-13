@@ -1,0 +1,60 @@
+//! Browser root reaches application-owned attachment policy.
+#![cfg(test)]
+use maestro_app::browser::components::messages::{ArtifactAction, CustomAgentMessages};
+use maestro_app::browser::utils::attachment_utils::{AttachmentSource, AttachmentType};
+use maestro_web::{
+    ArtifactMessage, Attachment, UserMessageWithAttachments, convert_attachments,
+    default_convert_to_llm, is_artifact_message, is_user_message_with_attachments, load_attachment,
+};
+use std::sync::{Arc, RwLock};
+
+#[test]
+fn web_attachment_exports_use_application_records() {
+    let attachment: Attachment = maestro_app::browser::utils::attachment_utils::Attachment {
+        id: "id".into(),
+        r#type: AttachmentType::Image,
+        file_name: "name".into(),
+        mime_type: "image/png".into(),
+        size: 0,
+        content: String::new(),
+        extracted_text: None,
+        preview: Some(String::new()),
+    };
+    let user = UserMessageWithAttachments {
+        content: maestro_app::UserContent::Text("hello".into()),
+        timestamp: 1.0,
+        attachments: Some(vec![attachment]),
+    };
+    let artifact = ArtifactMessage {
+        action: ArtifactAction::Create,
+        filename: "made.txt".into(),
+        content: None,
+        title: None,
+        timestamp: String::new(),
+    };
+    let history: Vec<maestro_app::AgentMessage<CustomAgentMessages>> = vec![
+        maestro_app::AgentMessage::Custom(Arc::new(RwLock::new(
+            CustomAgentMessages::UserWithAttachments(user),
+        ))),
+        maestro_app::AgentMessage::Custom(Arc::new(RwLock::new(CustomAgentMessages::Artifact(
+            artifact,
+        )))),
+    ];
+    assert!(is_user_message_with_attachments(&history[0]));
+    assert!(is_artifact_message(&history[1]));
+    assert_eq!(default_convert_to_llm(&history).len(), 1);
+    assert!(convert_attachments(&[]).is_empty());
+    let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+    let mut future = std::pin::pin!(load_attachment(
+        AttachmentSource::Buffer(b"hi"),
+        Some("note.txt"),
+        &fetch
+    ));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let std::task::Poll::Ready(Ok(loaded)) =
+        std::future::Future::poll(future.as_mut(), &mut context)
+    else {
+        panic!("local load did not complete");
+    };
+    assert_eq!(loaded.extracted_text.as_deref(), Some("hi"));
+}
