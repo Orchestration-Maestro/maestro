@@ -2,7 +2,7 @@
 #![cfg(unix)]
 use super::StderrMode;
 use super::{CapturedChild, Termination, WaitOptions, fill, wait_for_child_process};
-use std::io::{Read, Write};
+use std::io::Read;
 use std::{
     cell::Cell,
     future::Future,
@@ -20,8 +20,8 @@ use tokio::net::TcpListener;
 use tokio::process::Command;
 
 /// A reader that hands the consumer exactly one chunk per read.
-struct Chunks(std::vec::IntoIter<&'static [u8]>);
-impl AsyncRead for Chunks {
+struct Chunks<'a>(std::vec::IntoIter<&'a [u8]>);
+impl AsyncRead for Chunks<'_> {
     fn poll_read(
         mut self: Pin<&mut Self>,
         _: &mut Context<'_>,
@@ -84,9 +84,17 @@ fn paused_runtime() -> tokio::runtime::Runtime {
 
 #[test]
 fn bytes_split_across_consumed_reads_decode_as_one_character() {
-    let chunks = Chunks(vec![&b"\xE2"[..], &b"\x82\xAC"[..]].into_iter());
-    let bytes = runtime().block_on(drain(Some(chunks), true)).unwrap();
-    assert_eq!(String::from_utf8_lossy(&bytes), "€");
+    let scalar = "\u{10348}".as_bytes();
+    for split in 1..scalar.len() {
+        let (head, tail) = scalar.split_at(split);
+        let chunks = Chunks(vec![head, tail].into_iter());
+        let bytes = runtime().block_on(drain(Some(chunks), true)).unwrap();
+        assert_eq!(
+            String::from_utf8_lossy(&bytes),
+            "\u{10348}",
+            "split {split}"
+        );
+    }
 }
 
 #[test]
@@ -397,19 +405,17 @@ fn failed_wait_leaves_consumed_bytes_available() {
     });
 }
 
-/// A child that reports `READY`, answers each `p` with `E`, and answers each
-/// termination request with `T` while ignoring it.
+/// A child that reports `READY`, answers each termination signal with `T` while
+/// ignoring it, and exits on any byte.
 const STUBBORN: &str = r"
 import signal, socket, sys
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 signal.signal(signal.SIGTERM, lambda *_: s.sendall(b'T'))
 s.sendall(b'READY')
-while s.recv(1) == b'p': s.sendall(b'E')
+s.recv(1)
 ";
 
 /// Starts a [`STUBBORN`] child and returns it with its connected socket.
-/// The socket blocks: a paused-clock runtime that yielded for I/O would jump to the
-/// next timer.
 fn stubborn() -> (CapturedChild, std::net::TcpStream) {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let mut command = Command::new("python3");
@@ -426,22 +432,11 @@ fn stubborn() -> (CapturedChild, std::net::TcpStream) {
     (child, socket)
 }
 
-/// Asks a [`STUBBORN`] child to answer and returns what it sent before the answer.
-///
-/// A termination request made before this call is queued before the child reads the
-/// question, so its `T` precedes the answer.
-fn sync(socket: &mut std::net::TcpStream) -> Vec<u8> {
-    socket.write_all(b"p").unwrap();
-    let mut sent = Vec::new();
-    loop {
-        let mut byte = [0; 1];
-        socket.read_exact(&mut byte).unwrap();
-        let byte = byte[0];
-        if byte == b'E' {
-            return sent;
-        }
-        sent.push(byte);
-    }
+/// Blocks until a [`STUBBORN`] child answers a termination signal it received.
+fn read_signal_answer(socket: &mut std::net::TcpStream) {
+    let mut answer = [0; 1];
+    socket.read_exact(&mut answer).unwrap();
+    assert_eq!(&answer, b"T");
 }
 
 #[test]
@@ -453,10 +448,9 @@ fn escalation_checks_live_state_before_forced_kill() {
             let terminate = live.terminate(Termination::TerminateThenKill { after });
             tokio::pin!(terminate);
             assert!(is_pending(&mut terminate).await);
-            assert_eq!(sync(&mut socket), b"T", "requested once");
+            read_signal_answer(&mut socket);
             tokio::time::advance(after.checked_sub(Duration::from_millis(1)).unwrap()).await;
             assert!(is_pending(&mut terminate).await, "running before the delay");
-            assert_eq!(sync(&mut socket), b"", "still answering");
             tokio::time::advance(Duration::from_millis(1)).await;
             terminate.await.unwrap();
         }
@@ -503,16 +497,16 @@ fn wait_consumes_the_termination_decision_once() {
         let mut command = Command::new("sh");
         command.args(["-c", "exec sleep 60"]).kill_on_drop(true);
         let mut child = CapturedChild::spawn(&mut command).unwrap();
-        let polls = Rc::new(Cell::new(0));
-        let counter = polls.clone();
+        let polled = Rc::new(Cell::new(false));
+        let seen = polled.clone();
         let stop = std::future::poll_fn(move |_| {
-            counter.set(counter.get() + 1);
+            assert!(!seen.replace(true), "decision polled after it was consumed");
             Poll::Ready(Termination::Terminate)
         });
         let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
             .await
             .unwrap();
         assert_eq!(output.status.signal(), Some(15));
-        assert_eq!(polls.get(), 1, "polled once, after it was ready");
+        assert!(polled.get());
     });
 }

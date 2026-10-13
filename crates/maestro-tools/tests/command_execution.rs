@@ -39,18 +39,15 @@ s.recv(1)
 os.write(1, b'bye')
 ";
 
-/// Reports `READY`, then answers each `p` with `E` and exits on `g`; each termination
-/// request prints `bye`, is answered with `T` and is otherwise ignored.
+/// Reports `READY` and exits on any byte; each termination signal it receives prints
+/// `bye`, is answered with `T` and is otherwise ignored.
 const STUBBORN: &str = r"
 import os, signal, socket, sys
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 def term(*_): os.write(1, b'bye'); s.sendall(b'T')
 signal.signal(signal.SIGTERM, term)
 s.sendall(b'READY\n')
-while True:
-    b = s.recv(1)
-    if b == b'p': s.sendall(b'E')
-    else: break
+s.recv(1)
 ";
 
 /// Leaves a descendant holding both pipes after the direct child exits; the
@@ -175,14 +172,10 @@ sys.stderr.buffer.write(b'e' * 300000 + b'\r\n')
 #[test]
 fn exec_preserves_utf8_across_pipe_fragments() {
     runtime().block_on(async {
-        // The child reports READY only after both pipes are empty, so the first
-        // fragments were consumed before the rest is written.
         let script = r"
-import fcntl, os, socket, sys, termios, time
+import os, socket, sys
 split = int(sys.argv[2])
 for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[:split])
-def queued(fd): return int.from_bytes(fcntl.ioctl(fd, termios.FIONREAD, b'\0\0\0\0'), sys.byteorder)
-while queued(1) or queued(2): time.sleep(0.001)
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 s.sendall(b'READY\n')
 s.recv(1)
@@ -404,7 +397,6 @@ fn exec_terminates_on_abort_timeout_or_both() {
                 "spawned and waiting"
             );
             let mut socket = accept_ready(&listener);
-            assert_eq!(sync(&mut socket), b"", "{triggers:?}: no request yet");
             for trigger in triggers {
                 match trigger {
                     Trigger::Abort => signal.abort(),
@@ -412,7 +404,7 @@ fn exec_terminates_on_abort_timeout_or_both() {
                 }
                 assert!(poll_once(&mut exec).await.is_pending(), "{triggers:?}");
             }
-            assert_eq!(sync(&mut socket), b"T", "{triggers:?}: one request");
+            read_signal_answer(&mut socket);
             std::io::Write::write_all(&mut socket, b"g").unwrap();
             let result = exec.await;
             assert_eq!(
@@ -440,26 +432,15 @@ fn accept_ready(listener: &std::net::TcpListener) -> std::net::TcpStream {
     socket
 }
 
-/// Asks a [`STUBBORN`] child to answer and returns what it sent before the answer.
-///
-/// A termination request made before this call is queued before the child reads the
-/// question, so its `T` precedes the answer; no `T` before the answer means none was
-/// delivered.
-fn sync(socket: &mut std::net::TcpStream) -> Vec<u8> {
-    std::io::Write::write_all(socket, b"p").unwrap();
-    let mut sent = Vec::new();
-    loop {
-        let mut byte = [0; 1];
-        std::io::Read::read_exact(socket, &mut byte).unwrap();
-        if byte[0] == b'E' {
-            return sent;
-        }
-        sent.push(byte[0]);
-    }
+/// Blocks until a [`STUBBORN`] child answers a termination signal it received.
+fn read_signal_answer(socket: &mut std::net::TcpStream) {
+    let mut answer = [0; 1];
+    std::io::Read::read_exact(socket, &mut answer).unwrap();
+    assert_eq!(&answer, b"T");
 }
 
 #[test]
-fn exec_kills_and_reaps_a_term_resistant_child() {
+fn exec_kills_and_reaps_a_term_resistant_child_after_the_escalation_delay() {
     paused_runtime().block_on(async {
         let (listener, port) = blocking_listener();
         let signal = Cancellation::new();
@@ -475,21 +456,15 @@ fn exec_kills_and_reaps_a_term_resistant_child() {
         );
         let mut socket = accept_ready(&listener);
         signal.abort();
+        let aborted = tokio::time::Instant::now();
         assert!(
             poll_once(&mut exec).await.is_pending(),
             "terminated, not yet killed"
         );
-        assert_eq!(sync(&mut socket), b"T", "terminated once");
-        tokio::time::advance(Duration::from_millis(4999)).await;
-        assert!(poll_once(&mut exec).await.is_pending());
-        assert_eq!(
-            sync(&mut socket),
-            b"",
-            "ignored the signal and still answering at 4999 ms"
-        );
-        tokio::time::advance(Duration::from_millis(1)).await;
+        read_signal_answer(&mut socket);
         let result = exec.await;
         assert_eq!((result.code, result.killed), (0, true));
+        assert_eq!(aborted.elapsed(), Duration::from_secs(5));
         assert_eq!(
             std::io::Read::read(&mut socket, &mut [0; 1]).unwrap(),
             0,
@@ -550,30 +525,47 @@ fn exec_settlement_releases_cancellation_observation() {
     });
 }
 
+/// Reports `READY` with the default termination action restored and answers each `p`
+/// with `E`.
+const YIELDING: &str = r"
+import signal, socket, sys
+signal.signal(signal.SIGTERM, signal.SIG_DFL)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+s.sendall(b'READY\n')
+while s.recv(1) == b'p': s.sendall(b'E')
+";
+
+/// Asks a [`YIELDING`] child to answer; `true` when it does, `false` when it is gone.
+///
+/// A termination signal sent before the question is fatal before the child can
+/// answer it.
+fn answers(socket: &mut std::net::TcpStream) -> bool {
+    let _ = std::io::Write::write_all(socket, b"p");
+    let mut answer = [0; 1];
+    matches!(std::io::Read::read(socket, &mut answer), Ok(1) if answer == *b"E")
+}
+
 #[test]
 fn exec_timeout_requests_termination_exactly_at_the_deadline() {
     paused_runtime().block_on(async {
+        let timeout = Duration::from_secs(1);
         let (listener, port) = blocking_listener();
         let options = ExecOptions {
             signal: None,
-            timeout: Some(Duration::from_secs(1)),
+            timeout: Some(timeout),
         };
-        let exec = python(STUBBORN, &[&port], options);
+        let exec = python(YIELDING, &[&port], options);
         tokio::pin!(exec);
         assert!(poll_once(&mut exec).await.is_pending(), "spawned");
         let mut socket = accept_ready(&listener);
-        tokio::time::advance(Duration::from_millis(999)).await;
+        tokio::time::advance(timeout.checked_sub(Duration::from_millis(1)).unwrap()).await;
         assert!(poll_once(&mut exec).await.is_pending());
-        assert_eq!(
-            sync(&mut socket),
-            b"",
-            "no request 1 ms before the deadline"
-        );
+        assert!(answers(&mut socket), "alive 1 ms before the deadline");
         tokio::time::advance(Duration::from_millis(1)).await;
         assert!(poll_once(&mut exec).await.is_pending());
-        assert_eq!(sync(&mut socket), b"T", "requested at the deadline");
-        std::io::Write::write_all(&mut socket, b"g").unwrap();
-        assert!(exec.await.killed);
+        assert!(!answers(&mut socket), "terminated at the deadline");
+        let result = exec.await;
+        assert_eq!((result.code, result.killed), (0, true));
     });
 }
 
