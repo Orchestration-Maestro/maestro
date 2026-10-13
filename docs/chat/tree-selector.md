@@ -6,7 +6,8 @@ Its selected-node getter returns the original node; an empty view returns `None`
 
 The list orders active subtrees first at each branch, keeping supplied order
 within the active and inactive groups. Repeated entry identities remain separate
-navigation positions. Identity lookup chooses the last occurrence.
+navigation positions. Selection chooses the last visible occurrence of an identity.
+Hidden-parent lookup uses the last occurrence in the full navigation order.
 
 An omitted filter starts in `Default`. The five modes are:
 
@@ -40,8 +41,9 @@ with seven tree-filter actions.
 Up/down wrap; page actions and left/right aliases clamp by the supplied visible
 line count. Confirm calls `on_select` with the selected entry identity when both
 selection and callback exist. Ordinary cancel calls `on_cancel` when supplied.
-An empty view cannot confirm a node. Direct filter shortcuts toggle the requested
-mode back to default; the default shortcut always selects default. Forward and
+An empty view cannot confirm a node. Direct filter shortcuts select the requested
+mode when it differs from the current mode, or return to default when it is already
+selected; the default shortcut always selects default. Forward and
 backward cycles follow `Default`, `NoTools`, `UserOnly`, `LabeledOnly`, `All`.
 
 Rendering and visual metadata are tracked in [#764](https://github.com/Orchestration-Maestro/maestro/issues/764).

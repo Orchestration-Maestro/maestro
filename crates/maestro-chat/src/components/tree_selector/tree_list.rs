@@ -72,7 +72,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
         self.visible.get(self.selected).copied()
     }
 
-    /// Selects the last matching occurrence, walking stored parent identities.
+    /// Selects the last visible match, walking parents from the last full-tree match.
     fn nearest_visible<'target>(&'target self, mut target: Option<&'target str>) -> usize {
         let indices: HashMap<_, _> = self
             .visible

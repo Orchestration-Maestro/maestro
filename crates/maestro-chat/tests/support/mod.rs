@@ -325,6 +325,8 @@ fn replay(case: &Case) {
     if case.name.starts_with("opaque_entry_fields") {
         let entry = list.get_selected_node().unwrap().entry;
         assert_eq!(entry["extension"]["nested"][0]["untouched"], true);
+        assert_eq!(entry["extension"]["ordered"]["z"], 1);
+        assert_eq!(entry["extension"]["ordered"]["a"], 2);
         assert_eq!(
             entry["extension"]["ordered"]
                 .as_object()
