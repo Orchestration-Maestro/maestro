@@ -127,6 +127,8 @@ pub struct Turn {
     pub updates: usize,
     /// Tool arguments retained by the assistant message after execution.
     pub arguments: Vec<Value>,
+    /// Retained tool arguments replayed into the next model request.
+    pub request_arguments: Vec<Value>,
 }
 
 /// Run one turn of tool calls, given as `(id, tool, arguments)`, through the raw loop.
@@ -150,12 +152,17 @@ pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
         Box::pin(std::future::ready(Ok(())))
     });
     let requested = assistant("call", calls);
+    let replay = Arc::new(Mutex::new(Vec::new()));
+    let options = replay_responses(
+        vec![Arc::clone(&requested), assistant("done", &[])],
+        Arc::clone(&replay),
+    );
     let returned = crate::read_support::run(run_agent_loop(
         vec![user("go")],
         context,
         &config(),
         emit,
-        responses(vec![Arc::clone(&requested), assistant("done", &[])]),
+        options,
     ))
     .unwrap();
     let results = returned
@@ -168,17 +175,42 @@ pub fn run_turn(tools: Vec<AgentTool>, calls: &[(&str, &str, Value)]) -> Turn {
         })
         .collect();
     Turn {
+        request_arguments: replay.lock().unwrap().clone(),
         results,
         updates: updates.load(Ordering::SeqCst),
-        arguments: requested
-            .read()
-            .unwrap()
-            .content
+        arguments: call_arguments(&requested.read().unwrap().content),
+    }
+}
+
+/// Tool argument values in content order.
+fn call_arguments(content: &[AssistantContent]) -> Vec<Value> {
+    content
+        .iter()
+        .filter_map(|block| match block {
+            AssistantContent::ToolCall(call) => Some(Value::Object(call.arguments.clone())),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Capture assistant call arguments delivered to each controlled model request.
+fn replay_responses(
+    messages: Vec<SharedAssistantMessage>,
+    captured: Arc<Mutex<Vec<Value>>>,
+) -> AgentLoopOptions {
+    let mut options = responses(messages);
+    let stream = options.stream_fn.take().unwrap();
+    options.stream_fn = Some(Arc::new(move |model, context, options, objects| {
+        let arguments = context
+            .messages
             .iter()
-            .filter_map(|block| match block {
-                AssistantContent::ToolCall(call) => Some(Value::Object(call.arguments.clone())),
+            .filter_map(|message| match message {
+                Message::Assistant(message) => Some(call_arguments(&message.content)),
                 _ => None,
             })
-            .collect(),
-    }
+            .flatten();
+        captured.lock().unwrap().extend(arguments);
+        stream(model, context, options, objects)
+    }));
+    options
 }

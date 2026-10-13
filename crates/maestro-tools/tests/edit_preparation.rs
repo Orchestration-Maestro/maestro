@@ -11,9 +11,9 @@ use maestro_tools::{EditToolOptions, create_edit_tool_definition};
 #[test]
 fn edit_preparation_preserves_nonobjects() {
     let tool = create_edit_tool_definition::<()>("/work".into(), EditToolOptions::default());
-    for row in rows("edit_preparation_preserves_nonobjects") {
+    for mut row in rows("edit_preparation_preserves_nonobjects") {
         assert_eq!(
-            tool.prepare_arguments.as_ref().unwrap()(row.input).unwrap(),
+            tool.prepare_arguments.as_ref().unwrap()(&mut row.input).unwrap(),
             row.expected
         );
     }
@@ -22,8 +22,8 @@ fn edit_preparation_preserves_nonobjects() {
 /// Compare preparation including surviving member order.
 fn preparation(test: &str) {
     let tool = create_edit_tool_definition::<()>("/work".into(), EditToolOptions::default());
-    for row in rows(test) {
-        let observed = tool.prepare_arguments.as_ref().unwrap()(row.input).unwrap();
+    for mut row in rows(test) {
+        let observed = tool.prepare_arguments.as_ref().unwrap()(&mut row.input).unwrap();
         assert_eq!(observed, row.expected);
         if let (Some(observed), Some(expected)) = (observed.as_object(), row.expected.as_object()) {
             assert_eq!(
@@ -126,9 +126,9 @@ fn edit_arguments_use_preparation_before_shared_validation() {
         args: Option<Value>,
     }
     let tool = create_edit_tool_definition::<()>("/work".into(), EditToolOptions::default());
-    for row in rows("edit_arguments_use_preparation_before_shared_validation") {
+    for mut row in rows("edit_arguments_use_preparation_before_shared_validation") {
         let expected: Expected = serde_json::from_value(row.expected).unwrap();
-        let args = tool.prepare_arguments.as_ref().unwrap()(row.input).unwrap();
+        let args = tool.prepare_arguments.as_ref().unwrap()(&mut row.input).unwrap();
         match args {
             Value::Object(arguments) => {
                 let call = ToolCall {
@@ -184,15 +184,26 @@ fn prepared_edit_runs_through_agent_loop() {
             "array",
             json!({"path":"file","edits":"[{\"oldText\":\"hello\",\"newText\":\"world\"}]"}),
         ),
+        (
+            "parse-fold",
+            json!({"path":"file","edits":"[]","oldText":"hello","newText":"world"}),
+        ),
     ] {
         let dir = TempDir::new();
         let path = dir.file("file", b"hello");
-        let retained = args.clone();
+        let mut retained = args.clone();
+        if id == "array" {
+            retained["edits"] = json!([{"oldText":"hello","newText":"world"}]);
+        }
+        if id == "parse-fold" {
+            retained["edits"] = json!([]);
+        }
         let turn = loop_support::run_turn(
             vec![create_edit_tool(dir.text(), EditToolOptions::default())],
             &[(id, "edit", args)],
         );
-        assert_eq!(turn.arguments, vec![retained]);
+        assert_eq!(turn.arguments, vec![retained.clone()]);
+        assert_eq!(turn.request_arguments, vec![retained]);
         assert_eq!(std::fs::read(path).unwrap(), b"world");
         assert_eq!(turn.updates, 0);
         assert_eq!(turn.results.len(), 1);
@@ -207,6 +218,13 @@ fn prepared_edit_runs_through_agent_loop() {
         );
         assert_eq!(turn.results[0]["isError"], false);
     }
+}
+
+#[test]
+fn parsed_edit_arguments_survive_validation_failure() {
+    use maestro_tools::create_edit_tool;
+    use read_support::TempDir;
+    use serde_json::json;
     let dir = TempDir::new();
     let path = dir.file("file", b"hello");
     let turn = loop_support::run_turn(
@@ -214,9 +232,12 @@ fn prepared_edit_runs_through_agent_loop() {
         &[(
             "bad",
             "edit",
-            json!({"path":"file","edits":[{"oldText":"hello"}]}),
+            json!({"path":"file","edits":"[{\"oldText\":\"hello\"}]"}),
         )],
     );
+    let retained = json!({"path":"file","edits":[{"oldText":"hello"}]});
+    assert_eq!(turn.arguments, vec![retained.clone()]);
+    assert_eq!(turn.request_arguments, vec![retained]);
     assert_eq!(turn.results[0]["isError"], true);
     assert_eq!(std::fs::read(path).unwrap(), b"hello");
     assert_eq!(turn.updates, 0);

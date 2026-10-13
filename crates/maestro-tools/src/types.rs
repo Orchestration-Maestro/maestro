@@ -138,7 +138,7 @@ pub struct ToolDefinition<C = (), P = Value, D = Value, S = Value> {
     pub prompt_guidelines: Option<Vec<String>>,
     /// Frame selection for the renderers.
     pub render_shell: Option<ToolRenderShell>,
-    /// Argument preparation run before schema validation.
+    /// Argument preparation; see [`PrepareArguments`] for the mutable input contract.
     pub prepare_arguments: Option<PrepareArguments>,
     /// Scheduling preference.
     pub execution_mode: Option<ToolExecutionMode>,

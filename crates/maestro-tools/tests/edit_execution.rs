@@ -105,16 +105,30 @@ use write_support::{Mode, failure, poll_once, ready};
 
 #[test]
 fn edit_matching_failures_leave_original_bytes() {
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase", deny_unknown_fields)]
+    struct Expected {
+        ok: bool,
+        bytes: Vec<u8>,
+        error_contains: Vec<String>,
+    }
     for row in rows("edit_matching_failures_leave_original_bytes") {
         let args: FileInput = serde_json::from_value(row.input).unwrap();
         assert!(args.mode.is_none());
-        let expected: FileExpected = serde_json::from_value(row.expected).unwrap();
+        let expected: Expected = serde_json::from_value(row.expected).unwrap();
         let empty = args.edits.is_empty();
         let ops = Arc::new(Operations::new(&args.bytes));
         let error = run(start(&tool(&ops, "/work"), args.arguments(), None))
             .err()
             .unwrap();
-        assert!(!expected.ok && expected.result.is_none());
+        assert!(!expected.ok);
+        for fragment in &expected.error_contains {
+            assert!(
+                error.message.contains(fragment),
+                "{} lacks {fragment}",
+                error.message
+            );
+        }
         assert_eq!(
             ops.script.names(),
             if empty {
@@ -520,12 +534,16 @@ fn edit_and_write_use_one_queue() {
         dir.file("mixed.txt", b"hello\n");
         let (ops, gate) = GatedNative::new();
         let edit = gated_tool(&ops, &dir.text());
-        let write = maestro_tools::create_write_tool_definition::<()>(
-            dir.text(),
-            maestro_tools::WriteToolOptions::default(),
-        );
         let replacement = write_support::input("mixed.txt", "replacement\n");
         if args.order == "edit-write" {
+            let (writer, release) = GatedNative::new();
+            let write = maestro_tools::create_write_tool_definition::<()>(
+                dir.text(),
+                maestro_tools::WriteToolOptions {
+                    operations: Some(writer),
+                },
+            );
+            release.open();
             let mut a = start(&edit, input("mixed.txt", "hello", "world"), None);
             assert!(poll_once(&mut a).is_pending());
             let mut b = (write.execute)("id".into(), replacement, None, None, None);

@@ -30,14 +30,15 @@ pub type AgentToolUpdateCallback<TDetails = serde_json::Value> =
 #[cfg(target_arch = "wasm32")]
 pub type AgentToolUpdateCallback<TDetails = serde_json::Value> =
     Arc<dyn Fn(AgentToolResult<TDetails>)>;
-/// Prepare raw arguments as JSON before schema validation.
+/// Normalize retained raw arguments in place and return arguments for schema validation.
 #[cfg(not(target_arch = "wasm32"))]
-pub type PrepareArguments =
-    Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo> + Send + Sync>;
-/// Prepare raw browser arguments as JSON before schema validation.
+pub type PrepareArguments = Arc<
+    dyn Fn(&mut serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo> + Send + Sync,
+>;
+/// Normalize retained browser arguments in place and return arguments for validation.
 #[cfg(target_arch = "wasm32")]
 pub type PrepareArguments =
-    Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo>>;
+    Arc<dyn Fn(&mut serde_json::Value) -> Result<serde_json::Value, DiagnosticErrorInfo>>;
 /// Execute a tool with its call id, arguments, cancellation and progress observer.
 #[cfg(not(target_arch = "wasm32"))]
 pub type ExecuteTool<TParameters = serde_json::Value, TDetails = serde_json::Value> = Arc<

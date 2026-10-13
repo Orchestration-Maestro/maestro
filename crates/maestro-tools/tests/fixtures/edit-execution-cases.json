@@ -12407,6 +12407,9 @@
             108,
             108,
             111
+          ],
+          "errorContains": [
+            "Could not find the exact text"
           ]
         }
       },
@@ -12447,6 +12450,9 @@
             102,
             111,
             111
+          ],
+          "errorContains": [
+            "Found 3 occurrences"
           ]
         }
       },
@@ -12484,6 +12490,9 @@
             108,
             100,
             10
+          ],
+          "errorContains": [
+            "edits must contain"
           ]
         }
       },
@@ -12534,6 +12543,11 @@
             101,
             101,
             10
+          ],
+          "errorContains": [
+            "edits[0]",
+            "edits[1]",
+            "overlap"
           ]
         }
       },
@@ -12590,6 +12604,9 @@
             109,
             97,
             10
+          ],
+          "errorContains": [
+            "Could not find edits[1]"
           ]
         }
       },
@@ -12618,6 +12635,9 @@
             108,
             108,
             111
+          ],
+          "errorContains": [
+            "oldText must not be empty"
           ]
         }
       },
@@ -12646,6 +12666,9 @@
             108,
             108,
             111
+          ],
+          "errorContains": [
+            "No changes made"
           ]
         }
       },
@@ -12678,6 +12701,9 @@
             108,
             108,
             111
+          ],
+          "errorContains": [
+            "edits[1].oldText must not be empty"
           ]
         }
       },
@@ -12710,6 +12736,9 @@
             108,
             108,
             111
+          ],
+          "errorContains": [
+            "No changes made"
           ]
         }
       },
@@ -12746,6 +12775,9 @@
             97,
             98,
             99
+          ],
+          "errorContains": [
+            "Found 2 occurrences of edits[0]"
           ]
         }
       },
@@ -12774,6 +12806,11 @@
             97,
             98,
             99
+          ],
+          "errorContains": [
+            "edits[0]",
+            "edits[1]",
+            "overlap"
           ]
         }
       },
@@ -12850,6 +12887,9 @@
             110,
             116,
             10
+          ],
+          "errorContains": [
+            "Could not find the exact text"
           ]
         }
       },
@@ -12922,6 +12962,9 @@
             108,
             100,
             10
+          ],
+          "errorContains": [
+            "Found 2 occurrences"
           ]
         }
       },
@@ -13002,6 +13045,48 @@
             108,
             100,
             10
+          ],
+          "errorContains": [
+            "Found 2 occurrences"
+          ]
+        }
+      },
+      {
+        "input": {
+          "path": "file.txt",
+          "bytes": [
+            97,
+            98,
+            99,
+            32,
+            97,
+            98,
+            99
+          ],
+          "edits": [
+            {
+              "oldText": "missing",
+              "newText": "z"
+            },
+            {
+              "oldText": "abc",
+              "newText": "x"
+            }
+          ]
+        },
+        "expected": {
+          "ok": false,
+          "bytes": [
+            97,
+            98,
+            99,
+            32,
+            97,
+            98,
+            99
+          ],
+          "errorContains": [
+            "Could not find edits[0]"
           ]
         }
       }

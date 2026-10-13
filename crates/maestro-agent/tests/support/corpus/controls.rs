@@ -365,7 +365,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
         .then(|| {
             let input = Arc::clone(&input);
             let observed = Arc::clone(&observed);
-            Arc::new(move |_| {
+            Arc::new(move |_: &mut Value| {
                 observed.lock().unwrap().trace.push("prepare".into());
                 let control = input.control.as_ref().unwrap();
                 if control.prepare.as_deref() == Some("error")

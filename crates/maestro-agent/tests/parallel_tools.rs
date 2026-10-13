@@ -502,7 +502,7 @@ async fn preflight_gate_case() {
         .unwrap()
         .prepare_arguments = Some(Arc::new(move |args| {
         captured.lock().unwrap().push("prepare".into());
-        Ok(args)
+        Ok(args.clone())
     }));
     let (release, wait) = tokio::sync::oneshot::channel();
     let wait = Arc::new(Mutex::new(Some(wait)));
