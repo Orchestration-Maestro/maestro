@@ -62,7 +62,9 @@ The factory observes neither the filesystem nor inherited environment until a ru
 `BashExecOptions::on_data` receives raw output chunks, without sanitization,
 decoding or truncation. Stdin is closed. `env: Some(...)`, including an empty map,
 replaces inheritance; omission reads fresh native entries and prepends the caller's
-binary directory when absent from the first case-insensitive PATH entry.
+binary directory when absent from the first case-insensitive PATH entry. On
+Windows, native insertion selects the first UTF-16-sorted spelling of each
+Unicode-uppercase key identity; the supplied environment map stays unchanged.
 
 `signal` is optional; `timeout` is optional positive seconds, with no default.
 Zero, negative and unrepresentable durations arm no timer. Abort and timeout request

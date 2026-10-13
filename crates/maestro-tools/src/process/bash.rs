@@ -129,13 +129,13 @@ impl LocalBash {
             .env_clear();
         match options.env {
             Some(env) => {
-                builder.envs(env);
+                builder.envs(command_env(env, cfg!(windows)));
             }
             None => {
-                builder.envs(get_shell_env(&self.bin_dir));
+                builder.envs(command_env(&get_shell_env(&self.bin_dir), cfg!(windows)));
             }
         }
-        let mut child = CapturedChild::spawn_detached(&mut builder)?;
+        let mut child = CapturedChild::spawn_detached(builder)?;
         let pid = child.id();
         if let Some(pid) = pid {
             track_detached_child_pid(pid);
@@ -199,3 +199,29 @@ async fn observe(
     tokio::join!(abort, timeout);
     std::future::pending().await
 }
+
+/// Selects entries for native environment insertion.
+fn command_env(env: &ShellEnv, windows: bool) -> Vec<(&std::ffi::OsString, &std::ffi::OsString)> {
+    let mut entries: Vec<_> = env.iter().collect();
+    if windows {
+        entries.sort_by(
+            |(left, _), (right, _)| match (left.to_str(), right.to_str()) {
+                (Some(left), Some(right)) => left.encode_utf16().cmp(right.encode_utf16()),
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => left.cmp(right),
+            },
+        );
+        let mut seen = std::collections::HashSet::new();
+        entries.retain(|(key, _)| {
+            seen.insert(
+                key.to_str()
+                    .map_or_else(|| (*key).clone(), |key| key.to_uppercase().into()),
+            )
+        });
+    }
+    entries
+}
+
+#[cfg(test)]
+mod tests;

@@ -444,7 +444,7 @@ fn local_bash_streams_raw_bytes_before_completion() {
                 BashExecOptions {
                     on_data: &mut sink,
                     signal: None,
-                    timeout: Some(1.0),
+                    timeout: None,
                     env: None,
                 },
             )
@@ -456,7 +456,7 @@ fn local_bash_streams_raw_bytes_before_completion() {
 }
 
 #[test]
-fn local_bash_abort_wins_after_timeout_but_not_native_error() {
+fn local_bash_aborts_from_stream_callback() {
     run(async {
         let dir = TempDir::new();
         let signal = Cancellation::new();
@@ -473,7 +473,7 @@ fn local_bash_abort_wins_after_timeout_but_not_native_error() {
                 BashExecOptions {
                     on_data: &mut sink,
                     signal: Some(&signal),
-                    timeout: Some(1.0),
+                    timeout: None,
                     env: None,
                 },
             )

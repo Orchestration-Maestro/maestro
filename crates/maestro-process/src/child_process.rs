@@ -42,10 +42,10 @@ pub struct CapturedChild {
 /// Selections for one [`wait_for_child_process`] call.
 #[derive(Clone, Copy, Debug)]
 pub struct WaitOptions {
-    /// Whether stderr bytes are returned or consumed and dropped.
+    /// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
     pub stderr: StderrMode,
     /// How long pipes may stay open after the child exits; `None` waits for both
-    /// end-of-file events. On expiry the bytes consumed so far are returned and the
+    /// end-of-file events. On expiry retained bytes are returned and the
     /// pipes are dropped.
     pub post_exit_grace: Option<Duration>,
 }
@@ -59,12 +59,12 @@ impl Default for WaitOptions {
     }
 }
 
-/// Whether stderr bytes are returned or consumed and dropped.
+/// Capture-only stderr policy; see [`wait_for_child_process`] for streaming.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StderrMode {
-    /// Return the stderr bytes the wait collects.
+    /// Retain newly consumed stderr when no streaming sink is supplied.
     Capture,
-    /// Read stderr and return nothing.
+    /// Drop retained stderr and, without a sink, discard newly consumed stderr.
     Discard,
 }
 
@@ -98,18 +98,26 @@ impl CapturedChild {
         self.child.id()
     }
 
-    /// Spawns with a new Unix session; other platforms use ordinary spawning.
+    /// Consumes `command` and spawns with a new Unix session; other platforms
+    /// use ordinary spawning. The session hook cannot affect a later spawn.
+    ///
+    /// ```compile_fail,E0382
+    /// use maestro_process::child_process::CapturedChild;
+    /// let command = tokio::process::Command::new("sh");
+    /// let first = CapturedChild::spawn_detached(command);
+    /// let second = CapturedChild::spawn_detached(command);
+    /// ```
     ///
     /// # Errors
     /// Returns the native session configuration or spawn error.
-    pub fn spawn_detached(command: &mut Command) -> io::Result<Self> {
+    pub fn spawn_detached(mut command: Command) -> io::Result<Self> {
         #[cfg(unix)]
         {
             use process_wrap::tokio::{CommandWrap, CommandWrapper, ProcessSession};
             let context = CommandWrap::from(Command::new(""));
-            ProcessSession.pre_spawn(command, &context)?;
+            ProcessSession.pre_spawn(&mut command, &context)?;
         }
-        Self::spawn(command)
+        Self::spawn(&mut command)
     }
 
     /// Spawns `command` with ignored stdin, captured stdout and the selected stderr.
@@ -128,7 +136,7 @@ impl CapturedChild {
         })
     }
 
-    /// Moves out the bytes consumed so far and drops any open pipes.
+    /// Moves out retained bytes and drops any open pipes.
     ///
     /// A failed wait leaves retained bytes here; a successful wait has already
     /// returned its bytes in the [`Output`].
@@ -286,14 +294,15 @@ async fn fires(timer: &mut Option<Pin<Box<Sleep>>>) {
 /// until exit and both EOFs, the latter killing a child still running after its delay.
 /// [`Termination::Kill`]
 /// abandons readers that have not finished, returns once the direct child is reaped
-/// and gives empty bytes for each abandoned stream; completed streams keep theirs.
+/// and gives empty bytes for each abandoned stream; completed streams keep retained bytes.
 /// [`StderrMode::Discard`] also drops stderr bytes retained by an earlier wait.
-/// A `post_exit_grace` ends the wait that long after the exit with the bytes
-/// consumed so far; without one the wait ends at the exit and both end-of-file
+/// A `post_exit_grace` ends the wait that long after the exit with retained
+/// bytes; without one the wait ends at the exit and both end-of-file
 /// events. The future is dropped when this function returns.
 ///
 /// With `on_data`, newly consumed chunks go synchronously to the sink instead of
-/// retained output. Earlier retained bytes are not replayed.
+/// retained output, including stderr regardless of [`StderrMode`]. Earlier
+/// retained bytes are not replayed.
 ///
 /// # Errors
 /// Returns the first native pipe, status or termination error unchanged; bytes

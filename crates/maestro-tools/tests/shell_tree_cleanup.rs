@@ -23,7 +23,7 @@ fn native_tree_kill_terminates_descendants() {
         let script = "import os,socket,sys\nchild=os.fork()\ns=socket.create_connection(('127.0.0.1',int(sys.argv[1])))\ns.sendall(b'READY')\ns.recv(1)\nif child: os.waitpid(child,0)";
         let mut command = tokio::process::Command::new("python3");
         command.args(["-c", script, &listener.local_addr().unwrap().port().to_string()]);
-        let mut child = CapturedChild::spawn_detached(&mut command).unwrap();
+        let mut child = CapturedChild::spawn_detached(command).unwrap();
         let pid = child.id().unwrap();
         let guard = Cleanup(pid);
         let mut sockets = Vec::new();

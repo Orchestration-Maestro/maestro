@@ -51,7 +51,7 @@ fn session_spawn_leaves_ordinary_children_unchanged() {
                     "import os; print(os.getpid(),os.getsid(0),os.getpgrp())",
                 ]);
                 let mut child = if detached {
-                    CapturedChild::spawn_detached(&mut command)
+                    CapturedChild::spawn_detached(command)
                 } else {
                     CapturedChild::spawn(&mut command)
                 }
@@ -104,7 +104,7 @@ fn streamed_wait_continues_after_external_tree_kill() {
                 "-c",
                 "import os,signal; os.write(1,b'before-kill'); signal.pause()",
             ]);
-            let mut child = CapturedChild::spawn_detached(&mut command).unwrap();
+            let mut child = CapturedChild::spawn_detached(command).unwrap();
             let pid = child.id().unwrap();
             let (tx, rx) = tokio::sync::oneshot::channel();
             let mut tx = Some(tx);
@@ -129,5 +129,34 @@ fn streamed_wait_continues_after_external_tree_kill() {
             assert!(!output.status.success());
             assert!(output.stdout.is_empty());
             assert!(output.stderr.is_empty());
+        });
+}
+
+#[test]
+fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let mut command = tokio::process::Command::new("/bin/sh");
+            command.args(["-c", "printf diagnostic >&2"]);
+            let mut child = CapturedChild::spawn(&mut command).unwrap();
+            let mut bytes = Vec::new();
+            let mut sink = |chunk: &[u8]| bytes.extend_from_slice(chunk);
+            let output = wait_for_child_process(
+                &mut child,
+                WaitOptions {
+                    stderr: maestro_process::child_process::StderrMode::Discard,
+                    ..WaitOptions::default()
+                },
+                std::future::pending(),
+                Some(&mut sink),
+            )
+            .await
+            .unwrap();
+            assert_eq!(bytes, b"diagnostic");
+            assert!(output.stderr.is_empty());
+            assert!(child.take_output().1.is_empty());
         });
 }
