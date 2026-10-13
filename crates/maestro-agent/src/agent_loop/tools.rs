@@ -261,9 +261,14 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                 {
                     retained.arguments.clone_from(&call.arguments);
                 }
-                let mut candidate = call.clone();
-                candidate.arguments = serde_json::from_value(prepared?)
+                let arguments = serde_json::from_value(prepared?)
                     .map_err(|error| failure(error.to_string()))?;
+                let candidate = ToolCall {
+                    id: call.id.clone(),
+                    name: call.name.clone(),
+                    arguments,
+                    thought_signature: call.thought_signature.clone(),
+                };
                 maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?
             }
             None => maestro_models::validate_tool_arguments(&read(&tool).definition, call)?,

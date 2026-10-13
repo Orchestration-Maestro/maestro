@@ -5,7 +5,7 @@ use maestro_tools::{EditToolOptions, create_edit_tool};
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};
 
-/// Exercise both normalization and legacy folding at every later observation.
+/// Check normalization and legacy folding in hooks, progress and retained history.
 pub fn observe(mode: ToolExecutionMode) {
     for input in [
         json!({"path":"file","edits":"[{\"oldText\":\"hello\",\"newText\":\"world\"}]"}),
