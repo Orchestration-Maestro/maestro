@@ -9,7 +9,7 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, and it has no workspace dependencies.
-No reverse dependency or internal dev edge is permitted.
+No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners; `maestro-text`, `maestro-json` and `maestro-entry` exist, and tool and brand are policy only with no crate
