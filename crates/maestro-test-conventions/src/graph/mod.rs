@@ -232,6 +232,9 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
         ));
     }
     if edge.kind == Kind::Development {
+        if policy::DEVELOPMENT.contains(&(edge.from.as_str(), edge.to.as_str())) {
+            return Ok(());
+        }
         return Err(format!(
             "internal dev dependency requires declared dependency-free test support: {} -> {}",
             edge.from, edge.to

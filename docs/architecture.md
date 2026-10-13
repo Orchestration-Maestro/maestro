@@ -48,8 +48,11 @@ may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
-not satisfy a direct requirement. The internal dev-target allowlist is empty;
-the scenario harness is not a reusable test-support dependency. Both production
+not satisfy a direct requirement. The sole permitted internal development edge is
+`maestro-tui-crossterm` to `maestro-brand` for the terminal examples. The exception
+permits neither a normal/build brand dependency nor a theme dependency, and does
+not satisfy the adapter's required toolkit/text dependencies. The scenario harness
+is not a reusable test-support dependency. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 
