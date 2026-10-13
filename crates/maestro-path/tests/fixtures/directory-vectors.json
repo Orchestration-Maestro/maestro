@@ -1,0 +1,436 @@
+[
+  {
+    "id": "p-anchored",
+    "flavor": "posix",
+    "groups": [
+      [
+        "/base",
+        "x/../leaf"
+      ],
+      [
+        "relative",
+        "/reset/./file"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/base/leaf",
+        "/reset/file"
+      ]
+    }
+  },
+  {
+    "id": "p-empty-groups",
+    "flavor": "posix",
+    "groups": [],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": []
+    }
+  },
+  {
+    "id": "p-no-operands",
+    "flavor": "posix",
+    "groups": [
+      []
+    ],
+    "cwd": "/tmp",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/tmp"
+      ]
+    }
+  },
+  {
+    "id": "p-empty-and-dot",
+    "flavor": "posix",
+    "groups": [
+      [
+        ""
+      ],
+      [
+        "."
+      ]
+    ],
+    "cwd": "/tmp",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/tmp",
+        "/tmp"
+      ]
+    }
+  },
+  {
+    "id": "p-relative",
+    "flavor": "posix",
+    "groups": [
+      [
+        "rel",
+        "../leaf"
+      ]
+    ],
+    "cwd": "/tmp",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/tmp/leaf"
+      ]
+    }
+  },
+  {
+    "id": "p-parent",
+    "flavor": "posix",
+    "groups": [
+      [
+        "..",
+        "x"
+      ]
+    ],
+    "cwd": "/tmp",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/x"
+      ]
+    }
+  },
+  {
+    "id": "p-spelling",
+    "flavor": "posix",
+    "groups": [
+      [
+        "/base ",
+        "x/../é"
+      ],
+      [
+        "/x",
+        "﻿"
+      ],
+      [
+        "/x",
+        ""
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/base /é",
+        "/x/﻿",
+        "/x/"
+      ]
+    }
+  },
+  {
+    "id": "p-ordered-duplicates",
+    "flavor": "posix",
+    "groups": [
+      [
+        "/z",
+        "b"
+      ],
+      [
+        "rel",
+        "a"
+      ],
+      [
+        "/z",
+        "b"
+      ]
+    ],
+    "cwd": "/tmp",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "/z/b",
+        "/tmp/rel/a",
+        "/z/b"
+      ]
+    }
+  },
+  {
+    "id": "p-required-error",
+    "flavor": "posix",
+    "groups": [
+      [
+        "rel",
+        "x"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "error": "cwd unavailable"
+    }
+  },
+  {
+    "id": "p-mixed-error",
+    "flavor": "posix",
+    "groups": [
+      [
+        "/ok"
+      ],
+      [
+        "rel"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "error": "cwd unavailable"
+    }
+  },
+  {
+    "id": "w-absolute",
+    "flavor": "win32",
+    "groups": [
+      [
+        "C:\\base",
+        "..\\leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "C:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-unc",
+    "flavor": "win32",
+    "groups": [
+      [
+        "\\\\server\\share\\base",
+        "..\\leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "\\\\server\\share\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-namespace",
+    "flavor": "win32",
+    "groups": [
+      [
+        "\\\\?\\C:\\base",
+        "..\\leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "\\\\?\\C:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-rooted",
+    "flavor": "win32",
+    "groups": [
+      [
+        "\\leaf"
+      ]
+    ],
+    "cwd": "D:\\work",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "D:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-rooted-error",
+    "flavor": "win32",
+    "groups": [
+      [
+        "\\leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {
+      "=D:": "D:\\drive"
+    },
+    "expected": {
+      "error": "cwd unavailable"
+    }
+  },
+  {
+    "id": "w-drive-supplied",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {
+      "=D:": "D:\\drive"
+    },
+    "expected": {
+      "ok": [
+        "D:\\drive\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-empty",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": "C:\\work",
+    "drives": {
+      "=D:": ""
+    },
+    "expected": {
+      "ok": [
+        "D:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-missing",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": "C:\\work",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "D:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-same-cwd",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": "D:\\work",
+    "drives": {},
+    "expected": {
+      "ok": [
+        "D:\\work\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-mismatch",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {
+      "=D:": "C:\\wrong"
+    },
+    "expected": {
+      "ok": [
+        "D:\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-operand",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:\\base",
+        "D:leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "D:\\base\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-device-precedence",
+    "flavor": "win32",
+    "groups": [
+      [
+        "C:\\base",
+        "D:\\chosen",
+        "leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "ok": [
+        "D:\\chosen\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-mixed-groups",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ],
+      [
+        "C:\\fixed"
+      ],
+      [
+        "relative"
+      ],
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": "C:\\work",
+    "drives": {
+      "=D:": "D:\\drive"
+    },
+    "expected": {
+      "ok": [
+        "D:\\drive\\leaf",
+        "C:\\fixed",
+        "C:\\work\\relative",
+        "D:\\drive\\leaf"
+      ]
+    }
+  },
+  {
+    "id": "w-drive-error",
+    "flavor": "win32",
+    "groups": [
+      [
+        "D:leaf"
+      ]
+    ],
+    "cwd": null,
+    "drives": {},
+    "expected": {
+      "error": "cwd unavailable"
+    }
+  }
+]

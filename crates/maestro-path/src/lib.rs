@@ -11,9 +11,11 @@
 //! crate root re-exports the flavor of the compile target; the POSIX-only
 //! [`posix::parse`] is also re-exported on targets other than Windows.
 
+mod os;
 mod path;
 
-pub use path::{Cwd, CwdUnavailable, posix, win32};
+pub use os::homedir;
+pub use path::{Cwd, CwdUnavailable, posix, resolve_with, win32};
 
 #[cfg(not(windows))]
 pub use path::posix::{

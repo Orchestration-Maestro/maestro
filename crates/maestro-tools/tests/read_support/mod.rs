@@ -385,6 +385,15 @@ pub fn blank_image(width: u32, height: u32, format: image::ImageOutputFormat) ->
 ///
 /// Returns true only inside the child spawned for `mode`; the parent asserts the child passed.
 pub fn isolated(test: &str, mode: &str, envs: &[(&str, Option<&str>)]) -> bool {
+    let envs: Vec<_> = envs
+        .iter()
+        .map(|(key, value)| (*key, value.map(std::ffi::OsStr::new)))
+        .collect();
+    isolated_os(test, mode, &envs)
+}
+
+/// [`isolated`] with environment values that need not be text.
+pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsStr>)]) -> bool {
     if let Ok(current) = std::env::var("MAESTRO_READ_CHILD") {
         return current == mode;
     }

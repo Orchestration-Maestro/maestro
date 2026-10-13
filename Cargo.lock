@@ -2299,6 +2299,7 @@ dependencies = [
 name = "maestro-path"
 version = "0.1.0"
 dependencies = [
+ "serde",
  "serde_json",
 ]
 
@@ -2491,6 +2492,7 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "chrono",
+ "maestro-path",
  "maestro-text",
  "maestro-tui",
  "rand",

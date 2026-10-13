@@ -155,11 +155,13 @@ impl TuiRuntime for ProcessTuiRuntime {
 /// The home directory: on Unix the `HOME` variable verbatim, empty included,
 /// and the account directory only when it is unset.
 fn home_directory() -> PathBuf {
-    #[cfg(unix)]
-    if let Some(home) = std::env::var_os("HOME") {
-        return PathBuf::from(home);
-    }
-    std::env::home_dir().unwrap_or_default()
+    maestro_path::homedir(
+        std::env::var_os("HOME")
+            .filter(|_| cfg!(unix))
+            .map(PathBuf::from),
+        std::env::home_dir,
+    )
+    .unwrap_or_default()
 }
 
 #[cfg(test)]

@@ -252,29 +252,18 @@ fn has_assistant(entries: &[FileEntry]) -> io::Result<bool> {
 
 /// Resolve a path lazily, preserving the original native cwd error.
 fn absolute(path: &str) -> io::Result<String> {
-    if let Ok(path) = maestro_path::try_resolve(&[path], &[]) {
-        return Ok(path);
-    }
-    let directories = if cfg!(windows) {
-        maestro_path::env_drive_directories(|name| std::env::var_os(name))
-    } else {
-        Vec::new()
-    };
-    let drives: Vec<_> = directories
-        .iter()
-        .map(|(letter, path)| (*letter, path.as_str()))
-        .collect();
-    if let Ok(path) = maestro_path::try_resolve(&[path], &drives) {
-        return Ok(path);
-    }
-    let cwd = std::env::current_dir()?.to_string_lossy().into_owned();
-    Ok(maestro_path::resolve(
-        &[path],
-        &maestro_path::Cwd {
-            current: &cwd,
-            drive_directories: &drives,
+    maestro_path::resolve_with(
+        &[&[path]],
+        || {
+            if cfg!(windows) {
+                maestro_path::env_drive_directories(|name| std::env::var_os(name))
+            } else {
+                Vec::new()
+            }
         },
-    ))
+        || std::env::current_dir().map(|cwd| cwd.to_string_lossy().into_owned()),
+    )
+    .map(|paths| paths.concat())
 }
 
 /// Rewrite retained records in order, leaving native partial writes in place.

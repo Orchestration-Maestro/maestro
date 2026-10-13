@@ -1079,6 +1079,29 @@ fn ambient_files() -> Rc<FakeOps> {
     ]))
 }
 
+/// A worktree link through a drive-lettered target asks for that drive before resolving, whatever anchors it.
+#[cfg(windows)]
+#[test]
+fn worktree_resolution_keeps_eager_drive_observations() {
+    let head = text("ref: refs/heads/updated\n");
+    let gitfile = text("gitdir: c:../repo/.git\n");
+    let ops = FakeOps::new(BTreeMap::from([
+        ("/scratch/repo/.git".to_owned(), Entry::Flag(true)),
+        ("/scratch/repo/.git/HEAD".to_owned(), head),
+        ("/scratch/worktree/.git".to_owned(), gitfile.clone()),
+        ("worktree/.git".to_owned(), gitfile),
+    ]));
+    let branch = provider(&ops, "/scratch/worktree").get_git_branch();
+    assert_eq!(branch.as_deref(), Some("updated"));
+    assert_eq!(*ops.drive_reads.borrow(), ['C']);
+    assert_eq!(ops.current_dir_calls.get(), 0);
+
+    ops.drive_reads.borrow_mut().clear();
+    assert_eq!(provider(&ops, "worktree").get_git_branch(), None);
+    assert_eq!(*ops.drive_reads.borrow(), ['C']);
+    assert_eq!(ops.current_dir_calls.get(), 1);
+}
+
 /// What the native adapter finds for each ambient case, read in a child whose
 /// working directory is gone.
 #[cfg(unix)]
