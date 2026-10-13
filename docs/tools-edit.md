@@ -1,14 +1,15 @@
 # File-changing tools
 
-`maestro-tools` delivers the native `write` tool and the file mutation queue that
-orders every file-changing tool. The `edit` tool and its diff helpers continue in
-[#690](https://github.com/Orchestration-Maestro/maestro/issues/690),
-[#691](https://github.com/Orchestration-Maestro/maestro/issues/691) and
+`maestro-tools` delivers the native `write` tool, the file mutation queue that
+orders every file-changing tool and the pure matching core of `edit`. The `edit` tool
+itself, its diff output and its rendering continue in
+[#691](https://github.com/Orchestration-Maestro/maestro/issues/691),
+[#723](https://github.com/Orchestration-Maestro/maestro/issues/723) and
 [#692](https://github.com/Orchestration-Maestro/maestro/issues/692); they are not
 part of this crate yet.
 
-Both items are native-only: the `write` module and the queue are excluded from
-browser builds, which still build the portable tool definitions.
+All three items are native-only: the `write` module, the queue and `edit_diff` are
+excluded from browser builds, which still build the portable tool definitions.
 
 ## Write tool
 
@@ -81,6 +82,34 @@ nothing, and complete arguments or any other change highlight it all again. A pa
 with no recognized language is not highlighted. The result renderer draws nothing for a success and the error
 text for a failure. Display strings, tab expansion and key hints follow the
 [display helpers](tools-read.md#display-helpers). Rendering never writes a file.
+
+## Original-snapshot matching
+
+[`edit_diff`](../crates/maestro-tools/src/edit_diff.rs) matches edits and applies them;
+it reads no file and has no side effect. `apply_edits_to_normalized_content` takes
+content that already uses LF endings (convert it with
+[`normalize_to_lf`](text.md)) and returns the comparison base with the edited text, or a
+diagnostic.
+
+- Operands: `old_text` and `new_text` are converted to LF; an empty `old_text` is
+  rejected before any matching. Replacement text is inserted literally.
+- Snapshot: every edit is matched against the same text, never against another
+  edit's output. Matches are sorted by position, must not overlap (touching is fine)
+  and are then spliced in one pass.
+- Fuzzy base: matching tries the exact text first. If any edit matches only after
+  NFKC, per-line trailing-whitespace removal and quote, dash and space folding,
+  every edit is matched against that normalized text, which is returned as the base.
+- Uniqueness: occurrences are counted in normalized space, overlaps included, even
+  when the chosen match is exact. A nonempty `old_text` that normalization erases
+  matches and counts literally only; it is never an empty insertion point.
+- Positions and lengths are UTF-8 byte offsets into the text they describe.
+- Trailing whitespace follows the shared set of [text](text.md).
+- `detect_line_ending` follows the first LF, `restore_line_endings` turns each LF into
+  CR LF in CRLF mode, and `strip_bom` removes one leading BOM.
+
+The nine failure messages are the exact texts in the module; single-edit calls use
+the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
+failure, which names no edit.
 
 ## File mutation queue
 

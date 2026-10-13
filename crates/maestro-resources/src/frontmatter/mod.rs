@@ -65,7 +65,7 @@ impl FrontmatterError {
 /// # Errors
 /// Returns a native parsing cause when the extracted metadata is invalid.
 pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, FrontmatterError> {
-    let normalized = content.replace("\r\n", "\n").replace('\r', "\n");
+    let normalized = maestro_text::normalize_to_lf(content);
     let Some(end) = normalized
         .strip_prefix("---")
         .and_then(|s| s.find("\n---").map(|n| n + 3))

@@ -163,9 +163,7 @@ impl Editing {
 }
 /// Normalizes programmatic storage, not ordinary input.
 pub(super) fn normalize(text: &str) -> String {
-    text.replace("\r\n", "\n")
-        .replace('\r', "\n")
-        .replace('\t', "    ")
+    maestro_text::normalize_to_lf(text).replace('\t', "    ")
 }
 
 impl Buffer {

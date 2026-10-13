@@ -1,13 +1,16 @@
 # Text
 
 `maestro-text` is a core leaf below layer 0 with no workspace dependencies. It holds
-four stateless decisions; each caller keeps its own trimming, any-or-all semantics,
+five stateless decisions; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except
   U+0085, plus U+FEFF. `is_whitespace_scalar` tests membership. HTTP edge
   whitespace and JSON token whitespace are different rules and stay with their owners.
   The model overflow pattern builds its character class from `WHITESPACE`.
+- **Newlines.** `normalize_to_lf` converts every CRLF pair and lone CR to LF and touches
+  nothing else. Frontmatter parsing, the editor's stored text, Markdown parsing and
+  edit matching all call it; each keeps its own tab policy.
 - **Lexical order.** `utf16_order` compares UTF-16 code units, so supplementary
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`

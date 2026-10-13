@@ -2456,6 +2456,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-process",
+ "maestro-text",
  "maestro-theme",
  "maestro-tui",
  "num-traits",
