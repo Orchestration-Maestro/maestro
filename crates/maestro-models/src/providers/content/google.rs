@@ -5,8 +5,9 @@
 use std::borrow::Cow;
 
 use super::google_shared::{
-    FunctionCallingConfigMode, GenerateContentParameters, GoogleThinkingLevel, ThinkingConfig,
-    build_parameters, enabled_thinking, is_gemini_3_flash, is_gemini_3_pro, is_gemma_4,
+    ApiClient, FunctionCallingConfigMode, GenerateContentParameters, GoogleThinkingLevel,
+    ThinkingConfig, build_parameters, enabled_thinking, is_gemini_3_flash, is_gemini_3_pro,
+    is_gemma_4,
 };
 use crate::options::resolve_api_key;
 use crate::{
@@ -194,4 +195,35 @@ fn budget(model_id: &str, effort: ThinkingLevel, custom: Option<&ThinkingBudgets
         [-1.0; 4]
     };
     slot.unwrap_or(defaults[index])
+}
+
+/// Capture supplied client settings without validation or environment lookup.
+#[must_use]
+pub fn create_client(
+    model: &Model,
+    api_key: &str,
+    options_headers: Option<&indexmap::IndexMap<String, String>>,
+) -> ApiClient {
+    let mut headers = model.headers.clone().unwrap_or_default();
+    if let Some(options) = options_headers {
+        headers.extend(
+            options
+                .iter()
+                .map(|(name, value)| (name.clone(), value.clone())),
+        );
+    }
+    let (base_url, api_version) = if model.base_url.is_empty() {
+        (
+            "https://generativelanguage.googleapis.com".to_owned(),
+            "v1beta".to_owned(),
+        )
+    } else {
+        (model.base_url.clone(), String::new())
+    };
+    ApiClient {
+        base_url,
+        api_version,
+        api_key: api_key.to_owned(),
+        headers,
+    }
 }

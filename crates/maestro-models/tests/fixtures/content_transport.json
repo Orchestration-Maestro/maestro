@@ -1,0 +1,1915 @@
+[
+  {
+    "test": "default_endpoint_uses_the_public_api_version",
+    "input": "{\"baseUrl\":\"\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "model_endpoints_append_no_implicit_version",
+    "input": "{\"baseUrl\":\"https://proxy.invalid\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "model_endpoints_append_no_implicit_version",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/v1\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/v1/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "model_endpoints_append_no_implicit_version",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/v1/\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/v1/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "model_endpoints_append_no_implicit_version",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/v1//\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/v1//models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "model_endpoints_append_no_implicit_version",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/v1///\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/v1///models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://other.invalid/path\",\"apiVersion\":\"v9\"}}}}",
+    "expected": {
+      "url": "https://other.invalid/path/v9/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://other.invalid/path\",\"apiVersion\":\"\"}}}}",
+    "expected": {
+      "url": "https://other.invalid/path/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://other.invalid/path/\",\"apiVersion\":\"v1/\"}}}}",
+    "expected": {
+      "url": "https://other.invalid/path/v1//models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://other.invalid/path\",\"apiVersion\":\"/v1\"}}}}",
+    "expected": {
+      "url": "https://other.invalid/path//v1/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://other.invalid/custom\"}}}}",
+    "expected": {
+      "url": "https://other.invalid/custom/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"apiVersion\":\"v9\"}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/v9/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "request_endpoint_and_version_override_independently",
+    "input": "{\"baseUrl\":\"\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"apiVersion\":\"\"}}}}",
+    "expected": {
+      "url": "https://generativelanguage.googleapis.com/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini target\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini%20target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/ümlaut\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/%C3%BCmlaut:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"tunedModels/custom-name\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/tunedModels/custom-name:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/a/b\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/a/b:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/a/./b\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/a/b:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/x%2Fy\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/x%2Fy:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/a#frag\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/a?alt=sse#frag:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "resource_text_is_encoded_only_by_url_construction",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"models/a:b\",\"contents\":\"changed prompt\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/a:b:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"HTTPS://PROXY.INVALID:443/a/../b\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/b/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"https://user:pass@proxy.invalid/root\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://user:pass@proxy.invalid/root/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/root?x=one two\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/root?x=one+two%2Fmodels%2Fgemini-target%3AstreamGenerateContent%3Falt%3Dsse&alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/root?alt=json&x=one two\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/root?alt=sse&x=one+two%2Fmodels%2Fgemini-target%3AstreamGenerateContent%3Falt%3Dsse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/root?alt=sse&alt=other\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/root?alt=sse&alt=other/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"https://proxy.invalid/root#fragment\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://proxy.invalid/root?alt=sse#fragment/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "url_components_keep_constructor_and_stream_query_rules",
+    "input": "{\"baseUrl\":\"http://[::1]:3210/root\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "http://[::1]:3210/root/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "invalid_request_endpoints_fail_before_headers_or_auth",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/forbidden\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":null,\"headers\":{\"bad name\":\"value\"}}}}}",
+    "expected": {
+      "errorKind": "url"
+    }
+  },
+  {
+    "test": "invalid_request_endpoints_fail_before_headers_or_auth",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/forbidden\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"\",\"headers\":{\"bad name\":\"value\"}}}}}",
+    "expected": {
+      "errorKind": "url"
+    }
+  },
+  {
+    "test": "invalid_request_endpoints_fail_before_headers_or_auth",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/forbidden\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"relative\",\"headers\":{\"bad name\":\"value\"}}}}}",
+    "expected": {
+      "errorKind": "url"
+    }
+  },
+  {
+    "test": "invalid_request_endpoints_fail_before_headers_or_auth",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/forbidden\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"baseUrl\":\"https://[bad\",\"headers\":{\"bad name\":\"value\"}}}}}",
+    "expected": {
+      "errorKind": "url"
+    }
+  },
+  {
+    "test": "projection_errors_precede_transport_option_errors",
+    "input": "{\"baseUrl\":\"relative\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"bad..model\",\"contents\":\"changed prompt\",\"config\":{\"httpOptions\":{\"headers\":{\"bad name\":\"x\"}}}}}",
+    "expected": {
+      "errorKind": "projection"
+    }
+  },
+  {
+    "test": "same_spelling_headers_replace_across_all_layers",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"httpOptions\":{\"headers\":{\"Content-Type\":\"hook/type\",\"X\":\"hook\"}}}},\"modelHeaders\":{\"Content-Type\":\"model/type\",\"X\":\"model\"},\"optionHeaders\":{\"Content-Type\":\"option/type\",\"X\":\"option\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "hook/type"
+        ],
+        [
+          "x",
+          "hook"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "differently_spelled_headers_append_after_layering",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"httpOptions\":{\"headers\":{\"X\":\"hook\",\"COOKIE\":\"c=3\",\"content-type\":\"custom/type\"}}}},\"modelHeaders\":{\"X\":\"model\",\"Cookie\":\"a=1\"},\"optionHeaders\":{\"x\":\"option\",\"cookie\":\"b=2\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json, custom/type"
+        ],
+        [
+          "cookie",
+          "a=1; b=2; c=3"
+        ],
+        [
+          "x",
+          "hook, option"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "caller_metadata_and_empty_headers_survive",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"User-Agent\":\"caller-agent\",\"x-goog-api-client\":\"caller-client\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "user-agent",
+          "caller-agent"
+        ],
+        [
+          "x-goog-api-client",
+          "caller-client"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "caller_metadata_and_empty_headers_survive",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"user-agent\":\"lower-agent\",\"X-Goog-Api-Client\":\"upper-client\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "user-agent",
+          "lower-agent"
+        ],
+        [
+          "x-goog-api-client",
+          "upper-client"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "caller_metadata_and_empty_headers_survive",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"Content-Type\":\"\",\"X-Empty\":\" \\r\\n\\t \"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          ""
+        ],
+        [
+          "x-empty",
+          ""
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "caller_metadata_and_empty_headers_survive",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"1\":\"numeric\",\"X-Order\":\"second\",\"a-first\":\"first\",\"Z-last\":\"third\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "1",
+          "numeric"
+        ],
+        [
+          "a-first",
+          "first"
+        ],
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-order",
+          "second"
+        ],
+        [
+          "z-last",
+          "third"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "header_normalization_keeps_byte_values_without_native_preflight",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bytes\":\" \\tvalue\\r\\n \"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-bytes",
+          "value"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "header_normalization_keeps_byte_values_without_native_preflight",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bytes\":\" latinÿ \"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-bytes",
+          " latinÿ "
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "header_normalization_keeps_byte_values_without_native_preflight",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bytes\":\"not-trimmed\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-bytes",
+          "not-trimmed"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "header_normalization_keeps_byte_values_without_native_preflight",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bytes\":\"\\u0001control\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-bytes",
+          "\u0001control"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "header_normalization_keeps_byte_values_without_native_preflight",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bytes\":\"vertical\\u000btab\\f\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-bytes",
+          "vertical\u000btab\f"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"bad name\":\"x\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"\":\"x\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bad\":\"a\\nb\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bad\":\"a\\rb\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bad\":\"a\\u0000b\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bad\":\"Ā\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Bad\":\"﻿\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "invalid_headers_fail_before_key_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/no\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"Ü\":\"x\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "replaced_invalid_header_values_are_not_read",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}},\"modelHeaders\":{\"X\":\"bad\\nold\"},\"optionHeaders\":{\"X\":\"valid\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x",
+          "valid"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "replaced_invalid_header_values_are_not_read",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"httpOptions\":{\"headers\":{\"X\":\"repaired\"}}}},\"modelHeaders\":{\"X\":\"bad\\nold\"}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x",
+          "repaired"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "case_variants_do_not_hide_invalid_earlier_values",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}},\"modelHeaders\":{\"X\":\"bad\\nold\"},\"optionHeaders\":{\"x\":\"valid\"}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          ""
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\" key with edges \",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "key with edges"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"clé\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "clé"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"bad\\nkey\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "errorKind": "auth"
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/token\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "errorKind": "auth"
+    }
+  },
+  {
+    "test": "api_key_insertion_keeps_header_and_token_rules",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"AUTH_TOKENS/token\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "AUTH_TOKENS/token"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "authored_api_keys_override_insertion_but_not_token_rejection",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"bad\\nkey\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Goog-Api-Key\":\"caller-key\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "caller-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "authored_api_keys_override_insertion_but_not_token_rejection",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"bad\\nkey\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"x-goog-api-key\":\"\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          ""
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "authored_api_keys_override_insertion_but_not_token_rejection",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"auth_tokens/token\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"x-goog-api-key\":\"caller-key\"}}}}}",
+    "expected": {
+      "errorKind": "auth"
+    }
+  },
+  {
+    "test": "authored_api_keys_override_insertion_but_not_token_rejection",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{\"X-Goog-Api-Key\":\"first\",\"x-goog-api-key\":\"second\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "first, second"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":0}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":-1}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":0.001}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "1"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 0.001
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":999}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "1"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 999
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":1000}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "1"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 1000
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":1000.001}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "2"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 1000.001
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":1001}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "2"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 1001
+    }
+  },
+  {
+    "test": "timeouts_retain_milliseconds_and_ceil_the_server_header",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":2000}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "2"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 2000
+    }
+  },
+  {
+    "test": "server_timeout_headers_append_after_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":1001,\"headers\":{\"X-Server-Timeout\":\" authored \"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "x-server-timeout",
+          "authored, 2"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": 1001
+    }
+  },
+  {
+    "test": "server_timeout_headers_append_after_validation",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"timeout\":1001,\"headers\":{\"X-Server-Timeout\":\"bad\\nvalue\"}}}}}",
+    "expected": {
+      "errorKind": "header"
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":null}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":null,\"extraBody\":null,\"timeout\":null}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"headers\":{},\"extraBody\":{}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "absent_options_and_unused_controls_do_not_change_the_request",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"retryOptions\":{\"attempts\":9},\"baseUrlResourceScope\":\"COLLECTION\",\"unknown\":{\"kept\":\"outside body\"}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_merges_objects_and_replaces_nonobjects",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"topP\":0.9},\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"replacement\"}]}],\"newField\":{\"x\":1}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"replacement\"}]}],\"generationConfig\":{\"temperature\":0.25,\"topP\":0.9},\"newField\":{\"x\":1}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_merges_objects_and_replaces_nonobjects",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"temperature\":null,\"extra\":[3,1,3]},\"contents\":{\"new\":\"object\"}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":{\"new\":\"object\"},\"generationConfig\":{\"temperature\":null,\"extra\":[3,1,3]}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_merges_objects_and_replaces_nonobjects",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"extraBody\":{\"generationConfig\":\"replace object\",\"contents\":false}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":false,\"generationConfig\":\"replace object\"}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":{\"a\":1},\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":{\"b\":2}}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"a\":1,\"b\":2}}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":[1,2],\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":[3,1,3]}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":[3,1,3]}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":[],\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":{\"x\":1},\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":[]}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":[]}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":null,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":false,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"x\":1}}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":0,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":\"text\"}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":\"text\"}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":\"old\",\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":0}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":0}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":\"old\",\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":null}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":null}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":1,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":\"new\"}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":\"new\"}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":\"\",\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":true}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":true}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_retains_open_values_and_type_changes",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":true,\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":2}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":2}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_bypasses_projection_without_redirecting_the_resource",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"extraBody\":{\"model\":\"other-model\",\"config\":{\"httpOptions\":{\"baseUrl\":\"https://decoy.invalid\"}},\"generationConfig\":{\"labels\":{\"open\":\"kept\"}},\"newOption\":[2,2,1]}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0.25,\"labels\":{\"open\":\"kept\"}},\"model\":\"other-model\",\"config\":{\"httpOptions\":{\"baseUrl\":\"https://decoy.invalid\"}},\"newOption\":[2,2,1]}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "extra_body_cannot_repair_an_earlier_projection_failure",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"labels\":{\"unsupported\":\"yes\"},\"httpOptions\":{\"extraBody\":{\"generationConfig\":{}}}}}}",
+    "expected": {
+      "errorKind": "projection"
+    }
+  },
+  {
+    "test": "merged_body_text_preserves_key_positions_and_binary64_numbers",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"temperature\":0.25,\"httpOptions\":{\"extraBody\":{\"2\":\"two\",\"10\":\"ten\",\"generationConfig\":{\"1\":1,\"2\":2,\"temperature\":0,\"topP\":1e-7,\"z\":0},\"a\":9}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"2\":\"two\",\"10\":\"ten\",\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"1\":1,\"2\":2,\"temperature\":0,\"topP\":1e-7,\"z\":0},\"a\":9}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "merged_body_text_preserves_key_positions_and_binary64_numbers",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"responseJsonSchema\":{\"z\":1,\"a\":2},\"httpOptions\":{\"extraBody\":{\"generationConfig\":{\"responseJsonSchema\":{\"new\":1,\"z\":3}}}}}}}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"z\":3,\"a\":2,\"new\":1}}}",
+      "timeout": null
+    }
+  },
+  {
+    "test": "client_snapshots_inputs_and_preparations_do_not_mutate_controls",
+    "input": "{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiKey\":\"fixture-key\",\"params\":{\"model\":\"gemini-target\",\"contents\":\"changed prompt\",\"config\":{\"httpOptions\":{\"headers\":{\"Z\":\"per-run\"},\"extraBody\":{\"generationConfig\":{\"topP\":0.6}}}}},\"modelHeaders\":{\"X\":\"captured\"},\"optionHeaders\":{\"Y\":\"captured\"},\"snapshot\":true}",
+    "expected": {
+      "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+      "method": "POST",
+      "headers": [
+        [
+          "content-type",
+          "application/json"
+        ],
+        [
+          "x",
+          "captured"
+        ],
+        [
+          "x-goog-api-key",
+          "fixture-key"
+        ],
+        [
+          "y",
+          "captured"
+        ],
+        [
+          "z",
+          "per-run"
+        ]
+      ],
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"generationConfig\":{\"topP\":0.6}}",
+      "timeout": null,
+      "followup": {
+        "url": "https://fixture.invalid/v1beta/models/gemini-target:streamGenerateContent?alt=sse",
+        "method": "POST",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "x",
+            "captured"
+          ],
+          [
+            "x-goog-api-key",
+            "fixture-key"
+          ],
+          [
+            "y",
+            "captured"
+          ]
+        ],
+        "body": "{\"contents\":[{\"parts\":[{\"text\":\"next prompt\"}],\"role\":\"user\"}]}",
+        "timeout": null
+      }
+    }
+  }
+]
