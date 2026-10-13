@@ -92,7 +92,7 @@ fn mistral_checks_object_fields_after_payload_hook() -> TestResult {
 
         for rejected in [
             json!({"parallelToolCalls": null}),
-            json!({"responseFormat": [{"type": "text"}]}),
+            json!({"responseFormat": ["text"]}),
         ] {
             let case = rejected.clone();
             let (text, sent) = run(move |payload| with(payload, case.clone())).await?;

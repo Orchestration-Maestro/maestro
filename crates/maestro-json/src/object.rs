@@ -1,6 +1,6 @@
 //! Records read from JSON objects only.
 //!
-//! A derived record also accepts a JSON array and reads its elements as the properties in
+//! A derived record can also accept a JSON array and read its elements as the properties in
 //! declaration order. These readers hand a record only the map of a JSON object and so
 //! reject arrays. Defaults, duplicate members, unknown members and nested values stay with
 //! the record's own decoders and the caller's deserializer.

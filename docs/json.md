@@ -22,9 +22,8 @@ defaults, duplicate-member policy and error wording.
 - **Objects.** The `object` module hands a record only the
   map of a JSON object, so a derived record never reads a positional array. `record_with`
   names the caller's expectation in the error; `record`, `from_str`, `list` and
-  `optional_list` use `a JSON object`. Whether a duplicate member fails or the last one
-  wins is decided by the deserializer the caller supplies: reading text directly rejects
-  a repeated selected field, while a value materialized first keeps the last.
+  `optional_list` use `a JSON object`. A repeated member is handled by the record and the
+  deserializer the caller supplies; these readers add no duplicate policy.
 
 The optional-field helper that keeps null apart from absence is `present` in
 `maestro-request`; the JSON leaf does not depend on it. Dependencies are listed in

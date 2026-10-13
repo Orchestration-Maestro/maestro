@@ -39,7 +39,8 @@ pub fn compact_object(value: &Map<String, Value>) -> Result<String, serde_json::
     write(&Members(object_entries(value)), CompactFormatter)
 }
 
-/// Write borrowed members exactly as [`compact_object`] writes an object holding them.
+/// Write borrowed members in the order and spelling [`compact_object`] gives an object, but
+/// write every member given: a repeated name is written once per occurrence.
 ///
 /// # Errors
 /// Returns the serializer failure.
