@@ -204,3 +204,52 @@ map the effort to a level and ignore custom budgets; other models use the select
 `thinking_budgets` slot, an explicit zero included, or the family default: Pro
 `128/2048/8192/32768`, Flash-Lite `512/2048/8192/24576`, Flash `128/2048/8192/24576`
 (minimal to high; `2.5` identifiers, matched case-sensitively) and `-1` (dynamic) otherwise.
+
+## Request projection
+
+`maestro_models::providers::content::google_shared::project_content_request` takes the JSON a
+payload hook returned and selects the model path and wire body of the public endpoint. It calls
+no hook, sends nothing and builds no URL or header: the endpoint, API version, HTTP options and
+cancellation stay with the transport caller, and a client-only member is never a body member.
+
+```rust
+use maestro_models::compact_json;
+use maestro_models::providers::content::google_shared::project_content_request;
+use serde_json::{Value, json};
+
+let projected = project_content_request(json!({
+    "model": "gemini-fixture",
+    "contents": "hello",
+    "config": {"temperature": 0, "serviceTier": "flex"},
+})).expect("supported members");
+assert_eq!(projected.model, "models/gemini-fixture");
+assert_eq!(
+    compact_json(&Value::Object(projected.body)).expect("compact"),
+    r#"{"contents":[{"parts":[{"text":"hello"}],"role":"user"}],"serviceTier":"flex","generationConfig":{"temperature":0}}"#,
+);
+```
+
+The result holds the model resource path (`models/` is added unless the name starts with
+`models/` or `tunedModels/`) and the body, whose key order and number spelling are written by
+the [JSON owner](../json.md). A model that is missing, empty or not text, or that contains
+`..`, `?` or `&`, is rejected before contents and configuration are read; the first rejection
+in the order model, contents, configuration wins.
+
+- Contents accept a content, a text, an admitted part, or a non-empty homogeneous list of
+  contents or admitted parts. Empty lists, mixed content/part lists, and bare function-call
+  or function-response parts (single or in a list) are rejected.
+- A part may hold several members. File data, inline data and function calls select only
+  the members the endpoint knows; other supported part members are copied whole.
+- Selected record members omit missing or null values, retain zero and false, and apply
+  field-specific transforms to empty text, lists and objects. Unsupported record members
+  are rejected on presence, even when null or false.
+- Sampling and output settings go into `generationConfig`; the system instruction, safety
+  settings, tools, tool configuration, cached content and service tier go to the body.
+- A schema is converted node by node: type names are uppercased (unknown names become
+  `TYPE_UNSPECIFIED`), type arrays and `anyOf` lists drop their null type into `nullable`,
+  `items`, `anyOf` and `properties` are converted recursively, and `additionalProperties`
+  is dropped at converted nodes. A union collapses to its other arm only when it is a pure
+  nullable wrapper; a parent that holds other non-null members is retained for ordinary
+  schema conversion. At the responseSchema and function parameters/response fields only,
+  a schema carrying `$schema` is moved to its JSON-schema alternative when that destination
+  is absent, null, false, zero or empty text, and is not converted in that alternative.

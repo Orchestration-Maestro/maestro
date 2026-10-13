@@ -1,0 +1,2517 @@
+[
+  {
+    "test": "configuration_presence_controls_the_generation_object",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "configuration_presence_controls_the_generation_object",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":null}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "configuration_presence_controls_the_generation_object",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "unknown_and_client_only_fields_do_not_enter_the_body",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"unknown\":\"ignore\",\"config\":{\"unknown\":{\"temperature\":99},\"httpOptions\":{\"baseUrl\":\"https://fixture.invalid/v1beta\",\"apiVersion\":\"\",\"headers\":{\"x-custom\":\"value\"}},\"abortSignal\":{},\"automaticFunctionCalling\":{\"disable\":true,\"maximumRemoteCalls\":7}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"models/qualified\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/qualified",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"tunedModels/tuned\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "tunedModels/tuned",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"a/b/c\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/a/b/c",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"publisher/model\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/publisher/model",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\" \",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/ ",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"﻿ gemini\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/﻿ gemini",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"Gemini-Case\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/Gemini-Case",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"é/模型\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/é/模型",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"one.dot\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/one.dot",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"x%20z\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/x%20z",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"#frag\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models/#frag",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_paths_preserve_qualifiers_and_authored_text",
+    "input": "{\"model\":\"/absolute\",\"contents\":\"request\"}",
+    "expected": {
+      "model": "models//absolute",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "model_rejections_precede_contents_and_configuration",
+    "input": "{\"model\":\"\",\"contents\":[],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "model_rejections_precede_contents_and_configuration",
+    "input": "{\"model\":12,\"contents\":[],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "model_rejections_precede_contents_and_configuration",
+    "input": "{\"model\":\"a..b\",\"contents\":[],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "model_rejections_precede_contents_and_configuration",
+    "input": "{\"model\":\"a?b\",\"contents\":[],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "model_rejections_precede_contents_and_configuration",
+    "input": "{\"model\":\"a&b\",\"contents\":[],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "missing_or_null_contents_are_not_invented",
+    "input": "{\"model\":\"m\",\"config\":{\"temperature\":0}}",
+    "expected": {
+      "model": "models/m",
+      "body": "{\"generationConfig\":{\"temperature\":0}}"
+    }
+  },
+  {
+    "test": "missing_or_null_contents_are_not_invented",
+    "input": "{\"model\":\"m\",\"contents\":null}",
+    "expected": {
+      "model": "models/m",
+      "body": "{}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"\"}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":{\"text\":\"single part\",\"unknown\":1}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"single part\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":{\"role\":\"model\",\"parts\":[{\"text\":\"single content\"}],\"unknown\":1}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"single content\"}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[\"z\",{\"text\":\"a\"},\"z\"]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"z\"},{\"text\":\"a\"},{\"text\":\"z\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"z\"}]},{\"role\":\"model\",\"parts\":[{\"text\":\"a\"}]},{\"role\":\"user\",\"parts\":[{\"text\":\"z\"}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"z\"}],\"role\":\"user\"},{\"parts\":[{\"text\":\"a\"}],\"role\":\"model\"},{\"parts\":[{\"text\":\"z\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "content_unions_keep_turns_parts_and_duplicates",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"parts\":[]},{\"role\":\"custom-role\",\"parts\":[{\"text\":\"﻿  \\n\"},null,{},\"text inside a Content is not a PartUnion\"]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[]},{\"parts\":[{\"text\":\"﻿  \\n\"},{},{},{}],\"role\":\"custom-role\"}]}"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[]}",
+    "expected": {
+      "error": "contents are required"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"parts\":[]},\"part\"]}",
+    "expected": {
+      "error": "Mixing Content and Parts is not supported, please group the parts into a the appropriate Content objects and specify the roles for them"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[\"part\",{\"parts\":[]}]}",
+    "expected": {
+      "error": "Mixing Content and Parts is not supported, please group the parts into a the appropriate Content objects and specify the roles for them"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":{\"functionCall\":{\"name\":\"f\"}}}",
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them in a Content object, specifying the role for them"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":{\"functionResponse\":{\"name\":\"f\"}}}",
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them in a Content object, specifying the role for them"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"functionCall\":{\"name\":\"f\"}}]}",
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them, and any other parts, in Content objects as appropriate, specifying the role for them"
+    }
+  },
+  {
+    "test": "contents_reject_empty_mixed_and_unwrapped_call_forms",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"functionResponse\":{\"name\":\"f\"}}]}",
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them, and any other parts, in Content objects as appropriate, specifying the role for them"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":\"\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"\"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":\" ﻿ \"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\" ﻿ \"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":{\"text\":\"instruction\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"instruction\"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":{\"role\":\"system\",\"parts\":[{\"text\":\"z\"},{\"text\":\"a\"},{\"text\":\"z\"}],\"unknown\":3}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"z\"},{\"text\":\"a\"},{\"text\":\"z\"}],\"role\":\"system\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":[{\"text\":\"a\"},\"b\"]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"a\"},{\"text\":\"b\"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "system_instructions_use_the_single_content_union",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "empty_system_part_lists_fail_before_sampling",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"systemInstruction\":[],\"temperature\":0,\"routingConfig\":{}}}",
+    "expected": {
+      "error": "PartListUnion is required"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\"}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\"}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"x\",\"extra\":1}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"x\",\"extra\":1}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(1)\",\"extra\":2}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(1)\",\"extra\":2}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"executableCode\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionResponse\":{\"name\":\"f\",\"response\":{\"output\":\"z\"},\"extra\":{\"keep\":true}}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"functionResponse\":{\"name\":\"f\",\"response\":{\"output\":\"z\"},\"extra\":{\"keep\":true}}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionResponse\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"text\":\"t\"}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"t\"}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"text\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thought\":false}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"thought\":false}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thought\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":\"sig\"}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"thoughtSignature\":\"sig\"}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"extra\":3}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"extra\":3}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"videoMetadata\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":{\"id\":\"t\",\"toolType\":\"GOOGLE_SEARCH\",\"args\":{\"q\":\"x\"},\"extra\":4}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"toolCall\":{\"id\":\"t\",\"toolType\":\"GOOGLE_SEARCH\",\"args\":{\"q\":\"x\"},\"extra\":4}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":{\"id\":\"t\",\"response\":{\"answer\":1},\"extra\":5}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"toolResponse\":{\"id\":\"t\",\"response\":{\"answer\":1},\"extra\":5}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":{\"z\":1,\"a\":2}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"partMetadata\":{\"z\":1,\"a\":2}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "part_fields_keep_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "combined_part_fields_are_not_exclusive_variants",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\"},\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"x\",\"extra\":1},\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(1)\",\"extra\":2},\"functionResponse\":{\"name\":\"f\",\"response\":{\"output\":\"z\"},\"extra\":{\"keep\":true}},\"text\":\"t\",\"thought\":false,\"thoughtSignature\":\"sig\",\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"extra\":3},\"toolCall\":{\"id\":\"t\",\"toolType\":\"GOOGLE_SEARCH\",\"args\":{\"q\":\"x\"},\"extra\":4},\"toolResponse\":{\"id\":\"t\",\"response\":{\"answer\":1},\"extra\":5},\"partMetadata\":{\"z\":1,\"a\":2},\"inlineData\":{\"data\":\"eA==\",\"mimeType\":\"image/png\",\"unknown\":1},\"fileData\":{\"fileUri\":\"gs://b/a\",\"mimeType\":\"image/jpeg\",\"unknown\":2},\"functionCall\":{\"id\":\"id\",\"name\":\"f\",\"args\":{\"z\":1,\"a\":2,\"z2\":1},\"unknown\":3},\"unknown\":\"drop\"}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\"},\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"x\",\"extra\":1},\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(1)\",\"extra\":2},\"fileData\":{\"fileUri\":\"gs://b/a\",\"mimeType\":\"image/jpeg\"},\"functionCall\":{\"id\":\"id\",\"args\":{\"z\":1,\"a\":2,\"z2\":1},\"name\":\"f\"},\"functionResponse\":{\"name\":\"f\",\"response\":{\"output\":\"z\"},\"extra\":{\"keep\":true}},\"inlineData\":{\"data\":\"eA==\",\"mimeType\":\"image/png\"},\"text\":\"t\",\"thought\":false,\"thoughtSignature\":\"sig\",\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"extra\":3},\"toolCall\":{\"id\":\"t\",\"toolType\":\"GOOGLE_SEARCH\",\"args\":{\"q\":\"x\"},\"extra\":4},\"toolResponse\":{\"id\":\"t\",\"response\":{\"answer\":1},\"extra\":5},\"partMetadata\":{\"z\":1,\"a\":2}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"inlineData\":{}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":{}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"fileData\":{}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"functionCall\":{}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":null}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "nested_part_projection_selects_only_owned_members",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{\"data\":\"\",\"mimeType\":null},\"fileData\":{\"fileUri\":\"\",\"mimeType\":null},\"functionCall\":{\"id\":\"\",\"args\":null,\"name\":\"\"}}]}]}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"fileData\":{\"fileUri\":\"\"},\"functionCall\":{\"id\":\"\",\"name\":\"\"},\"inlineData\":{\"data\":\"\"}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{\"displayName\":null}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{\"displayName\":false}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{\"displayName\":{}}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":{\"displayName\":null}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":{\"displayName\":false}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":{\"displayName\":{}}}]}]}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"partialArgs\":null}}]}]}",
+    "expected": {
+      "error": "partialArgs parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"partialArgs\":false}}]}]}",
+    "expected": {
+      "error": "partialArgs parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"partialArgs\":{}}}]}]}",
+    "expected": {
+      "error": "partialArgs parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"willContinue\":null}}]}]}",
+    "expected": {
+      "error": "willContinue parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"willContinue\":false}}]}]}",
+    "expected": {
+      "error": "willContinue parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_part_members_fail_even_when_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"willContinue\":{}}}]}]}",
+    "expected": {
+      "error": "willContinue parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"temperature\":0}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"temperature\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"topP\":0.75}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"topP\":0.75}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"topP\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"topK\":8}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"topK\":8}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"topK\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"candidateCount\":2}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"candidateCount\":2}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"candidateCount\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"maxOutputTokens\":123}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"maxOutputTokens\":123}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"maxOutputTokens\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"stopSequences\":[\"z\",\"a\",\"z\"]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"stopSequences\":[\"z\",\"a\",\"z\"]}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"stopSequences\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseLogprobs\":false}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseLogprobs\":false}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseLogprobs\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"logprobs\":0}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"logprobs\":0}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"logprobs\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"presencePenalty\":-1.5}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"presencePenalty\":-1.5}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"presencePenalty\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"frequencyPenalty\":0.3}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"frequencyPenalty\":0.3}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"frequencyPenalty\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"seed\":17}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"seed\":17}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"seed\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseMimeType\":\"application/json\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseMimeType\":\"application/json\"}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseMimeType\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseJsonSchema\":{\"type\":[\"string\",\"null\"],\"extra\":{\"keep\":true}}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"type\":[\"string\",\"null\"],\"extra\":{\"keep\":true}}}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseJsonSchema\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"]}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseModalities\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\"}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"mediaResolution\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"thinkingConfig\":{\"includeThoughts\":false,\"thinkingBudget\":0,\"thinkingLevel\":\"LOW\",\"unknown\":\"preserved\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"thinkingConfig\":{\"includeThoughts\":false,\"thinkingBudget\":0,\"thinkingLevel\":\"LOW\",\"unknown\":\"preserved\"}}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"thinkingConfig\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"enableEnhancedCivicAnswers\":false}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"enableEnhancedCivicAnswers\":false}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"enableEnhancedCivicAnswers\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_keep_their_destination_and_zero_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"serviceTier\":\"FLEX\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"serviceTier\":\"FLEX\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"serviceTier\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "configuration_fields_are_projected_in_source_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"serviceTier\":\"FLEX\",\"enableEnhancedCivicAnswers\":false,\"thinkingConfig\":{\"includeThoughts\":false,\"thinkingBudget\":0,\"thinkingLevel\":\"LOW\",\"unknown\":\"preserved\"},\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\",\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"],\"responseJsonSchema\":{\"type\":[\"string\",\"null\"],\"extra\":{\"keep\":true}},\"responseMimeType\":\"application/json\",\"seed\":17,\"frequencyPenalty\":0.3,\"presencePenalty\":-1.5,\"logprobs\":0,\"responseLogprobs\":false,\"stopSequences\":[\"z\",\"a\",\"z\"],\"maxOutputTokens\":123,\"candidateCount\":2,\"topK\":8,\"topP\":0.75,\"temperature\":0}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"serviceTier\":\"FLEX\",\"generationConfig\":{\"temperature\":0,\"topP\":0.75,\"topK\":8,\"candidateCount\":2,\"maxOutputTokens\":123,\"stopSequences\":[\"z\",\"a\",\"z\"],\"responseLogprobs\":false,\"logprobs\":0,\"presencePenalty\":-1.5,\"frequencyPenalty\":0.3,\"seed\":17,\"responseMimeType\":\"application/json\",\"responseJsonSchema\":{\"type\":[\"string\",\"null\"],\"extra\":{\"keep\":true}},\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"],\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\",\"thinkingConfig\":{\"includeThoughts\":false,\"thinkingBudget\":0,\"thinkingLevel\":\"LOW\",\"unknown\":\"preserved\"},\"enableEnhancedCivicAnswers\":false}}"
+    }
+  },
+  {
+    "test": "passthrough_fields_do_not_gain_typed_ingress_validation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"temperature\":\"0.5\",\"thinkingConfig\":{\"thinkingLevel\":{\"future\":\"value\"}},\"responseModalities\":{\"future\":true},\"responseJsonSchema\":false}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":\"0.5\",\"responseJsonSchema\":false,\"responseModalities\":{\"future\":true},\"thinkingConfig\":{\"thinkingLevel\":{\"future\":\"value\"}}}}"
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"routingConfig\":null}}",
+    "expected": {
+      "error": "routingConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"routingConfig\":false}}",
+    "expected": {
+      "error": "routingConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "routingConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelSelectionConfig\":null}}",
+    "expected": {
+      "error": "modelSelectionConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelSelectionConfig\":false}}",
+    "expected": {
+      "error": "modelSelectionConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelSelectionConfig\":{}}}",
+    "expected": {
+      "error": "modelSelectionConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"labels\":null}}",
+    "expected": {
+      "error": "labels parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"labels\":false}}",
+    "expected": {
+      "error": "labels parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"labels\":{}}}",
+    "expected": {
+      "error": "labels parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"audioTimestamp\":null}}",
+    "expected": {
+      "error": "audioTimestamp parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"audioTimestamp\":false}}",
+    "expected": {
+      "error": "audioTimestamp parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"audioTimestamp\":{}}}",
+    "expected": {
+      "error": "audioTimestamp parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelArmorConfig\":null}}",
+    "expected": {
+      "error": "modelArmorConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelArmorConfig\":false}}",
+    "expected": {
+      "error": "modelArmorConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_configuration_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelArmorConfig\":{}}}",
+    "expected": {
+      "error": "modelArmorConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "speech_configuration_accepts_names_and_open_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":\"voice-x\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"voice-x\"}}}}}"
+    }
+  },
+  {
+    "test": "speech_configuration_accepts_names_and_open_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":\"\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"\"}}}}}"
+    }
+  },
+  {
+    "test": "speech_configuration_accepts_names_and_open_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":{}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{}}}"
+    }
+  },
+  {
+    "test": "speech_configuration_accepts_names_and_open_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"voice-y\"}},\"languageCode\":\"en-US\",\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[]},\"unknown\":\"keep\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"voice-y\"}},\"languageCode\":\"en-US\",\"multiSpeakerVoiceConfig\":{\"speakerVoiceConfigs\":[]},\"unknown\":\"keep\"}}}"
+    }
+  },
+  {
+    "test": "speech_configuration_accepts_names_and_open_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"cachedContents/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"cache-id\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"cachedContents/cache-id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"cachedContents/already\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"cachedContents/already\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"projects/p/locations/l/cachedContents/c\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/p/locations/l/cachedContents/c\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"a/b\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"a/b\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"a/\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"a/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cached_content_names_add_only_a_missing_single_segment_prefix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":\"/a\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"cachedContent\":\"/a\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "image_configuration_selects_supported_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"aspectRatio\":\"16:9\",\"imageSize\":\"2K\",\"unknown\":\"drop\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"aspectRatio\":\"16:9\",\"imageSize\":\"2K\"}}}"
+    }
+  },
+  {
+    "test": "image_configuration_selects_supported_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"aspectRatio\":null,\"imageSize\":\"\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageSize\":\"\"}}}"
+    }
+  },
+  {
+    "test": "image_configuration_selects_supported_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"personGeneration\":null}}}",
+    "expected": {
+      "error": "personGeneration parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"personGeneration\":false}}}",
+    "expected": {
+      "error": "personGeneration parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"personGeneration\":{}}}}",
+    "expected": {
+      "error": "personGeneration parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"prominentPeople\":null}}}",
+    "expected": {
+      "error": "prominentPeople parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"prominentPeople\":false}}}",
+    "expected": {
+      "error": "prominentPeople parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"prominentPeople\":{}}}}",
+    "expected": {
+      "error": "prominentPeople parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputMimeType\":null}}}",
+    "expected": {
+      "error": "outputMimeType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputMimeType\":false}}}",
+    "expected": {
+      "error": "outputMimeType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputMimeType\":{}}}}",
+    "expected": {
+      "error": "outputMimeType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputCompressionQuality\":null}}}",
+    "expected": {
+      "error": "outputCompressionQuality parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputCompressionQuality\":false}}}",
+    "expected": {
+      "error": "outputCompressionQuality parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"outputCompressionQuality\":{}}}}",
+    "expected": {
+      "error": "outputCompressionQuality parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":null}}}",
+    "expected": {
+      "error": "imageOutputOptions parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":false}}}",
+    "expected": {
+      "error": "imageOutputOptions parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_image_configuration_fails_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":{}}}}",
+    "expected": {
+      "error": "imageOutputOptions parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "safety_settings_keep_order_and_select_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"safetySettings\":[],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "safety_settings_keep_order_and_select_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "safety_settings_keep_order_and_select_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"threshold\":\"BLOCK_NONE\",\"unknown\":1},{\"category\":\"HARM_CATEGORY_DANGEROUS_CONTENT\",\"threshold\":\"BLOCK_LOW_AND_ABOVE\"},{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"threshold\":\"BLOCK_NONE\"}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"safetySettings\":[{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"threshold\":\"BLOCK_NONE\"},{\"category\":\"HARM_CATEGORY_DANGEROUS_CONTENT\",\"threshold\":\"BLOCK_LOW_AND_ABOVE\"},{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"threshold\":\"BLOCK_NONE\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "safety_settings_keep_order_and_select_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[{},null,{\"category\":null,\"threshold\":\"\"}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"safetySettings\":[{},{},{\"threshold\":\"\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "safety_method_is_rejected_before_threshold",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[{\"method\":null,\"threshold\":\"BLOCK_NONE\"}]}}",
+    "expected": {
+      "error": "method parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "safety_method_is_rejected_before_threshold",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[{\"method\":false,\"threshold\":\"BLOCK_NONE\"}]}}",
+    "expected": {
+      "error": "method parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "safety_method_is_rejected_before_threshold",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"safetySettings\":[{\"method\":\"SEVERITY\",\"threshold\":\"BLOCK_NONE\"}]}}",
+    "expected": {
+      "error": "method parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "tools_presence_preserves_an_explicit_empty_list",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tools_presence_preserves_an_explicit_empty_list",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"excludedPredefinedFunctions\":[\"x\"],\"extra\":1}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"excludedPredefinedFunctions\":[\"x\"],\"extra\":1}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"computerUse\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"fileSearch\":{\"fileSearchStoreNames\":[\"z\",\"a\",\"z\"],\"extra\":2}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"fileSearch\":{\"fileSearchStoreNames\":[\"z\",\"a\",\"z\"],\"extra\":2}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"fileSearch\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"codeExecution\":{\"future\":true}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"codeExecution\":{\"future\":true}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"codeExecution\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\",\"dynamicThreshold\":0.2},\"extra\":3}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\",\"dynamicThreshold\":0.2},\"extra\":3}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearchRetrieval\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"urlContext\":{\"future\":true}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"urlContext\":{\"future\":true}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"urlContext\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"mcpServers\":[{\"name\":\"server\",\"url\":\"https://fixture.invalid\",\"extra\":4}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"mcpServers\":[{\"name\":\"server\",\"url\":\"https://fixture.invalid\",\"extra\":4}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_fields_preserve_open_values_and_skip_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"mcpServers\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_kinds_and_declarations_can_coexist",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"excludedPredefinedFunctions\":[\"x\"],\"extra\":1},\"fileSearch\":{\"fileSearchStoreNames\":[\"z\",\"a\",\"z\"],\"extra\":2},\"codeExecution\":{\"future\":true},\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\",\"dynamicThreshold\":0.2},\"extra\":3},\"urlContext\":{\"future\":true},\"mcpServers\":[{\"name\":\"server\",\"url\":\"https://fixture.invalid\",\"extra\":4}],\"functionDeclarations\":[{\"name\":\"z\",\"description\":\"last\",\"parametersJsonSchema\":{\"type\":\"object\"},\"extra\":1},{\"name\":\"a\"},{\"name\":\"z\"}],\"unknown\":\"drop\"}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"excludedPredefinedFunctions\":[\"x\"],\"extra\":1},\"fileSearch\":{\"fileSearchStoreNames\":[\"z\",\"a\",\"z\"],\"extra\":2},\"codeExecution\":{\"future\":true},\"functionDeclarations\":[{\"name\":\"z\",\"description\":\"last\",\"parametersJsonSchema\":{\"type\":\"object\"},\"extra\":1},{\"name\":\"a\"},{\"name\":\"z\"}],\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\",\"dynamicThreshold\":0.2},\"extra\":3},\"urlContext\":{\"future\":true},\"mcpServers\":[{\"name\":\"server\",\"url\":\"https://fixture.invalid\",\"extra\":4}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"retrieval\":null}]}}",
+    "expected": {
+      "error": "retrieval parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"retrieval\":false}]}}",
+    "expected": {
+      "error": "retrieval parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"retrieval\":{}}]}}",
+    "expected": {
+      "error": "retrieval parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"enterpriseWebSearch\":null}]}}",
+    "expected": {
+      "error": "enterpriseWebSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"enterpriseWebSearch\":false}]}}",
+    "expected": {
+      "error": "enterpriseWebSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"enterpriseWebSearch\":{}}]}}",
+    "expected": {
+      "error": "enterpriseWebSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"parallelAiSearch\":null}]}}",
+    "expected": {
+      "error": "parallelAiSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"parallelAiSearch\":false}]}}",
+    "expected": {
+      "error": "parallelAiSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_tool_members_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"parallelAiSearch\":{}}]}}",
+    "expected": {
+      "error": "parallelAiSearch parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "search_tool_selects_only_supported_configuration",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearch\":{}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "search_tool_selects_only_supported_configuration",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"searchTypes\":{\"webSearch\":{},\"imageSearch\":{}},\"timeRangeFilter\":{\"startTime\":\"start\",\"endTime\":\"end\"},\"unknown\":1}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearch\":{\"searchTypes\":{\"webSearch\":{},\"imageSearch\":{}},\"timeRangeFilter\":{\"startTime\":\"start\",\"endTime\":\"end\"}}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "search_tool_selects_only_supported_configuration",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"searchTypes\":null,\"timeRangeFilter\":null}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearch\":{}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "search_tool_selects_only_supported_configuration",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"blockingConfidence\":null}}]}}",
+    "expected": {
+      "error": "blockingConfidence parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"blockingConfidence\":false}}]}}",
+    "expected": {
+      "error": "blockingConfidence parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"blockingConfidence\":{}}}]}}",
+    "expected": {
+      "error": "blockingConfidence parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"excludeDomains\":null}}]}}",
+    "expected": {
+      "error": "excludeDomains parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"excludeDomains\":false}}]}}",
+    "expected": {
+      "error": "excludeDomains parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_search_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleSearch\":{\"excludeDomains\":{}}}]}}",
+    "expected": {
+      "error": "excludeDomains parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "maps_tool_selects_api_key_and_widget_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleMaps\":{}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "maps_tool_selects_api_key_and_widget_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKey\":\"maps-key\",\"unknown\":\"drop\"},\"enableWidget\":false,\"unknown\":\"drop\"}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKey\":\"maps-key\"},\"enableWidget\":false}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "maps_tool_selects_api_key_and_widget_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":null,\"enableWidget\":null}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"googleMaps\":{}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "maps_tool_selects_api_key_and_widget_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":null}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKeyConfig\":null}}}]}}",
+    "expected": {
+      "error": "apiKeyConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKeyConfig\":false}}}]}}",
+    "expected": {
+      "error": "apiKeyConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKeyConfig\":{}}}}]}}",
+    "expected": {
+      "error": "apiKeyConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"authType\":null}}}]}}",
+    "expected": {
+      "error": "authType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"authType\":false}}}]}}",
+    "expected": {
+      "error": "authType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"authType\":{}}}}]}}",
+    "expected": {
+      "error": "authType parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"googleServiceAccountConfig\":null}}}]}}",
+    "expected": {
+      "error": "googleServiceAccountConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"googleServiceAccountConfig\":false}}}]}}",
+    "expected": {
+      "error": "googleServiceAccountConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"googleServiceAccountConfig\":{}}}}]}}",
+    "expected": {
+      "error": "googleServiceAccountConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"httpBasicAuthConfig\":null}}}]}}",
+    "expected": {
+      "error": "httpBasicAuthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"httpBasicAuthConfig\":false}}}]}}",
+    "expected": {
+      "error": "httpBasicAuthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"httpBasicAuthConfig\":{}}}}]}}",
+    "expected": {
+      "error": "httpBasicAuthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oauthConfig\":null}}}]}}",
+    "expected": {
+      "error": "oauthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oauthConfig\":false}}}]}}",
+    "expected": {
+      "error": "oauthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oauthConfig\":{}}}}]}}",
+    "expected": {
+      "error": "oauthConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oidcConfig\":null}}}]}}",
+    "expected": {
+      "error": "oidcConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oidcConfig\":false}}}]}}",
+    "expected": {
+      "error": "oidcConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "unsupported_maps_auth_fields_fail_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"oidcConfig\":{}}}}]}}",
+    "expected": {
+      "error": "oidcConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "tool_configuration_selects_fields_without_declarations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"toolConfig\":{},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_configuration_selects_fields_without_declarations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{}}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"toolConfig\":{\"functionCallingConfig\":{}},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_configuration_selects_fields_without_declarations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\",\"allowedFunctionNames\":[\"z\",\"a\",\"z\"],\"unknown\":1},\"retrievalConfig\":{\"latLng\":{\"latitude\":1,\"longitude\":2},\"languageCode\":\"en\",\"unknown\":2},\"includeServerSideToolInvocations\":false,\"unknown\":3}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"toolConfig\":{\"retrievalConfig\":{\"latLng\":{\"latitude\":1,\"longitude\":2},\"languageCode\":\"en\",\"unknown\":2},\"functionCallingConfig\":{\"allowedFunctionNames\":[\"z\",\"a\",\"z\"],\"mode\":\"ANY\"},\"includeServerSideToolInvocations\":false},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_configuration_selects_fields_without_declarations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"mode\":null,\"allowedFunctionNames\":null},\"retrievalConfig\":null,\"includeServerSideToolInvocations\":null}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"toolConfig\":{\"functionCallingConfig\":{}},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_configuration_selects_fields_without_declarations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "streamed_function_arguments_are_rejected_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"streamFunctionCallArguments\":null}}}}",
+    "expected": {
+      "error": "streamFunctionCallArguments parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "streamed_function_arguments_are_rejected_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"streamFunctionCallArguments\":false}}}}",
+    "expected": {
+      "error": "streamFunctionCallArguments parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "streamed_function_arguments_are_rejected_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"streamFunctionCallArguments\":true}}}}",
+    "expected": {
+      "error": "streamFunctionCallArguments parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"string\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"NUMBER\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"NUMBER\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"iNtEgEr\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"INTEGER\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"boolean\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"BOOLEAN\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"array\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"ARRAY\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"object\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"OBJECT\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"NULL\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"NULL\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"TYPE_UNSPECIFIED\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"TYPE_UNSPECIFIED\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"future\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"TYPE_UNSPECIFIED\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"TYPE_UNSPECIFIED\"}}}"
+    }
+  },
+  {
+    "test": "schema_types_use_the_declared_uppercase_vocabulary",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"ſtring\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"anyOf\":[]}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"null\",\"string\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\",\"null\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\",\"number\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\",\"number\",\"null\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\",\"string\",\"null\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"STRING\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"null\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[]}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"NULL\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"NULL\"}}}"
+    }
+  },
+  {
+    "test": "schema_type_arrays_keep_order_duplicates_and_nullable",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"future\",\"boolean\"]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"TYPE_UNSPECIFIED\"},{\"type\":\"BOOLEAN\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_rejects_exclusive_type_conflicts",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"null\"}}}",
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "schema_rejects_exclusive_type_conflicts",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"string\",\"anyOf\":[]}}}",
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "schema_rejects_exclusive_type_conflicts",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"string\"],\"anyOf\":[{\"type\":\"number\"}]}}}",
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"integer\"},{\"type\":\"null\"}]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"INTEGER\"}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"anyOf\":[]}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"string\"}]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"},{\"type\":\"STRING\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":[\"null\",\"string\"],\"nullable\":false}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":false,\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "schema_nullable_wrappers_and_general_unions_keep_their_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"nullable\":false,\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"},{\"type\":\"number\"}]}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}}"
+    }
+  },
+  {
+    "test": "schema_traversal_changes_only_owned_schema_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"properties\":{\"additionalProperties\":{\"type\":\"string\"},\"type\":{\"type\":\"integer\"},\"z\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"additionalProperties\":false}},\"items\":{\"type\":\"boolean\"},\"anyOf\":null,\"additionalProperties\":{\"type\":\"number\"},\"oneOf\":[{\"type\":\"string\",\"additionalProperties\":false}],\"allOf\":[{\"type\":\"number\"}],\"default\":{\"type\":\"null\",\"additionalProperties\":true},\"enum\":[{\"type\":\"null\"}],\"example\":{\"type\":\"null\"},\"description\":null,\"title\":\"keep\",\"minimum\":0,\"required\":[\"z\",\"type\",\"z\"],\"propertyOrdering\":[\"z\",\"type\"],\"future\":{\"type\":\"null\"}}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"OBJECT\",\"properties\":{\"additionalProperties\":{\"type\":\"STRING\"},\"type\":{\"type\":\"INTEGER\"},\"z\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"STRING\"}}},\"items\":{\"type\":\"BOOLEAN\"},\"oneOf\":[{\"type\":\"string\",\"additionalProperties\":false}],\"allOf\":[{\"type\":\"number\"}],\"default\":{\"type\":\"null\",\"additionalProperties\":true},\"enum\":[{\"type\":\"null\"}],\"example\":{\"type\":\"null\"},\"title\":\"keep\",\"minimum\":0,\"required\":[\"z\",\"type\",\"z\"],\"propertyOrdering\":[\"z\",\"type\"],\"future\":{\"type\":\"null\"}}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_siblings_survive_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\",\"description\":\"inner\"}],\"description\":\"outer\",\"maxLength\":9}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\",\"description\":\"inner\"}],\"description\":\"outer\",\"maxLength\":9}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_siblings_survive_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"description\":\"outer\",\"anyOf\":[{\"type\":\"integer\",\"minimum\":2},{\"type\":\"null\"}],\"maximum\":8}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"description\":\"outer\",\"nullable\":true,\"anyOf\":[{\"type\":\"INTEGER\",\"minimum\":2}],\"maximum\":8}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_siblings_survive_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}],\"nullable\":false}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":false,\"anyOf\":[{\"type\":\"STRING\"}]}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_siblings_survive_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}],\"description\":null}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_correction_is_shared_by_response_and_function_schemas",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"properties\":{\"x\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}],\"description\":\"outer\",\"maxLength\":12}}}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"OBJECT\",\"properties\":{\"x\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"outer\",\"maxLength\":12}}}}}"
+    }
+  },
+  {
+    "test": "nullable_schema_correction_is_shared_by_response_and_function_schemas",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}],\"description\":\"outer\",\"maxLength\":12}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"outer\",\"maxLength\":12}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "nullable_schema_correction_is_shared_by_response_and_function_schemas",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"string\"}],\"description\":\"outer\",\"maxLength\":12}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"outer\",\"maxLength\":12}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":false}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":0}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":\"\"}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"OBJECT\"},\"responseJsonSchema\":{}}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{\"type\":\"number\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"OBJECT\"},\"responseJsonSchema\":{\"type\":\"number\"}}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":null}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":false}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":0}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":\"\"}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":{}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":{}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":{\"type\":\"number\"}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"parametersJsonSchema\":{\"type\":\"number\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":null}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":false}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":0}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":\"\"}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{\"type\":\"number\"}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":false},\"responseJsonSchema\":{\"type\":\"number\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_declarations_keep_open_members_and_transform_both_schemas",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"z\",\"description\":\"keep\",\"parameters\":{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"string\"}},\"additionalProperties\":false},\"response\":{\"type\":\"array\",\"items\":{\"type\":\"number\"}},\"behavior\":\"NON_BLOCKING\",\"extra\":{\"keep\":true}},{\"name\":\"a\",\"parameters\":null,\"response\":null},{\"name\":\"z\",\"parameters\":{},\"response\":{}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"z\",\"description\":\"keep\",\"parameters\":{\"type\":\"OBJECT\",\"properties\":{\"x\":{\"type\":\"STRING\"}}},\"response\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"NUMBER\"}},\"behavior\":\"NON_BLOCKING\",\"extra\":{\"keep\":true}},{\"name\":\"a\",\"parameters\":null,\"response\":null},{\"name\":\"z\",\"parameters\":{},\"response\":{}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "raw_function_json_schemas_are_never_transformed",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"type\":\"null\",\"additionalProperties\":false},\"responseJsonSchema\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"null\"}]},\"parameters\":false,\"response\":0}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"type\":\"null\",\"additionalProperties\":false},\"responseJsonSchema\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"null\"}]},\"parameters\":false,\"response\":0}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "projection_failures_follow_the_source_phase_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelArmorConfig\":{},\"labels\":{},\"routingConfig\":{},\"systemInstruction\":[],\"responseSchema\":{\"type\":\"null\"}}}",
+    "expected": {
+      "error": "PartListUnion is required"
+    }
+  },
+  {
+    "test": "projection_failures_follow_the_source_phase_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"modelArmorConfig\":{},\"labels\":{},\"routingConfig\":{},\"responseSchema\":{\"type\":\"null\"}}}",
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "projection_failures_follow_the_source_phase_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"labels\":{},\"modelSelectionConfig\":{},\"routingConfig\":{}}}",
+    "expected": {
+      "error": "routingConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "projection_failures_follow_the_source_phase_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"retrieval\":{},\"functionDeclarations\":[{\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "projection_failures_follow_the_source_phase_order",
+    "input": "{\"model\":\"m\",\"contents\":[{\"parts\":[{\"fileData\":{\"displayName\":\"x\"},\"inlineData\":{\"displayName\":\"y\"}}]}],\"config\":{\"routingConfig\":{}}}",
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "projected_json_reuses_canonical_numbers_and_key_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseJsonSchema\":{\"z\":-0.0,\"2\":2,\"1\":1,\"a\":0.0000001,\"big\":9007199254740993,\"z\":1.25,\"01\":3,\"zero\":-0.0}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"1\":1,\"2\":2,\"z\":1.25,\"a\":1e-7,\"big\":9007199254740992,\"01\":3,\"zero\":0}}}"
+    }
+  },
+  {
+    "test": "hook_replacement_changes_model_content_and_configuration",
+    "input": "{\"model\":\"tunedModels/changed\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"text\":\"replacement\",\"thought\":true,\"thoughtSignature\":\"hook-signature\"}]}],\"config\":{\"temperature\":0.125,\"topP\":0.8,\"systemInstruction\":\"hook system\",\"tools\":[{\"functionDeclarations\":[{\"name\":\"hook_tool\",\"parametersJsonSchema\":{\"type\":\"object\"}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\",\"allowedFunctionNames\":[\"hook_tool\"]}},\"thinkingConfig\":{\"thinkingBudget\":512},\"responseJsonSchema\":{\"type\":\"object\"}}}",
+    "expected": {
+      "model": "tunedModels/changed",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"replacement\",\"thought\":true,\"thoughtSignature\":\"hook-signature\"}],\"role\":\"model\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"hook system\"}],\"role\":\"user\"},\"tools\":[{\"functionDeclarations\":[{\"name\":\"hook_tool\",\"parametersJsonSchema\":{\"type\":\"object\"}}]}],\"toolConfig\":{\"functionCallingConfig\":{\"allowedFunctionNames\":[\"hook_tool\"],\"mode\":\"ANY\"}},\"generationConfig\":{\"temperature\":0.125,\"topP\":0.8,\"responseJsonSchema\":{\"type\":\"object\"},\"thinkingConfig\":{\"thinkingBudget\":512}}}"
+    }
+  },
+  {
+    "test": "configuration_nulls_are_omitted_without_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":null,\"cachedContent\":null}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "image_configuration_selects_supported_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"imageConfig\":{}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "function_declarations_keep_open_members_and_transform_both_schemas",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":null},{\"functionDeclarations\":[]},{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":null,\"type\":\"object\"},\"response\":{\"$schema\":null,\"type\":\"array\"}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{},{\"functionDeclarations\":[]},{\"functionDeclarations\":[{\"name\":\"f\",\"parametersJsonSchema\":{\"$schema\":null,\"type\":\"object\"},\"responseJsonSchema\":{\"$schema\":null,\"type\":\"array\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "tool_kinds_and_declarations_can_coexist",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"codeExecution\":{}},{\"googleSearch\":{}},{\"codeExecution\":{}}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"codeExecution\":{}},{\"googleSearch\":{}},{\"codeExecution\":{}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "schema_traversal_changes_only_owned_schema_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"items\":null,\"anyOf\":null,\"properties\":null,\"type\":null,\"description\":\"empty schema\"}}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"description\":\"empty schema\"}}}"
+    }
+  },
+  {
+    "test": "schema_property_failures_follow_canonical_key_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"properties\":{\"a\":{\"type\":\"null\"},\"10\":{\"type\":\"null\"},\"2\":{\"type\":\"string\",\"anyOf\":[]}}}}}",
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"cachedContent\":12}}",
+    "expected": {
+      "error": "name must be a string"
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":12}}",
+    "expected": {
+      "error": "Unsupported speechConfig type: number"
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[null]}",
+    "expected": {
+      "error": "PartUnion is required"
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":12}",
+    "expected": {
+      "error": "Unsupported part type: number"
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":false}",
+    "expected": {
+      "error": "Unsupported part type: boolean"
+    }
+  },
+  {
+    "test": "selected_transform_inputs_fail_without_silent_defaults",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"speechConfig\":false}}",
+    "expected": {
+      "error": "Unsupported speechConfig type: boolean"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"schema-id\",\"type\":\"OBJECT\"},\"responseJsonSchema\":[]}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"parametersJsonSchema\":[]}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"parametersJsonSchema\":[]}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[]}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[]}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "response_json_schema_routing_respects_the_existing_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"responseSchema\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[false]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"schema-id\",\"type\":\"OBJECT\"},\"responseJsonSchema\":[false]}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"parametersJsonSchema\":[false]}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"parametersJsonSchema\":[false]}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[false]}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"schema-id\",\"type\":\"object\"},\"responseJsonSchema\":[false]}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"params-id\",\"type\":\"object\"},\"response\":{\"$schema\":\"response-id\",\"type\":\"string\"},\"parametersJsonSchema\":false,\"responseJsonSchema\":{\"type\":\"boolean\"}}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"response\":{\"$schema\":\"response-id\",\"type\":\"string\"},\"parametersJsonSchema\":{\"$schema\":\"params-id\",\"type\":\"object\"},\"responseJsonSchema\":{\"type\":\"boolean\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "function_schema_routing_preserves_an_existing_json_destination",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"params-id\",\"type\":\"object\"},\"response\":{\"$schema\":\"response-id\",\"type\":\"string\"},\"parametersJsonSchema\":{\"type\":\"integer\"},\"responseJsonSchema\":false}]}]}}",
+    "expected": {
+      "model": "models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"parameters\":{\"$schema\":\"params-id\",\"type\":\"object\"},\"parametersJsonSchema\":{\"type\":\"integer\"},\"responseJsonSchema\":{\"$schema\":\"response-id\",\"type\":\"string\"}}]}],\"generationConfig\":{}}"
+    }
+  }
+]
