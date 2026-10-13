@@ -159,9 +159,10 @@ build edges. Classes are distinct from delivery layers: only the binary root,
 conventions checker, terminal scenario harness and repository tooling are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility. Sparse workspaces need
-no placeholder crates. Frontends require their full direct sets; the terminal
-adapter requires toolkit and text, and the scenario harness requires toolkit only. The utility edge never counts
-toward an exact set. Other non-leaves permit subsets.
+no placeholder crates. Frontends require the application edge and may declare
+only the other edges in their allowed sets, when used. The terminal adapter
+requires toolkit and text, and the scenario harness requires toolkit only. The
+utility edge never supplies a required edge. Other non-leaves permit subsets.
 Production and test graphs are separately acyclic; the internal dev-target
 allowlist is empty. The scenario harness is not a general dev-dependency target.
 

@@ -253,9 +253,14 @@ pub(crate) fn exact(name: &str) -> bool {
     )
 }
 
-/// List the direct dependencies a crate with an exact boundary must declare.
+/// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
-    if exact(name) {
+    if matches!(
+        name,
+        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web"
+    ) {
+        &["maestro-app"]
+    } else if exact(name) {
         rule(name).map_or(&[], |rule| rule.dependencies)
     } else {
         &[]

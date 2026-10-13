@@ -705,8 +705,8 @@ const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-brand",
 ];
 
-/// Direct dependencies a crate must declare, empty unless it has an exact set.
-fn exact_targets(name: &str) -> &'static [&'static str] {
+/// Direct dependencies a crate must declare.
+fn required_targets(name: &str) -> &'static [&'static str] {
     support::required(name)
 }
 
@@ -750,7 +750,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         excluded_crate_may_not_declare_the_utility(from);
     }
     path_utility_has_no_outbound_edges();
-    path_utility_does_not_satisfy_exact_sets();
+    path_utility_does_not_replace_the_application();
 }
 
 /// Whether the table row of a crate lists no internal dependencies.
@@ -771,7 +771,7 @@ fn native_consumer_may_declare_the_utility(from: &str) {
         workspace.member(
             from,
             from,
-            &dependencies_with_utility(exact_targets(from), kind, extra),
+            &dependencies_with_utility(required_targets(from), kind, extra),
         );
         assert_eq!(
             check_workspace(&workspace.root),
@@ -782,7 +782,7 @@ fn native_consumer_may_declare_the_utility(from: &str) {
     workspace.member(
         from,
         from,
-        &dependencies_with_utility(exact_targets(from), "dev-dependencies", ""),
+        &dependencies_with_utility(required_targets(from), "dev-dependencies", ""),
     );
     assert_eq!(
         check_workspace(&workspace.root),
@@ -804,7 +804,7 @@ fn excluded_crate_may_not_declare_the_utility(from: &str) {
         workspace.member(
             from,
             from,
-            &dependencies_with_utility(exact_targets(from), kind, extra),
+            &dependencies_with_utility(required_targets(from), kind, extra),
         );
         assert_eq!(
             check_workspace(&workspace.root),
@@ -838,10 +838,10 @@ fn path_utility_has_no_outbound_edges() {
     }
 }
 
-/// Require each exact dependency set with and without the optional utility edge.
-fn path_utility_does_not_satisfy_exact_sets() {
+/// Require the application edge with and without the optional utility edge.
+fn path_utility_does_not_replace_the_application() {
     for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
-        let required = exact_targets(frontend);
+        let required = required_targets(frontend);
         let workspace = Workspace::new();
         workspace.foundation(&[&[frontend, "maestro-path"], required].concat());
         workspace.member(
@@ -911,7 +911,7 @@ fn sparse_inventory_does_not_create_product_crates() {
 }
 
 #[test]
-fn frontends_require_complete_direct_dependencies() {
+fn frontends_require_application_without_unused_allowed_edges() {
     for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
         let required = support::policy::POLICY
             .iter()
@@ -919,9 +919,20 @@ fn frontends_require_complete_direct_dependencies() {
             .unwrap()
             .1;
         let workspace = Workspace::new();
-        workspace.foundation(&[&[frontend], required].concat());
-        for omitted in required {
-            check_frontend_omission(&workspace, frontend, required, omitted);
+        workspace.foundation(&[&[frontend, "maestro-path"], required].concat());
+        check_frontend_omission(&workspace, frontend, &["maestro-app"], "maestro-app");
+        for omitted in required.iter().filter(|edge| **edge != "maestro-app") {
+            let remaining: Vec<_> = required
+                .iter()
+                .copied()
+                .filter(|edge| edge != omitted)
+                .collect();
+            workspace.member(
+                frontend,
+                frontend,
+                &dependencies_with_utility(&remaining, "dependencies", ""),
+            );
+            assert_eq!(check_workspace(&workspace.root), Ok(()));
         }
         let mut mixed = String::new();
         for (index, target) in required.iter().enumerate() {
@@ -1154,14 +1165,18 @@ fn complete_resolved_metadata() {
         });
     // The declared graph alone is incomplete; the resolved direct edges complete it.
     workspace.metadata_probe(&full, &full, "ok");
-    for omitted in 0..4 {
-        let mut value = full.clone();
-        value["resolve"]["nodes"][0]["deps"]
-            .as_array_mut()
-            .unwrap()
-            .remove(omitted);
-        workspace.metadata_probe(&full, &value, "missing required direct dependency");
-    }
+    let app = full["resolve"]["nodes"][0]["deps"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|edge| edge["name"] == "maestro_app")
+        .unwrap();
+    let mut missing_app = full.clone();
+    missing_app["resolve"]["nodes"][0]["deps"]
+        .as_array_mut()
+        .unwrap()
+        .remove(app);
+    workspace.metadata_probe(&full, &missing_app, "missing required direct dependency");
     let mut declared = full.clone();
     let actual = workspace.metadata();
     let package = actual["packages"]
@@ -1190,7 +1205,7 @@ fn complete_resolved_metadata() {
     full["resolve"]["nodes"][0]["deps"]
         .as_array_mut()
         .unwrap()
-        .remove(0);
+        .remove(app);
     workspace.metadata_probe(&declared, &full, "ok");
 }
 

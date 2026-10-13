@@ -254,5 +254,7 @@ forbidden production dependency: maestro-settings -> maestro-models
 ```
 
 Removing the dependency passes. An otherwise empty CLI fixture instead reports
-`maestro-cli: missing required direct dependency maestro-app`; restoring all four
-direct dependencies passes. Source failures include the offending file and line.
+`maestro-cli: missing required direct dependency maestro-app`; restoring the
+application dependency passes. Other listed frontend edges are permitted, not
+required, and are declared only when used. Source failures include the offending
+file and line.
