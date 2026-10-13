@@ -174,6 +174,14 @@ fn border_uses_live_theme_but_custom_color_needs_no_theme() {
     }
 }
 
+#[test]
+fn border_returns_painter_output_without_preserving_rule_glyphs() {
+    let state = published::unpublished();
+    let border = DynamicBorder::new(state.theme(), Some(Rc::new(|text| text.replace('─', "="))));
+    assert_eq!(border.render(0), ["="]);
+    assert_eq!(border.render(3), ["==="]);
+}
+
 /// A scheduling observer delegating every host effect to the existing manual runtime.
 #[derive(Clone, Default)]
 struct Spy {
@@ -442,6 +450,48 @@ fn countdown_drop_releases_callbacks_and_pending_tick() {
     assert_eq!(runtime.pending(), 1);
     drop(timer);
     assert!(weak.upgrade().is_none());
+    assert_eq!(runtime.pending(), 0);
+    assert!(runtime.advance_to(ms(3000)).is_empty());
+}
+/// A writer-owned component retaining countdown policy.
+struct CountdownComponent {
+    /// Countdown dropped with the component.
+    _timer: maestro_chat::CountdownTimer,
+}
+impl Component for CountdownComponent {
+    fn render(&self, _width: usize) -> Vec<String> {
+        vec![]
+    }
+}
+#[test]
+fn countdown_containing_writer_drop_releases_component_callbacks_and_pending_tick() {
+    let runtime = ManualRuntime::new();
+    let tui = writer(&runtime);
+    let capture = Rc::new(Cell::new(0));
+    let weak_capture = Rc::downgrade(&capture);
+    let component = Rc::new(CountdownComponent {
+        _timer: maestro_chat::CountdownTimer::new(
+            2000.0,
+            Some(&tui),
+            runtime.handle(),
+            Rc::new(move |_| capture.set(capture.get() + 1)),
+            Rc::new(|| panic!("dropped component countdown expired")),
+        ),
+    });
+    let weak_component = Rc::downgrade(&component);
+    tui.add_child(component.clone());
+    assert_eq!(runtime.pending(), 1);
+    assert_eq!(weak_capture.upgrade().unwrap().get(), 1);
+    drop(component);
+    drop(tui);
+    assert!(
+        weak_component.upgrade().is_none(),
+        "writer retained component"
+    );
+    assert!(
+        weak_capture.upgrade().is_none(),
+        "callback retained capture"
+    );
     assert_eq!(runtime.pending(), 0);
     assert!(runtime.advance_to(ms(3000)).is_empty());
 }

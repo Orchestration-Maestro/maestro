@@ -110,7 +110,8 @@ impl TUI {
     }
 
     /// An ordinary render request that does not retain the writer.
-    pub(crate) fn weak_render_request(&self) -> Rc<dyn Fn()> {
+    #[must_use]
+    pub fn weak_render_request(&self) -> Rc<dyn Fn()> {
         let weak = Rc::downgrade(&self.shared);
         Rc::new(move || {
             if let Some(shared) = weak.upgrade() {

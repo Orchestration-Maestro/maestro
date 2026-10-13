@@ -11,8 +11,8 @@ pub struct CountdownTimer(Rc<State>);
 struct State {
     /// Current ceiling in seconds.
     remaining: Cell<f64>,
-    /// Optional render target.
-    tui: Option<TUI>,
+    /// Optional render request that does not retain its writer.
+    request: Option<Rc<dyn Fn()>>,
     /// Existing scheduling owner.
     runtime: Rc<dyn TuiRuntime>,
     /// Count notification.
@@ -34,7 +34,7 @@ impl CountdownTimer {
     ) -> Self {
         let state = Rc::new(State {
             remaining: Cell::new((timeout_ms / 1000.0).ceil()),
-            tui: tui.cloned(),
+            request: tui.map(TUI::weak_render_request),
             runtime,
             on_tick,
             on_expire,
@@ -63,8 +63,8 @@ impl State {
                 let remaining = state.remaining.get() - 1.0;
                 state.remaining.set(remaining);
                 (state.on_tick)(remaining);
-                if let Some(tui) = &state.tui {
-                    tui.request_render(false);
+                if let Some(request) = &state.request {
+                    request();
                 }
                 if remaining <= 0.0 {
                     state.stop();

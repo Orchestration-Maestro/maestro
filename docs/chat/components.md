@@ -4,15 +4,17 @@
 It reuses the [terminal toolkit](../terminal/components.md) and
 [theme styles](../theme.md#component-styles).
 
-- `DynamicBorder` renders one colored line containing at least one `─` glyph.
-  A supplied painter bypasses theme lookup; otherwise each render reads the live
-  border color through the theme's paint helper.
+- `DynamicBorder` passes a freshly sized rule containing `width.max(1)` `─`
+  glyphs to the selected painter and returns its result as one row.
+  A supplied painter bypasses theme lookup; otherwise each render uses the live
+  theme's [paint helper](../theme.md#component-styles), which owns fallback behavior.
 - `CountdownTimer` reports `ceil(timeout_ms / 1000)` immediately without requesting
   a frame. One-second ticks decrement and report the count, request a frame when
-  a writer was supplied, then cancel the continuation before notifying expiry
+  the supplied writer is still alive, then cancel the continuation before notifying expiry
   when the count is at most zero. Disposal cancels future countdown work;
   a tick already executing still finishes its notification, render and expiry
-  decisions. Dropping the last owner also cancels the continuation.
+  decisions. The render request does not retain the writer. Dropping the last
+  countdown owner also cancels the continuation.
 - `BorderedLoader` defaults to cancellable. Its borders, spinner and message keep
   the supplied prepared theme; its hint is built once from the separate live
   theme and active keys. Input cancellation consults the active keys each time.

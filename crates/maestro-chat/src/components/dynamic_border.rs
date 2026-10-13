@@ -1,9 +1,9 @@
-//! A rule recolored at each render.
+//! A freshly sized rule passed to a painter at each render.
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{Component, editor_component::BorderColor};
 use std::rc::Rc;
 
-/// A viewport-wide rule with a live or supplied painter.
+/// A rule input with a live or supplied painter; renders its result as one row.
 pub struct DynamicBorder {
     /// Retained painter, invoked once per render.
     color: BorderColor,
