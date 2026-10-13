@@ -507,7 +507,12 @@ fn catalog_pattern_edge_is_scoped() {
 
 #[test]
 fn process_capture_consumers_may_declare_the_owner() {
-    for from in ["maestro-tools", "maestro-packages", "maestro-tui"] {
+    for from in [
+        "maestro-tools",
+        "maestro-packages",
+        "maestro-tui",
+        "maestro-credentials",
+    ] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, "maestro-process"]);
         check_permitted_declarations(&workspace, from, "maestro-process", &["maestro-process"]);
@@ -634,7 +639,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        109
+        110
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
