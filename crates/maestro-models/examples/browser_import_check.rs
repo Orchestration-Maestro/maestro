@@ -37,6 +37,7 @@ fn local_client() -> (
 
 fn main() {
     response_session_surface();
+    bedrock_surface();
     std::hint::black_box((stream_bedrock, BedrockOptions::default()));
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
@@ -156,4 +157,29 @@ fn response_session_callbacks() {
             ..Default::default()
         }),
     ));
+}
+
+/// Compile cloud-conversation exports and browser-local replacement captures.
+fn bedrock_surface() {
+    std::hint::black_box((
+        maestro_models::set_bedrock_provider_module,
+        maestro_models::bedrock_provider::bedrock_provider_module(),
+    ));
+    #[cfg(target_arch = "wasm32")]
+    {
+        let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
+        let seen = std::rc::Rc::clone(&calls);
+        let mut module = maestro_models::bedrock_provider::bedrock_provider_module();
+        module.stream_bedrock = std::sync::Arc::new(move |_, _, _| {
+            seen.set(seen.get() + 1);
+            Err(maestro_models::DiagnosticErrorInfo {
+                name: None,
+                message: String::new(),
+                stack: None,
+                code: None,
+            })
+        });
+        maestro_models::set_bedrock_provider_module(module);
+        assert_eq!(calls.get(), 0);
+    }
 }

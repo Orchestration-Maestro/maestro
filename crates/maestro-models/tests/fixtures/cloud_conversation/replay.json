@@ -1,0 +1,1861 @@
+[
+  {
+    "name": "model_anthropic.claude-opus-4-5",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "signed"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":42}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":42}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "signed"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-opus-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "xhigh"
+    },
+    "model": {
+      "id": "anthropic.claude-opus-4-5",
+      "name": "anthropic.claude-opus-4-5",
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 200000,
+      "maxTokens": 32768
+    },
+    "payload": {
+      "modelId": "anthropic.claude-opus-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "replay_model_anthropic.claude-opus-4-5",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "second reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "second signature"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "second",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":43}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "second reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "second reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":43}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 43
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "second reason",
+          "thinkingSignature": "second signature"
+        },
+        {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 43
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-opus-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "simple",
+    "options": {
+      "reasoning": "high"
+    },
+    "model": {
+      "id": "anthropic.claude-opus-4-5",
+      "name": "anthropic.claude-opus-4-5",
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 200000,
+      "maxTokens": 32768
+    },
+    "payload": {
+      "modelId": "anthropic.claude-opus-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Use the tool once more."
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Use the tool once more."
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "inspect",
+          "content": [
+            {
+              "type": "text",
+              "text": "42"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        },
+        {
+          "role": "user",
+          "content": "Use the tool once more.",
+          "timestamp": 3
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "replay_from": "anthropic.claude-opus-4-5"
+  },
+  {
+    "name": "model_anthropic.claude-opus-4-6",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "signed"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":42}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":42}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "signed"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-opus-4-6",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "xhigh"
+    },
+    "model": {
+      "id": "anthropic.claude-opus-4-6",
+      "name": "anthropic.claude-opus-4-6",
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 200000,
+      "maxTokens": 32768
+    },
+    "payload": {
+      "modelId": "anthropic.claude-opus-4-6",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "replay_model_anthropic.claude-opus-4-6",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "second reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "second signature"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "second",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":43}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "second reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "second reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":43}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 43
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "second reason",
+          "thinkingSignature": "second signature"
+        },
+        {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 43
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-opus-4-6",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "simple",
+    "options": {
+      "reasoning": "high"
+    },
+    "model": {
+      "id": "anthropic.claude-opus-4-6",
+      "name": "anthropic.claude-opus-4-6",
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "baseUrl": "https://bedrock-runtime.us-east-1.amazonaws.com",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 200000,
+      "maxTokens": 32768
+    },
+    "payload": {
+      "modelId": "anthropic.claude-opus-4-6",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Use the tool once more."
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32000
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Use the tool once more."
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32000
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "inspect",
+          "content": [
+            {
+              "type": "text",
+              "text": "42"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        },
+        {
+          "role": "user",
+          "content": "Use the tool once more.",
+          "timestamp": 3
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "replay_from": "anthropic.claude-opus-4-6"
+  },
+  {
+    "name": "generic_raw",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "signed"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":42}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":42}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "signed"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "high",
+      "bearerToken": "fixture-token"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "name": "replay_signed_tool",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "forty-two"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "end_turn"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "forty-two"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "forty-two"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "forty-two"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "inspect",
+          "content": [
+            {
+              "type": "text",
+              "text": "42"
+            }
+          ],
+          "isError": false,
+          "timestamp": 2
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        },
+        {
+          "role": "assistant",
+          "content": [
+            {
+              "reasoningContent": {
+                "reasoningText": {
+                  "text": "reason",
+                  "signature": "signed"
+                }
+              }
+            },
+            {
+              "toolUse": {
+                "toolUseId": "call",
+                "name": "inspect",
+                "input": {
+                  "x": 42
+                }
+              }
+            }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "toolResult": {
+                "toolUseId": "call",
+                "content": [
+                  {
+                    "text": "42"
+                  }
+                ],
+                "status": "success"
+              }
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "replay_from": "anthropic.claude-sonnet-4-5"
+  }
+]

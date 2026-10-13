@@ -147,7 +147,14 @@ fn decode(raw: &RawValue, containers: usize) -> Result<Value, serde_json::Error>
                 let key = String::from_utf8(key.0).map_err(serde::de::Error::custom)?;
                 Ok((key, decode(member, containers - 1)?))
             })
-            .collect(),
+            .collect::<Result<JsonObject, serde_json::Error>>()
+            .map(|members| {
+                Value::Object(
+                    maestro_json::canonical_entries(members)
+                        .into_iter()
+                        .collect(),
+                )
+            }),
         _ => serde_json::from_str(raw.get()),
     }
 }

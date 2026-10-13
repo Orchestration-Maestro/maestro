@@ -1,0 +1,112 @@
+[
+  {
+    "name": "options_profile",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "profile"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "profile"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "profile"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "profile"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "profile": "controlled-profile"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "destination": "bedrock-runtime.eu-west-1.amazonaws.com",
+    "signing_identity": "profile-key"
+  }
+]

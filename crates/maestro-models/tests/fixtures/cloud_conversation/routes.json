@@ -1,0 +1,323 @@
+[
+  {
+    "name": "generic_simple",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "signed"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":42}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":42}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "signed"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": 42
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1,
+    "route": "simple",
+    "options": {
+      "reasoning": "high",
+      "bearerToken": "fixture-token"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 32768
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com"
+  },
+  {
+    "name": "package_restored",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "restored"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "restored"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "restored"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "restored"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "bearerToken": "fixture-token"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Hello"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com"
+  }
+]

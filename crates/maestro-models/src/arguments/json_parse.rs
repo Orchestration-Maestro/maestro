@@ -286,7 +286,14 @@ impl Frame {
     /// Build the container value and consume an available closing delimiter.
     fn finish(self, cursor: &mut Cursor<'_>) -> serde_json::Value {
         let (close, value) = match self.members {
-            Members::Object { values, .. } => (b'}', serde_json::Value::Object(values)),
+            Members::Object { values, .. } => (
+                b'}',
+                serde_json::Value::Object(
+                    maestro_json::canonical_entries(values)
+                        .into_iter()
+                        .collect(),
+                ),
+            ),
             Members::Array(values) => (b']', serde_json::Value::Array(values)),
         };
         if cursor.peek() == Some(close) {

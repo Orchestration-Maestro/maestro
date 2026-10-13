@@ -1,0 +1,332 @@
+[
+  {
+    "name": "no_usage",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {}
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "usage_reported",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "cacheReadInputTokens": 11,
+            "cacheWriteInputTokens": 13,
+            "totalTokens": 101
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 7,
+        "output": 3,
+        "cacheRead": 11,
+        "cacheWrite": 13,
+        "totalTokens": 101,
+        "cost": {
+          "input": 7e-06,
+          "output": 6e-06,
+          "cacheRead": 3.3e-05,
+          "cacheWrite": 5.2e-05,
+          "total": 9.8e-05
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "usage_component_total",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "cacheReadInputTokens": 11,
+            "cacheWriteInputTokens": 13,
+            "totalTokens": 34
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 7,
+        "output": 3,
+        "cacheRead": 11,
+        "cacheWrite": 13,
+        "totalTokens": 34,
+        "cost": {
+          "input": 7e-06,
+          "output": 6e-06,
+          "cacheRead": 3.3e-05,
+          "cacheWrite": 5.2e-05,
+          "total": 9.8e-05
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "usage_zero_total",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "cacheReadInputTokens": 11,
+            "cacheWriteInputTokens": 13,
+            "totalTokens": 0
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 7,
+        "output": 3,
+        "cacheRead": 11,
+        "cacheWrite": 13,
+        "totalTokens": 10,
+        "cost": {
+          "input": 7e-06,
+          "output": 6e-06,
+          "cacheRead": 3.3e-05,
+          "cacheWrite": 5.2e-05,
+          "total": 9.8e-05
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "usage_zero_missing_cache",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "totalTokens": 0
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 7,
+        "output": 3,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 10,
+        "cost": {
+          "input": 7e-06,
+          "output": 6e-06,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 1.3000000000000001e-05
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "usage_replaced",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 7,
+            "outputTokens": 3,
+            "cacheReadInputTokens": 11,
+            "cacheWriteInputTokens": 13,
+            "totalTokens": 101
+          }
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 1,
+            "outputTokens": 2,
+            "totalTokens": 3
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 3,
+        "cost": {
+          "input": 1e-06,
+          "output": 4e-06,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 4.9999999999999996e-06
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  }
+]

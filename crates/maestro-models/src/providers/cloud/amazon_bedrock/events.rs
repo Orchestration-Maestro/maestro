@@ -1,22 +1,50 @@
 //! Reduction of decoded stream events into shared assistant updates.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, PoisonError};
 
 use aws_sdk_bedrockruntime::types::{
-    ContentBlockDelta, ContentBlockDeltaEvent, ContentBlockStopEvent, ConversationRole,
-    ConverseStreamMetadataEvent, ConverseStreamOutput, StopReason as Stop,
+    ContentBlockDelta, ContentBlockDeltaEvent, ContentBlockStart, ContentBlockStartEvent,
+    ContentBlockStopEvent, ConversationRole, ConverseStreamMetadataEvent, ConverseStreamOutput,
+    ReasoningContentBlockDelta, StopReason as Stop,
 };
 
 use crate::providers::http::RequestFailure;
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Model,
-    SharedAssistantMessage, StopReason, TextContent, calculate_cost,
+    SharedAssistantMessage, StopReason, TextContent, ThinkingContent, ToolCall, calculate_cost,
+    parsed_arguments,
 };
 
 /// Failure of a message that opens with a turn other than the assistant's.
 const USER_START_TEXT: &str =
     "Unexpected assistant message start but got user message start instead";
+
+/// Private state of an open content block.
+enum Block {
+    /// Text position in the assistant message.
+    Text(usize),
+    /// Thinking position in the assistant message.
+    Thinking(usize),
+    /// Tool position and its accumulated JSON fragments.
+    Tool {
+        /// Position in the public content sequence.
+        position: usize,
+        /// Accumulated argument fragments, never published.
+        json: String,
+    },
+}
+
+impl Block {
+    /// Position of this block in the public content sequence.
+    fn position(&self) -> usize {
+        match self {
+            Self::Text(position) | Self::Thinking(position) | Self::Tool { position, .. } => {
+                *position
+            }
+        }
+    }
+}
 
 /// Reduces events into the shared message, announcing each change.
 pub(super) struct Reducer {
@@ -26,8 +54,8 @@ pub(super) struct Reducer {
     output: SharedAssistantMessage,
     /// Receiver of the updates.
     stream: AssistantMessageEventStream,
-    /// Content position of each text block that is still open, by the service's block number.
-    open: HashMap<i32, usize>,
+    /// Open content blocks by the service's block number.
+    open: HashMap<i32, VecDeque<Block>>,
 }
 
 impl Reducer {
@@ -55,7 +83,7 @@ impl Reducer {
         self.stream.push(event(Arc::clone(&self.output)));
     }
 
-    /// Reduce one event; events this delivery does not reduce are skipped.
+    /// Reduce one event; unrecognized events are skipped.
     ///
     /// # Errors
     /// Fails when the message opens with a turn other than the assistant's.
@@ -67,6 +95,7 @@ impl Reducer {
                 }
                 self.announce(|partial| AssistantMessageEvent::Start { partial });
             }
+            ConverseStreamOutput::ContentBlockStart(start) => self.start(start),
             ConverseStreamOutput::ContentBlockDelta(delta) => self.delta(delta),
             ConverseStreamOutput::ContentBlockStop(stop) => self.stop(stop),
             ConverseStreamOutput::MessageStop(stop) => {
@@ -82,8 +111,8 @@ impl Reducer {
     /// The content position of the open block of a service block number, opening a text block
     /// first when none is open.
     fn open_text(&mut self, number: i32) -> usize {
-        if let Some(position) = self.open.get(&number) {
-            return *position;
+        if let Some(position) = self.open.get(&number).and_then(VecDeque::front) {
+            return position.position();
         }
         let position = self.update(|message| {
             message.content.push(AssistantContent::Text(TextContent {
@@ -92,7 +121,10 @@ impl Reducer {
             }));
             message.content.len() - 1
         });
-        self.open.insert(number, position);
+        self.open
+            .entry(number)
+            .or_default()
+            .push_back(Block::Text(position));
         self.announce(|partial| AssistantMessageEvent::TextStart {
             content_index: position,
             partial,
@@ -102,15 +134,29 @@ impl Reducer {
 
     /// Append text to the open block of the event's number, opening one first when none is.
     fn delta(&mut self, event: &ContentBlockDeltaEvent) {
+        if let Some(ContentBlockDelta::ToolUse(delta)) = event.delta() {
+            self.tool_delta(event.content_block_index(), delta.input());
+            return;
+        }
+        if let Some(ContentBlockDelta::ReasoningContent(delta)) = event.delta() {
+            self.thinking(event.content_block_index(), delta);
+            return;
+        }
         let Some(ContentBlockDelta::Text(delta)) = event.delta() else {
             return;
         };
         let position = self.open_text(event.content_block_index());
-        self.update(|message| {
+        let changed = self.update(|message| {
             if let Some(AssistantContent::Text(text)) = message.content.get_mut(position) {
                 text.text.push_str(delta);
+                true
+            } else {
+                false
             }
         });
+        if !changed {
+            return;
+        }
         self.announce(|partial| AssistantMessageEvent::TextDelta {
             content_index: position,
             delta: delta.clone(),
@@ -118,26 +164,158 @@ impl Reducer {
         });
     }
 
-    /// Close the open block of the event's number; an unknown number does nothing.
-    fn stop(&mut self, event: &ContentBlockStopEvent) {
-        let Some(position) = self.open.remove(&event.content_block_index()) else {
+    /// Append a new tool block when the service announces a tool start.
+    fn start(&mut self, event: &ContentBlockStartEvent) {
+        let Some(ContentBlockStart::ToolUse(start)) = event.start() else {
             return;
         };
-        let content = self.update(|message| match message.content.get(position) {
-            Some(AssistantContent::Text(text)) => Some(text.text.clone()),
-            _ => None,
+        let position = self.update(|message| {
+            message.content.push(AssistantContent::ToolCall(ToolCall {
+                id: start.tool_use_id().to_owned(),
+                name: start.name().to_owned(),
+                arguments: parsed_arguments(""),
+                thought_signature: None,
+            }));
+            message.content.len() - 1
         });
-        if let Some(content) = content {
-            self.announce(|partial| AssistantMessageEvent::TextEnd {
+        self.open
+            .entry(event.content_block_index())
+            .or_default()
+            .push_back(Block::Tool {
+                position,
+                json: String::new(),
+            });
+        self.announce(|partial| AssistantMessageEvent::ToolcallStart {
+            content_index: position,
+            partial,
+        });
+    }
+
+    /// Reparse accumulated tool input after each fragment of an open tool.
+    fn tool_delta(&mut self, number: i32, delta: &str) {
+        let Some(Block::Tool { position, json }) =
+            self.open.get_mut(&number).and_then(VecDeque::front_mut)
+        else {
+            return;
+        };
+        json.push_str(delta);
+        let arguments = parsed_arguments(json);
+        let position = *position;
+        self.update(|message| {
+            if let Some(AssistantContent::ToolCall(tool)) = message.content.get_mut(position) {
+                tool.arguments = arguments;
+            }
+        });
+        self.announce(|partial| AssistantMessageEvent::ToolcallDelta {
+            content_index: position,
+            delta: delta.to_owned(),
+            partial,
+        });
+    }
+
+    /// Append reasoning text or silently accumulate a signature, opening a block if needed.
+    fn thinking(&mut self, number: i32, delta: &ReasoningContentBlockDelta) {
+        let position = if let Some(position) = self.open.get(&number).and_then(VecDeque::front) {
+            position.position()
+        } else {
+            let position = self.update(|message| {
+                message
+                    .content
+                    .push(AssistantContent::Thinking(ThinkingContent {
+                        thinking: String::new(),
+                        thinking_signature: Some(String::new()),
+                        redacted: None,
+                    }));
+                message.content.len() - 1
+            });
+            self.open
+                .entry(number)
+                .or_default()
+                .push_back(Block::Thinking(position));
+            self.announce(|partial| AssistantMessageEvent::ThinkingStart {
                 content_index: position,
-                content,
+                partial,
+            });
+            position
+        };
+        let text = self.update(|message| {
+            let Some(AssistantContent::Thinking(thinking)) = message.content.get_mut(position)
+            else {
+                return None;
+            };
+            match delta {
+                ReasoningContentBlockDelta::Text(text) if !text.is_empty() => {
+                    thinking.thinking.push_str(text);
+                    Some(text.clone())
+                }
+                ReasoningContentBlockDelta::Signature(signature) => {
+                    thinking
+                        .thinking_signature
+                        .get_or_insert_with(String::new)
+                        .push_str(signature);
+                    None
+                }
+                _ => None,
+            }
+        });
+        if let Some(delta) = text {
+            self.announce(|partial| AssistantMessageEvent::ThinkingDelta {
+                content_index: position,
+                delta,
                 partial,
             });
         }
     }
 
-    /// Record the reported token counts, each absent count as zero, and their cost. A reported
-    /// total of zero is replaced by input plus output.
+    /// Close the open block of the event's number; an unknown number does nothing.
+    fn stop(&mut self, event: &ContentBlockStopEvent) {
+        let number = event.content_block_index();
+        let Some(queue) = self.open.get_mut(&number) else {
+            return;
+        };
+        let Some(block) = queue.pop_front() else {
+            return;
+        };
+        if queue.is_empty() {
+            self.open.remove(&number);
+        }
+        let position = block.position();
+        let content = self.update(|message| {
+            if let (Block::Tool { json, .. }, Some(AssistantContent::ToolCall(tool))) =
+                (&block, message.content.get_mut(position))
+            {
+                tool.arguments = parsed_arguments(json);
+            }
+            message.content.get(position).cloned()
+        });
+        match content {
+            Some(AssistantContent::Text(text)) => {
+                self.announce(|partial| AssistantMessageEvent::TextEnd {
+                    content_index: position,
+                    content: text.text,
+                    partial,
+                });
+            }
+            Some(AssistantContent::Thinking(thinking)) => {
+                self.announce(|partial| AssistantMessageEvent::ThinkingEnd {
+                    content_index: position,
+                    content: thinking.thinking,
+                    partial,
+                });
+            }
+            Some(AssistantContent::ToolCall(tool_call)) => {
+                self.announce(|partial| AssistantMessageEvent::ToolcallEnd {
+                    content_index: position,
+                    tool_call,
+                    partial,
+                });
+            }
+            _ => {}
+        }
+    }
+
+    /// Record reported counts and their cost, defaulting absent cache counts to zero.
+    /// A reported total of zero is replaced by input plus output.
     fn metadata(&self, event: &ConverseStreamMetadataEvent) {
         let Some(usage) = event.usage() else {
             return;
