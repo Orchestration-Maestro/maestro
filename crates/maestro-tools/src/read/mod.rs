@@ -15,7 +15,7 @@ use crate::{
 use execution::Reader;
 use maestro_agent::AgentTool;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, Model, Tool};
-use native::NativeReadOperations;
+pub(crate) use native::NativeReadOperations;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{rc::Rc, sync::Arc};
