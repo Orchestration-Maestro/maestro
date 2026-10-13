@@ -63,7 +63,7 @@ pub(crate) struct Route {
     pub(crate) http1_only: bool,
     /// Deadline for establishing a connection, when supplied by the provider.
     pub(crate) connect_timeout: Option<std::time::Duration>,
-    /// Deadline for each response read, when supplied by the provider.
+    /// Deadline for receiving response headers, when supplied by the provider.
     pub(crate) read_timeout: Option<std::time::Duration>,
 }
 
@@ -77,9 +77,6 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
         .no_proxy();
     if let Some(timeout) = route.connect_timeout {
         builder = builder.connect_timeout(timeout);
-    }
-    if let Some(timeout) = route.read_timeout {
-        builder = builder.read_timeout(timeout);
     }
     let check = route.proxy.clone();
     if let Some(select) = route.proxy {
@@ -99,7 +96,14 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
                 let destination = url::Url::parse(&request.url).map_err(failed)?;
                 select(&destination).map_err(connection)?;
             }
-            send(client?, request).await
+            let response = send(client?, request);
+            if let Some(timeout) = route.read_timeout {
+                tokio::time::timeout(timeout, response)
+                    .await
+                    .map_err(|_| FetchError::Timeout)?
+            } else {
+                response.await
+            }
         })
     })
 }

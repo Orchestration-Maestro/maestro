@@ -269,13 +269,22 @@ fn bridge(
     signal: Option<Cancellation>,
     observed: Arc<Mutex<Option<Observed>>>,
 ) -> SharedHttpClient {
+    let senders = Mutex::new(BTreeMap::new());
     http_client_fn(move |settings, _| {
         let fetch = fetch.clone().unwrap_or_else(|| {
-            configured_fetch(Route {
-                connect_timeout: settings.connect_timeout(),
-                read_timeout: settings.read_timeout(),
-                ..route.clone()
-            })
+            let key = (settings.connect_timeout(), settings.read_timeout());
+            senders
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .entry(key)
+                .or_insert_with(|| {
+                    configured_fetch(Route {
+                        connect_timeout: key.0,
+                        read_timeout: key.1,
+                        ..route.clone()
+                    })
+                })
+                .clone()
         });
         aws_smithy_runtime_api::client::http::SharedHttpConnector::new(Bridge {
             fetch,

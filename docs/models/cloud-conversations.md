@@ -133,7 +133,8 @@ authenticate; any other value of that variable has no effect. No `api_key` is re
 Login refresh, role assumption, web identity, SSO credentials and named-session OIDC refresh use
 conversation routing, including a supplied sender and [destination-specific proxy selection](#proxy-routing).
 Container and instance metadata stay direct, including named role sources, and do not use the
-supplied sender. Default connectors apply the SDK's connection and response-read deadlines;
+supplied sender. Default connectors retain connection pools by SDK timeout settings and apply the SDK's
+connection and response-header deadlines, not a body-read deadline;
 a supplied sender retains its own timeout policy.
 
 ## Proxy routing
