@@ -325,10 +325,15 @@ fn login_failure_reaches_root_process_after_role_source() -> TestResult {
 
 #[test]
 fn dropped_routed_server_closes_its_listener() -> TestResult {
-    let routed = loopback::serve_routed(|_| unreachable!("no request is sent"))?;
-    let address = routed.url.trim_start_matches("http://").to_owned();
+    let lifetime = std::sync::Arc::new(());
+    let observer = std::sync::Arc::downgrade(&lifetime);
+    let routed = loopback::serve_routed(move |_| {
+        std::hint::black_box(&lifetime);
+        unreachable!("no request is sent")
+    })?;
+    assert!(observer.upgrade().is_some());
     drop(routed);
-    assert!(std::net::TcpStream::connect(address).is_err());
+    assert!(observer.upgrade().is_none());
     Ok(())
 }
 
