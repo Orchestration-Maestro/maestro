@@ -1210,3 +1210,49 @@ fn brand_pack_terminal_pairs_keep_text_and_border_contrast() {
         }
     }
 }
+
+#[test]
+fn shared_brand_types_keep_the_theme_import_paths() {
+    use maestro_brand::{
+        BrandFont, BrandGlyph, BrandMark, BrandType, PackData, font_stack, role_color,
+    };
+    let source = forge_json().to_string();
+    let pure = PackData::parse(&source).unwrap();
+    assert_eq!(pure.mark.template, "mark.svg");
+    assert_eq!(pure.mark.variants["flat"], "mark-flat.svg");
+    let presentation = pure.presentation(BrandMode::Dark).unwrap();
+    let old: maestro_theme::theme::BrandPresentation<'_> = presentation;
+    let _: BrandPresentation<'_> = old.clone();
+    let _: maestro_theme::theme::BrandMode = maestro_brand::BrandMode::Light;
+    let font: &BrandFont = &old.fonts["body"];
+    let _: &maestro_theme::BrandFont = font;
+    let _: &maestro_theme::theme::BrandFont = font;
+    let mark: &BrandMark = old.mark;
+    let _: &maestro_theme::BrandMark = mark;
+    let _: &maestro_theme::theme::BrandMark = mark;
+    let kind: &BrandType = &old.typography["body"];
+    let _: &maestro_theme::BrandType = kind;
+    let _: &maestro_theme::theme::BrandType = kind;
+    let glyph: &BrandGlyph<'_> = &old.glyphs["mark"];
+    let _: &maestro_theme::BrandGlyph<'_> = glyph;
+    let _: &maestro_theme::theme::BrandGlyph<'_> = glyph;
+    assert_eq!(maestro_brand::BrandMode::Light.name(), "light");
+    assert_eq!(font_stack(font), "\"Barlow\", system-ui, sans-serif");
+    assert_eq!(role_color(&old.colors, "text").unwrap(), "#F2E8DC");
+    assert_eq!(
+        old.fill_mark("{{wordmark}} currentColor").unwrap(),
+        "Maestro #F2E8DC"
+    );
+    let operations = Mem::forge();
+    let native = load_brand_pack(FORGE_PATH, &operations).unwrap();
+    assert_eq!(*operations.reads.borrow(), [FORGE_PATH]);
+    let native = native.presentation(BrandMode::Dark).unwrap();
+    assert_eq!(native.mark.template, "/forge/mark.svg");
+    assert_eq!(native.css_properties(), old.css_properties());
+    let fonts = BTreeMap::new();
+    let mut missing = old;
+    missing.fonts = &fonts;
+    assert_eq!(missing.css_properties()["--maestro-type-body-font"], "");
+    let error = PackData::parse("{").err().unwrap();
+    assert!(error.source().unwrap().is::<serde_json::Error>());
+}

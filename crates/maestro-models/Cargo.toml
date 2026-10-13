@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-brand = { path = "../maestro-brand" }
 maestro-text = { path = "../maestro-text" }
 maestro-json = { path = "../maestro-json" }
 maestro-cancellation = { path = "../maestro-cancellation" }

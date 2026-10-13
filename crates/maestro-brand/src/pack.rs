@@ -1,5 +1,5 @@
 //! Typed brand pack records and their native decoding.
-use super::super::ThemeError;
+use crate::BrandError;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
@@ -26,7 +26,7 @@ pub struct BrandFont {
 pub struct BrandType {
     /// Key of the font role this type role uses.
     pub font: String,
-    /// Size in CSS pixels; positive.
+    /// Authored size in CSS pixels, checked by [`PackData::parse`].
     pub size: f64,
     /// Unitless line height.
     #[serde(rename = "line-height")]
@@ -38,9 +38,9 @@ pub struct BrandType {
 /// Mark asset paths and measurements.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct BrandMark {
-    /// Default template path, joined to the pack's directory when loaded.
+    /// Authored default template path; native consumers may join it to a directory.
     pub template: String,
-    /// Variant template paths by name, joined to the pack's directory when loaded.
+    /// Authored variant paths by name; native consumers may join them to a directory.
     pub variants: BTreeMap<String, String>,
     /// Smallest rendered size in CSS pixels.
     #[serde(rename = "minimum-size")]
@@ -58,7 +58,7 @@ pub struct BrandMark {
 
 /// A glyph symbol and the mode role that colors it.
 #[derive(Deserialize)]
-pub(super) struct GlyphData {
+pub(crate) struct GlyphData {
     /// The symbol text.
     pub symbol: String,
     /// Mode role alias of its color.
@@ -67,53 +67,53 @@ pub(super) struct GlyphData {
 
 /// The colors of one mode: role to palette key.
 #[derive(Deserialize)]
-pub(super) struct ModeData {
+pub(crate) struct ModeData {
     /// Role to palette key.
     pub colors: BTreeMap<String, String>,
 }
 
 /// Terminal alias maps: slot or name to mode role.
 #[derive(Deserialize)]
-pub(super) struct TerminalData {
+pub(crate) struct TerminalData {
     /// The ANSI slots.
     pub ansi: BTreeMap<String, String>,
     /// The truecolor names.
     pub truecolor: BTreeMap<String, String>,
 }
 
-/// The decoded pack file.
+/// Decoded brand data; use [`PackData::parse`] for complete pack admission.
 #[derive(Deserialize)]
-pub(super) struct PackData {
+pub struct PackData {
     /// Pack label.
-    pub name: String,
+    pub(crate) name: String,
     /// Displayed product name.
-    pub wordmark: String,
+    pub(crate) wordmark: String,
     /// Displayed tagline.
-    pub tagline: String,
+    pub(crate) tagline: String,
     /// Palette key to opaque color text.
-    pub palette: BTreeMap<String, String>,
+    pub(crate) palette: BTreeMap<String, String>,
     /// Mode name to its colors.
     #[serde(deserialize_with = "records")]
-    pub modes: BTreeMap<String, ModeData>,
+    pub(crate) modes: BTreeMap<String, ModeData>,
     /// Font role to font.
     #[serde(deserialize_with = "records")]
-    pub fonts: BTreeMap<String, BrandFont>,
+    pub(crate) fonts: BTreeMap<String, BrandFont>,
     /// Type role to type.
     #[serde(rename = "type", deserialize_with = "records")]
-    pub typography: BTreeMap<String, BrandType>,
+    pub(crate) typography: BTreeMap<String, BrandType>,
     /// Spacing role to CSS pixels.
-    pub spacing: BTreeMap<String, f64>,
+    pub(crate) spacing: BTreeMap<String, f64>,
     /// Radius role to CSS pixels.
-    pub radii: BTreeMap<String, f64>,
+    pub(crate) radii: BTreeMap<String, f64>,
     /// Mark paths and measurements.
     #[serde(deserialize_with = "record")]
     pub mark: BrandMark,
     /// Glyph role to glyph.
     #[serde(deserialize_with = "records")]
-    pub glyphs: BTreeMap<String, GlyphData>,
+    pub(crate) glyphs: BTreeMap<String, GlyphData>,
     /// Terminal alias maps.
     #[serde(deserialize_with = "record")]
-    pub terminal: TerminalData,
+    pub(crate) terminal: TerminalData,
 }
 
 /// A record accepted only in its object form, never as a positional array.
@@ -152,17 +152,20 @@ fn records<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
 }
 
 impl PackData {
-    /// Decode pack text; duplicate members keep the last value before typing.
-    pub(super) fn parse(path: &str, text: &str) -> Result<Self, ThemeError> {
-        serde_json::from_str::<Object<Self>>(text)
-            .map(|Object(pack)| pack)
-            .map_err(|cause| {
-                ThemeError::caused_by(format!("Invalid brand pack {path}: {cause}"), cause)
-            })
+    /// Decode an object pack, keeping final duplicate values, then check measurements.
+    ///
+    /// # Errors
+    /// Returns a decoder error for malformed or wrongly shaped data, or a measurement error
+    /// for a nonpositive type size or negative spacing or radius.
+    pub fn parse(text: &str) -> Result<Self, BrandError> {
+        let Object(pack) =
+            serde_json::from_str::<Object<Self>>(text).map_err(BrandError::Decode)?;
+        pack.check_measurements()?;
+        Ok(pack)
     }
 
     /// Reject a type size that is not positive or a spacing or radius below zero.
-    pub(super) fn check_measurements(&self) -> Result<(), ThemeError> {
+    fn check_measurements(&self) -> Result<(), BrandError> {
         let sizes = self
             .typography
             .iter()
@@ -176,9 +179,7 @@ impl PackData {
             .iter()
             .map(|(role, value)| (*value >= 0.0, format!("/radii/{}", pointer(role))));
         match sizes.chain(spacing).chain(radii).find(|(valid, _)| !valid) {
-            Some((_, path)) => Err(ThemeError::message(format!(
-                "Invalid brand measurement: {path}"
-            ))),
+            Some((_, path)) => Err(BrandError::Measurement(path)),
             None => Ok(()),
         }
     }
