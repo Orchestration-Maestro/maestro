@@ -1,0 +1,442 @@
+[
+  {
+    "id": 0,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 1,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 2,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 3,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 4,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 5,
+    "mapped": 37,
+    "format": "\"$\"#,##0_);\\(\"$\"#,##0\\)"
+  },
+  {
+    "id": 6,
+    "mapped": 38,
+    "format": "\"$\"#,##0_);[Red]\\(\"$\"#,##0\\)"
+  },
+  {
+    "id": 7,
+    "mapped": 39,
+    "format": "\"$\"#,##0.00_);\\(\"$\"#,##0.00\\)"
+  },
+  {
+    "id": 8,
+    "mapped": 40,
+    "format": "\"$\"#,##0.00_);[Red]\\(\"$\"#,##0.00\\)"
+  },
+  {
+    "id": 9,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 10,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 11,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 12,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 13,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 14,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 15,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 16,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 17,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 18,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 19,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 20,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 21,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 22,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 23,
+    "mapped": 0,
+    "format": null
+  },
+  {
+    "id": 24,
+    "mapped": 0,
+    "format": null
+  },
+  {
+    "id": 25,
+    "mapped": 0,
+    "format": null
+  },
+  {
+    "id": 26,
+    "mapped": 0,
+    "format": null
+  },
+  {
+    "id": 27,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 28,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 29,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 30,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 31,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 32,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 33,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 34,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 35,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 36,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 37,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 38,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 39,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 40,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 41,
+    "mapped": null,
+    "format": "_(* #,##0_);_(* \\(#,##0\\);_(* \"-\"_);_(@_)"
+  },
+  {
+    "id": 42,
+    "mapped": null,
+    "format": "_(\"$\"* #,##0_);_(\"$\"* \\(#,##0\\);_(\"$\"* \"-\"_);_(@_)"
+  },
+  {
+    "id": 43,
+    "mapped": null,
+    "format": "_(* #,##0.00_);_(* \\(#,##0.00\\);_(* \"-\"??_);_(@_)"
+  },
+  {
+    "id": 44,
+    "mapped": null,
+    "format": "_(\"$\"* #,##0.00_);_(\"$\"* \\(#,##0.00\\);_(\"$\"* \"-\"??_);_(@_)"
+  },
+  {
+    "id": 45,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 46,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 47,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 48,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 49,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 50,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 51,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 52,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 53,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 54,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 55,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 56,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 57,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 58,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 59,
+    "mapped": 1,
+    "format": null
+  },
+  {
+    "id": 60,
+    "mapped": 2,
+    "format": null
+  },
+  {
+    "id": 61,
+    "mapped": 3,
+    "format": null
+  },
+  {
+    "id": 62,
+    "mapped": 4,
+    "format": null
+  },
+  {
+    "id": 63,
+    "mapped": null,
+    "format": "\"$\"#,##0_);\\(\"$\"#,##0\\)"
+  },
+  {
+    "id": 64,
+    "mapped": null,
+    "format": "\"$\"#,##0_);[Red]\\(\"$\"#,##0\\)"
+  },
+  {
+    "id": 65,
+    "mapped": null,
+    "format": "\"$\"#,##0.00_);\\(\"$\"#,##0.00\\)"
+  },
+  {
+    "id": 66,
+    "mapped": null,
+    "format": "\"$\"#,##0.00_);[Red]\\(\"$\"#,##0.00\\)"
+  },
+  {
+    "id": 67,
+    "mapped": 9,
+    "format": null
+  },
+  {
+    "id": 68,
+    "mapped": 10,
+    "format": null
+  },
+  {
+    "id": 69,
+    "mapped": 12,
+    "format": null
+  },
+  {
+    "id": 70,
+    "mapped": 13,
+    "format": null
+  },
+  {
+    "id": 71,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 72,
+    "mapped": 14,
+    "format": null
+  },
+  {
+    "id": 73,
+    "mapped": 15,
+    "format": null
+  },
+  {
+    "id": 74,
+    "mapped": 16,
+    "format": null
+  },
+  {
+    "id": 75,
+    "mapped": 17,
+    "format": null
+  },
+  {
+    "id": 76,
+    "mapped": 20,
+    "format": null
+  },
+  {
+    "id": 77,
+    "mapped": 21,
+    "format": null
+  },
+  {
+    "id": 78,
+    "mapped": 22,
+    "format": null
+  },
+  {
+    "id": 79,
+    "mapped": 45,
+    "format": null
+  },
+  {
+    "id": 80,
+    "mapped": 46,
+    "format": null
+  },
+  {
+    "id": 81,
+    "mapped": 47,
+    "format": null
+  },
+  {
+    "id": 82,
+    "mapped": 0,
+    "format": null
+  },
+  {
+    "id": 83,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 163,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 392,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 65535,
+    "mapped": null,
+    "format": null
+  },
+  {
+    "id": 65536,
+    "mapped": null,
+    "format": null
+  }
+]
