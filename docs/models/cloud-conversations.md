@@ -72,11 +72,11 @@ after the payload hook ran.
 
 ## Authentication
 
-The credential chain, composed from the native providers, signs the request unless a bearer token is selected. Without a nonempty
-explicit `profile` option, an empty `AWS_PROFILE` selects nothing, so the environment's keys come
-first and the `default` profile is the fallback: the `default` profile then runs the same sources
-as a selected profile, from its own source to container or instance credentials. A profile named
-by the option or by `AWS_PROFILE` replaces the environment's keys.
+The credential chain, composed from the native providers, signs the request unless a bearer token is
+selected. Without a nonempty explicit `profile` option, an empty `AWS_PROFILE` selects nothing, so
+the environment's keys come first and the `default` profile is the fallback: the `default` profile then
+runs the same sources as a selected profile, from its own source to container or instance credentials.
+A profile named by the option or by `AWS_PROFILE` replaces the environment's keys.
 
 When a profile is selected the standalone environment-keys step is skipped (a profile may still
 name the environment as the credential source of a role) and these sources run in order, the next
@@ -112,8 +112,7 @@ reads the cache and refreshes a token that is about to expire, following the ret
 shared configuration. A refresh the sign-in service refuses as access denied, whatever its reason,
 ends the chain, and so does a cache that is missing or incomplete. Any other failure of the token
 request (validation, server, throttling or transport) lets the chain go on to the next source,
-decided from the error type and never from its text. A refresh that fails before a request is
-sent, such as an unreadable cached key, ends the chain. A refreshed token is used even when saving
+decided from the error type and never from its text. A refreshed token is used even when saving
 it back to the cache fails.
 
 A named SSO session supplies only the start URL and region (a session without them leaves the

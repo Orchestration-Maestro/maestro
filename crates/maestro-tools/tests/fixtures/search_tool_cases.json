@@ -721,7 +721,7 @@
       "api_status": 200,
       "download": {
         "status": 204,
-        "text": "archive bytes"
+        "text": ""
       },
       "preexisting": null,
       "bin_exists": true,
@@ -753,7 +753,7 @@
       "api_status": 200,
       "download": {
         "status": 205,
-        "text": "archive bytes"
+        "text": ""
       },
       "preexisting": null,
       "bin_exists": true,
