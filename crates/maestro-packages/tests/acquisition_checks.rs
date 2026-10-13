@@ -1298,9 +1298,9 @@ impl SettingsStorage for Storage {
 #[cfg(windows)]
 #[test]
 fn grouped_cleanup_keeps_drive_observation_policy() {
-    let scratch = scratch::Scratch::new().unwrap();
-    let root = scratch.0.to_string_lossy().replace('\\', "/");
     let ambient = std::env::current_dir().unwrap();
+    let scratch = scratch::Scratch::new_in(&ambient).unwrap();
+    let root = scratch.0.to_string_lossy().replace('\\', "/");
     let ambient = ambient.to_string_lossy();
     let none = maestro_path::Cwd {
         current: "",

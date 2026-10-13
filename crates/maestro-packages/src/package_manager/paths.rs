@@ -7,14 +7,14 @@ use maestro_path::{Cwd, dirname, join, relative, resolve_with};
 use maestro_resources::SourceScope;
 use sha2::{Digest, Sha256};
 use std::io;
-/// The ambient directory of each group's rightmost drive-lettered operand, looked up once per drive.
-#[cfg(windows)]
+/// On Windows, the ambient directory of each group's rightmost drive-lettered operand;
+/// a drive is looked up again until a lookup succeeds. Empty on other targets.
 fn selected_drive_directories(
     operations: &impl PackageOperations,
     groups: &[&[&str]],
 ) -> Vec<(char, String)> {
     let mut found: Vec<(char, String)> = Vec::new();
-    for group in groups {
+    for group in groups.iter().filter(|_| cfg!(windows)) {
         let letter = group.iter().rev().find_map(|path| {
             let bytes = path.as_bytes();
             bytes
@@ -22,19 +22,13 @@ fn selected_drive_directories(
                 .filter(|l| l.is_ascii_alphabetic() && bytes.get(1) == Some(&b':'))
                 .map(|l| char::from(*l))
         });
-        if let Some(drive) = letter.filter(|d| found.iter().all(|(known, _)| known != d)) {
-            if let Some(directory) = operations.drive_directory(drive) {
-                found.push((drive, directory));
-            }
+        if let Some(drive) = letter.filter(|d| found.iter().all(|(known, _)| known != d))
+            && let Some(directory) = operations.drive_directory(drive)
+        {
+            found.push((drive, directory));
         }
     }
     found
-}
-
-/// Drive directories exist only on Windows.
-#[cfg(not(windows))]
-fn selected_drive_directories(_: &impl PackageOperations, _: &[&[&str]]) -> Vec<(char, String)> {
-    Vec::new()
 }
 
 impl<O: PackageOperations> DefaultPackageManager<O> {

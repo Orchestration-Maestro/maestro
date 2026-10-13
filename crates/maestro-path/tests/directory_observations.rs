@@ -85,7 +85,6 @@ fn supplied_resolution_matches_native_flavor_corpus() {
         let drives = case
             .drives
             .iter()
-            .filter(|(_, directory)| !directory.is_empty())
             .map(|(name, directory)| (name.chars().nth(1).unwrap(), directory.clone()))
             .collect();
         let actual = match run(&groups, case.cwd.as_deref(), drives) {
@@ -129,7 +128,17 @@ fn open_groups_share_ordered_directory_observations() {
             Ok("/tmp".to_owned())
         },
     );
-    assert_eq!(result.unwrap(), ["/z/b", "/tmp/rel/a", "/z/b"]);
+    let native = |path: &str| {
+        if cfg!(windows) {
+            path.replace('/', "\\")
+        } else {
+            path.to_owned()
+        }
+    };
+    assert_eq!(
+        result.unwrap(),
+        [native("/z/b"), native("/tmp/rel/a"), native("/z/b")]
+    );
     assert_eq!(*order.borrow(), ["drives", "cwd"]);
 }
 
@@ -153,6 +162,12 @@ fn drive_complete_groups_skip_cwd_observation() {
         || -> Result<String, ()> { panic!("a supplied drive completes the path") },
     );
     assert_eq!(result.unwrap(), ["D:\\drive\\leaf"]);
+    let empty = resolve_with(
+        &[&["D:leaf"]],
+        || vec![('D', String::new())],
+        || Err::<String, _>("cwd read"),
+    );
+    assert_eq!(empty, Err("cwd read"));
     for open in [&["D:leaf"][..], &["\\leaf"]] {
         let calls = Cell::new(0);
         let _: Result<_, ()> = resolve_with(&[open], Vec::new, || {

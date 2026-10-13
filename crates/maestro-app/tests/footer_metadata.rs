@@ -1086,14 +1086,21 @@ fn worktree_resolution_keeps_eager_drive_observations() {
     let head = text("ref: refs/heads/updated\n");
     let gitfile = text("gitdir: c:../repo/.git\n");
     let ops = FakeOps::new(BTreeMap::from([
-        ("/scratch/repo/.git".to_owned(), Entry::Flag(true)),
-        ("/scratch/repo/.git/HEAD".to_owned(), head),
         ("/scratch/worktree/.git".to_owned(), gitfile.clone()),
         ("worktree/.git".to_owned(), gitfile),
     ]));
+    // Resolution keeps the lowercase spelling of the selected drive.
+    for (path, entry) in [
+        ("/scratch/repo/.git", Entry::Flag(true)),
+        ("/scratch/repo/.git/HEAD", head),
+    ] {
+        ops.files
+            .borrow_mut()
+            .insert(target(path).replacen("C:", "c:", 1), entry);
+    }
     let branch = provider(&ops, "/scratch/worktree").get_git_branch();
     assert_eq!(branch.as_deref(), Some("updated"));
-    assert_eq!(*ops.drive_reads.borrow(), ['C']);
+    assert_eq!(*ops.drive_reads.borrow(), ['C', 'C']);
     assert_eq!(ops.current_dir_calls.get(), 0);
 
     ops.drive_reads.borrow_mut().clear();
