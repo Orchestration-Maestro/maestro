@@ -179,6 +179,22 @@ fn borrowed_members_keep_values_slices_and_key_order() {
         json!({ "z": 1, "10": [true], "2": { "b": -0.0, "1": 1e21 } })
     );
     assert_eq!(compact_members(std::iter::empty()).unwrap(), "{}");
+    let values = [
+        json!("b first"),
+        json!("1 first"),
+        json!("b second"),
+        json!("1 second"),
+    ];
+    let repeated = [
+        ("b", BorrowedJson::Value(&values[0])),
+        ("1", BorrowedJson::Value(&values[1])),
+        ("b", BorrowedJson::Value(&values[2])),
+        ("1", BorrowedJson::Value(&values[3])),
+    ];
+    assert_eq!(
+        compact_members(repeated.iter().copied()).unwrap(),
+        r#"{"1":"1 first","1":"1 second","b":"b first","b":"b second"}"#
+    );
 }
 
 /// A record with one borrowed string field.

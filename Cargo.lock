@@ -2648,6 +2648,7 @@ dependencies = [
  "pulldown-cmark",
  "rand 0.10.3",
  "regress",
+ "rustix",
  "serde",
  "serde_json",
  "tokio",

@@ -21,7 +21,7 @@ stable sorting and comparator lifetime.
   values included, and none means `en_US`. Encoding and modifier suffixes are
   dropped, `C` and `POSIX` mean `en-US`, an empty name means `und`, and text that is
   not a locale selects the library default. The collator keeps the chosen locale,
-  never the reader. `maestro_theme::Collator` re-exports it.
+  never the reader. `maestro_theme::Collator` re-exports it outside browser targets.
 
 ```rust
 use maestro_text::{markup::{EscapeMode, escape}, is_whitespace_scalar, utf16_order};

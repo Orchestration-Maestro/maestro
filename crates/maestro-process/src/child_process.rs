@@ -14,8 +14,8 @@ use tokio::time::Sleep;
 
 /// A spawned child whose stdout and stderr are captured and whose stdin is closed.
 pub struct CapturedChild {
-    /// The native child, reaped by [`CapturedChild::terminate`] with [`Termination::Kill`]
-    /// and by [`wait_for_child_process`] once it returns.
+    /// The native child, reaped once [`CapturedChild::terminate`] with [`Termination::Kill`]
+    /// or [`wait_for_child_process`] returns successfully.
     child: Child,
     /// Stdout, until it ends, fails or is dropped.
     stdout: Option<ChildStdout>,

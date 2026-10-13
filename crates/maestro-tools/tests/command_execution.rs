@@ -535,14 +535,37 @@ s.sendall(b'READY\n')
 while s.recv(1) == b'p': s.sendall(b'E')
 ";
 
-/// Asks a [`YIELDING`] child to answer; `true` when it does, `false` when it is gone.
+/// Asks a [`YIELDING`] child to answer: `true` when it answers `E`, `false` when it closed
+/// its end. A closed end fails the question as a broken pipe or reset, or ends the answer
+/// as end of file or a reset (a child that dies with the question unread resets the
+/// connection); any other byte or I/O error fails the test.
 ///
 /// A termination signal sent before the question is fatal before the child can
 /// answer it.
 fn answers(socket: &mut std::net::TcpStream) -> bool {
-    let _ = std::io::Write::write_all(socket, b"p");
+    use std::io::{ErrorKind, Read, Write};
+    let closed = |error: &std::io::Error| {
+        matches!(
+            error.kind(),
+            ErrorKind::ConnectionReset | ErrorKind::BrokenPipe
+        )
+    };
+    if let Err(error) = socket.write_all(b"p") {
+        assert!(closed(&error), "asking failed: {error}");
+        return false;
+    }
     let mut answer = [0; 1];
-    matches!(std::io::Read::read(socket, &mut answer), Ok(1) if answer == *b"E")
+    match socket.read(&mut answer) {
+        Ok(0) => false,
+        Ok(_) => {
+            assert_eq!(&answer, b"E", "unexpected answer");
+            true
+        }
+        Err(error) => {
+            assert_eq!(error.kind(), ErrorKind::ConnectionReset, "{error}");
+            false
+        }
+    }
 }
 
 #[test]
