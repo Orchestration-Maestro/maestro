@@ -143,7 +143,7 @@ are later scope, not active foundation concepts.
 - **Text:** The core leaf `maestro-text` below layer 0, owning the whitespace scalar set, UTF-16 lexical order, one-pass markup escaping and, behind its `collation` feature, locale comparator preparation; it depends on no workspace crate and its callers keep their own trimming, stable sorting and comparator lifetime. See [text](docs/text.md).
 - **JSON boundary:** The declared core leaf `maestro-json` below layer 0, owning JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text); it depends on no workspace crate.
 - **Process:** The declared core leaf `maestro-process` below layer 0, owning native captured child-process lifecycles (spawn, raw pipes, exit and EOF observation, termination, reaping) for packages, the terminal toolkit and tools; it depends on no workspace crate, including the path and cancellation leaves. Its [contract](docs/specs/maestro-port.md#crates-and-delivery-order) leaves cancellation, termination and settlement choices with callers.
-- **Foundation utility:** The `maestro-path` library of lexical path operations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
+- **Foundation utility:** The `maestro-path` library of lexical path operations and of home and directory selection from caller-supplied observations, below every delivery layer; native crates may depend on it optionally, and it depends on no other workspace crate.
 - **Conventions:** Native workspace graph and bounded source/build checks, supplemented by semantic source review.
 - **Tooling:** Development-only commands and repository automation for this repository; never shipped.
 

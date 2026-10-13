@@ -1,7 +1,7 @@
 //! Native read-path transformations for authored tool paths.
 
 use icu_normalizer::DecomposingNormalizer;
-use maestro_path::{Cwd, env_drive_directories, is_absolute, resolve, try_resolve};
+use maestro_path::{env_drive_directories, homedir, is_absolute, resolve_with};
 use std::{
     io::{self, ErrorKind},
     path::{Path, PathBuf},
@@ -44,11 +44,13 @@ pub fn expand_path(file_path: &str) -> io::Result<String> {
         Some(rest) if rest.starts_with('/') => rest,
         _ => return Ok(normalized),
     };
-    let home = std::env::var_os("HOME")
-        .filter(|_| cfg!(unix))
-        .map(PathBuf::from)
-        .or_else(std::env::home_dir)
-        .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
+    let home = homedir(
+        std::env::var_os("HOME")
+            .filter(|_| cfg!(unix))
+            .map(PathBuf::from),
+        std::env::home_dir,
+    )
+    .ok_or_else(|| io::Error::new(ErrorKind::NotFound, "home directory is unknown"))?;
     Ok(utf8(home, "home directory")? + rest)
 }
 
@@ -78,19 +80,12 @@ pub(crate) fn resolve_path(parts: &[&str]) -> io::Result<String> {
     let directories = cfg!(windows)
         .then(|| env_drive_directories(|name| std::env::var_os(name)))
         .unwrap_or_default();
-    let drives: Vec<_> = directories
-        .iter()
-        .map(|(letter, path)| (*letter, path.as_str()))
-        .collect();
-    if let Ok(resolved) = try_resolve(parts, &drives) {
-        return Ok(resolved);
-    }
-    let process_cwd = utf8(std::env::current_dir()?, "working directory")?;
-    let anchor = Cwd {
-        current: &process_cwd,
-        drive_directories: &drives,
-    };
-    Ok(resolve(parts, &anchor))
+    resolve_with(
+        &[parts],
+        || &directories,
+        || utf8(std::env::current_dir()?, "working directory"),
+    )
+    .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Insert the narrow no-break space before a case-insensitive ` AM.` or ` PM.`.

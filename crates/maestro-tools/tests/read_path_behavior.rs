@@ -209,6 +209,22 @@ fn empty_home_is_used_verbatim() {
 
 #[cfg(unix)]
 #[test]
+fn home_expansion_rejects_non_utf8_without_replacing_it() {
+    let home = <std::ffi::OsStr as std::os::unix::ffi::OsStrExt>::from_bytes(b"/bytes-\xff-home");
+    if isolated_os(
+        "home_expansion_rejects_non_utf8_without_replacing_it",
+        "bytes",
+        &[("HOME", Some(home))],
+    ) {
+        let error = expand_path("~/x").unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        assert_eq!(error.to_string(), "home directory is not valid UTF-8");
+        assert_eq!(expand_path("plain").unwrap(), "plain");
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn read_resolves_empty_and_absent_home_without_home_writes() {
     let test = "read_resolves_empty_and_absent_home_without_home_writes";
     let dir = TempDir::new();

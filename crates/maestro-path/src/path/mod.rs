@@ -7,6 +7,11 @@ pub mod posix;
 mod segments;
 pub mod win32;
 
+#[cfg(not(windows))]
+use posix::{resolve, try_resolve};
+#[cfg(windows)]
+use win32::{resolve, try_resolve};
+
 /// Working-directory snapshot supplied by the caller, never read from the process.
 ///
 /// `current` is spelled in the flavor it is passed to. The Windows flavor also
@@ -34,6 +39,59 @@ impl fmt::Display for CwdUnavailable {
 }
 
 impl std::error::Error for CwdUnavailable {}
+
+/// Resolve each operand group in the compile target's flavor from supplied directories.
+///
+/// A group that its own operands complete costs no observation. For the groups
+/// that do not, `drive_directories` is called once and may be borrowed from a
+/// cache; if they remain open, `current_directory` is called once. Results keep
+/// group order and duplicates. This function reads no process state, and the
+/// callbacks decide how and when their directories are read. See [`Cwd`] for
+/// how each flavor uses them.
+///
+/// # Errors
+/// Returns the error `current_directory` returned, unchanged, when a group
+/// needs the working directory.
+///
+/// # Examples
+///
+/// ```
+/// let paths = maestro_path::resolve_with::<_, _, ()>(
+///     &[&["/a", "b"], &["c"]],
+///     Vec::new,
+///     || Ok("/work"),
+/// );
+/// # #[cfg(not(windows))]
+/// assert_eq!(paths, Ok(vec!["/a/b".to_owned(), "/work/c".to_owned()]));
+/// ```
+pub fn resolve_with<C, D, E>(
+    groups: &[&[&str]],
+    drive_directories: impl FnOnce() -> D,
+    current_directory: impl FnOnce() -> Result<C, E>,
+) -> Result<Vec<String>, E>
+where
+    C: AsRef<str>,
+    D: AsRef<[(char, String)]>,
+{
+    if let Ok(paths) = groups.iter().map(|g| try_resolve(g, &[])).collect() {
+        return Ok(paths);
+    }
+    let directories = drive_directories();
+    let drives: Vec<(char, &str)> = directories
+        .as_ref()
+        .iter()
+        .map(|(letter, directory)| (*letter, directory.as_str()))
+        .collect();
+    if let Ok(paths) = groups.iter().map(|g| try_resolve(g, &drives)).collect() {
+        return Ok(paths);
+    }
+    let current = current_directory()?;
+    let cwd = Cwd {
+        current: current.as_ref(),
+        drive_directories: &drives,
+    };
+    Ok(groups.iter().map(|g| resolve(g, &cwd)).collect())
+}
 
 /// The root of a Windows path, borrowing the authored spelling.
 ///

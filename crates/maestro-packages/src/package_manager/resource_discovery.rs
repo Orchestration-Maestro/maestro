@@ -225,26 +225,12 @@ pub(super) fn resolve_entry_path(
     entry: &str,
     operations: &dyn ResourceOperations,
 ) -> io::Result<String> {
-    let operands = [dir, entry];
-    if let Ok(path) = maestro_path::try_resolve(&operands, &[]) {
-        return Ok(path);
-    }
-    let directories = operations.drive_directories();
-    let drives: Vec<_> = directories
-        .iter()
-        .map(|(drive, path)| (*drive, path.as_str()))
-        .collect();
-    if let Ok(path) = maestro_path::try_resolve(&operands, &drives) {
-        return Ok(path);
-    }
-    let current = operations.current_directory()?;
-    Ok(maestro_path::resolve(
-        &operands,
-        &maestro_path::Cwd {
-            current: &current,
-            drive_directories: &drives,
-        },
-    ))
+    maestro_path::resolve_with(
+        &[&[dir, entry]],
+        || operations.drive_directories(),
+        || operations.current_directory(),
+    )
+    .map(|paths| paths.into_iter().collect::<String>())
 }
 
 /// Collects files and resource directories from already-resolved literal paths.

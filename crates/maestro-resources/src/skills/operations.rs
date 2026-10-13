@@ -1,6 +1,6 @@
 //! Replaceable supplied-path filesystem observations.
 
-use maestro_path::{Cwd, resolve, try_resolve};
+use maestro_path::resolve_with;
 use std::{
     cell::OnceCell,
     ffi::OsString,
@@ -118,11 +118,8 @@ impl<'a> ProcessContext<'a> {
         }
     }
 
-    /// Hand `use_directories` the working directory and drive directories, asking the adapter the first time.
-    pub(super) fn observe<R>(
-        &self,
-        use_directories: impl FnOnce(Result<&str, io::ErrorKind>, &[(char, &str)]) -> R,
-    ) -> R {
+    /// The working directory, then the drive directories, asking the adapter the first time.
+    fn snapshot(&self) -> (Result<&str, io::ErrorKind>, &[(char, String)]) {
         let current = self.current.get_or_init(|| {
             self.operations
                 .current_directory()
@@ -131,11 +128,7 @@ impl<'a> ProcessContext<'a> {
         let drives = self
             .drives
             .get_or_init(|| self.operations.drive_directories());
-        let drives: Vec<(char, &str)> = drives
-            .iter()
-            .map(|(letter, directory)| (*letter, directory.as_str()))
-            .collect();
-        use_directories(current.as_deref().map_err(|kind| *kind), &drives)
+        (current.as_deref().map_err(|kind| *kind), drives)
     }
 
     /// Resolve `paths` from right to left, asking the adapter for its directories only if they leave a part open.
@@ -143,18 +136,12 @@ impl<'a> ProcessContext<'a> {
     /// # Errors
     /// Returns the kind of the working directory's error when it was needed and unreadable.
     pub(crate) fn resolve(&self, paths: &[&str]) -> io::Result<String> {
-        try_resolve(paths, &[]).or_else(|_| {
-            self.observe(|current, drives| match current {
-                Ok(current) => Ok(resolve(
-                    paths,
-                    &Cwd {
-                        current,
-                        drive_directories: drives,
-                    },
-                )),
-                Err(kind) => try_resolve(paths, drives).map_err(|_| kind.into()),
-            })
-        })
+        resolve_with(
+            &[paths],
+            || self.snapshot().1,
+            || self.snapshot().0.map_err(io::Error::from),
+        )
+        .map(|resolved| resolved.into_iter().collect::<String>())
     }
 }
 

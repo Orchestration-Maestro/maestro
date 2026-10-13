@@ -1294,6 +1294,41 @@ impl SettingsStorage for Storage {
     }
 }
 
+/// A project cleanup whose base is drive-relative reads the working directory once for both groups.
+#[cfg(windows)]
+#[test]
+fn grouped_cleanup_keeps_drive_observation_policy() {
+    let ambient = std::env::current_dir().unwrap();
+    let scratch = scratch::Scratch::new_in(&ambient).unwrap();
+    let root = scratch.0.to_string_lossy().replace('\\', "/");
+    let ambient = ambient.to_string_lossy();
+    if ambient.as_bytes().get(1) != Some(&b':') {
+        return;
+    }
+    let none = maestro_path::Cwd {
+        current: "",
+        drive_directories: &[],
+    };
+    let relative = maestro_path::relative(&ambient, &format!("{root}/project"), &none);
+    let letter = ambient.chars().next().unwrap().to_ascii_lowercase();
+    let settings =
+        maestro_settings::SettingsManager::in_memory(maestro_settings::Settings::default());
+    let fixture = Fixture::over(settings, Some(&format!("{letter}:{relative}")), false);
+    let git = format!("{root}/project/.maestro/git/github.com");
+    native_support::write(&format!("{git}/user/repo/file"), "x");
+    native_support::write(&format!("{git}/other/keep"), "x");
+    block_on(
+        fixture
+            .manager
+            .remove("https://github.com/user/repo", Some(Project)),
+    )
+    .unwrap();
+    assert!(!std::path::Path::new(&format!("{git}/user")).exists());
+    assert!(std::path::Path::new(&format!("{git}/other/keep")).is_file());
+    assert_eq!(*fixture.script.reads.borrow(), ["cwd"]);
+    assert_eq!(*fixture.script.drive_reads.borrow(), [letter, letter]);
+}
+
 #[test]
 fn git_parent_cleanup_uses_resolved_component_containment() {
     let parsed = parse_git_url("git:git@github.com:../../git-cache/team/repo").unwrap();

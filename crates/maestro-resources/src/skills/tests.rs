@@ -9,7 +9,6 @@ use super::{
     LoadSkillsOptions, LoadSkillsResult, ResourceEntry, ResourceFileType, ResourceOperations,
     load_skills,
 };
-use maestro_path::{Cwd, win32};
 use std::{
     cell::RefCell,
     io,
@@ -481,44 +480,21 @@ fn relative_user_root_continues_from_the_process_directory_not_the_cwd() {
     assert_eq!(result.skills[0].source_info.scope, crate::SourceScope::User);
 }
 
-/// The caller directory wins on its own drive; another drive continues from its own entry.
+/// A failed working-directory read is cached and does not stop a path a drive directory completes.
+#[cfg(windows)]
 #[test]
-fn resolution_context_continues_other_drives_from_their_reported_directories() {
-    let adapter = process(
-        r"C:\Users\me",
-        &[('C', r"C:\Users\me"), ('D', r"D:\skills")],
+fn cached_cwd_failure_does_not_block_supplied_drive() {
+    let mut adapter = process(r"C:\Users\me", &[('D', r"D:\skills")]);
+    adapter.current = None;
+    let context = ProcessContext::new(&adapter);
+    assert_eq!(context.resolve(&[r"D:leaf"]).unwrap(), r"D:\skills\leaf");
+    assert_eq!(context.resolve(&[r"C:\a", "b"]).unwrap(), r"C:\a\b");
+    let error = context.resolve(&["relative"]).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+    assert_eq!(
+        *adapter.observed.borrow(),
+        ["current_directory", "drive_directories"]
     );
-    ProcessContext::new(&adapter).observe(|current, drive_directories| {
-        let cwd = Cwd {
-            current: current.unwrap(),
-            drive_directories,
-        };
-        assert_eq!(cwd.current, r"C:\Users\me");
-        assert_eq!(
-            win32::resolve(&[r"C:\work", r"C:notes.md"], &cwd),
-            r"C:\work\notes.md"
-        );
-        assert_eq!(
-            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], &cwd),
-            r"D:\skills\calendar\SKILL.md"
-        );
-    });
-}
-
-/// A drive without a reported directory continues from that drive's root.
-#[test]
-fn resolution_context_falls_back_to_the_drive_root_without_an_entry() {
-    let adapter = process(r"C:\Users\me", &[('C', r"C:\Users\me")]);
-    ProcessContext::new(&adapter).observe(|current, drive_directories| {
-        let cwd = Cwd {
-            current: current.unwrap(),
-            drive_directories,
-        };
-        assert_eq!(
-            win32::resolve(&[r"C:\work", r"D:calendar\SKILL.md"], &cwd),
-            r"D:\calendar\SKILL.md"
-        );
-    });
 }
 
 /// The adapter is asked nothing while paths are anchored, and once for all later open paths, a failure included.

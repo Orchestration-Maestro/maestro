@@ -63,6 +63,8 @@ pub struct Script {
     pub ambient_fails: Cell<bool>,
     /// Ambient directory reads in order.
     pub reads: RefCell<Vec<&'static str>>,
+    /// Drive letters whose directory was asked for, as written.
+    pub drive_reads: RefCell<Vec<char>>,
     /// Captured-command launches in order.
     pub captures: RefCell<Vec<Call>>,
     /// Runs once at the first captured command.
@@ -169,7 +171,8 @@ impl PackageOperations for Sandbox {
         let ambient = std::env::current_dir()?;
         self.ambient("cwd", &ambient.to_string_lossy())
     }
-    fn drive_directory(&self, _drive: char) -> Option<String> {
+    fn drive_directory(&self, drive: char) -> Option<String> {
+        self.script.drive_reads.borrow_mut().push(drive);
         None
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> io::Result<CommandOutput> {

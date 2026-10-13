@@ -3,10 +3,34 @@ use super::{
     DefaultPackageManager, InstalledSourceScope, PackageOperations,
     sources::{self, Source},
 };
-use maestro_path::{Cwd, dirname, join, relative, resolve, try_resolve};
+use maestro_path::{Cwd, dirname, join, relative, resolve_with};
 use maestro_resources::SourceScope;
 use sha2::{Digest, Sha256};
 use std::io;
+/// On Windows, the ambient directory of each group's rightmost drive-lettered operand;
+/// a drive is looked up again until a lookup succeeds. Empty on other targets.
+fn selected_drive_directories(
+    operations: &impl PackageOperations,
+    groups: &[&[&str]],
+) -> Vec<(char, String)> {
+    let mut found: Vec<(char, String)> = Vec::new();
+    for group in groups.iter().filter(|_| cfg!(windows)) {
+        let letter = group.iter().rev().find_map(|path| {
+            let bytes = path.as_bytes();
+            bytes
+                .first()
+                .filter(|l| l.is_ascii_alphabetic() && bytes.get(1) == Some(&b':'))
+                .map(|l| char::from(*l))
+        });
+        if let Some(drive) = letter.filter(|d| found.iter().all(|(known, _)| known != d))
+            && let Some(directory) = operations.drive_directory(drive)
+        {
+            found.push((drive, directory));
+        }
+    }
+    found
+}
+
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Finds already-existing contents without acquiring the source.
     /// # Errors
@@ -103,44 +127,11 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Resolves each operand group against one ambient context: the working directory is captured at most once, and
     /// only when required; per-drive directory lookups are separate.
     pub(super) fn resolve_together(&self, groups: &[&[&str]]) -> io::Result<Vec<String>> {
-        let plain: Result<Vec<_>, _> = groups.iter().map(|g| try_resolve(g, &[])).collect();
-        if let Ok(paths) = plain {
-            return Ok(paths);
-        }
-        #[cfg(windows)]
-        let directories: Vec<(char, String)> = {
-            let mut found: Vec<(char, String)> = Vec::new();
-            for group in groups {
-                let letter = group.iter().rev().find_map(|path| {
-                    let bytes = path.as_bytes();
-                    bytes
-                        .first()
-                        .filter(|l| l.is_ascii_alphabetic() && bytes.get(1) == Some(&b':'))
-                        .map(|l| char::from(*l))
-                });
-                if let Some(drive) = letter.filter(|d| found.iter().all(|(known, _)| known != d)) {
-                    if let Some(directory) = self.operations.drive_directory(drive) {
-                        found.push((drive, directory));
-                    }
-                }
-            }
-            found
-        };
-        #[cfg(windows)]
-        let drives: Vec<_> = directories.iter().map(|(d, p)| (*d, p.as_str())).collect();
-        #[cfg(not(windows))]
-        let drives = [];
-        let with_drives: Result<Vec<_>, _> =
-            groups.iter().map(|g| try_resolve(g, &drives)).collect();
-        if let Ok(paths) = with_drives {
-            return Ok(paths);
-        }
-        let current = self.operations.current_dir()?;
-        let cwd = Cwd {
-            current: &current,
-            drive_directories: &drives,
-        };
-        Ok(groups.iter().map(|g| resolve(g, &cwd)).collect())
+        resolve_with(
+            groups,
+            || selected_drive_directories(&self.operations, groups),
+            || self.operations.current_dir(),
+        )
     }
     /// Normalizes local input for storage, leaving nonlocal spelling intact.
     pub(super) fn normalize_source(

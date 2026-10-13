@@ -2,7 +2,7 @@
 
 use std::io;
 
-use maestro_path::{Cwd, dirname, join, resolve, try_resolve};
+use maestro_path::{dirname, join, resolve_with};
 
 use super::operations::{FooterFileKind, FooterOperations};
 
@@ -34,16 +34,8 @@ fn resolve_path(operations: &dyn FooterOperations, paths: &[&str]) -> io::Result
             Some((drive, operations.drive_directory(drive)?))
         })
         .collect();
-    let drives: Vec<(char, &str)> = drives.iter().map(|(d, path)| (*d, path.as_str())).collect();
-    if let Ok(resolved) = try_resolve(paths, &drives) {
-        return Ok(resolved);
-    }
-    let current = operations.current_dir()?;
-    let cwd = Cwd {
-        current: &current,
-        drive_directories: &drives,
-    };
-    Ok(resolve(paths, &cwd))
+    resolve_with(&[paths], || &drives, || operations.current_dir())
+        .map(|resolved| resolved.into_iter().collect::<String>())
 }
 
 /// Walk from `cwd` towards its root for the nearest directory with a `.git`

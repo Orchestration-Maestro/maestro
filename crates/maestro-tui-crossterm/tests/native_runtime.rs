@@ -454,16 +454,6 @@ fn checked_context(host: &ProcessTuiRuntime) -> LogContext {
     context
 }
 
-/// The home a context should report: a present `HOME` verbatim (empty included) on Unix,
-/// otherwise the native home fallback, or an empty path if unavailable.
-fn expected_home() -> PathBuf {
-    #[cfg(unix)]
-    if let Some(home) = std::env::var_os("HOME") {
-        return PathBuf::from(home);
-    }
-    std::env::home_dir().unwrap_or_default()
-}
-
 #[test]
 fn log_context_uses_native_home_and_current_wall_time() {
     if is_child() {
@@ -475,21 +465,21 @@ fn log_context_uses_native_home_and_current_wall_time() {
                     let destination = context.home.join(".maestro").join("agent");
                     assert_eq!(destination.is_relative(), !Path::new(&home).is_absolute());
                 }
-                None => assert_eq!(context.home, expected_home()),
+                None => assert_eq!(context.home, std::env::home_dir().unwrap_or_default()),
             }
         });
         return;
     }
     run_set(true, |local| async move {
-        let context = checked_context(&ProcessTuiRuntime::new(local));
-        assert_eq!(context.home, expected_home());
+        checked_context(&ProcessTuiRuntime::new(local));
     });
     #[cfg(unix)]
     for home in [
-        Some("/maestro-home-fixture"),
-        Some("rel/home"),
-        Some("/with space/home"),
-        Some(""),
+        Some(std::ffi::OsStr::new("/maestro-home-fixture")),
+        Some(std::ffi::OsStr::new("rel/home")),
+        Some(std::ffi::OsStr::new("/with space/home")),
+        Some(std::ffi::OsStr::new("")),
+        Some(<std::ffi::OsStr as std::os::unix::ffi::OsStrExt>::from_bytes(b"/bytes-\xff-home")),
         None,
     ] {
         rerun(

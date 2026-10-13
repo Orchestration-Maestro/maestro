@@ -91,7 +91,13 @@ root re-exports the flavor of the compile target. Nothing reads the process
 working directory or the environment: `resolve` and `relative` take a `Cwd`
 snapshot from the caller, and `try_resolve` resolves what the operands anchor and
 fails with `CwdUnavailable` where the runtime would have read the working
-directory. Windows relative paths require matching resolved
+directory. `resolve_with` resolves several operand groups in the target flavor
+from callbacks the caller supplies: it calls the drive callback once, and the
+working-directory callback once, only for the groups the operands and drives
+leave open, and returns that callback's error unchanged. `homedir` returns a
+supplied home, empty included, and calls its account callback only when none
+was supplied. The callbacks decide what is read and when; the crate reads
+nothing itself. Windows relative paths require matching resolved
 root identities, including anchoring. A matching anchored drive, share or
 namespace supplies a comparison base; otherwise, nonempty tails need a complete
 shared first component. Empty tails still permit component traversal. Without a

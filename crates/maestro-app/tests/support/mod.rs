@@ -37,6 +37,7 @@ pub struct FakeOps {
     pub reads: RefCell<Vec<String>>,
     pub git_dirs: RefCell<Vec<String>>,
     pub current_dir_calls: Cell<usize>,
+    pub drive_reads: RefCell<Vec<char>>,
 }
 
 /// A fixture path spelled for the target: on Windows, slash-rooted paths gain
@@ -79,6 +80,7 @@ impl FakeOps {
             reads: RefCell::default(),
             git_dirs: RefCell::default(),
             current_dir_calls: Cell::new(0),
+            drive_reads: RefCell::default(),
         })
     }
 
@@ -172,7 +174,8 @@ impl FooterOperations for FakeOps {
             .ok_or_else(failure)
     }
 
-    fn drive_directory(&self, _drive: char) -> Option<String> {
+    fn drive_directory(&self, drive: char) -> Option<String> {
+        self.drive_reads.borrow_mut().push(drive);
         None
     }
 
