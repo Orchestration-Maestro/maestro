@@ -26420,13 +26420,12 @@
                 {
                   "guardContent": {
                     "text": {
-                      "text": "text Z",
                       "qualifiers": [
                         "query"
-                      ]
+                      ],
+                      "text": "text Z"
                     },
                     "image": {
-                      "format": "png",
                       "source": {
                         "bytes": [
                           0,
@@ -26434,7 +26433,8 @@
                           128,
                           255
                         ]
-                      }
+                      },
+                      "format": "png"
                     }
                   }
                 }
@@ -26481,6 +26481,14 @@
           "/messages/0/content/0/guardContent": [
             "text",
             "image"
+          ],
+          "/messages/0/content/0/guardContent/text": [
+            "text",
+            "qualifiers"
+          ],
+          "/messages/0/content/0/guardContent/image": [
+            "format",
+            "source"
           ]
         }
       }
@@ -28646,13 +28654,6 @@
                     ],
                     "citations": [
                       {
-                        "title": "title Z",
-                        "source": "source Z",
-                        "sourceContent": [
-                          {
-                            "text": "text Z"
-                          }
-                        ],
                         "location": {
                           "web": {
                             "url": "url Z",
@@ -28678,7 +28679,14 @@
                             "start": 2,
                             "end": 9
                           }
-                        }
+                        },
+                        "sourceContent": [
+                          {
+                            "text": "text Z"
+                          }
+                        ],
+                        "source": "source Z",
+                        "title": "title Z"
                       }
                     ]
                   }
@@ -28756,6 +28764,12 @@
           "/messages/0/content/0/citationsContent": [
             "content",
             "citations"
+          ],
+          "/messages/0/content/0/citationsContent/citations/0": [
+            "title",
+            "source",
+            "sourceContent",
+            "location"
           ]
         }
       }
