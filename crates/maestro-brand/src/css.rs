@@ -1,6 +1,6 @@
 //! CSS custom properties for a resolved presentation.
-use super::data::BrandFont;
-use super::projection::BrandPresentation;
+use crate::pack::BrandFont;
+use crate::presentation::BrandPresentation;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
@@ -63,7 +63,8 @@ impl BrandPresentation<'_> {
 }
 
 /// The family and its fallbacks, named families quoted and generic keywords bare.
-fn font_stack(font: &BrandFont) -> String {
+#[must_use]
+pub fn font_stack(font: &BrandFont) -> String {
     std::iter::once(&font.family)
         .chain(&font.fallbacks)
         .map(|name| {

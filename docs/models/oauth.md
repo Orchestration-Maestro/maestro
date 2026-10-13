@@ -25,13 +25,13 @@ existing entities are escaped again. Error details are omitted only when absent
 or empty. Both documents retain the centered dark callback layout and fixed
 authentication wording. Embedded `assets/brand/brand.json` supplies the dark
 semantic colors and ordered display, body and mono font stacks.
-Primary font families and non-generic fallback names are quoted; CSS generic
-fallback keywords remain unquoted, recognized case-insensitively. Stack order
-and supplied case are preserved. `assets/brand/mark.svg` supplies the fitted mark.
-Required pack fields and reached color aliases must resolve; failures return
-diagnostic messages rather than a
-fallback palette. Replacing these assets changes the identity at build time;
-there is no runtime asset loader or network font acquisition.
+[Shared brand projection](../brand.md) owns complete pack admission, selected-mode
+resolution and CSS font encoding.
+`assets/brand/mark.svg` supplies the fitted mark, whose original tokens are filled
+through the shared projection before embedding. Pack admission and selected references
+must resolve before the page's colors, fonts and mark; failures return diagnostic
+messages rather than a fallback palette. Replacing these assets changes the identity
+at build time; there is no runtime asset loader or network font acquisition.
 
 ## Provider registry
 

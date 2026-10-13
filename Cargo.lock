@@ -2318,6 +2318,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-brand"
+version = "0.1.0"
+dependencies = [
+ "maestro-json",
+ "maestro-text",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-cancellation"
 version = "0.1.0"
 dependencies = [
@@ -2415,6 +2425,7 @@ dependencies = [
  "idna",
  "indexmap",
  "js-sys",
+ "maestro-brand",
  "maestro-cancellation",
  "maestro-json",
  "maestro-request",
@@ -2586,6 +2597,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "jsonschema",
+ "maestro-brand",
  "maestro-json",
  "maestro-path",
  "maestro-request",

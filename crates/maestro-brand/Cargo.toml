@@ -1,0 +1,15 @@
+[package]
+name = "maestro-brand"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

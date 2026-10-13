@@ -1,35 +1,15 @@
-//! The selected brand pack and its projections into themes, presentation data, CSS and marks.
+//! Native brand pack loading and terminal theme adapters.
 //!
-//! See `docs/theme.md` for the pack shape, the projections and their errors.
-mod css;
-mod data;
+//! See `docs/theme.md` for native loading and `docs/brand.md` for pure projection.
 mod mark;
 mod projection;
 
 use super::{ThemeError, ThemeOperations};
-use data::PackData;
-pub use data::{BrandFont, BrandMark, BrandType};
+use maestro_brand::{BrandError, PackData};
+pub use maestro_brand::{
+    BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPresentation, BrandType,
+};
 use maestro_path::{dirname, join};
-pub use projection::{BrandGlyph, BrandPresentation};
-
-/// The two shipped appearances a pack supplies colors for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BrandMode {
-    /// The dark appearance.
-    Dark,
-    /// The light appearance.
-    Light,
-}
-
-impl BrandMode {
-    /// The key of this mode in a pack and the name of its shipped theme.
-    pub(super) fn name(self) -> &'static str {
-        match self {
-            Self::Dark => "dark",
-            Self::Light => "light",
-        }
-    }
-}
 
 /// A decoded brand pack: colors, fonts, type, spacing, mark and glyph data.
 pub struct BrandPack {
@@ -49,8 +29,12 @@ pub fn load_brand_pack(
     operations: &dyn ThemeOperations,
 ) -> Result<BrandPack, ThemeError> {
     let text = operations.read_to_string(path).map_err(ThemeError::io)?;
-    let mut data = PackData::parse(path, &text)?;
-    data.check_measurements()?;
+    let mut data = PackData::parse(&text).map_err(|error| match error {
+        BrandError::Decode(cause) => {
+            ThemeError::caused_by(format!("Invalid brand pack {path}: {cause}"), cause)
+        }
+        error => ThemeError::from(error),
+    })?;
     let directory = dirname(path);
     let from_pack = |relative: &str| join(&[&directory, relative]);
     data.mark.template = from_pack(&data.mark.template);
@@ -58,4 +42,11 @@ pub fn load_brand_pack(
         *variant = from_pack(variant);
     }
     Ok(BrandPack { data })
+}
+
+impl From<BrandError> for ThemeError {
+    /// Retain the shared failure as the cause of a theme error.
+    fn from(error: BrandError) -> Self {
+        Self::caused_by(error.to_string(), error)
+    }
 }

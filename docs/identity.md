@@ -428,9 +428,9 @@ independent color settings. The template contains no hex colors.
    the intended size before publishing.
 
 The repository ships these data files and static renders, and the theme
-library reads a selected pack: it derives the shipped dark and light terminal
-themes, resolved presentation values, CSS custom properties and filled mark
-templates ([theme library](theme.md#brand-pack)). It has no pack-selection
+library reads a selected pack and derives the shipped dark and light terminal
+themes ([theme library](theme.md#brand-pack)); [the brand library](brand.md) owns
+shared admission and pure presentation, CSS and mark projections. It has no pack-selection
 command, renderer or bundled font files. Web and export implementations must read
 the same selected pack. Every runtime consumer must read the selected
 pack and never hard-code brand colors, fonts, sizes, wordmark, tagline, glyphs or

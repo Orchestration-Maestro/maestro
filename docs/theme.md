@@ -259,46 +259,30 @@ cargo run -p maestro-theme --example brand_themes -- assets/brand/brand.json cra
 The example writes `dark.json` and `light.json` into the given directory. Fewer or more
 arguments fail with `usage: brand_themes <pack.json> <output-directory>`.
 
-`load_brand_pack(path, operations)` reads exactly `path` through `ThemeOperations` and
-decodes it. It searches for no default pack and reads no template or font. A read
-failure keeps its I/O error; text or fields the decoder rejects give
-`Invalid brand pack <path>: <cause>`. Every listed field is required and not null;
-records are objects, never positional arrays; unknown members are ignored and a repeated
-member keeps its last value. A type size of zero or less, or a negative spacing or
-radius, gives `Invalid brand measurement: <JSON Pointer>`. Mark paths become the pack's
-directory joined with the authored relative path (`maestro_path::join`, lexical).
+`load_brand_pack(path, operations)` reads `path` through `ThemeOperations`, then uses
+[shared brand admission](brand.md#admission). It searches for no default pack and
+reads no template or font. Read failures retain the I/O error; decoder failures are
+wrapped as `Invalid brand pack <path>: <cause>`. Mark paths become the pack's directory
+joined with the authored relative path ([lexical path joining](../crates/maestro-path/src/lib.rs)).
 
-A `BrandMode` (`Dark` or `Light`, independent of `ColorMode`) selects the mode of every
-projection. A projection resolves a role through the mode's alias, then the palette.
+`BrandMode`, `BrandFont`, `BrandType`, `BrandMark`, `BrandGlyph` and
+`BrandPresentation` remain re-exported through `maestro_theme` and
+`maestro_theme::theme`. Their [pure projections](brand.md#projection) belong to
+`maestro-brand`.
 
-- `BrandPack::theme_json` returns the standard theme document: `$schema`, `name` (the
-  mode), `vars` (the mode's resolved colors in key order), `colors` (the 51 established
-  keys mapped through `brand-roles.json`) and `export`. The four terminal-default keys
-  stay empty. Custom themes and the generic export fallback are untouched.
-- `BrandPack::presentation` returns the resolved colors, fonts, type, spacing, radii,
-  glyphs and ANSI and truecolor aliases, borrowed from the pack.
-- `BrandPresentation::css_properties` returns custom properties only:
-  `--maestro-color-<role>`, `--maestro-font-<role>`, `--maestro-type-<role>-font`, `-size`,
-  `-line-height` and `-weight`, `--maestro-spacing-<role>` and `--maestro-radii-<role>`.
-  Size, spacing and radii carry `px`. Named families are quoted, generic family keywords
-  stay bare, and fallback order and repeats are kept. Names and strings use CSS escapes,
-  with `<` as a hexadecimal escape.
-- `BrandPack::mark_svg` reads the default template or the named variant and substitutes
-  `{{wordmark}}` (XML-escaped), `var(--role)` and `currentColor` (the `text` color) in one
-  pass; inserted text is never scanned again.
+- `BrandPack::presentation` delegates to the shared pack's selected-mode projection.
+- `BrandPack::theme_json` returns the standard theme document: `$schema`, mode `name`,
+  `vars`, the 51 ordered `colors` keys mapped through `brand-roles.json`, and `export`.
+  The four terminal-default keys stay empty. Custom themes and the generic export
+  fallback are untouched.
+- `BrandPack::mark_svg` selects the default template or named variant, resolves the
+  presentation, reads that template, then delegates to
+  [`BrandPresentation::fill_mark`](brand.md#projection). An unknown variant fails
+  before projection or reading.
 
 Empty colors in exported themes follow [Resolved colors for export](#resolved-colors-for-export);
 callers that want the pack's text color read `BrandPresentation::colors["text"]`.
-
-Projection failures are `Missing brand mode: <mode>`, `Missing brand palette color: <key>`,
-`Invalid brand color: <value>` (not `#` and six hexadecimal digits), `Missing brand font: <key>`,
-`Missing brand color role: <role>`, `Unknown brand mark variant: <name>` (before any read) and
-`Unterminated brand template color`. A projection checks the selected mode's colors and the
-pack's font, glyph and terminal references, and `mark_svg` reads only the requested
-template; nothing falls back to a default.
-
-Font files, pack selection, frontend rendering and the exported-page integration are
-separate deliveries.
+Font files, pack selection and frontend rendering are separate deliveries.
 
 ## Source metadata
 
