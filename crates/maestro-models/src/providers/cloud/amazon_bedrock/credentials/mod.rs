@@ -26,6 +26,7 @@ use aws_config::provider_config::ProviderConfig;
 use aws_config::web_identity_token::WebIdentityTokenCredentialsProvider;
 use aws_credential_types::provider::error::CredentialsError;
 use aws_credential_types::provider::{self, ProvideCredentials, future};
+use aws_smithy_runtime_api::client::http::SharedHttpClient;
 
 use self::profile::{Walk, field};
 
@@ -80,6 +81,8 @@ struct Selected {
     profile: String,
     /// Configuration of the native source providers.
     conf: ProviderConfig,
+    /// Direct configuration for container and instance metadata.
+    direct: ProviderConfig,
     /// Configuration roles are assumed with, before any provider was composed from it.
     shared: SdkConfig,
     /// The container source.
@@ -109,6 +112,7 @@ impl Selected {
                 Walk {
                     profiles: &profiles,
                     conf: &self.conf,
+                    direct: &self.direct,
                     shared: &self.shared,
                 }
                 .resolve(&self.profile)
@@ -162,26 +166,40 @@ impl ProvideCredentials for Step {
 pub(super) fn default_provider(
     profile: Option<&str>,
     shared: &SdkConfig,
+    direct: &SharedHttpClient,
 ) -> CredentialsProviderChain {
     match profile {
-        Some(profile) => selected_profile(profile, shared),
+        Some(profile) => selected_profile(profile, shared, direct),
         None => CredentialsProviderChain::first_try(
             "Environment",
             EnvironmentVariableCredentialsProvider::new(),
         )
-        .or_else("Profile", selected_profile("default", shared)),
+        .or_else("Profile", selected_profile("default", shared, direct)),
     }
 }
 
 /// The chain for a selected profile. Nothing is read until the first credential is looked up.
-fn selected_profile(profile: &str, shared: &SdkConfig) -> CredentialsProviderChain {
-    let conf = ProviderConfig::default().with_region(shared.region().cloned());
+fn selected_profile(
+    profile: &str,
+    shared: &SdkConfig,
+    direct: &SharedHttpClient,
+) -> CredentialsProviderChain {
+    let direct = ProviderConfig::default()
+        .with_region(shared.region().cloned())
+        .with_http_client(direct.clone());
+    let mut conf = direct.clone();
+    if let Some(http) = shared.http_client() {
+        conf = conf.with_http_client(http);
+    }
     let selected = Arc::new(Selected {
         profile: profile.to_owned(),
         shared: shared.clone(),
-        ecs: EcsCredentialsProvider::builder().configure(&conf).build(),
-        imds: ImdsCredentialsProvider::builder().configure(&conf).build(),
+        ecs: EcsCredentialsProvider::builder().configure(&direct).build(),
+        imds: ImdsCredentialsProvider::builder()
+            .configure(&direct)
+            .build(),
         conf: conf.clone(),
+        direct,
     });
     let step = |kind| Step(Arc::clone(&selected), kind);
     CredentialsProviderChain::first_try("Profile", step(Kind::Profile))

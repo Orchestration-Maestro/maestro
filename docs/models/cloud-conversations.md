@@ -114,8 +114,7 @@ ends the chain, and so does a cache that is missing or incomplete. Any other fai
 request (validation, server, throttling or transport) lets the chain go on to the next source,
 decided from the error type and never from its text. A refresh that fails before a request is
 sent, such as an unreadable cached key, ends the chain. A refreshed token is used even when saving
-it back to the cache fails. Like every native credential provider, the refresh does not read the
-proxy variables (tracked in issue #742).
+it back to the cache fails.
 
 A named SSO session supplies only the start URL and region (a session without them leaves the
 field missing, whatever the profile says); the account and role come from the profile. A profile
@@ -130,6 +129,13 @@ The bearer token is the nonempty `bearer_token` option, otherwise nonempty `AWS_
 signing with `Authorization: Bearer <token>`. `AWS_BEDROCK_SKIP_AUTH` equal to `1` instead signs
 with placeholder credentials and ignores both bearer sources, which is for proxies that do not
 authenticate; any other value of that variable has no effect. No `api_key` is read.
+
+Login refresh, role assumption, web identity, SSO credentials and named-session OIDC refresh use
+conversation routing, including a supplied sender and [destination-specific proxy selection](#proxy-routing).
+Container and instance metadata stay direct, including named role sources, and do not use the
+supplied sender.
+
+## Proxy routing
 
 Proxying is on when any of `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` or their lowercase spellings
 is nonempty. Then the proxy of each destination is the first nonempty of

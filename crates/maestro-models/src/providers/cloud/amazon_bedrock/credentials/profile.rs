@@ -148,6 +148,8 @@ pub(super) struct Walk<'a> {
     pub(super) profiles: &'a ProfileSet,
     /// Configuration of the native source providers.
     pub(super) conf: &'a ProviderConfig,
+    /// Direct configuration for named container and instance metadata sources.
+    pub(super) direct: &'a ProviderConfig,
     /// Configuration roles are assumed with.
     pub(super) shared: &'a SdkConfig,
 }
@@ -241,14 +243,14 @@ impl<'a> Walk<'a> {
             }
             Named::EcsContainer => {
                 EcsCredentialsProvider::builder()
-                    .configure(self.conf)
+                    .configure(self.direct)
                     .build()
                     .provide_credentials()
                     .await
             }
             Named::Ec2InstanceMetadata => {
                 ImdsCredentialsProvider::builder()
-                    .configure(self.conf)
+                    .configure(self.direct)
                     .build()
                     .provide_credentials()
                     .await

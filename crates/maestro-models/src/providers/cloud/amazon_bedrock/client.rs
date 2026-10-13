@@ -12,7 +12,9 @@ use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamOutput;
 use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError;
 use aws_smithy_runtime_api::client::auth::AuthSchemeId;
 use aws_smithy_runtime_api::client::auth::http::HTTP_BEARER_AUTH_SCHEME_ID;
-use aws_smithy_runtime_api::client::http::{HttpConnector, HttpConnectorFuture, http_client_fn};
+use aws_smithy_runtime_api::client::http::{
+    HttpConnector, HttpConnectorFuture, SharedHttpClient, http_client_fn,
+};
 use aws_smithy_runtime_api::client::orchestrator::{
     HttpRequest as WireRequest, HttpResponse as WireResponse,
 };
@@ -258,6 +260,21 @@ fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) ->
     })
 }
 
+/// Adapt a sender to the native SDK through the single connector implementation.
+fn bridge(
+    fetch: Fetch,
+    signal: Option<Cancellation>,
+    observed: Arc<Mutex<Option<Observed>>>,
+) -> SharedHttpClient {
+    http_client_fn(move |_, _| {
+        aws_smithy_runtime_api::client::http::SharedHttpConnector::new(Bridge {
+            fetch: Arc::clone(&fetch),
+            signal: signal.clone(),
+            observed: Arc::clone(&observed),
+        })
+    })
+}
+
 /// Build the SDK client from the settings. The region is looked up while the shared
 /// configuration loads; credentials are looked up by the SDK on the first send.
 pub(super) async fn connect(
@@ -268,15 +285,7 @@ pub(super) async fn connect(
     let observed = Arc::new(Mutex::new(None));
     let empty_profile = env.0.get("AWS_PROFILE").is_some_and(String::is_empty);
     let fetch = transport(options, settings, env);
-    let signal = options.common.signal.clone();
-    let seen = Arc::clone(&observed);
-    let http = http_client_fn(move |_, _| {
-        aws_smithy_runtime_api::client::http::SharedHttpConnector::new(Bridge {
-            fetch: Arc::clone(&fetch),
-            signal: signal.clone(),
-            observed: Arc::clone(&seen),
-        })
-    });
+    let http = bridge(fetch, options.common.signal.clone(), Arc::clone(&observed));
     let mut loader = aws_config::defaults(BehaviorVersion::latest());
     if let Some(profile) = &settings.profile {
         loader = loader.profile_name(profile);
@@ -286,16 +295,24 @@ pub(super) async fn connect(
     if let Some(region) = &settings.region {
         loader = loader.region(Region::new(region.clone()));
     }
-    let shared = loader.load().await;
+    let shared = loader.load().await.into_builder().http_client(http).build();
     let mut config = aws_sdk_bedrockruntime::config::Builder::from(&shared)
-        .http_client(http)
         .stalled_stream_protection(StalledStreamProtectionConfig::disabled());
     if let Some(endpoint) = &settings.endpoint {
         config = config.endpoint_url(endpoint);
     }
     config = match &settings.auth {
         Auth::Chain => {
-            config.credentials_provider(default_provider(settings.profile.as_deref(), &shared))
+            let direct = bridge(
+                configured_fetch(Route::default()),
+                None,
+                Arc::new(Mutex::new(None)),
+            );
+            config.credentials_provider(default_provider(
+                settings.profile.as_deref(),
+                &shared,
+                &direct,
+            ))
         }
         Auth::Bearer(token) => config
             .token_provider(Token::new(token, None))
