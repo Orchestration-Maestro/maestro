@@ -2348,6 +2348,7 @@ dependencies = [
  "maestro-lock",
  "maestro-models",
  "maestro-path",
+ "maestro-process",
  "maestro-text",
  "serde",
  "serde_json",

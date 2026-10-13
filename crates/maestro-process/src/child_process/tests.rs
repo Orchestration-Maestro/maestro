@@ -1,7 +1,9 @@
 //! Private collector, grace and escalation behaviour.
 #![cfg(unix)]
 use super::StderrMode;
-use super::{CapturedChild, Termination, WaitOptions, fill, wait_for_child_process};
+use super::{
+    CapturedChild, SpawnSyncError, Termination, WaitOptions, capture, fill, wait_for_child_process,
+};
 use std::io::Read;
 use std::{
     cell::Cell,
@@ -415,8 +417,8 @@ s.sendall(b'READY')
 s.recv(1)
 ";
 
-/// Starts a [`STUBBORN`] child and returns it with its connected socket.
-fn stubborn() -> (CapturedChild, std::net::TcpStream) {
+/// A [`STUBBORN`] command connecting back to a fresh listener.
+fn stubborn_command() -> (Command, std::net::TcpListener) {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let mut command = Command::new("python3");
     command
@@ -426,10 +428,21 @@ fn stubborn() -> (CapturedChild, std::net::TcpStream) {
             &listener.local_addr().unwrap().port().to_string(),
         ])
         .kill_on_drop(true);
-    let child = CapturedChild::spawn(&mut command).unwrap();
+    (command, listener)
+}
+
+/// Blocks until a [`STUBBORN`] child reports `READY`, returning its socket.
+fn stubborn_ready(listener: &std::net::TcpListener) -> std::net::TcpStream {
     let (mut socket, _) = listener.accept().unwrap();
     socket.read_exact(&mut [0; 5]).unwrap();
-    (child, socket)
+    socket
+}
+
+/// Starts a [`STUBBORN`] child and returns it with its connected socket.
+fn stubborn() -> (CapturedChild, std::net::TcpStream) {
+    let (mut command, listener) = stubborn_command();
+    let child = CapturedChild::spawn(&mut command).unwrap();
+    (child, stubborn_ready(&listener))
 }
 
 /// Blocks until a [`STUBBORN`] child answers a termination signal it received.
@@ -528,5 +541,79 @@ fn wait_consumes_the_termination_decision_once() {
             .unwrap();
         assert_eq!(output.status.signal(), Some(15));
         assert!(polled.get());
+    });
+}
+
+#[test]
+fn sync_capture_uses_each_callers_timeout() {
+    // The blocking readiness read holds the only runtime thread, so the paused
+    // clock cannot reach the deadline before the child ignores termination.
+    paused_runtime().block_on(async {
+        for timeout in [Duration::from_millis(5000), Duration::from_millis(10_000)] {
+            let (mut command, listener) = stubborn_command();
+            let started = tokio::time::Instant::now();
+            let mut run = Box::pin(capture(&mut command, timeout));
+            assert!(is_pending(&mut run).await, "{timeout:?} started");
+            let mut socket = stubborn_ready(&listener);
+            assert!(
+                matches!(run.await, Err(SpawnSyncError::Timeout)),
+                "{timeout:?}"
+            );
+            assert_eq!(started.elapsed(), timeout);
+            let mut rest = Vec::new();
+            socket.read_to_end(&mut rest).unwrap();
+            assert_eq!(
+                rest, b"",
+                "{timeout:?} killed without a termination request"
+            );
+        }
+    });
+}
+
+#[test]
+fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
+    use std::{error::Error, io::Write};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let script = r"
+import os, socket, sys
+os.write(1, b'prefix')
+gone, alive = os.pipe()
+if os.fork(): os._exit(0)
+os.close(alive); os.read(gone, 1); os.close(gone)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+if s.recv(1):
+    try: os.write(1, b'tail'); result = b'writable'
+    except BrokenPipeError: result = b'closed'
+    s.sendall(result)
+s.close(); os._exit(0)
+";
+    paused_runtime().block_on(async {
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            script,
+            &listener.local_addr().unwrap().port().to_string(),
+        ]);
+        let timeout = Duration::from_secs(5);
+        let started = tokio::time::Instant::now();
+        let mut run = Box::pin(capture(&mut command, timeout));
+        assert!(is_pending(&mut run).await, "capture started");
+        // The holder connects only after the exit pipe reaches EOF. This blocking
+        // accept keeps the paused runtime from advancing during either startup.
+        let (mut holder, _) = listener.accept().unwrap();
+        assert_eq!(started.elapsed(), Duration::ZERO);
+        assert!(is_pending(&mut run).await, "stdout still held after exit");
+        tokio::time::advance(timeout).await;
+        let result = run.await;
+        // Release before assertions so a wrong result cannot strand the holder.
+        holder.write_all(b"!").unwrap();
+        let mut report = Vec::new();
+        holder.read_to_end(&mut report).unwrap();
+        let error = result.unwrap_err();
+        assert!(matches!(error, SpawnSyncError::Timeout));
+        assert!(error.source().is_none());
+        assert_eq!(error.to_string(), "The process timed out");
+        assert_eq!(report, b"closed");
+        assert_eq!(started.elapsed(), timeout);
     });
 }
