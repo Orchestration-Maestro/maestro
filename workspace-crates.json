@@ -4,6 +4,7 @@
   "maestro-brand": "core",
   "maestro-cancellation": "core",
   "maestro-catalog": "core",
+  "maestro-chat": "core",
   "maestro-credentials": "core",
   "maestro-entry": "core",
   "maestro-export": "core",

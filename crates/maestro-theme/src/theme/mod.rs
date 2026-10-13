@@ -431,3 +431,5 @@ fn prepare(
         .map(|(key, value)| Ok((key, colors::ansi(&value, mode, plane)?)))
         .collect()
 }
+
+pub use styles::paint;

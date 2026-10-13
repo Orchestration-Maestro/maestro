@@ -8,3 +8,5 @@ pub use maestro_models::{ModelCost, Usage, UsageCost};
 pub use maestro_text::markup;
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
+
+pub use maestro_tools::{key_hint, key_text, raw_key_hint};

@@ -207,6 +207,11 @@ with the file-extension table. A name without a dot is compared whole, so extens
 
 ## Component styles
 
+`paint(theme: Option<&Theme>, key, text)` applies a prepared foreground or returns
+unstyled text when the supplied theme or key is absent. Live consumers supply
+an observation of their live handle at invocation; captured consumers supply
+their retained instance.
+
 `get_markdown_theme`, `get_select_list_theme`, `get_editor_theme` and
 `get_settings_list_theme` return the terminal toolkit's style records. Their coloring callbacks
 read the published theme on every call and return their text unstyled when no theme is published

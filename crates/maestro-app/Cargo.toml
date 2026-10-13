@@ -7,6 +7,7 @@ repository.workspace = true
 
 [dependencies]
 maestro-models = { path = "../maestro-models" }
+maestro-tools = { path = "../maestro-tools" }
 maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }

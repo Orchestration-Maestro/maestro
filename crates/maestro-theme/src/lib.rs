@@ -15,3 +15,5 @@ pub use theme::{ThemeDirectories, ThemeInfo, ThemeOperations, ThemeState, load_t
 pub use theme::{ThemeReloadTimer, ThemeWatchOperations, ThemeWatcher, close_watcher};
 pub use theme::{get_editor_theme, get_markdown_theme, get_select_list_theme};
 pub use theme::{get_settings_list_theme, highlight_code, highlight_html};
+
+pub use theme::paint;

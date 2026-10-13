@@ -10,7 +10,7 @@ use std::rc::Rc;
 ///
 /// Strikethrough does no lookup and unselected settings labels are never colored.
 fn foreground(live: LiveTheme, key: ThemeColor) -> impl Fn(&str) -> String + Clone {
-    move |text| paint(&live, &key, text)
+    move |text| paint(live.get().ok().as_deref(), &key, text)
 }
 
 /// Shared form of [`foreground`].
@@ -84,13 +84,13 @@ pub fn get_editor_theme(theme: LiveTheme) -> EditorTheme {
 /// Settings-list styles; the cursor is colored once, with the theme published now.
 #[must_use]
 pub fn get_settings_list_theme(theme: LiveTheme) -> SettingsListTheme {
-    let cursor = paint(&theme, &ThemeColor::Accent, "\u{2192} ");
+    let cursor = paint(theme.get().ok().as_deref(), &ThemeColor::Accent, "→ ");
     let (label, value) = (theme.clone(), theme.clone());
     let dim = shared(theme, ThemeColor::Dim);
     SettingsListTheme {
         label: Rc::new(move |text, selected| {
             if selected {
-                paint(&label, &ThemeColor::Accent, text)
+                paint(label.get().ok().as_deref(), &ThemeColor::Accent, text)
             } else {
                 text.to_owned()
             }
@@ -101,7 +101,7 @@ pub fn get_settings_list_theme(theme: LiveTheme) -> SettingsListTheme {
             } else {
                 ThemeColor::Muted
             };
-            paint(&value, &key, text)
+            paint(value.get().ok().as_deref(), &key, text)
         }),
         description: Rc::clone(&dim),
         cursor,

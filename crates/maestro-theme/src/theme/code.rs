@@ -14,7 +14,7 @@ fn supported<'a>(highlighter: &dyn SyntaxHighlighter, lang: Option<&'a str>) -> 
 /// Split `code` at every line feed, coloring each row as unclassified code.
 pub(super) fn colored_rows(theme: &LiveTheme, code: &str) -> Vec<String> {
     code.split('\n')
-        .map(|row| paint(theme, &ThemeColor::MdCodeBlock, row))
+        .map(|row| paint(theme.get().ok().as_deref(), &ThemeColor::MdCodeBlock, row))
         .collect()
 }
 
@@ -60,7 +60,7 @@ fn styled_rows(theme: &LiveTheme, code: &str, spans: &[SyntaxSpan]) -> Vec<Strin
             }
             if !piece.is_empty() {
                 match span.color.as_ref() {
-                    Some(key) => row.push_str(&paint(theme, key, piece)),
+                    Some(key) => row.push_str(&paint(theme.get().ok().as_deref(), key, piece)),
                     None => row.push_str(piece),
                 }
             }

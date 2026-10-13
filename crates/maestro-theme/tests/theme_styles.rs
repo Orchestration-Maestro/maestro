@@ -339,3 +339,26 @@ fn retained_style_handles_release_after_last_owner() {
     drop((retained, live, state));
     assert!(second_gone.upgrade().is_none());
 }
+
+#[test]
+fn toolkit_paint_preserves_missing_and_live_theme_fallbacks() {
+    use maestro_theme::paint;
+    assert_eq!(paint(None, &ThemeColor::Accent, "x"), "x");
+    let first = theme(0);
+    assert_eq!(
+        paint(Some(&first), &ThemeColor::Named("absent".into()), "x"),
+        "x"
+    );
+    assert_eq!(
+        paint(Some(&first), &ThemeColor::Accent, "x"),
+        "\x1b[38;5;1mx\x1b[39m"
+    );
+    assert_eq!(
+        paint(Some(&first), &ThemeColor::Accent, ""),
+        "\x1b[38;5;1m\x1b[39m"
+    );
+    let (state, live) = published(&first);
+    let retained = get_editor_theme(live);
+    state.set_theme_instance(theme(100)).unwrap();
+    assert_eq!((retained.border_color)("x"), "\x1b[38;5;104mx\x1b[39m");
+}

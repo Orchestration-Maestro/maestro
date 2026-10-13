@@ -60,3 +60,5 @@ pub use components::{
     SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme,
     SelectListTruncatePrimaryContext, SettingItem, SettingsList, SettingsListTheme,
 };
+
+pub use maestro_cancellation::Cancellation;
