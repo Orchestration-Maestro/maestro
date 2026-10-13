@@ -57,7 +57,7 @@ fn attribute(svg: &mut String, key: &str, value: &str) {
     svg.push(' ');
     escape_into(key, svg, EscapeMode::Xml);
     svg.push_str("=\"");
-    escape_into(value, svg, EscapeMode::Xml);
+    escape_into(value, svg, EscapeMode::XmlAttribute);
     svg.push('"');
 }
 /// Build the SVG shared by DOM parsing and native rasterization.
@@ -77,6 +77,13 @@ pub fn icon_svg(node: &IconNode, size: IconSize, class_name: Option<&str>) -> St
     for (tag, attrs) in node {
         svg.push('<');
         escape_into(tag, &mut svg, EscapeMode::Xml);
+        if let Some((prefix, _)) = tag.split_once(':') {
+            attribute(
+                &mut svg,
+                &format!("xmlns:{prefix}"),
+                "http://www.w3.org/2000/svg",
+            );
+        }
         for (key, value) in attrs {
             match value {
                 SvgValue::Text(text) => attribute(&mut svg, key, text),

@@ -115,6 +115,16 @@ fn lexical_order_keeps_utf16_sequence_and_duplicates() {
 
 #[test]
 fn markup_modes_escape_once_and_append() {
+    let whitespace = "a\tb\nc\rd";
+    assert_eq!(escape(whitespace, EscapeMode::Xml), whitespace);
+    assert_eq!(
+        escape(whitespace, EscapeMode::XmlAttribute),
+        "a&#9;b&#10;c&#13;d"
+    );
+    assert_eq!(
+        escape("&<>\"'", EscapeMode::XmlAttribute),
+        "&amp;&lt;&gt;&quot;&apos;"
+    );
     for case in rules().markup {
         for (mode, expected) in [
             (EscapeMode::Xml, &case.xml),

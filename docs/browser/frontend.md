@@ -37,7 +37,8 @@ rounding use `ryu-js`; token text uses `k`, never `M`.
 ## Icons
 
 `icons()` loads 27 used glyphs. `icon_svg` constructs their ordered primitive
-nodes; [`markup`](../../crates/maestro-text/src/markup.rs) owns XML escaping.
+nodes, binding qualified primitive prefixes to the SVG namespace;
+[`markup`](../../crates/maestro-text/src/markup.rs) owns XML attribute escaping.
 `icon` renders the SVG through usvg/resvg into an egui image, accepting caller
 color and device density. `icon_dom` parses the same SVG into a browser SVG
 element. Custom and empty primitive lists are also accepted.

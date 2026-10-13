@@ -140,7 +140,7 @@ fn icon_svg_escapes_attribute_values_before_parsing() {
         let document = usvg::roxmltree::Document::parse(&svg).unwrap();
         assert_tree(document.root_element(), &case.expected);
     }
-    let literal = "x\"'<&💡";
+    let literal = "x\"'<&💡a\tb\nc\rd";
     let node = vec![(
         "circle".into(),
         IndexMap::from([(
@@ -162,6 +162,29 @@ fn icon_svg_escapes_attribute_values_before_parsing() {
     assert_eq!(children.len(), 1);
     assert_eq!(children[0].attributes().len(), 1);
     assert_eq!(children[0].attribute("data-label"), Some(literal));
+}
+
+#[test]
+fn qualified_svg_primitives_keep_the_svg_namespace() {
+    use maestro_web::icons::{IconSize, SvgValue, icon, icon_svg};
+    let node = vec![(
+        "svg:circle".into(),
+        IndexMap::from([
+            ("cx".into(), SvgValue::Number(12.0)),
+            ("cy".into(), SvgValue::Number(12.0)),
+            ("r".into(), SvgValue::Number(5.0)),
+        ]),
+    )];
+    let svg = icon_svg(&node, IconSize::Md, None);
+    let document = usvg::roxmltree::Document::parse(&svg).unwrap();
+    let child = document.root_element().first_element_child().unwrap();
+    assert_eq!(child.tag_name().name(), "circle");
+    assert_eq!(
+        child.tag_name().namespace(),
+        Some("http://www.w3.org/2000/svg")
+    );
+    let image = icon(&node, IconSize::Md, egui::Color32::WHITE, 1.0).unwrap();
+    assert!(image.pixels.iter().any(|p| p.a() > 0));
 }
 
 #[test]

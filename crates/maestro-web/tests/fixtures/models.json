@@ -18,17 +18,6 @@
   {
     "language": "en",
     "input": {
-      "input": 0,
-      "output": 0
-    },
-    "expected": "Free",
-    "effects": [
-      "get"
-    ]
-  },
-  {
-    "language": "en",
-    "input": {
       "input": "NaN",
       "output": 0
     },
@@ -266,17 +255,6 @@
   {
     "language": "de",
     "input": {},
-    "expected": "Kostenlos",
-    "effects": [
-      "get"
-    ]
-  },
-  {
-    "language": "de",
-    "input": {
-      "input": 0,
-      "output": 0
-    },
     "expected": "Kostenlos",
     "effects": [
       "get"

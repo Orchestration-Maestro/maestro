@@ -253,13 +253,15 @@ impl<F: ?Sized> I18n<F> {
                 .cloned()
                 .ok_or(I18nError::MissingLanguage(language))?
         };
-        let value = table
-            .try_borrow()
-            .map_err(|_| I18nError::BorrowConflict)?
-            .get(category_or_key)
-            .cloned();
         if let Some(key) = key {
-            let Some(TranslationValue::Category(category)) = value else {
+            let category = {
+                let messages = table.try_borrow().map_err(|_| I18nError::BorrowConflict)?;
+                match messages.get(category_or_key) {
+                    Some(TranslationValue::Category(category)) => Some(category.clone()),
+                    _ => None,
+                }
+            };
+            let Some(category) = category else {
                 self.host
                     .unknown_translation(&I18nDiagnostic::MissingCategory {
                         category: category_or_key.to_owned(),
@@ -273,6 +275,11 @@ impl<F: ?Sized> I18n<F> {
                 .cloned();
             Ok(self.resolve(value, Some(category_or_key), key))
         } else {
+            let value = table
+                .try_borrow()
+                .map_err(|_| I18nError::BorrowConflict)?
+                .get(category_or_key)
+                .cloned();
             Ok(self.resolve(value, None, category_or_key))
         }
     }

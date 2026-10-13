@@ -38,6 +38,7 @@ fn localization_catalog_preserves_every_message() {
             );
         }
     }
+    assert!(host.diagnostics.borrow().is_empty());
     let defaults: IndexMap<String, IndexMap<String, String>> =
         serde_json::from_str(include_str!("fixtures/defaults.json")).unwrap();
     for (language, messages) in defaults {
