@@ -163,6 +163,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-tui",
             "maestro-watch",
             "maestro-text",
+            "maestro-json",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),
