@@ -66,8 +66,9 @@ callback was provided.`), an SSO profile with a missing field (`Missing required
 whose own error is not a missing-credentials one. Login-session profiles are not supported yet (issue #728).
 
 A named SSO session supplies only the start URL and region (a session without them leaves the
-field missing, whatever the profile says); the account and role come from the profile. A cached
-token read by start URL that has expired fails before the SSO service is contacted. Every role of
+field missing, whatever the profile says); the account and role come from the profile. A profile
+with only a start URL sends its cached token as it is: the token is never renewed or rewritten,
+so an expired one ends in the SSO service's rejection. Every role of
 a walk is assumed in the region of the first role profile when it sets one, so a later role
 profile's own `region` has no effect. Retries and token caches belong to the SDK, as do the
 session names of assumed roles, except that a web identity source without `role_session_name`

@@ -115,7 +115,8 @@ struct Row {
     expected: Expected,
 }
 
-/// The text a failed row's error must carry, for the failures this crate words itself.
+/// The text a failed row's error must carry: this crate's own wording, or the stable cause the
+/// native provider reports for a controlled failure.
 fn cause(id: &str) -> Option<&'static str> {
     Some(match id {
         "role_mfa" => {
@@ -130,6 +131,12 @@ fn cause(id: &str) -> Option<&'static str> {
             "Missing required SSO field: sso_region."
         }
         "sso_session_missing" => "Missing SSO session: controlled.",
+        "web_sts_denied" | "role_denied" => "AccessDenied",
+        "sso_denied" => "controlled SSO denial",
+        "sso_expired" | "sso_refreshable_cache" => "controlled SSO expiry",
+        "web_missing_file" | "env_web_missing_file" | "sso_token_missing" => {
+            "No such file or directory (os error 2)"
+        }
         _ => return None,
     })
 }
@@ -241,12 +248,36 @@ fn check_outside(test: &str, row: &Row) -> TestResult {
         sent.and_then(|sent: &Sent| sent.security_token.as_ref()),
     );
     assert_eq!(got, want, "{id}: signature");
+    if input_has_cache(&row.input) {
+        assert!(work.sso_cache_unchanged(&row.input)?, "{id}: token cache");
+    }
     Ok(())
+}
+
+/// Whether the row writes an SSO token cache file.
+pub fn input_has_cache(input: &Input) -> bool {
+    input.sso_cache.is_some()
+        || matches!(
+            input.sso.as_deref(),
+            Some("valid" | "session" | "expired" | "refreshable")
+        )
+}
+
+/// Parse rows, rejecting a repeated id before any filtering can hide it.
+fn parse_rows(json: &str) -> TestResult<Vec<Row>> {
+    let rows: Vec<Row> = serde_json::from_str(json)?;
+    let mut seen = std::collections::HashSet::new();
+    for row in &rows {
+        if !seen.insert(row.id.as_str()) {
+            return Err(format!("duplicate row id {}", row.id).into());
+        }
+    }
+    Ok(rows)
 }
 
 /// Run every row a test owns.
 pub fn check_rows(test: &str) -> TestResult {
-    let all: Vec<Row> = serde_json::from_str(FIXTURE)?;
+    let all = parse_rows(FIXTURE)?;
     let owned: Vec<Row> = all.into_iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty(), "{test} owns no rows");
     if let Some(case) = child_process::child_case() {
@@ -257,4 +288,14 @@ pub fn check_rows(test: &str) -> TestResult {
         return block_on(false, converse(row));
     }
     owned.iter().try_for_each(|row| check_outside(test, row))
+}
+
+/// Reject a fixture whose ids repeat.
+pub fn duplicate_ids_are_rejected() -> TestResult {
+    let row = r#"{"id":"same","test":"t","input":{},"expected":{"processCalls":0,"sequence":[],"roles":[],"events":[],"stopReason":"stop"}}"#;
+    let error = parse_rows(&format!("[{row},{row}]"))
+        .err()
+        .ok_or("accepted")?;
+    assert_eq!(error.to_string(), "duplicate row id same");
+    Ok(())
 }

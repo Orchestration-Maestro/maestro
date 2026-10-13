@@ -214,8 +214,8 @@ fn sso_service_failure_stops_before_container() -> TestResult {
 }
 
 #[test]
-fn sso_token_failure_stops_before_container() -> TestResult {
-    check_rows("sso_token_failure_stops_before_container")
+fn legacy_sso_token_is_never_renewed() -> TestResult {
+    check_rows("legacy_sso_token_is_never_renewed")
 }
 
 #[test]
@@ -278,4 +278,9 @@ fn routed_server_reports_a_failed_connection_after_joining() -> TestResult {
     let error = routed.finish().err().ok_or("finish hid the failure")?;
     assert!(error.to_string().contains("connection thread panicked"));
     Ok(())
+}
+
+#[test]
+fn duplicate_fixture_ids_are_rejected() -> TestResult {
+    profile_credentials::duplicate_ids_are_rejected()
 }

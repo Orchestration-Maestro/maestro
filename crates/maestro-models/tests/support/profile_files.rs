@@ -82,9 +82,7 @@ impl Workdir {
         std::fs::write(self.file("token"), "controlled-web-token")?;
         std::fs::write(self.file("process-count"), "")?;
         install_script(&self.0)?;
-        if input.sso_cache.is_some()
-            || matches!(input.sso.as_deref(), Some("valid" | "session" | "expired"))
-        {
+        if crate::profile_credentials::input_has_cache(input) {
             self.write_sso_cache(input)?;
         }
         std::fs::write(self.file("config"), self.config(input))?;
@@ -107,16 +105,37 @@ impl Workdir {
         } else {
             START_URL_CACHE
         };
-        let (token, expires) = if input.sso.as_deref() == Some("expired") {
-            ("expired-sso-token", "2000-01-01T00:00:00Z")
-        } else {
-            ("controlled-sso-token", "2099-01-01T00:00:00Z")
-        };
         std::fs::write(
             cache.join(format!("{name}.json")),
-            format!(r#"{{"accessToken":"{token}","expiresAt":"{expires}"}}"#),
+            Self::sso_cache_text(input),
         )?;
         Ok(())
+    }
+
+    /// The token cache file a row starts with: valid, expired, or expired with every field
+    /// that would let a refreshing provider renew it.
+    fn sso_cache_text(input: &Input) -> String {
+        match input.sso.as_deref() {
+            Some("expired") => {
+                r#"{"accessToken":"expired-sso-token","expiresAt":"2000-01-01T00:00:00Z"}"#
+            }
+            Some("refreshable") => {
+                r#"{"accessToken":"expired-sso-token","expiresAt":"2000-01-01T00:00:00Z","clientId":"controlled-client","clientSecret":"controlled-secret","refreshToken":"controlled-refresh","registrationExpiresAt":"2099-01-01T00:00:00Z"}"#
+            }
+            _ => r#"{"accessToken":"controlled-sso-token","expiresAt":"2099-01-01T00:00:00Z"}"#,
+        }
+        .to_owned()
+    }
+
+    /// Whether the token cache file still holds the bytes the row wrote.
+    pub fn sso_cache_unchanged(&self, input: &Input) -> TestResult<bool> {
+        let name = if input.sso.as_deref() == Some("session") {
+            SESSION_CACHE
+        } else {
+            START_URL_CACHE
+        };
+        let path = self.0.join(".aws/sso/cache").join(format!("{name}.json"));
+        Ok(std::fs::read_to_string(path)? == Self::sso_cache_text(input))
     }
 
     /// The number of times the credential process ran.
@@ -300,6 +319,7 @@ impl Workdir {
             ("AWS_REGION".to_owned(), "us-east-1".to_owned()),
             ("AWS_ENDPOINT_URL_STS".to_owned(), endpoint.to_owned()),
             ("AWS_ENDPOINT_URL_SSO".to_owned(), endpoint.to_owned()),
+            ("AWS_ENDPOINT_URL_SSO_OIDC".to_owned(), endpoint.to_owned()),
             (
                 "AWS_EC2_METADATA_SERVICE_ENDPOINT".to_owned(),
                 endpoint.to_owned(),

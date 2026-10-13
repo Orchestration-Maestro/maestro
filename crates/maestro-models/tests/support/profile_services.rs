@@ -142,6 +142,36 @@ fn role_token(input: &Input, request: &Received, log: &mut Log) -> Reply {
     )
 }
 
+/// An SSO role-credentials request: record it and answer with credentials, a denial, or the
+/// rejection of an expired token.
+fn sso_credentials(input: &Input, request: &Received, query: &str, log: &mut Log) -> Reply {
+    log.sequence.push("sso".to_owned());
+    let params: std::collections::HashMap<String, String> =
+        url::form_urlencoded::parse(query.as_bytes())
+            .into_owned()
+            .collect();
+    log.sso.push(SsoRequest {
+        account: params.get("account_id").cloned(),
+        role: params.get("role_name").cloned(),
+    });
+    if input.deny.is_some() {
+        json(
+            403,
+            r#"{"__type":"UnauthorizedException","message":"controlled SSO denial"}"#,
+        )
+    } else if request.header("x-amz-sso_bearer_token") == Some("expired-sso-token") {
+        json(
+            401,
+            r#"{"__type":"UnauthorizedException","message":"controlled SSO expiry"}"#,
+        )
+    } else {
+        json(
+            200,
+            r#"{"roleCredentials":{"accessKeyId":"sso-key","secretAccessKey":"controlled-secret","sessionToken":"sso-token","expiration":4070908800000}}"#,
+        )
+    }
+}
+
 /// Answer one request and record it.
 fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
     let target = request.request_line.split(' ').nth(1).unwrap_or_default();
@@ -172,26 +202,11 @@ fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
             json(200, &body)
         }
         _ if path.starts_with("/federation/credentials") => {
-            log.sequence.push("sso".to_owned());
-            let params: std::collections::HashMap<String, String> =
-                url::form_urlencoded::parse(query.as_bytes())
-                    .into_owned()
-                    .collect();
-            log.sso.push(SsoRequest {
-                account: params.get("account_id").cloned(),
-                role: params.get("role_name").cloned(),
-            });
-            if input.deny.is_some() {
-                json(
-                    403,
-                    r#"{"__type":"UnauthorizedException","message":"controlled SSO denial"}"#,
-                )
-            } else {
-                json(
-                    200,
-                    r#"{"roleCredentials":{"accessKeyId":"sso-key","secretAccessKey":"controlled-secret","sessionToken":"sso-token","expiration":4070908800000}}"#,
-                )
-            }
+            sso_credentials(input, request, query, log)
+        }
+        "/token" => {
+            log.sequence.push("oidc".to_owned());
+            json(400, r#"{"error":"invalid_grant"}"#)
         }
         "/bedrock" => {
             log.sequence.push("bedrock".to_owned());
