@@ -2,10 +2,13 @@
 
 use serde_json::{Map, Value, json};
 
-use super::{Failure, Projection, Step, malformed, record, type_name};
+use super::{Failure, Projection, Step, malformed, record, record_list, type_name};
 
 /// Selection of a content: its parts, then its role.
-const CONTENT: &[Step] = &[Step::Convert("parts", parts_wire), Step::Keep("role")];
+const CONTENT: &[Step] = &[
+    Step::Convert("parts", |parts| record_list(parts, PART)),
+    Step::Keep("role"),
+];
 
 /// Selection of a part, in wire order; a part may hold several members at once.
 const PART: &[Step] = &[
@@ -47,18 +50,6 @@ const BLOB: &[Step] = &[
     Step::Reject("displayName"),
     Step::Keep("mimeType"),
 ];
-
-/// Project each part of a content's part list; any other value is kept whole.
-fn parts_wire(parts: Value) -> Projection<Value> {
-    match parts {
-        Value::Array(items) => items
-            .into_iter()
-            .map(|part| record(part, PART))
-            .collect::<Projection<_>>()
-            .map(Value::Array),
-        other => Ok(other),
-    }
-}
 
 /// Whether the value is a content: an object holding a part list.
 fn is_content(value: &Value) -> bool {
@@ -129,11 +120,7 @@ pub(super) fn contents(origin: Value) -> Projection<Value> {
         }
         single => vec![content(single)?],
     };
-    turns
-        .into_iter()
-        .map(|turn| record(turn, CONTENT))
-        .collect::<Projection<_>>()
-        .map(Value::Array)
+    record_list(Value::Array(turns), CONTENT)
 }
 
 /// Keep a non-empty content list or group admitted non-call parts into one user turn.

@@ -83,6 +83,18 @@ fn record(source: Value, plan: &[Step]) -> Projection<Value> {
     select(source, plan, &mut Map::new()).map(Value::Object)
 }
 
+/// Project each array element through the record selection; keep non-arrays unchanged.
+fn record_list(source: Value, plan: &[Step]) -> Projection<Value> {
+    match source {
+        Value::Array(items) => items
+            .into_iter()
+            .map(|item| record(item, plan))
+            .collect::<Projection<_>>()
+            .map(Value::Array),
+        other => Ok(other),
+    }
+}
+
 /// Remove a member and return it unless it is null.
 fn take(source: &mut Map<String, Value>, key: &str) -> Option<Value> {
     source.shift_remove(key).filter(|value| !value.is_null())

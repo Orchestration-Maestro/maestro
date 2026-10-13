@@ -2,7 +2,9 @@
 
 use serde_json::{Map, Value, json};
 
-use super::{Failure, Projection, Step, content, record, schema, select, tools, type_name};
+use super::{
+    Failure, Projection, Step, content, record, record_list, schema, select, tools, type_name,
+};
 
 /// Selection of the configuration in wire order; body-level members go to the request body
 /// and the rest to the generation object.
@@ -24,7 +26,7 @@ const CONFIG: &[Step] = &[
     Step::Keep("responseJsonSchema"),
     Step::Reject("routingConfig"),
     Step::Reject("modelSelectionConfig"),
-    Step::Body("safetySettings", safety_settings),
+    Step::Body("safetySettings", |settings| record_list(settings, SAFETY)),
     Step::Body("tools", tools::tools),
     Step::Body("toolConfig", tools::tool_config),
     Step::Reject("labels"),
@@ -69,18 +71,6 @@ pub(super) fn generation(
         schema::route_json_schema(members, "responseSchema", "responseJsonSchema");
     }
     select(config, CONFIG, body)
-}
-
-/// Project each safety setting of a list; any other value is kept whole.
-fn safety_settings(settings: Value) -> Projection<Value> {
-    match settings {
-        Value::Array(items) => items
-            .into_iter()
-            .map(|setting| record(setting, SAFETY))
-            .collect::<Projection<_>>()
-            .map(Value::Array),
-        other => Ok(other),
-    }
 }
 
 /// A cached-content name; a single unqualified segment gains its resource prefix.
