@@ -99,3 +99,25 @@ pub(super) fn response_record(headers: &HeaderMap) -> BTreeMap<String, String> {
         })
         .collect()
 }
+
+/// Validate each incoming header before combining initial names or replacing later names.
+pub(crate) fn layer_request_headers(
+    target: &mut IndexMap<String, String>,
+    entries: &IndexMap<String, String>,
+    combine: bool,
+) -> Result<(), String> {
+    for (name, value) in entries {
+        let mut entry = IndexMap::from([(name.to_ascii_lowercase(), value.to_owned())]);
+        normalize_request(&mut entry)?;
+        for (name, value) in entry {
+            let separator = if name == "cookie" { "; " } else { ", " };
+            if combine && let Some(previous) = target.get_mut(&name) {
+                previous.push_str(separator);
+                previous.push_str(&value);
+            } else {
+                target.insert(name, value);
+            }
+        }
+    }
+    Ok(())
+}

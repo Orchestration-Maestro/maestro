@@ -1,31 +1,9 @@
 //! Validated header layers for response-session requests.
 
 use super::request::diagnostic;
-use crate::providers::http::normalize_request;
+use crate::providers::http::{layer_request_headers, normalize_request};
 use crate::{DiagnosticErrorInfo, Model, StreamOptions};
 use indexmap::IndexMap;
-
-/// Validate each incoming header before combining initial names or replacing later names.
-fn layer(
-    target: &mut IndexMap<String, String>,
-    entries: &IndexMap<String, String>,
-    initial: bool,
-) -> Result<(), DiagnosticErrorInfo> {
-    for (name, value) in entries {
-        let mut entry = IndexMap::from([(name.to_ascii_lowercase(), value.to_owned())]);
-        normalize_request(&mut entry).map_err(diagnostic)?;
-        for (name, value) in entry {
-            let separator = if name == "cookie" { "; " } else { ", " };
-            if initial && let Some(previous) = target.get_mut(&name) {
-                previous.push_str(separator);
-                previous.push_str(&value);
-            } else {
-                target.insert(name, value);
-            }
-        }
-    }
-    Ok(())
-}
 
 /// Initial model headers combine; additional headers replace; provider headers win.
 pub(super) fn build_sse_headers(
@@ -37,10 +15,10 @@ pub(super) fn build_sse_headers(
 ) -> Result<IndexMap<String, String>, DiagnosticErrorInfo> {
     let mut headers = IndexMap::new();
     if let Some(initial) = &model.headers {
-        layer(&mut headers, initial, true)?;
+        layer_request_headers(&mut headers, initial, true).map_err(diagnostic)?;
     }
     if let Some(additional) = &options.headers {
-        layer(&mut headers, additional, false)?;
+        layer_request_headers(&mut headers, additional, false).map_err(diagnostic)?;
     }
     headers.extend([
         ("authorization".to_owned(), format!("Bearer {token}")),

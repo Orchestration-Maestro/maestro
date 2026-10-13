@@ -140,9 +140,9 @@ signature are read together; unknown members and later candidates are never deco
 
 ## Request preparation
 
-`maestro_models::providers::content::google` prepares the parameters of a content-generation
-request. It sends nothing, calls no hook and never reads a retained timeout, retry or transport
-setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
+`build_params` in `maestro_models::providers::content::google` prepares the parameters of a
+content-generation request. It sends nothing, calls no hook and never reads a retained timeout,
+retry or transport setting; `GoogleOptions` is also exported at the crate root. Two operations compose:
 
 - `build_simple_options(model, options)` selects raw options from simple ones.
 - `build_params(model, context, options)` builds `GenerateContentParameters` from the
@@ -253,3 +253,45 @@ in the order model, contents, configuration wins.
   schema conversion. At the responseSchema and function parameters/response fields only,
   a schema carrying `$schema` is moved to its JSON-schema alternative when that destination
   is absent, null, false, zero or empty text, and is not converted in that alternative.
+
+
+## Request transport
+
+[`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/google.rs)
+captures the supplied endpoint, key and headers without environment lookup or validation.
+[`ApiClient::prepare_request`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/google_shared/api_client.rs)
+consumes a projected body and borrows the selected HTTP options, returning a POST request
+and positive timeout milliseconds without sending or starting a timer. Cancellation is left
+unset for the invocation caller.
+
+Header layers replace exact spellings before case-insensitive combination. Extra body values
+merge recursively only for object/object pairs; other values replace the previous value.
+Body text is written by the [JSON owner](../json.md). This stage adds no SDK telemetry headers
+and emits no console diagnostics.
+
+```rust
+use maestro_models::Model;
+use maestro_models::providers::content::google::create_client;
+use maestro_models::providers::content::google_shared::project_content_request;
+use serde_json::{Value, json};
+
+let model: Model = serde_json::from_value(json!({
+    "id": "gemini-fixture", "name": "Gemini", "api": "google-generative-ai",
+    "provider": "google", "baseUrl": "https://example.invalid/v1beta", "reasoning": false,
+    "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
+    "contextWindow": 8192, "maxTokens": 4096
+})).expect("model");
+let client = create_client(&model, "fixture-key", None);
+let mut selected = json!({
+    "model": "gemini-fixture", "contents": "hello",
+    "config": {"httpOptions": {"timeout": 1001}}
+});
+let controls = selected.get_mut("config").and_then(Value::as_object_mut)
+    .and_then(|config| config.shift_remove("httpOptions"));
+let projected = project_content_request(selected).expect("supported payload");
+let prepared = client.prepare_request(projected, controls.as_ref()).expect("valid transport");
+assert_eq!(prepared.request.url,
+    "https://example.invalid/v1beta/models/gemini-fixture:streamGenerateContent?alt=sse");
+assert_eq!(prepared.timeout, Some(1001.0));
+assert!(prepared.request.signal.is_none());
+```
