@@ -1,8 +1,8 @@
 //! Custom-file theme admission and alias resolution.
-use super::export::canonical_entries;
 use super::{
     ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeInfo, ThemeOptions,
 };
+use maestro_json::canonical_entries;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::collections::HashSet;

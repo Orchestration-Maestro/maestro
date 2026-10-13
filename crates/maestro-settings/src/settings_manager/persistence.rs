@@ -7,9 +7,10 @@ use std::io;
 use serde_json::{Map, Value};
 use tokio::sync::oneshot;
 
-use super::conversion::{parse_document, to_text};
+use super::conversion::parse_document;
 use super::preferences::SettingsStorageHandle;
 use super::preferences::{SettingsError, SettingsScope, SettingsStorage, SettingsStorageError};
+use maestro_json::pretty_object;
 
 /// Shared state handle: atomically counted and locked on native targets.
 #[cfg(not(target_arch = "wasm32"))]
@@ -205,7 +206,7 @@ fn persist(
         for (edit, _) in edits {
             apply_edit(&mut fresh, snapshot, edit);
         }
-        Ok(Some(to_text(&fresh)?))
+        Ok(Some(pretty_object(&fresh)?))
     })
 }
 

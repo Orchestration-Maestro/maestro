@@ -1,6 +1,6 @@
 //! Typed tools transport records.
 
-use super::{Nullable, Object, literal, nullable, optional};
+use super::{Nullable, Object, literal, nullable, present};
 use serde::{Deserialize, Serialize};
 
 /// Transport fields for `Tool`.
@@ -24,14 +24,14 @@ pub(super) struct FunctionT {
     /// The `description` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     description: Option<String>,
     /// The `strict` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     strict: Option<bool>,
@@ -46,7 +46,7 @@ pub(super) struct ToolChoice {
     /// The `type` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none",
         rename = "type"
     )]

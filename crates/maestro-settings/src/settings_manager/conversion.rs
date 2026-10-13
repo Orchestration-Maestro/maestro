@@ -1,10 +1,6 @@
-//! Stored-format conversions, the one-level merge and the saved JSON text.
+//! Stored-format conversions and the one-level merge.
 
-use std::io;
-
-use serde::Serialize;
-use serde_json::ser::{Formatter, PrettyFormatter};
-use serde_json::{Map, Serializer, Value};
+use serde_json::{Map, Value};
 
 /// Largest magnitude below which every integral `f64` is an exact integer.
 const EXACT_INTEGER_LIMIT: f64 = 9_007_199_254_740_992.0;
@@ -115,67 +111,5 @@ fn convert_retry_delay(document: &mut Map<String, Value>) {
     } else {
         let provider = Map::from_iter([("maxRetryDelayMs".to_owned(), delay)]);
         retry.insert("provider".to_owned(), Value::Object(provider));
-    }
-}
-
-/// Renders a document with two-space indentation and no final newline.
-pub(crate) fn to_text(document: &Map<String, Value>) -> Result<String, serde_json::Error> {
-    let mut output = Vec::new();
-    let formatter = ScriptNumbers(PrettyFormatter::with_indent(b"  "));
-    document.serialize(&mut Serializer::with_formatter(&mut output, formatter))?;
-    String::from_utf8(output).map_err(serde::ser::Error::custom)
-}
-
-/// Pretty formatting that spells floats the way JSON producers conventionally
-/// do: `1` rather than `1.0`, and `1e+21` for large magnitudes.
-struct ScriptNumbers<'a>(PrettyFormatter<'a>);
-
-impl Formatter for ScriptNumbers<'_> {
-    fn write_f64<W: ?Sized + io::Write>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
-        writer.write_all(ryu_js::Buffer::new().format_finite(value).as_bytes())
-    }
-
-    fn begin_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_array(writer)
-    }
-
-    fn end_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_array(writer)
-    }
-
-    fn begin_array_value<W: ?Sized + io::Write>(
-        &mut self,
-        writer: &mut W,
-        first: bool,
-    ) -> io::Result<()> {
-        self.0.begin_array_value(writer, first)
-    }
-
-    fn end_array_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_array_value(writer)
-    }
-
-    fn begin_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_object(writer)
-    }
-
-    fn end_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_object(writer)
-    }
-
-    fn begin_object_key<W: ?Sized + io::Write>(
-        &mut self,
-        writer: &mut W,
-        first: bool,
-    ) -> io::Result<()> {
-        self.0.begin_object_key(writer, first)
-    }
-
-    fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_object_value(writer)
-    }
-
-    fn end_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_object_value(writer)
     }
 }

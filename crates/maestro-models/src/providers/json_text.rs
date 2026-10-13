@@ -6,130 +6,13 @@ use num_traits::ToPrimitive;
 use serde::de::value::MapDeserializer;
 use serde::de::{DeserializeOwned, Error as _};
 use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 use serde_json::value::RawValue;
-use serde_json::{Map, Number, Value};
 
 use crate::{JsonObject, parse_streaming_json};
 
-/// Serialize without whitespace, keys in canonical order, numbers as ECMAScript prints them.
-///
-/// Keys that are canonical array indices come first in ascending numeric order, then
-/// every other key in insertion order. A number is written as the double it names, so an
-/// integer beyond 2^53 is rounded.
-///
-/// # Errors
-/// Returns the serializer failure when a string cannot be written.
-pub fn compact_json(value: &Value) -> Result<String, serde_json::Error> {
-    let mut text = String::new();
-    write_value(value, &mut text)?;
-    Ok(text)
-}
-
-/// Serialize an object exactly as [`compact_json`] serializes a value holding it.
-///
-/// # Errors
-/// Returns the serializer failure when a string cannot be written.
-pub(crate) fn compact_object(members: &Map<String, Value>) -> Result<String, serde_json::Error> {
-    let mut text = String::new();
-    write_object(members, &mut text)?;
-    Ok(text)
-}
-
-/// Serialize borrowed members as [`compact_object`] serializes an object holding them.
-///
-/// # Errors
-/// Returns the serializer failure when a string cannot be written.
-pub(crate) fn compact_members<'a>(
-    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)>,
-) -> Result<String, serde_json::Error> {
-    let mut text = String::new();
-    write_members(members, &mut text)?;
-    Ok(text)
-}
-
-/// A borrowed value or array slice written without allocating a JSON container.
-#[derive(Clone, Copy)]
-pub(crate) enum BorrowedJson<'a> {
-    /// One complete value.
-    Value(&'a Value),
-    /// Array elements.
-    Slice(&'a [Value]),
-}
-
-/// Append values as an array.
-fn write_items(items: &[Value], text: &mut String) -> Result<(), serde_json::Error> {
-    text.push('[');
-    for (position, item) in items.iter().enumerate() {
-        if position > 0 {
-            text.push(',');
-        }
-        write_value(item, text)?;
-    }
-    text.push(']');
-    Ok(())
-}
-
-/// Append one value to the output text.
-fn write_value(value: &Value, text: &mut String) -> Result<(), serde_json::Error> {
-    match value {
-        Value::Null => text.push_str("null"),
-        Value::Bool(flag) => text.push_str(if *flag { "true" } else { "false" }),
-        Value::Number(number) => write_number(number, text),
-        Value::String(string) => text.push_str(&serde_json::to_string(string)?),
-        Value::Array(items) => write_items(items, text)?,
-        Value::Object(members) => write_object(members, text)?,
-    }
-    Ok(())
-}
-
-/// Append a number in ECMAScript spelling.
-fn write_number(number: &Number, text: &mut String) {
-    let float = number.as_f64().unwrap_or_default();
-    text.push_str(ryu_js::Buffer::new().format_finite(float));
-}
-
-/// Append an object with array-index keys first.
-fn write_object(members: &Map<String, Value>, text: &mut String) -> Result<(), serde_json::Error> {
-    write_members(
-        members
-            .iter()
-            .map(|(key, value)| (key.as_str(), BorrowedJson::Value(value))),
-        text,
-    )
-}
-
-/// Append members with array-index keys first.
-fn write_members<'a>(
-    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)>,
-    text: &mut String,
-) -> Result<(), serde_json::Error> {
-    let mut ordered: Vec<_> = members.collect();
-    ordered.sort_by_key(|(key, _)| array_index(key).unwrap_or(u32::MAX));
-    text.push('{');
-    for (position, (key, value)) in ordered.into_iter().enumerate() {
-        if position > 0 {
-            text.push(',');
-        }
-        text.push_str(&serde_json::to_string(key)?);
-        text.push(':');
-        match value {
-            BorrowedJson::Value(value) => write_value(value, text)?,
-            BorrowedJson::Slice(items) => write_items(items, text)?,
-        }
-    }
-    text.push('}');
-    Ok(())
-}
-
-/// Parse a canonical array index: no sign, no leading zero, below 2^32 - 1.
-pub(crate) fn array_index(key: &str) -> Option<u32> {
-    let canonical =
-        key == "0" || (!key.starts_with('0') && key.bytes().all(|b| b.is_ascii_digit()));
-    canonical
-        .then(|| key.parse::<u32>().ok())
-        .flatten()
-        .filter(|index| *index != u32::MAX)
-}
+pub use maestro_json::compact_json;
+pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members, compact_object};
 
 /// Containers a value may nest when [`json_value`] decodes it: the most that the parser's
 /// recursion limit of 128 accepts.
@@ -229,16 +112,7 @@ pub(crate) fn member<'a>(raw: &'a RawValue, name: &str) -> Option<&'a RawValue> 
     members.get(name.as_bytes()).copied()
 }
 
-/// Report whether a value counts as present when used as a condition.
-///
-/// Null, `false`, zero of either sign and the empty string do not; arrays, objects and
-/// infinities always do.
-pub(crate) fn is_truthy(raw: &RawValue) -> bool {
-    match raw.get() {
-        "null" | "false" | r#""""# => false,
-        _ => raw_number(raw) != Some(0.0),
-    }
-}
+pub(crate) use maestro_json::is_raw_truthy as is_truthy;
 
 /// Decode a value into the JSON data model, where every number is a double and an infinity,
 /// which JSON cannot spell, becomes `null`. Decoding recurses once per retained level, so a path

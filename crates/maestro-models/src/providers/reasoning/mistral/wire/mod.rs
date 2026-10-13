@@ -62,7 +62,7 @@ struct Request {
     /// The `responseFormat` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     response_format: Option<Object<ResponseFormat>>,
@@ -76,7 +76,7 @@ struct Request {
     /// The `toolChoice` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     tool_choice: Option<ToolSelection>,
@@ -104,14 +104,14 @@ struct Request {
     /// The `prediction` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     prediction: Option<Object<Prediction>>,
     /// The `parallelToolCalls` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     parallel_tool_calls: Option<bool>,
@@ -139,7 +139,7 @@ struct Request {
     /// The `safePrompt` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     safe_prompt: Option<bool>,
@@ -152,7 +152,7 @@ struct ResponseFormat {
     /// The `type` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none",
         rename = "type"
     )]
@@ -185,7 +185,7 @@ struct JsonSchema {
     /// The `strict` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     strict: Option<bool>,
@@ -224,10 +224,10 @@ mod messages;
 mod tools;
 
 use crate::providers::http::RequestFailure;
-use serde::de::{Error as _, MapAccess, Visitor};
-use serde::{Deserializer, de::value::MapAccessDeserializer};
+use maestro_request::types::present;
+use serde::Deserializer;
+use serde::de::Error as _;
 use serde_json::{Number, Value};
-use std::fmt;
 
 /// Encode the selected typed transport fields.
 pub(super) fn encode_payload(payload: &Value) -> Result<Value, RequestFailure> {
@@ -242,18 +242,7 @@ struct Object<T>(T);
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        /// Decode a map directly into its typed record.
-        struct ObjectVisitor<T>(std::marker::PhantomData<T>);
-        impl<'de, T: Deserialize<'de>> Visitor<'de> for ObjectVisitor<T> {
-            type Value = Object<T>;
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an object")
-            }
-            fn visit_map<M: MapAccess<'de>>(self, map: M) -> Result<Self::Value, M::Error> {
-                T::deserialize(MapAccessDeserializer::new(map)).map(Object)
-            }
-        }
-        deserializer.deserialize_map(ObjectVisitor(std::marker::PhantomData))
+        maestro_json::object::record_with(deserializer, "an object").map(Object)
     }
 }
 
@@ -261,14 +250,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
 pub(super) fn nullable<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<Nullable<T>>, D::Error> {
-    Nullable::<T>::deserialize(deserializer).map(Some)
-}
-
-/// Decode an optional field that does not admit null.
-pub(super) fn optional<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
-    deserializer: D,
-) -> Result<Option<T>, D::Error> {
-    T::deserialize(deserializer).map(Some)
+    present::<D, Nullable<T>>(deserializer)
 }
 
 /// Require a nullable field to be present.

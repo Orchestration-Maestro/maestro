@@ -1,6 +1,7 @@
 //! Inbound completion records admitted before reduction.
-use super::wire::{SafeInteger, optional};
+use super::wire::SafeInteger;
 use crate::providers::json_text::required;
+use maestro_request::types::present;
 use serde::Deserialize;
 
 /// An admitted complete event.
@@ -14,13 +15,13 @@ pub(super) struct Chunk {
     #[serde(rename = "model")]
     _model: String,
     /// Optional server object label.
-    #[serde(default, rename = "object", deserialize_with = "optional")]
+    #[serde(default, rename = "object", deserialize_with = "present")]
     _object: Option<String>,
     /// Optional creation timestamp.
-    #[serde(default, rename = "created", deserialize_with = "optional")]
+    #[serde(default, rename = "created", deserialize_with = "present")]
     _created: Option<SafeInteger>,
     /// Optional reported usage.
-    #[serde(default, deserialize_with = "optional")]
+    #[serde(default, deserialize_with = "present")]
     pub usage: Option<Record<Usage>>,
 }
 /// One selected response choice.
@@ -79,7 +80,7 @@ pub(super) struct Usage {
 #[derive(Deserialize)]
 pub(super) struct Tool {
     /// Optional nonnullable open tool kind.
-    #[serde(default, rename = "type", deserialize_with = "optional")]
+    #[serde(default, rename = "type", deserialize_with = "present")]
     _kind: Option<String>,
     /// Defaulted identity.
     #[serde(default = "default_id")]

@@ -15,15 +15,9 @@ use crate::{
     ModelThinkingLevel, OpenAICodexResponsesOptions, OpenAICompletionsOptions,
     OpenAIResponsesOptions, ProviderStreamOptions, ThinkingLevel, ToolChoice,
 };
+use maestro_request::types::present;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-
-/// Read a field that, when present, must be a `T`; an explicit null is rejected.
-fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
-    deserializer: D,
-) -> Result<Option<T>, D::Error> {
-    T::deserialize(deserializer).map(Some)
-}
 
 /// Read an enum field that, when present, must be a JSON string naming a variant.
 fn literal<'de, D: Deserializer<'de>, T: Deserialize<'de>>(

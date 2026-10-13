@@ -1,6 +1,7 @@
 //! Request construction: endpoint, headers, cache policy and the typed payload.
 
 use indexmap::IndexMap;
+use maestro_json::is_truthy as enabled;
 use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -523,15 +524,4 @@ pub(super) fn supports_adaptive_thinking(model_id: &str) -> bool {
     ]
     .iter()
     .any(|marker| model_id.contains(marker))
-}
-
-/// Interpret a supplied option at this provider's conditional branch.
-fn enabled(value: &serde_json::Value) -> bool {
-    match value {
-        serde_json::Value::Null => false,
-        serde_json::Value::Bool(value) => *value,
-        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
-        serde_json::Value::String(value) => !value.is_empty(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
-    }
 }

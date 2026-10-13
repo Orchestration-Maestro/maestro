@@ -1,6 +1,6 @@
 //! Typed guardrails transport records.
 
-use super::{Nullable, Object, nullable, optional};
+use super::{Nullable, Object, nullable, present};
 use serde::{Deserialize, Serialize};
 
 /// Transport fields for `GuardrailConfig`.
@@ -46,7 +46,7 @@ pub(super) struct ModerationLlmv1Config {
     /// The `action` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     action: Option<String>,
@@ -72,7 +72,7 @@ pub(super) struct ModerationLlmv2Config {
     /// The `action` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
     action: Option<String>,

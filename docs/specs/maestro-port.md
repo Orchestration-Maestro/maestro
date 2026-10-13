@@ -222,8 +222,8 @@ semantics: object acceptance, canonical keys, truth, and compact and pretty text
 only on `maestro-request`: entry defines session interchange records and tool defines
 tool interchange records. `maestro-brand` is a core domain library below layer 0 that
 depends on text and JSON and projects a brand pack. These five owners are declared by
-policy; `maestro-text` exists, and the code the other four will own moves in later
-extraction issues, which create those crates. No `common`, `utils`, `shared-types` or
+policy; `maestro-text` and `maestro-json` exist, and the code the other three will own
+moves in later extraction issues, which create those crates. No `common`, `utils`, `shared-types` or
 background-runtime crate is added. `maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 

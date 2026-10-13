@@ -1,5 +1,6 @@
 //! Provider capability detection and the model overrides applied over it.
 
+pub(super) use maestro_json::is_truthy as supplied;
 use std::collections::BTreeSet;
 
 use crate::{CacheControlFormat, MaxTokensField, Model, ModelCompat, ThinkingFormat};
@@ -185,16 +186,6 @@ fn overridden(capability: Capability, compat: Option<&ModelCompat>) -> Option<bo
             supplied(value)
         },
     )
-}
-/// Whether a supplied open option enables its caller's conditional branch.
-pub(super) fn supplied(value: &serde_json::Value) -> bool {
-    match value {
-        serde_json::Value::Null => false,
-        serde_json::Value::Bool(value) => *value,
-        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
-        serde_json::Value::String(value) => !value.is_empty(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
-    }
 }
 /// Read a nonnull literal without interpreting other JSON types as text.
 fn literal<'a>(model: &'a Model, name: &str, default: &'a str) -> &'a str {

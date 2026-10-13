@@ -1,6 +1,7 @@
 //! Standard response endpoint invocation.
 
 pub(super) mod source;
+use maestro_json::is_truthy as enabled;
 use source::{Prepared, Source};
 
 use super::openai_responses_shared::{
@@ -511,15 +512,4 @@ pub(super) fn reasoning(
         effort,
         summary: None,
     })
-}
-
-/// Interpret a supplied option at this provider's conditional branch.
-fn enabled(value: &serde_json::Value) -> bool {
-    match value {
-        serde_json::Value::Null => false,
-        serde_json::Value::Bool(value) => *value,
-        serde_json::Value::Number(value) => value.as_f64().is_some_and(|number| number != 0.0),
-        serde_json::Value::String(value) => !value.is_empty(),
-        serde_json::Value::Array(_) | serde_json::Value::Object(_) => true,
-    }
 }

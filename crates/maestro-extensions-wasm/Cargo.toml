@@ -12,6 +12,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 indexmap = { version = "=2.14.2", features = ["serde"] }
+maestro-json = { path = "../maestro-json" }
 maestro-request = { path = "../maestro-request" }
 wit-bindgen = { version = "=0.62.0", default-features = false, features = ["macros", "realloc", "async", "std", "inter-task-wakeup"] }
 serde.workspace = true

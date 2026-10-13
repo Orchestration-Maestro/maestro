@@ -1,7 +1,7 @@
 //! Typed messages transport records.
 
 use super::content::{MessageContent, SystemMessageContent};
-use super::{Nullable, Object, SafeInteger, literal, nullable, optional, required_nullable};
+use super::{Nullable, Object, SafeInteger, literal, nullable, present, required_nullable};
 use serde::{Deserialize, Serialize};
 
 /// Transport fields for `AssistantMessage`.
@@ -89,7 +89,7 @@ pub(super) struct ToolCall {
     /// The `type` field.
     #[serde(
         default,
-        deserialize_with = "optional",
+        deserialize_with = "present",
         skip_serializing_if = "Option::is_none",
         rename = "type"
     )]

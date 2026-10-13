@@ -122,10 +122,16 @@ struct Object<T>(T);
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Object<T> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = Value::deserialize(deserializer)?;
-        if !value.is_object() {
-            return Err(D::Error::custom("expected an object record"));
-        }
-        T::deserialize(value).map(Self).map_err(D::Error::custom)
+        let is_object = value.is_object();
+        maestro_json::object::record(value)
+            .map(Self)
+            .map_err(|cause| {
+                if is_object {
+                    D::Error::custom(cause)
+                } else {
+                    D::Error::custom("expected an object record")
+                }
+            })
     }
 }
 
