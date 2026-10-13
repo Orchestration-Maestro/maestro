@@ -2,6 +2,7 @@
 //! identity token, an SSO token cache and a credential process that counts its runs.
 
 use std::fmt::Write as _;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -43,7 +44,6 @@ pub struct Workdir(PathBuf);
 
 impl Drop for Workdir {
     fn drop(&mut self) {
-        use std::os::unix::fs::PermissionsExt;
         for cache in ["override-cache", ".aws/login/cache"] {
             std::fs::set_permissions(self.0.join(cache), std::fs::Permissions::from_mode(0o755))
                 .ok();
@@ -177,7 +177,6 @@ impl Workdir {
             std::fs::write(&file, text)?;
         }
         if input.read_only.is_some() {
-            use std::os::unix::fs::PermissionsExt;
             std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o444))?;
             std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o555))?;
             assert!(

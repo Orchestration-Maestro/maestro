@@ -168,7 +168,7 @@ pub struct Row {
     pub test: String,
     /// Change applied.
     pub change: Change,
-    /// Environment the request runs under; empty means the request needs none.
+    /// Row-specific variables for the child; an empty map declares none.
     #[serde(default)]
     pub env: BTreeMap<String, String>,
     /// Observations expected.
@@ -221,7 +221,7 @@ fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
         .collect())
 }
 
-/// Run every row `test` owns in `fixture`, in a child with the row's environment when it has one.
+/// Run every row `test` owns in `fixture` in an isolated child with its row-specific variables.
 pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} owns no rows");
@@ -234,12 +234,8 @@ pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     }
     for row in &owned {
         let env = environment(row);
-        if env.is_empty() {
-            block_on(true, check(row))?;
-        } else {
-            let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
-            child_process::rerun(test, &row.id, &env)?;
-        }
+        let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
+        child_process::rerun(test, &row.id, &env)?;
     }
     Ok(())
 }
