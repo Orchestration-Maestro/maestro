@@ -2919,13 +2919,12 @@ version = "0.1.0"
 dependencies = [
  "base64",
  "chrono",
+ "maestro-brand",
  "maestro-path",
  "maestro-text",
  "maestro-tui",
  "rand 0.10.3",
  "rustix",
- "serde",
- "serde_json",
  "tokio",
 ]
 

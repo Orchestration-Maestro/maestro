@@ -12,7 +12,7 @@ cargo run -p maestro-tui-crossterm --example viewport_overwrite_repro
 ```
 
 The examples compose the [native adapter](native-terminal.md) with the toolkit.
-Their styles read the embedded [brand pack](../identity.md#pack-shape-and-swapping).
+Their styles resolve the embedded brand pack through the shared [brand library](../brand.md).
 
 ## Chat
 
