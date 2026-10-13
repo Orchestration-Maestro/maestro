@@ -232,9 +232,6 @@ fn token_refresh(input: &Input, request: &Received, log: &mut Log) -> Reply {
                 ..text(200, "")
             };
         }
-        Some("AccessDeniedException") if matches!(code, "TOKEN_EXPIRED" | "AUTHCODE_EXPIRED") => {
-            401
-        }
         Some("AccessDeniedException") => 403,
         Some("InternalServerException") => 500,
         Some("TooManyRequestsError") => 429,

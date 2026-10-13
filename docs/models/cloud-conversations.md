@@ -34,7 +34,7 @@ after the payload hook ran.
 
 ## Authentication
 
-The SDK's credential chain signs the request unless a bearer token is selected. Without a nonempty
+The credential chain, composed from the native providers, signs the request unless a bearer token is selected. Without a nonempty
 explicit `profile` option, an empty `AWS_PROFILE` selects nothing, so the environment's keys come
 first and the `default` profile is the fallback: the `default` profile then runs the same sources
 as a selected profile, from its own source to container or instance credentials. A profile named
@@ -70,13 +70,14 @@ whose own error is not a missing-credentials one.
 
 A login profile signs with the token the AWS CLI cached for its session, in
 `~/.aws/login/cache` or the directory named by `AWS_LOGIN_CACHE_DIRECTORY`. The native provider
-reads the cache and refreshes a token that is about to expire; the refresh goes to the profile's
-`region` when it sets one, otherwise to the request's region, and follows the retry settings of the
+reads the cache and refreshes a token that is about to expire, following the retry settings of the
 shared configuration. A refresh the sign-in service refuses as access denied, whatever its reason,
-ends the chain, and so does a cache that is missing or incomplete. Any other refresh failure
-(validation, server, throttling or transport) lets the chain go on to the next source, decided
-from the error type and never from its text. A refreshed token is used even when saving it back to
-the cache fails.
+ends the chain, and so does a cache that is missing or incomplete. Any other failure of the token
+request (validation, server, throttling or transport) lets the chain go on to the next source,
+decided from the error type and never from its text. A refresh that fails before a request is
+sent, such as an unreadable cached key, ends the chain. A refreshed token is used even when saving
+it back to the cache fails. Like every native credential provider, the refresh does not read the
+proxy variables (tracked in issue #742).
 
 A named SSO session supplies only the start URL and region (a session without them leaves the
 field missing, whatever the profile says); the account and role come from the profile. A profile

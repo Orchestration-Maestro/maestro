@@ -174,7 +174,7 @@ pub(super) fn default_provider(
 }
 
 /// The chain for a selected profile. Nothing is read until the first credential is looked up.
-pub(super) fn selected_profile(profile: &str, shared: &SdkConfig) -> CredentialsProviderChain {
+fn selected_profile(profile: &str, shared: &SdkConfig) -> CredentialsProviderChain {
     let conf = ProviderConfig::default().with_region(shared.region().cloned());
     let selected = Arc::new(Selected {
         profile: profile.to_owned(),

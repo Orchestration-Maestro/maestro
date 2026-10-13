@@ -111,20 +111,15 @@ fn login_region(profile: Option<&str>, request: Option<&Region>) -> Option<Regio
 }
 
 /// A failed login refresh decided by its token-operation error: access denied stays final and
-/// any other refresh failure counts as a source that did not apply. Other errors are unchanged.
+/// any other failure of the token request counts as a source that did not apply. An error that
+/// carries no token-operation error, such as an unreadable cached key, is unchanged.
 fn login_failure(error: CredentialsError) -> CredentialsError {
-    let mut cause = std::error::Error::source(&error);
-    while let Some(next) = cause {
-        if let Some(token) = next.downcast_ref::<CreateOAuth2TokenError>() {
-            return if token.is_access_denied_exception() {
-                error
-            } else {
-                CredentialsError::not_loaded(error)
-            };
-        }
-        cause = next.source();
+    let token = std::iter::successors(std::error::Error::source(&error), |cause| cause.source())
+        .find_map(|cause| cause.downcast_ref::<CreateOAuth2TokenError>());
+    match token {
+        Some(token) if !token.is_access_denied_exception() => CredentialsError::not_loaded(error),
+        _ => error,
     }
-    error
 }
 
 /// What a walk has collected so far.
@@ -164,8 +159,8 @@ impl<'a> Walk<'a> {
     /// # Errors
     /// A missing profile, incomplete keys, a missing or unsupported source and a source cycle
     /// are missing-credentials errors, and so is a failed credential process. A failed login
-    /// refresh is one too unless the sign-in service denied access. The error of a native source
-    /// or role provider is otherwise returned as it is, except that SSO turns a
+    /// token request is one too unless the sign-in service denied access. The error of a native
+    /// source or role provider is otherwise returned as it is, except that SSO turns a
     /// missing-credentials error into a final one.
     pub(super) async fn resolve(&self, root: &'a str) -> provider::Result {
         let mut state = State::default();

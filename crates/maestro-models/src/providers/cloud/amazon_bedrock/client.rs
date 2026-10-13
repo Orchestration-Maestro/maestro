@@ -37,7 +37,7 @@ use crate::{Cancellation, Model};
 /// How the request is authenticated.
 #[derive(Debug, PartialEq)]
 pub(super) enum Auth {
-    /// The SDK's own credential chain.
+    /// The credential chain composed from the native providers.
     Chain,
     /// A bearer token.
     Bearer(String),
