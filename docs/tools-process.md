@@ -18,8 +18,9 @@ println!("{} {}", result.code, result.stdout);
 ```
 
 `command` and `args` are the literal program and argument vector: no shell
-interprets them, stdin is closed, and the working directory is the positional `cwd`.
-The environment is the caller's.
+interprets them, stdin is closed, and the working directory is the positional `cwd`;
+an empty `cwd` leaves the caller's working directory. An empty `command` fails with
+`InvalidInput` before the signal is observed. The environment is the caller's.
 
 `ExecOptions::signal` terminates the command when its
 [`Cancellation`](../crates/maestro-models/src/lib.rs) is aborted, including one

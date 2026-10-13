@@ -1,6 +1,8 @@
 //! Private collector, grace and escalation behaviour.
+#![cfg(unix)]
 use super::StderrMode;
 use super::{CapturedChild, Termination, WaitOptions, fill, wait_for_child_process};
+use std::io::{Read, Write};
 use std::{
     cell::Cell,
     future::Future,
@@ -13,7 +15,7 @@ use std::{
     task::{Context, Poll},
     time::Duration,
 };
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt, ReadBuf};
+use tokio::io::{AsyncRead, AsyncReadExt, ReadBuf};
 use tokio::net::TcpListener;
 use tokio::process::Command;
 
@@ -200,34 +202,13 @@ async fn is_pending<F: Future + Unpin>(future: &mut F) -> bool {
     std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx).is_pending())).await
 }
 
-/// Polls `future` between scheduler turns until it settles; `None` if it does not.
-async fn settle<F: Future + Unpin>(future: &mut F) -> Option<F::Output> {
-    for _ in 0..200_000 {
-        if let Poll::Ready(value) =
-            std::future::poll_fn(|cx| Poll::Ready(Pin::new(&mut *future).poll(cx))).await
-        {
-            return Some(value);
-        }
-        tokio::task::yield_now().await;
-    }
-    None
-}
-
-/// Whether the process has exited, reaped or not.
-fn has_exited(pid: u32) -> bool {
-    std::fs::read_to_string(format!("/proc/{pid}/stat")).map_or(true, |stat| {
-        stat.rsplit(") ")
-            .next()
-            .is_some_and(|rest| rest.starts_with('Z'))
-    })
-}
-
 #[test]
 fn grace_deadline_begins_after_child_exit() {
+    // Idle paused-clock runtime jumps to the next armed timer: the wait ends exactly
+    // when its grace timer, armed by the exit, fires.
     paused_runtime().block_on(async {
         for grace in [Duration::from_millis(100), Duration::from_millis(250)] {
             let mut held = held_shell().await;
-            let shell = held.child.child.id().unwrap();
             let options = WaitOptions {
                 post_exit_grace: Some(grace),
                 ..WaitOptions::default()
@@ -241,20 +222,11 @@ fn grace_deadline_begins_after_child_exit() {
             assert!(is_pending(&mut wait).await, "{grace:?} before the exit");
             tokio::time::advance(grace * 10).await;
             assert!(is_pending(&mut wait).await, "{grace:?} long after start");
+            let exited = tokio::time::Instant::now();
             std::fs::write(&gate, b"").unwrap();
-            while !has_exited(shell) {
-                tokio::task::yield_now().await;
-            }
-            for _ in 0..200 {
-                assert!(is_pending(&mut wait).await, "{grace:?} at exit");
-                tokio::task::yield_now().await;
-            }
-            tokio::time::advance(grace.checked_sub(Duration::from_millis(1)).unwrap()).await;
-            assert!(is_pending(&mut wait).await, "{grace:?} before the deadline");
-            tokio::time::advance(Duration::from_millis(1)).await;
-            let output = settle(&mut wait).await.expect("settled at the deadline");
-            assert!(output.unwrap().status.success(), "{grace:?}");
-            drop(wait);
+            let output = wait.await.unwrap();
+            assert_eq!(exited.elapsed(), grace, "ended by the grace after the exit");
+            assert!(output.status.success(), "{grace:?}");
             held.release();
         }
     });
@@ -336,7 +308,8 @@ fn termination_is_polled_while_a_stream_stays_ready() {
     });
 }
 
-/// Records its drop in a shared flag.
+/// Records its drop in a shared flag; the timers of a wait are locals of
+/// [`wait_for_child_process`] and drop with the same frame, which ownership enforces.
 struct Observed(Rc<Cell<bool>>);
 impl Future for Observed {
     type Output = Termination;
@@ -424,50 +397,77 @@ fn failed_wait_leaves_consumed_bytes_available() {
     });
 }
 
-/// A child that reports `READY`, then answers each termination request with `T` while
-/// ignoring it.
+/// A child that reports `READY`, answers each `p` with `E`, and answers each
+/// termination request with `T` while ignoring it.
 const STUBBORN: &str = r"
-import signal, socket, sys, time
+import signal, socket, sys
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 signal.signal(signal.SIGTERM, lambda *_: s.sendall(b'T'))
 s.sendall(b'READY')
-while True: time.sleep(1)
+while s.recv(1) == b'p': s.sendall(b'E')
 ";
+
+/// Starts a [`STUBBORN`] child and returns it with its connected socket.
+/// The socket blocks: a paused-clock runtime that yielded for I/O would jump to the
+/// next timer.
+fn stubborn() -> (CapturedChild, std::net::TcpStream) {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let mut command = Command::new("python3");
+    command
+        .args([
+            "-c",
+            STUBBORN,
+            &listener.local_addr().unwrap().port().to_string(),
+        ])
+        .kill_on_drop(true);
+    let child = CapturedChild::spawn(&mut command).unwrap();
+    let (mut socket, _) = listener.accept().unwrap();
+    socket.read_exact(&mut [0; 5]).unwrap();
+    (child, socket)
+}
+
+/// Asks a [`STUBBORN`] child to answer and returns what it sent before the answer.
+///
+/// A termination request made before this call is queued before the child reads the
+/// question, so its `T` precedes the answer.
+fn sync(socket: &mut std::net::TcpStream) -> Vec<u8> {
+    socket.write_all(b"p").unwrap();
+    let mut sent = Vec::new();
+    loop {
+        let mut byte = [0; 1];
+        socket.read_exact(&mut byte).unwrap();
+        let byte = byte[0];
+        if byte == b'E' {
+            return sent;
+        }
+        sent.push(byte);
+    }
+}
 
 #[test]
 fn escalation_checks_live_state_before_forced_kill() {
     paused_runtime().block_on(async {
-        let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
-        let mut command = Command::new("python3");
-        command
-            .args([
-                "-c",
-                STUBBORN,
-                &listener.local_addr().unwrap().port().to_string(),
-            ])
-            .kill_on_drop(true);
-        let mut live = CapturedChild::spawn(&mut command).unwrap();
-        let (mut socket, _) = listener.accept().await.unwrap();
-        socket.read_exact(&mut [0; 5]).await.unwrap();
+        let (mut live, mut socket) = stubborn();
         let after = Duration::from_secs(5);
         {
             let terminate = live.terminate(Termination::TerminateThenKill { after });
             tokio::pin!(terminate);
             assert!(is_pending(&mut terminate).await);
-            socket.read_exact(&mut [0; 1]).await.unwrap();
+            assert_eq!(sync(&mut socket), b"T", "requested once");
             tokio::time::advance(after.checked_sub(Duration::from_millis(1)).unwrap()).await;
             assert!(is_pending(&mut terminate).await, "running before the delay");
+            assert_eq!(sync(&mut socket), b"", "still answering");
             tokio::time::advance(Duration::from_millis(1)).await;
-            settle(&mut terminate)
-                .await
-                .expect("killed at the delay")
-                .unwrap();
+            terminate.await.unwrap();
         }
         assert!(
             live.child.try_wait().unwrap().is_some(),
             "killed and reaped"
         );
-        socket.shutdown().await.unwrap();
+        assert!(
+            socket.read_exact(&mut [0; 1]).is_err(),
+            "the killed child's end closed"
+        );
 
         let mut exited = CapturedChild::spawn(&mut Command::new("true")).unwrap();
         exited.child.wait().await.unwrap();
@@ -477,5 +477,42 @@ fn escalation_checks_live_state_before_forced_kill() {
             !is_pending(&mut terminate).await,
             "exited child is not waited on"
         );
+    });
+}
+
+#[test]
+fn wait_escalation_timer_kills_exactly_after_the_selected_delay() {
+    // Idle paused-clock runtime jumps to the next armed timer: the wait ends exactly
+    // when the escalation timer, armed by the request, fires.
+    paused_runtime().block_on(async {
+        let (mut live, _socket) = stubborn();
+        let after = Duration::from_secs(5);
+        let started = tokio::time::Instant::now();
+        let stop = std::future::ready(Termination::TerminateThenKill { after });
+        let output = wait_for_child_process(&mut live, WaitOptions::default(), stop)
+            .await
+            .unwrap();
+        assert_eq!(output.status.signal(), Some(9));
+        assert_eq!(started.elapsed(), after);
+    });
+}
+
+#[test]
+fn wait_consumes_the_termination_decision_once() {
+    runtime().block_on(async {
+        let mut command = Command::new("sh");
+        command.args(["-c", "exec sleep 60"]).kill_on_drop(true);
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        let polls = Rc::new(Cell::new(0));
+        let counter = polls.clone();
+        let stop = std::future::poll_fn(move |_| {
+            counter.set(counter.get() + 1);
+            Poll::Ready(Termination::Terminate)
+        });
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), stop)
+            .await
+            .unwrap();
+        assert_eq!(output.status.signal(), Some(15));
+        assert_eq!(polls.get(), 1, "polled once, after it was ready");
     });
 }

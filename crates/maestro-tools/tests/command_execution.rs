@@ -7,7 +7,6 @@ use maestro_models::Cancellation;
 use maestro_tools::{ExecOptions, ExecResult, exec_command};
 use process_support::{complete, forward, poll_once, poll_through, polled_to_completion};
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::task::Poll;
 use std::time::Duration;
@@ -31,28 +30,38 @@ fn paused_runtime() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
-/// Reports `READY<pid>`, then waits for one byte and prints `bye`; when `stubborn` is
-/// set, each termination request prints `bye`, is answered with `T` on the socket and
-/// is otherwise ignored.
+/// Reports `READY`, then waits for one byte and prints `bye`.
 const HOLDER: &str = r"
-import os, signal, socket, sys
+import os, socket, sys
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-if sys.argv[2] == 'stubborn':
-    def term(*_): os.write(1, b'bye'); s.sendall(b'T')
-    signal.signal(signal.SIGTERM, term)
-s.sendall(b'READY%d\n' % os.getpid())
+s.sendall(b'READY\n')
 s.recv(1)
-if sys.argv[2] != 'stubborn': os.write(1, b'bye')
+os.write(1, b'bye')
 ";
 
-/// Leaves a descendant holding both pipes after the direct child exits.
+/// Reports `READY`, then answers each `p` with `E` and exits on `g`; each termination
+/// request prints `bye`, is answered with `T` and is otherwise ignored.
+const STUBBORN: &str = r"
+import os, signal, socket, sys
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+def term(*_): os.write(1, b'bye'); s.sendall(b'T')
+signal.signal(signal.SIGTERM, term)
+s.sendall(b'READY\n')
+while True:
+    b = s.recv(1)
+    if b == b'p': s.sendall(b'E')
+    else: break
+";
+
+/// Leaves a descendant holding both pipes after the direct child exits; the
+/// descendant answers each `p` with `E` and finishes on any other byte.
 const DESCENDANT: &str = r"
 import os, socket, sys
 os.write(1, b'early'); os.write(2, b'diag')
 if os.fork() == 0:
     s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-    s.sendall(b'READY%d\n' % os.getpid())
-    s.recv(1)
+    s.sendall(b'READY\n')
+    while s.recv(1) == b'p': s.sendall(b'E')
     os.write(1, b'late'); os._exit(0)
 os._exit(0)
 ";
@@ -98,23 +107,10 @@ fn python<'a>(
     run("python3", &all, options)
 }
 
-/// Polls `future` between scheduler turns until it settles; `None` if it does not.
-async fn settle<F: Future>(future: &mut Pin<&mut F>) -> Option<F::Output> {
-    for _ in 0..200_000 {
-        if let Poll::Ready(value) = poll_once(future).await {
-            return Some(value);
-        }
-        tokio::task::yield_now().await;
-    }
-    None
-}
-
-/// A held child's readiness socket and process id.
+/// A held child's readiness socket.
 struct Held {
     /// The connection the child waits on.
     socket: TcpStream,
-    /// The child's process id.
-    pid: String,
 }
 
 /// Binds a readiness listener and returns it with its port.
@@ -124,16 +120,15 @@ async fn listen() -> (TcpListener, String) {
     (listener, port)
 }
 
-/// Accepts the held child and reads its `READY<pid>` line.
+/// Accepts the held child and reads its `READY` line.
 async fn ready(listener: &TcpListener) -> Held {
     let (mut socket, _) = listener.accept().await.unwrap();
     let mut line = Vec::new();
     while !line.ends_with(b"\n") {
         line.push(socket.read_u8().await.unwrap());
     }
-    let line = String::from_utf8(line).unwrap();
-    let pid = line.strip_prefix("READY").unwrap().trim().to_owned();
-    Held { socket, pid }
+    assert_eq!(line, b"READY\n");
+    Held { socket }
 }
 
 /// Lets the held child continue and returns what it sent until it closed the socket.
@@ -142,16 +137,6 @@ async fn release(mut held: Held) -> Vec<u8> {
     let mut rest = Vec::new();
     let _ = held.socket.read_to_end(&mut rest).await;
     rest
-}
-
-/// Whether the process still exists.
-fn alive(pid: &str) -> bool {
-    std::process::Command::new("kill")
-        .args(["-0", pid])
-        .stderr(std::process::Stdio::null())
-        .status()
-        .unwrap()
-        .success()
 }
 
 #[test]
@@ -190,26 +175,24 @@ sys.stderr.buffer.write(b'e' * 300000 + b'\r\n')
 #[test]
 fn exec_preserves_utf8_across_pipe_fragments() {
     runtime().block_on(async {
+        // The child reports READY only after both pipes are empty, so the first
+        // fragments were consumed before the rest is written.
         let script = r"
-import os, socket, sys
+import fcntl, os, socket, sys, termios, time
 split = int(sys.argv[2])
 for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[:split])
+def queued(fd): return int.from_bytes(fcntl.ioctl(fd, termios.FIONREAD, b'\0\0\0\0'), sys.byteorder)
+while queued(1) or queued(2): time.sleep(0.001)
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-s.sendall(b'READY%d\n' % os.getpid())
+s.sendall(b'READY\n')
 s.recv(1)
 for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[split:])
 ";
         for split in ["1", "2", "3"] {
             let (listener, port) = listen().await;
             let exec = python(script, &[&port, split], ExecOptions::default());
-            tokio::pin!(exec);
-            assert!(poll_once(&mut exec).await.is_pending(), "spawned");
-            let held = ready(&listener).await;
-            assert!(
-                poll_once(&mut exec).await.is_pending(),
-                "first fragments read before the rest is written"
-            );
-            let (result, _) = tokio::join!(exec, release(held));
+            let released = async { release(ready(&listener).await).await };
+            let (result, _) = tokio::join!(exec, released);
             assert_eq!(
                 (result.stdout.as_str(), result.stderr.as_str()),
                 ("\u{10348}", "\u{10348}"),
@@ -282,6 +265,41 @@ fn exec_spawn_errors_preserve_phase_and_preabort_state() {
 }
 
 #[test]
+fn exec_empty_cwd_runs_in_the_inherited_directory() {
+    runtime().block_on(async {
+        let result = exec_command(
+            "python3",
+            &args(&["-c", "import os; print(os.getcwd(), end='')"]),
+            "",
+            ExecOptions::default(),
+        )
+        .await
+        .unwrap();
+        let inherited = std::env::current_dir().unwrap();
+        assert_eq!(
+            (result.stdout.as_str(), result.code),
+            (inherited.to_str().unwrap(), 0)
+        );
+    });
+}
+
+#[test]
+fn exec_rejects_an_empty_command_before_observing_the_signal() {
+    runtime().block_on(async {
+        let aborted = Cancellation::new();
+        aborted.abort();
+        for signal in [None, Some(&aborted)] {
+            let options = ExecOptions {
+                signal,
+                timeout: None,
+            };
+            let error = exec_command("", &[], &cwd(), options).await.err().unwrap();
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
+        }
+    });
+}
+
+#[test]
 fn exec_spawns_before_observing_preaborted_signal() {
     runtime().block_on(async {
         let aborted = Cancellation::new();
@@ -315,7 +333,7 @@ async fn run_released(timeout: Option<Duration>) -> ExecResult {
     let (listener, port) = listen().await;
     let exec = python(
         HOLDER,
-        &[&port, "plain"],
+        &[&port],
         ExecOptions {
             signal: None,
             timeout,
@@ -363,7 +381,7 @@ enum Trigger {
 }
 
 #[test]
-fn exec_abort_and_timeout_request_termination_once() {
+fn exec_terminates_on_abort_timeout_or_both() {
     paused_runtime().block_on(async {
         let timeout = Duration::from_secs(1);
         let cases: [&[Trigger]; 4] = [
@@ -373,21 +391,20 @@ fn exec_abort_and_timeout_request_termination_once() {
             &[Trigger::Timeout, Trigger::Abort],
         ];
         for triggers in cases {
-            let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-            let port = listener.local_addr().unwrap().port().to_string();
+            let (listener, port) = blocking_listener();
             let signal = Cancellation::new();
             let options = ExecOptions {
                 signal: Some(&signal),
                 timeout: Some(timeout),
             };
-            let exec = python(HOLDER, &[&port, "stubborn"], options);
+            let exec = python(STUBBORN, &[&port], options);
             tokio::pin!(exec);
             assert!(
                 poll_once(&mut exec).await.is_pending(),
                 "spawned and waiting"
             );
-            let (mut socket, _) = listener.accept().unwrap();
-            read_line(&mut socket);
+            let mut socket = accept_ready(&listener);
+            assert_eq!(sync(&mut socket), b"", "{triggers:?}: no request yet");
             for trigger in triggers {
                 match trigger {
                     Trigger::Abort => signal.abort(),
@@ -395,11 +412,9 @@ fn exec_abort_and_timeout_request_termination_once() {
                 }
                 assert!(poll_once(&mut exec).await.is_pending(), "{triggers:?}");
             }
+            assert_eq!(sync(&mut socket), b"T", "{triggers:?}: one request");
             std::io::Write::write_all(&mut socket, b"g").unwrap();
-            let mut signals = Vec::new();
-            std::io::Read::read_to_end(&mut socket, &mut signals).unwrap();
             let result = exec.await;
-            assert_eq!(signals, b"T", "{triggers:?}");
             assert_eq!(
                 (result.stdout.as_str(), result.killed),
                 ("bye", true),
@@ -409,56 +424,77 @@ fn exec_abort_and_timeout_request_termination_once() {
     });
 }
 
-/// Reads a `READY<pid>` line from a blocking socket and returns the process id.
-fn read_line(socket: &mut std::net::TcpStream) -> String {
-    let mut line = Vec::new();
-    while !line.ends_with(b"\n") {
+/// A blocking readiness listener and its port.
+fn blocking_listener() -> (std::net::TcpListener, String) {
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port().to_string();
+    (listener, port)
+}
+
+/// Accepts the child and reads its `READY` line from a blocking socket.
+fn accept_ready(listener: &std::net::TcpListener) -> std::net::TcpStream {
+    let (mut socket, _) = listener.accept().unwrap();
+    let mut line = [0; 6];
+    std::io::Read::read_exact(&mut socket, &mut line).unwrap();
+    assert_eq!(&line, b"READY\n");
+    socket
+}
+
+/// Asks a [`STUBBORN`] child to answer and returns what it sent before the answer.
+///
+/// A termination request made before this call is queued before the child reads the
+/// question, so its `T` precedes the answer; no `T` before the answer means none was
+/// delivered.
+fn sync(socket: &mut std::net::TcpStream) -> Vec<u8> {
+    std::io::Write::write_all(socket, b"p").unwrap();
+    let mut sent = Vec::new();
+    loop {
         let mut byte = [0; 1];
         std::io::Read::read_exact(socket, &mut byte).unwrap();
-        line.push(byte[0]);
+        if byte[0] == b'E' {
+            return sent;
+        }
+        sent.push(byte[0]);
     }
-    String::from_utf8(line)
-        .unwrap()
-        .trim_start_matches("READY")
-        .trim()
-        .to_owned()
 }
 
 #[test]
 fn exec_kills_and_reaps_a_term_resistant_child() {
     paused_runtime().block_on(async {
-        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let port = listener.local_addr().unwrap().port().to_string();
+        let (listener, port) = blocking_listener();
         let signal = Cancellation::new();
         let options = ExecOptions {
             signal: Some(&signal),
             timeout: None,
         };
-        let exec = python(HOLDER, &[&port, "stubborn"], options);
+        let exec = python(STUBBORN, &[&port], options);
         tokio::pin!(exec);
         assert!(
             poll_once(&mut exec).await.is_pending(),
             "spawned and waiting"
         );
-        let (mut socket, _) = listener.accept().unwrap();
-        let pid = read_line(&mut socket);
+        let mut socket = accept_ready(&listener);
         signal.abort();
         assert!(
             poll_once(&mut exec).await.is_pending(),
             "terminated, not yet killed"
         );
-        std::io::Read::read_exact(&mut socket, &mut [0; 1]).unwrap();
+        assert_eq!(sync(&mut socket), b"T", "terminated once");
         tokio::time::advance(Duration::from_millis(4999)).await;
         assert!(poll_once(&mut exec).await.is_pending());
-        assert!(
-            alive(&pid),
-            "ignored the first signal and still running at 4999 ms"
+        assert_eq!(
+            sync(&mut socket),
+            b"",
+            "ignored the signal and still answering at 4999 ms"
         );
         tokio::time::advance(Duration::from_millis(1)).await;
-        let result = settle(&mut exec).await.expect("killed at the delay");
+        let result = exec.await;
         assert_eq!((result.code, result.killed), (0, true));
-        assert!(!alive(&pid), "killed and reaped");
-        assert_eq!(std::io::Read::read(&mut socket, &mut [0; 1]).unwrap(), 0);
+        assert_eq!(
+            std::io::Read::read(&mut socket, &mut [0; 1]).unwrap(),
+            0,
+            "killed: the child's end closed"
+        );
     });
 }
 
@@ -477,8 +513,11 @@ fn exec_finishes_after_inherited_pipe_grace() {
             ),
             ("early", "diag", 0, false)
         );
-        assert!(
-            alive(&held.pid),
+        let mut held = held;
+        held.socket.write_all(b"p").await.unwrap();
+        assert_eq!(
+            held.socket.read_u8().await.unwrap(),
+            b'E',
             "the descendant was still holding the pipes"
         );
         release(held).await;
@@ -514,32 +553,25 @@ fn exec_settlement_releases_cancellation_observation() {
 #[test]
 fn exec_timeout_requests_termination_exactly_at_the_deadline() {
     paused_runtime().block_on(async {
-        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-        let port = listener.local_addr().unwrap().port().to_string();
+        let (listener, port) = blocking_listener();
         let options = ExecOptions {
             signal: None,
             timeout: Some(Duration::from_secs(1)),
         };
-        let exec = python(HOLDER, &[&port, "stubborn"], options);
+        let exec = python(STUBBORN, &[&port], options);
         tokio::pin!(exec);
         assert!(poll_once(&mut exec).await.is_pending(), "spawned");
-        let (mut socket, _) = listener.accept().unwrap();
-        read_line(&mut socket);
+        let mut socket = accept_ready(&listener);
         tokio::time::advance(Duration::from_millis(999)).await;
         assert!(poll_once(&mut exec).await.is_pending());
-        socket.set_nonblocking(true).unwrap();
-        let early = std::io::Read::read(&mut socket, &mut [0; 1]);
         assert_eq!(
-            early.unwrap_err().kind(),
-            std::io::ErrorKind::WouldBlock,
+            sync(&mut socket),
+            b"",
             "no request 1 ms before the deadline"
         );
-        socket.set_nonblocking(false).unwrap();
         tokio::time::advance(Duration::from_millis(1)).await;
         assert!(poll_once(&mut exec).await.is_pending());
-        let mut request = [0; 1];
-        std::io::Read::read_exact(&mut socket, &mut request).unwrap();
-        assert_eq!(&request, b"T", "requested at the deadline");
+        assert_eq!(sync(&mut socket), b"T", "requested at the deadline");
         std::io::Write::write_all(&mut socket, b"g").unwrap();
         assert!(exec.await.killed);
     });
@@ -555,7 +587,7 @@ fn exec_registers_a_cancellation_observer_until_it_settles() {
             timeout: Some(Duration::from_secs(600)),
         };
         let owner = forward();
-        let mut exec = Box::pin(python(HOLDER, &[&port, "plain"], options));
+        let mut exec = Box::pin(python(HOLDER, &[&port], options));
         let pending = std::future::poll_fn(|cx| {
             Poll::Ready(poll_through(&owner, &mut exec, cx).is_pending())
         });

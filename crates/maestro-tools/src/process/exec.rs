@@ -39,20 +39,28 @@ pub struct ExecResult {
 
 /// Runs `command` with `args` in `cwd`, without a shell and with stdin closed.
 ///
-/// A command that cannot start (missing program or directory, permission denied)
-/// yields code 1 with empty streams. Which bytes a finished or failed wait collects
+/// An empty `cwd` leaves the working directory inherited. A command that cannot
+/// start (missing program or directory, permission denied) yields code 1 with empty
+/// streams. Which bytes a finished or failed wait collects
 /// is decided by [`wait_for_child_process`].
 ///
 /// # Errors
-/// Returns the native error for an operand the operating system rejects as invalid.
+/// Returns `InvalidInput` for an empty `command`, before the signal is observed, and
+/// the native error for an operand the operating system rejects as invalid.
 pub async fn exec_command(
     command: &str,
     args: &[String],
     cwd: &str,
     options: ExecOptions<'_>,
 ) -> io::Result<ExecResult> {
+    if command.is_empty() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "empty command"));
+    }
     let mut builder = Command::new(command);
-    builder.args(args).current_dir(cwd);
+    builder.args(args);
+    if !cwd.is_empty() {
+        builder.current_dir(cwd);
+    }
     let mut child = match CapturedChild::spawn(&mut builder) {
         Ok(child) => child,
         Err(error) if error.kind() == io::ErrorKind::InvalidInput => return Err(error),
