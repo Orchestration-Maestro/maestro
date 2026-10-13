@@ -335,10 +335,18 @@ fn oauth_pages_reject_positional_pack_records() {
         );
     }
     let positional = json!([
+        base["name"],
         base["wordmark"],
+        base["tagline"],
         base["palette"],
+        base["modes"],
         base["fonts"],
-        base["modes"]
+        base["type"],
+        base["spacing"],
+        base["radii"],
+        base["mark"],
+        base["glyphs"],
+        base["terminal"]
     ]);
     assert!(page(&positional, MARK).is_err(), "object-only root");
 }

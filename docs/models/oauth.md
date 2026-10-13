@@ -26,8 +26,7 @@ or empty. Both documents retain the centered dark callback layout and fixed
 authentication wording. Embedded `assets/brand/brand.json` supplies the dark
 semantic colors and ordered display, body and mono font stacks.
 [Shared brand projection](../brand.md) owns complete pack admission, selected-mode
-resolution and CSS font encoding. Generic family keywords remain bare in both
-primary and fallback positions; named families are quoted, with controls escaped.
+resolution and CSS font encoding.
 `assets/brand/mark.svg` supplies the fitted mark, whose original tokens are filled
 through the shared projection before embedding. Pack admission and selected references
 must resolve before the page's colors, fonts and mark; failures return diagnostic
