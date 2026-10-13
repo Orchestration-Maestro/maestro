@@ -259,6 +259,71 @@ fn web_identity_precedes_process() -> TestResult {
 }
 
 #[test]
+fn login_cache_signs_each_profile_route() -> TestResult {
+    check_rows("login_cache_signs_each_profile_route")
+}
+
+#[test]
+fn default_login_profile_yields_to_environment_keys() -> TestResult {
+    check_rows("default_login_profile_yields_to_environment_keys")
+}
+
+#[test]
+fn login_cache_directory_override_selects_the_token() -> TestResult {
+    check_rows("login_cache_directory_override_selects_the_token")
+}
+
+#[test]
+fn higher_priority_profile_sources_do_not_load_login() -> TestResult {
+    check_rows("higher_priority_profile_sources_do_not_load_login")
+}
+
+#[test]
+fn login_source_supplies_chained_role() -> TestResult {
+    check_rows("login_source_supplies_chained_role")
+}
+
+#[test]
+fn login_refresh_signs_with_renewed_credentials() -> TestResult {
+    check_rows("login_refresh_signs_with_renewed_credentials")
+}
+
+#[test]
+fn login_access_denied_stops_before_fallback() -> TestResult {
+    check_rows("login_access_denied_stops_before_fallback")
+}
+
+#[test]
+fn login_refresh_failure_reaches_container() -> TestResult {
+    check_rows("login_refresh_failure_reaches_container")
+}
+
+#[test]
+fn login_refresh_classification_ignores_error_text() -> TestResult {
+    check_rows("login_refresh_classification_ignores_error_text")
+}
+
+#[test]
+fn refreshed_login_credentials_survive_cache_write_failure() -> TestResult {
+    check_rows("refreshed_login_credentials_survive_cache_write_failure")
+}
+
+#[test]
+fn login_cache_failure_stops_before_fallback() -> TestResult {
+    check_rows("login_cache_failure_stops_before_fallback")
+}
+
+#[test]
+fn default_profile_keeps_later_credential_sources() -> TestResult {
+    check_rows("default_profile_keeps_later_credential_sources")
+}
+
+#[test]
+fn login_failure_reaches_root_process_after_role_source() -> TestResult {
+    check_rows("login_failure_reaches_root_process_after_role_source")
+}
+
+#[test]
 fn dropped_routed_server_closes_its_listener() -> TestResult {
     let routed = loopback::serve_routed(|_| unreachable!("no request is sent"))?;
     let address = routed.url.trim_start_matches("http://").to_owned();

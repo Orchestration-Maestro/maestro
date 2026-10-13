@@ -1,8 +1,10 @@
 //! The credential sources tried when a profile is selected: that profile's own source, its
 //! process once more, web identity from the environment, then container or instance metadata.
+//! Without a selected profile the environment's own keys come first and the `default` profile
+//! supplies the same steps.
 //!
-//! The environment's own keys are not a step: selecting a profile replaces them. A profile may
-//! still name the environment as the source of a role. A step that fails with a
+//! Selecting a profile replaces the environment's own keys. A profile may still name the
+//! environment as the source of a role. A step that fails with a
 //! missing-credentials error lets the next one run and any other error ends the chain; the
 //! profile walk and the process step decide which of their failures are missing-credentials
 //! errors.
@@ -16,6 +18,7 @@ use std::time::SystemTime;
 use aws_config::SdkConfig;
 use aws_config::credential_process::CredentialProcessProvider;
 use aws_config::ecs::EcsCredentialsProvider;
+use aws_config::environment::EnvironmentVariableCredentialsProvider;
 use aws_config::imds::credentials::ImdsCredentialsProvider;
 use aws_config::meta::credentials::CredentialsProviderChain;
 use aws_config::profile::ProfileSet;
@@ -154,8 +157,24 @@ impl ProvideCredentials for Step {
     }
 }
 
+/// The chain for a request: the selected profile alone, or without one the environment's own keys
+/// and then the `default` profile's steps.
+pub(super) fn default_provider(
+    profile: Option<&str>,
+    shared: &SdkConfig,
+) -> CredentialsProviderChain {
+    match profile {
+        Some(profile) => selected_profile(profile, shared),
+        None => CredentialsProviderChain::first_try(
+            "Environment",
+            EnvironmentVariableCredentialsProvider::new(),
+        )
+        .or_else("Profile", selected_profile("default", shared)),
+    }
+}
+
 /// The chain for a selected profile. Nothing is read until the first credential is looked up.
-pub(super) fn selected_profile(profile: &str, shared: &SdkConfig) -> CredentialsProviderChain {
+fn selected_profile(profile: &str, shared: &SdkConfig) -> CredentialsProviderChain {
     let conf = ProviderConfig::default().with_region(shared.region().cloned());
     let selected = Arc::new(Selected {
         profile: profile.to_owned(),
