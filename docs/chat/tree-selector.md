@@ -27,8 +27,9 @@ block returns `InvalidData`; an earlier nonblank text block avoids later reads.
 
 Initial selection uses the explicit target when supplied, otherwise the current
 leaf. Filtering retains the selected identity, walks hidden parents to a visible
-ancestor, or falls back to the last visible row. Empty results have no selection
-and retain the bookmark for a later nonempty filter.
+ancestor, or falls back to the last visible row. Hidden ancestry cycles also use
+that fallback. Empty results skip parent lookup, have no selection, and retain
+the bookmark for a later nonempty filter.
 
 ## Configurable input
 

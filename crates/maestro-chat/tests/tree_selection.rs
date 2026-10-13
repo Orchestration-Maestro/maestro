@@ -151,3 +151,21 @@ fn selected_node_borrows_original_records() {
 fn opaque_entry_fields_survive_selection() {
     support::group("opaque_entry_fields_survive_selection");
 }
+
+/// An empty view avoids walking a self-parent leaf.
+#[test]
+fn self_parent_hidden_leaf_has_no_selection() {
+    support::group("self_parent_hidden_leaf_has_no_selection");
+}
+
+/// Empty filtering avoids walking a retained self-parent selection.
+#[test]
+fn all_to_empty_filter_keeps_self_parent_bookmark() {
+    support::group("all_to_empty_filter_keeps_self_parent_bookmark");
+}
+
+/// A hidden ancestry cycle falls back to the last unrelated visible row.
+#[test]
+fn hidden_parent_cycle_falls_back_to_last_visible() {
+    support::group("hidden_parent_cycle_falls_back_to_last_visible");
+}

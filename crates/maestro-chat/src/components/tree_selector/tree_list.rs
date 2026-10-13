@@ -73,22 +73,23 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
     }
 
     /// Selects the last visible match, walking parents from the last full-tree match.
-    fn nearest_visible<'target>(&'target self, mut target: Option<&'target str>) -> usize {
+    fn nearest_visible<'target>(&'target self, target: Option<&'target str>) -> usize {
+        if self.visible.is_empty() {
+            return 0;
+        }
         let indices: HashMap<_, _> = self
             .visible
             .iter()
             .enumerate()
             .filter_map(|(i, node)| node.entry.get("id")?.as_str().map(|id| (id, i)))
             .collect();
-        while let Some(id) = target {
+        let ancestors = std::iter::successors(target, |id| {
+            self.parents.get(id)?.entry["parentId"].as_str()
+        });
+        for id in ancestors.take(self.parents.len()) {
             if let Some(index) = indices.get(id) {
                 return *index;
             }
-            target = self
-                .parents
-                .get(id)
-                .and_then(|node| node.entry.get("parentId"))
-                .and_then(serde_json::Value::as_str);
         }
         self.visible.len().saturating_sub(1)
     }

@@ -511,6 +511,15 @@
     ],
     "opaque_entry_fields_survive_selection": [
       "opaque_entry_fields_survive_selection_1"
+    ],
+    "self_parent_hidden_leaf_has_no_selection": [
+      "self_parent_hidden_leaf_has_no_selection"
+    ],
+    "all_to_empty_filter_keeps_self_parent_bookmark": [
+      "all_to_empty_filter_keeps_self_parent_bookmark"
+    ],
+    "hidden_parent_cycle_falls_back_to_last_visible": [
+      "hidden_parent_cycle_falls_back_to_last_visible"
     ]
   },
   "cases": [
@@ -29056,10 +29065,19 @@
               }
             },
             "children": []
+          },
+          {
+            "entry": {
+              "type": "model_change",
+              "id": "m",
+              "parentId": null
+            },
+            "children": []
           }
         ],
         "roots": [
-          0
+          0,
+          5
         ],
         "leaf": "a2",
         "lines": 3,
@@ -29090,7 +29108,8 @@
               1,
               2,
               3,
-              4
+              4,
+              5
             ],
             "selected": 3,
             "events": []
@@ -47128,6 +47147,150 @@
               1
             ],
             "selected": 0,
+            "events": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "self_parent_hidden_leaf_has_no_selection",
+      "input": {
+        "nodes": [
+          {
+            "entry": {
+              "type": "model_change",
+              "id": "m",
+              "parentId": "m"
+            },
+            "children": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "leaf": "m",
+        "lines": 3,
+        "ops": []
+      },
+      "expected": {
+        "frames": [
+          {
+            "visible": [],
+            "selected": null,
+            "events": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "all_to_empty_filter_keeps_self_parent_bookmark",
+      "input": {
+        "nodes": [
+          {
+            "entry": {
+              "type": "model_change",
+              "id": "m",
+              "parentId": "m"
+            },
+            "children": []
+          }
+        ],
+        "roots": [
+          0
+        ],
+        "leaf": "m",
+        "lines": 3,
+        "ops": [
+          "\u0004",
+          "\u0001"
+        ],
+        "mode": "all"
+      },
+      "expected": {
+        "frames": [
+          {
+            "visible": [
+              0
+            ],
+            "selected": 0,
+            "events": []
+          },
+          {
+            "visible": [],
+            "selected": null,
+            "events": []
+          },
+          {
+            "visible": [
+              0
+            ],
+            "selected": 0,
+            "events": []
+          }
+        ]
+      }
+    },
+    {
+      "case": "hidden_parent_cycle_falls_back_to_last_visible",
+      "input": {
+        "nodes": [
+          {
+            "entry": {
+              "type": "model_change",
+              "id": "m",
+              "parentId": "n"
+            },
+            "children": []
+          },
+          {
+            "entry": {
+              "type": "model_change",
+              "id": "n",
+              "parentId": "m"
+            },
+            "children": []
+          },
+          {
+            "entry": {
+              "type": "message",
+              "id": "u1",
+              "parentId": null,
+              "message": {
+                "role": "user"
+              }
+            },
+            "children": []
+          },
+          {
+            "entry": {
+              "type": "message",
+              "id": "u2",
+              "parentId": null,
+              "message": {
+                "role": "user"
+              }
+            },
+            "children": []
+          }
+        ],
+        "roots": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "leaf": "m",
+        "lines": 3,
+        "ops": []
+      },
+      "expected": {
+        "frames": [
+          {
+            "visible": [
+              2,
+              3
+            ],
+            "selected": 3,
             "events": []
           }
         ]
