@@ -1,7 +1,7 @@
 //! Native stdout capture through child exit, pipe EOFs and an optional deadline.
 use super::{CommandCaptureOptions, NativePackageOperations};
 use maestro_process::child_process::{
-    CapturedChild, StderrMode, Termination, wait_for_child_process,
+    CapturedChild, Termination, WaitOptions, wait_for_child_process,
 };
 use std::{cell::Cell, io, process::ExitStatus};
 
@@ -29,7 +29,7 @@ impl NativePackageOperations {
             timed_out.set(true);
             Termination::Terminate
         };
-        let output = wait_for_child_process(&mut child, StderrMode::Capture, deadline).await?;
+        let output = wait_for_child_process(&mut child, WaitOptions::default(), deadline).await?;
         let prefix = format!("{command} {}", args.join(" "));
         if timed_out.get() {
             return Err(io::Error::other(format!(

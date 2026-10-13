@@ -34,6 +34,8 @@ pub mod output;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod path_utils;
 #[cfg(not(target_arch = "wasm32"))]
+pub mod process;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod read;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod search;
@@ -52,6 +54,11 @@ pub use output::truncate::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
+#[cfg(not(target_arch = "wasm32"))]
+pub use process::{
+    exec::{ExecOptions, ExecResult, exec_command},
+    sleep::{SleepError, sleep},
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use read::{
     ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, create_read_tool,

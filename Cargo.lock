@@ -2453,6 +2453,7 @@ dependencies = [
  "maestro-agent",
  "maestro-models",
  "maestro-path",
+ "maestro-process",
  "maestro-theme",
  "maestro-tui",
  "num-traits",
