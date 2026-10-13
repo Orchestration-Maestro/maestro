@@ -125,7 +125,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   production lines with matching moved/deleted counts, not claimed savings.
 - `maestro-process` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path and cancellation leaves. Only tools, packages,
-  credentials and the toolkit may depend on it, on native targets. It owns native child-process
+  credentials, the application and the toolkit may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Synchronous capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
