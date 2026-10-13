@@ -694,38 +694,7 @@ fn callback_failure_stops_before_events() -> TestResult {
     })
 }
 
-/// A sender whose body yields `before`, then waits for the returned gate.
-struct Held {
-    scripted: transport::Transport,
-    release: tokio::sync::oneshot::Sender<()>,
-    dropped: Arc<AtomicBool>,
-    ended: tokio::sync::oneshot::Receiver<()>,
-    received: tokio::sync::mpsc::UnboundedReceiver<()>,
-}
-
-fn held(before: Vec<Vec<u8>>, after: Vec<Vec<u8>>) -> Held {
-    let (release, gate) = tokio::sync::oneshot::channel();
-    let (end, ended) = tokio::sync::oneshot::channel();
-    let (sender, received) = tokio::sync::mpsc::unbounded_channel();
-    let dropped = Arc::new(AtomicBool::new(false));
-    let guard = std::sync::Mutex::new(Some((gate, end, bedrock::DropFlag(Arc::clone(&dropped)))));
-    let scripted = transport::transport(vec![transport::Attempt::streaming(move || {
-        sender.send(()).ok();
-        match guard.lock().ok().and_then(|mut guard| guard.take()) {
-            Some((gate, end, flag)) => {
-                bedrock::gated(before.clone(), gate, after.clone(), flag, end)
-            }
-            None => Box::pin(futures_util::stream::empty()),
-        }
-    })]);
-    Held {
-        scripted,
-        release,
-        dropped,
-        ended,
-        received,
-    }
-}
+use bedrock::held;
 
 #[test]
 fn cancellation_settles_same_operation() -> TestResult {

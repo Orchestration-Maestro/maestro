@@ -1,0 +1,3215 @@
+[
+  {
+    "name": "options_absent",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {},
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_empty",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "region": "",
+      "profile": "",
+      "requestMetadata": {},
+      "bearerToken": ""
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "requestMetadata": {}
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "requestMetadata": {}
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_tags",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "requestMetadata": {
+        "z": "last",
+        "a": "first"
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "requestMetadata": {
+        "z": "last",
+        "a": "first"
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "requestMetadata": {
+        "z": "last",
+        "a": "first"
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_auto",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "toolChoice": "auto"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "toolChoice": {
+          "auto": {}
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ],
+        "toolChoice": {
+          "auto": {}
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_any",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "toolChoice": "any"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "toolChoice": {
+          "any": {}
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ],
+        "toolChoice": {
+          "any": {}
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_none",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "toolChoice": "none"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {}
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_named",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "toolChoice": {
+        "type": "tool",
+        "name": "inspect"
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "toolChoice": {
+          "tool": {
+            "name": "inspect"
+          }
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ],
+        "toolChoice": {
+          "tool": {
+            "name": "inspect"
+          }
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_fixed_low",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "low",
+      "thinkingBudgets": {
+        "low": 1025,
+        "high": 3200
+      },
+      "interleavedThinking": false,
+      "thinkingDisplay": "omitted"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1025,
+          "display": "omitted"
+        }
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1025,
+          "display": "omitted"
+        }
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_fixed_high",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "high",
+      "thinkingBudgets": {
+        "low": 1025,
+        "high": 3200
+      },
+      "interleavedThinking": true,
+      "thinkingDisplay": "summarized"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 3200,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 3200,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_region",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "region": "us-west-2",
+      "bearerToken": "fixture-token"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-west-2.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_common",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "temperature": 0.25,
+      "maxTokens": 3000,
+      "cacheRetention": "long",
+      "apiKey": "ignored",
+      "headers": {
+        "x-unused": "ignored"
+      },
+      "timeoutMs": 17,
+      "maxRetries": 5,
+      "maxRetryDelayMs": 41,
+      "transport": "websocket",
+      "sessionId": "ignored",
+      "metadata": {
+        "arbitrary": 1
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            },
+            {
+              "cachePoint": {
+                "type": "default",
+                "ttl": "1h"
+              }
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 3000,
+        "temperature": 0.25
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            },
+            {
+              "cachePoint": {
+                "type": "default",
+                "ttl": "1h"
+              }
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {
+        "maxTokens": 3000,
+        "temperature": 0.25
+      },
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_unknown",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "futureOption": {
+        "nested": [
+          1,
+          2
+        ]
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_budget_null_slot",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "low",
+      "thinkingBudgets": {
+        "low": null,
+        "high": 3200
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 2048,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 2048,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_budget_minimal",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "minimal",
+      "thinkingBudgets": {
+        "minimal": 1234,
+        "low": 2345,
+        "medium": 3456,
+        "high": 4567
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1234,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1234,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_budget_medium",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "text": "options"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "options"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "options"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "options"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "medium",
+      "thinkingBudgets": {
+        "minimal": 1234,
+        "low": 2345,
+        "medium": 3456,
+        "high": 4567
+      }
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 3456,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 3456,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_level_minimal",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "minimal"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1024,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 1024,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_level_medium",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "medium"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 8192,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 8192,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "options_level_xhigh",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1,
+    "route": "raw",
+    "options": {
+      "reasoning": "xhigh"
+    },
+    "payload": {
+      "modelId": "anthropic.claude-sonnet-4-5",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "description": "Read input",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "wire": {
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "text": "Calculate"
+            }
+          ]
+        }
+      ],
+      "inferenceConfig": {},
+      "toolConfig": {
+        "tools": [
+          {
+            "toolSpec": {
+              "name": "inspect",
+              "inputSchema": {
+                "json": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "description": "Read input"
+            }
+          }
+        ]
+      },
+      "additionalModelRequestFields": {
+        "thinking": {
+          "type": "enabled",
+          "budget_tokens": 16384,
+          "display": "summarized"
+        },
+        "anthropic_beta": [
+          "interleaved-thinking-2025-05-14"
+        ]
+      }
+    },
+    "destination": "bedrock-runtime.us-east-1.amazonaws.com",
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Calculate",
+          "timestamp": 1
+        }
+      ],
+      "tools": [
+        {
+          "name": "inspect",
+          "description": "Read input",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]

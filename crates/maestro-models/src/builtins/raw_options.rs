@@ -349,3 +349,55 @@ pub(super) fn response_sessions(
         text_verbosity: extra.text_verbosity,
     })
 }
+
+/// Raw cloud-conversation fields.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BedrockExtras {
+    /// Bearer authentication instead of signing.
+    #[serde(default, deserialize_with = "present")]
+    bearer_token: Option<String>,
+    /// Service region override.
+    #[serde(default, deserialize_with = "present")]
+    region: Option<String>,
+    /// Shared configuration profile.
+    #[serde(default, deserialize_with = "present")]
+    profile: Option<String>,
+    /// Tool selection policy.
+    #[serde(default, deserialize_with = "present")]
+    tool_choice: Option<MessageChoice>,
+    /// Requested thinking level.
+    #[serde(default, deserialize_with = "literal")]
+    reasoning: Option<ThinkingLevel>,
+    /// Object-valued per-level budgets.
+    #[serde(default, deserialize_with = "present")]
+    thinking_budgets: Option<serde_json::Map<String, Value>>,
+    /// Fixed-budget interleaving policy.
+    #[serde(default, deserialize_with = "present")]
+    interleaved_thinking: Option<bool>,
+    /// Thinking display mode.
+    #[serde(default, deserialize_with = "literal")]
+    thinking_display: Option<AnthropicThinkingDisplay>,
+    /// Request allocation tags.
+    #[serde(default, deserialize_with = "present")]
+    request_metadata: Option<indexmap::IndexMap<String, String>>,
+}
+
+/// Decode the default cloud-conversation adapter's options.
+pub(crate) fn bedrock(
+    options: ProviderStreamOptions,
+) -> Result<crate::BedrockOptions, serde_json::Error> {
+    let extra: BedrockExtras = extras(options.extra)?;
+    Ok(crate::BedrockOptions {
+        common: options.common,
+        bearer_token: extra.bearer_token,
+        region: extra.region,
+        profile: extra.profile,
+        tool_choice: extra.tool_choice.map(ToolChoice::from),
+        reasoning: extra.reasoning,
+        thinking_budgets: extra.thinking_budgets.map(extras).transpose()?,
+        interleaved_thinking: extra.interleaved_thinking,
+        thinking_display: extra.thinking_display,
+        request_metadata: extra.request_metadata,
+    })
+}

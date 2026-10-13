@@ -278,7 +278,7 @@ fn maestro_initial_registry_is_ready() -> TestResult {
     if child_process::child_case().is_none() {
         return child_process::rerun("maestro_initial_registry_is_ready", "fresh", &[]);
     }
-    assert_eq!(registered(), bundled::apis());
+    assert_eq!(registered(), bundled::registered_apis());
     Ok(())
 }
 
@@ -294,14 +294,14 @@ fn maestro_registration_keeps_custom_order() {
     register_api_provider(custom("custom-b", "b"), None);
     let replaced = get_api_provider("openai-codex-responses");
     maestro_models::register_built_in_api_providers();
-    let expected: Vec<String> = bundled::apis()
+    let expected: Vec<String> = bundled::registered_apis()
         .into_iter()
         .map(str::to_owned)
         .chain(["custom-a".to_owned(), "custom-b".to_owned()])
         .collect();
     assert_eq!(registered(), expected);
     unregister_api_providers("extension");
-    let after: Vec<String> = bundled::apis()
+    let after: Vec<String> = bundled::registered_apis()
         .into_iter()
         .map(str::to_owned)
         .chain(["custom-b".to_owned()])
@@ -338,7 +338,7 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
     register_api_provider(custom("custom-x", "custom"), None);
     let retired = get_api_provider(PROTOCOLS[0].api).ok_or("custom entry")?;
     reset_api_providers();
-    assert_eq!(registered(), bundled::apis());
+    assert_eq!(registered(), bundled::registered_apis());
     assert!(get_api_provider("custom-x").is_none());
     let model = bundled::protocol_model(&PROTOCOLS[0])?;
     let old = (retired.stream_simple)(model, bundled::conversation()?, None);

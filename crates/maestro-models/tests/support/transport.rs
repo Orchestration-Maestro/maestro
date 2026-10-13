@@ -158,6 +158,7 @@ impl Attempt {
 }
 
 /// The scripted transport and what it observed.
+#[derive(Clone)]
 pub struct Transport {
     /// Transport to install in the options.
     pub fetch: Fetch,

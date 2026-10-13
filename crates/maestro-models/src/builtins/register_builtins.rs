@@ -8,7 +8,8 @@ use crate::providers::reasoning::mistral as conversation;
 use crate::providers::response_sessions::openai_codex_responses as sessions;
 use crate::providers::responses::{azure_openai_responses as cloud, openai_responses as responses};
 use crate::records::api_registry::{
-    ApiProvider, ApiStreamFunction, clear_api_providers, register_api_provider,
+    ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers,
+    register_api_provider,
 };
 use crate::{
     AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
@@ -48,7 +49,7 @@ fn settle_simple(
 }
 
 /// Registered raw callback: decode the extras, then start the protocol.
-fn raw_callback<T: 'static>(
+pub(crate) fn raw_callback<T: 'static>(
     decode: fn(ProviderStreamOptions) -> Result<T, serde_json::Error>,
     start: RawStart<T>,
 ) -> ApiStreamFunction {
@@ -78,7 +79,7 @@ fn provider<T: 'static>(
 }
 
 /// The bundled protocols in registration order.
-pub(crate) fn built_in_providers() -> [ApiProvider; 6] {
+pub(crate) fn built_in_providers() -> [ApiProvider; 7] {
     [
         provider(
             "anthropic-messages",
@@ -116,6 +117,21 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 6] {
             sessions::stream_openai_codex_responses,
             stream_simple_openai_codex_responses,
         ),
+        ApiProvider {
+            api: "bedrock-converse-stream".into(),
+            stream: Arc::new(|model, context, options| {
+                let callback = selected_bedrock().stream_bedrock;
+                let identity = initial_message(&model);
+                Ok(callback(model, context, options)
+                    .unwrap_or_else(|error| settled(identity, error.into())))
+            }),
+            stream_simple: Arc::new(|model, context, options| {
+                let callback = selected_bedrock().stream_simple_bedrock;
+                let identity = initial_message(&model);
+                Ok(callback(model, context, options)
+                    .unwrap_or_else(|error| settled(identity, error.into())))
+            }),
+        },
     ]
 }
 
@@ -206,4 +222,52 @@ pub fn stream_simple_openai_codex_responses(
     options: Option<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
     settle_simple(session_simple, model, context, options)
+}
+
+/// Replaceable raw and simple cloud-conversation callbacks.
+#[derive(Clone)]
+pub struct BedrockProviderModule {
+    /// Raw invocation, receiving open options unchanged.
+    pub stream_bedrock: ApiStreamFunction,
+    /// Simple invocation, receiving its options unchanged.
+    pub stream_simple_bedrock: ApiStreamSimpleFunction,
+}
+
+/// Native callback override, independent of registry reset.
+#[cfg(not(target_arch = "wasm32"))]
+static BEDROCK: std::sync::Mutex<Option<BedrockProviderModule>> = std::sync::Mutex::new(None);
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    /// Browser-local callback override.
+    static BEDROCK: std::cell::RefCell<Option<BedrockProviderModule>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Access the selected slot only to snapshot or replace callback handles.
+fn with_bedrock<T>(operation: impl FnOnce(&mut Option<BedrockProviderModule>) -> T) -> T {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        operation(
+            &mut BEDROCK
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        BEDROCK.with_borrow_mut(operation)
+    }
+}
+
+/// Select the current pair, releasing the slot before invocation.
+fn selected_bedrock() -> BedrockProviderModule {
+    with_bedrock(|slot| slot.clone())
+        .unwrap_or_else(crate::bedrock_provider::bedrock_provider_module)
+}
+
+/// Replace the callbacks used by subsequent bundled cloud-conversation invocations.
+///
+/// Already started calls keep their selected callbacks. Registry resets do not clear this pair.
+pub fn set_bedrock_provider_module(module: BedrockProviderModule) {
+    let retired = with_bedrock(|slot| slot.replace(module));
+    drop(retired);
 }

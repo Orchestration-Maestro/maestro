@@ -1,12 +1,14 @@
 #![doc = include_str!("../../../docs/records.md")]
 
 pub mod arguments;
+pub mod bedrock_provider;
 pub use arguments::*;
 /// Built-in provider environment utilities.
 mod builtins;
 pub use builtins::{
-    find_env_keys, get_env_api_key, register_built_in_api_providers, reset_api_providers,
-    stream_simple_anthropic, stream_simple_azure_openai_responses, stream_simple_mistral,
+    BedrockProviderModule, find_env_keys, get_env_api_key, register_built_in_api_providers,
+    reset_api_providers, set_bedrock_provider_module, stream_simple_anthropic,
+    stream_simple_azure_openai_responses, stream_simple_mistral,
     stream_simple_openai_codex_responses, stream_simple_openai_completions,
     stream_simple_openai_responses,
 };

@@ -74,23 +74,27 @@ pub struct AwsFiles(PathBuf);
 
 impl AwsFiles {
     pub fn create(test: &str) -> TestResult<Self> {
-        let dir =
-            std::env::temp_dir().join(format!("maestro-bedrock-{test}-{}", std::process::id()));
-        std::fs::create_dir_all(&dir)?;
-        std::fs::write(
-            dir.join("config"),
+        Self::create_with(
+            test,
             "[default]\nregion = ap-south-1\n[profile selected]\nregion = us-west-2\n",
-        )?;
-        std::fs::write(
-            dir.join("credentials"),
             "[default]\naws_access_key_id = controlled-default\naws_secret_access_key = controlled-secret\n\
              [selected]\naws_access_key_id = controlled-selected\naws_secret_access_key = controlled-secret\n",
-        )?;
-        Ok(Self(dir))
+        )
+    }
+
+    /// Create exclusively owned configuration files for a synthetic profile.
+    pub fn create_with(test: &str, config: &str, credentials: &str) -> TestResult<Self> {
+        let dir =
+            std::env::temp_dir().join(format!("maestro-bedrock-{test}-{}", std::process::id()));
+        std::fs::create_dir(&dir)?;
+        let files = Self(dir);
+        std::fs::write(files.0.join("config"), config)?;
+        std::fs::write(files.0.join("credentials"), credentials)?;
+        Ok(files)
     }
 
     /// The environment of a child: the files, no metadata service, and the case's variables.
-    fn environment(&self, case: &Case) -> Vec<(String, String)> {
+    pub fn environment(&self, case: &Case) -> Vec<(String, String)> {
         let path = |name: &str| self.0.join(name).to_string_lossy().into_owned();
         let mut vars = vec![
             ("HOME".to_owned(), self.0.to_string_lossy().into_owned()),

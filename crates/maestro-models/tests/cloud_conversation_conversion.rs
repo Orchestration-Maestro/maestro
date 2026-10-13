@@ -19,8 +19,7 @@ mod chat;
 )]
 #[path = "support/child_process.rs"]
 mod child_process;
-#[path = "support/json.rs"]
-mod json;
+use bedrock::json;
 #[allow(
     dead_code,
     reason = "Shared helpers serve multiple integration targets."

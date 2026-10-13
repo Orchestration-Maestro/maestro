@@ -1,0 +1,731 @@
+[
+  {
+    "name": "field_start_missing",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 0,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "field_start_null",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": null
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 0,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "field_delta_missing",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 0,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "field_delta_null",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": null
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 0,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {}
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_usage_null",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": null
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_cache_null",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "metadata",
+        "body": {
+          "usage": {
+            "inputTokens": 2,
+            "outputTokens": 3,
+            "totalTokens": 5,
+            "cacheReadInputTokens": null,
+            "cacheWriteInputTokens": null
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 2,
+        "output": 3,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 5,
+        "cost": {
+          "input": 2e-06,
+          "output": 6e-06,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 8e-06
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_tool_result_ignored",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 19,
+          "delta": {
+            "toolResult": []
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_citation_ignored",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 19,
+          "delta": {
+            "citation": {
+              "title": "source"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_image_ignored",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 19,
+          "delta": {
+            "image": {}
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "fresh_unknown_members",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 19,
+          "delta": {
+            "text": "kept"
+          },
+          "future": {
+            "nested": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 19
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 0,
+        "delta": "kept"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 0,
+        "content": "kept"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  }
+]

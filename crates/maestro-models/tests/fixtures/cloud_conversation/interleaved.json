@@ -1,0 +1,537 @@
+[
+  {
+    "name": "mixed_order",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "reason"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "one",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 2,
+          "delta": {
+            "text": "answer"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "sig"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "1}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 4
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 2
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 9
+        }
+      },
+      {
+        "kind": "messageStop",
+        "body": {
+          "stopReason": "tool_use"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "reason"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":"
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 2
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 2,
+        "delta": "answer"
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "1}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "one",
+          "name": "inspect",
+          "arguments": {
+            "x": 1
+          }
+        }
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 2,
+        "content": "answer"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "reason"
+      },
+      {
+        "type": "done",
+        "reason": "toolUse"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "reason",
+          "thinkingSignature": "sig"
+        },
+        {
+          "type": "toolCall",
+          "id": "one",
+          "name": "inspect",
+          "arguments": {
+            "x": 1
+          }
+        },
+        {
+          "type": "text",
+          "text": "answer"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "reused_mixed_number",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 6,
+          "delta": {
+            "reasoningContent": {
+              "text": "first"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 6
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 6,
+          "start": {
+            "toolUse": {
+              "toolUseId": "second",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 6,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":2}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 6
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 6,
+          "delta": {
+            "text": "third"
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 6
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "first"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "first"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":2}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 2
+          }
+        }
+      },
+      {
+        "type": "text_start",
+        "contentIndex": 2
+      },
+      {
+        "type": "text_delta",
+        "contentIndex": 2,
+        "delta": "third"
+      },
+      {
+        "type": "text_end",
+        "contentIndex": 2,
+        "content": "third"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "first",
+          "thinkingSignature": ""
+        },
+        {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 2
+          }
+        },
+        {
+          "type": "text",
+          "text": "third"
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "duplicate_open_tools",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 6,
+          "start": {
+            "toolUse": {
+              "toolUseId": "first",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 6,
+          "start": {
+            "toolUse": {
+              "toolUseId": "second",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 6,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":1}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 6
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 6,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":2}"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 6
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 0,
+        "delta": "{\"x\":1}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 0,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "first",
+          "name": "inspect",
+          "arguments": {
+            "x": 1
+          }
+        }
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":2}"
+      },
+      {
+        "type": "toolcall_end",
+        "contentIndex": 1,
+        "toolCall": {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 2
+          }
+        }
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "first",
+          "name": "inspect",
+          "arguments": {
+            "x": 1
+          }
+        },
+        {
+          "type": "toolCall",
+          "id": "second",
+          "name": "inspect",
+          "arguments": {
+            "x": 2
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  }
+]

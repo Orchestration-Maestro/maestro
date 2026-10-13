@@ -1,0 +1,202 @@
+[
+  {
+    "name": "empty",
+    "frames": [],
+    "events": [
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "unknown_only",
+    "frames": [
+      {
+        "kind": "futureEvent",
+        "body": {
+          "message": "ignored"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "start_only",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "unknown_between",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "reasoningContent": {
+              "text": "kept"
+            }
+          }
+        }
+      },
+      {
+        "kind": "futureEvent",
+        "body": {}
+      },
+      {
+        "kind": "contentBlockStop",
+        "body": {
+          "contentBlockIndex": 0
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "kept"
+      },
+      {
+        "type": "thinking_end",
+        "contentIndex": 0,
+        "content": "kept"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "kept",
+          "thinkingSignature": ""
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  }
+]

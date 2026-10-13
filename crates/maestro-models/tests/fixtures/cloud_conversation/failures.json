@@ -1,0 +1,939 @@
+[
+  {
+    "name": "failure_internalServerException",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "internalServerException",
+        "body": {
+          "message": "controlled cause"
+        },
+        "exception": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "failure_modelStreamErrorException",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "modelStreamErrorException",
+        "body": {
+          "message": "controlled cause"
+        },
+        "exception": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "failure_validationException",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "validationException",
+        "body": {
+          "message": "controlled cause"
+        },
+        "exception": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "failure_throttlingException",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "throttlingException",
+        "body": {
+          "message": "controlled cause"
+        },
+        "exception": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "failure_serviceUnavailableException",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "serviceUnavailableException",
+        "body": {
+          "message": "controlled cause"
+        },
+        "exception": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "unfinished_success",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "done",
+        "reason": "stop"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "mixed_crc_failure",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "text": "partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 9,
+          "delta": {
+            "reasoningContent": {
+              "signature": "s"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockStart",
+        "body": {
+          "contentBlockIndex": 4,
+          "start": {
+            "toolUse": {
+              "toolUseId": "call",
+              "name": "inspect"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 4,
+          "delta": {
+            "toolUse": {
+              "input": "{\"x\":\"partial"
+            }
+          }
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 5,
+          "delta": {
+            "text": "unseen"
+          }
+        },
+        "corrupt": true
+      }
+    ],
+    "events": [
+      {
+        "type": "start"
+      },
+      {
+        "type": "thinking_start",
+        "contentIndex": 0
+      },
+      {
+        "type": "thinking_delta",
+        "contentIndex": 0,
+        "delta": "partial"
+      },
+      {
+        "type": "toolcall_start",
+        "contentIndex": 1
+      },
+      {
+        "type": "toolcall_delta",
+        "contentIndex": 1,
+        "delta": "{\"x\":\"partial"
+      },
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "partial",
+          "thinkingSignature": "s"
+        },
+        {
+          "type": "toolCall",
+          "id": "call",
+          "name": "inspect",
+          "arguments": {
+            "x": "partial"
+          }
+        }
+      ],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1
+  },
+  {
+    "name": "response_hook_failure",
+    "frames": [
+      {
+        "kind": "messageStart",
+        "body": {
+          "role": "assistant"
+        }
+      },
+      {
+        "kind": "contentBlockDelta",
+        "body": {
+          "contentBlockIndex": 0,
+          "delta": {
+            "reasoningContent": {
+              "text": "unseen"
+            }
+          }
+        }
+      }
+    ],
+    "events": [
+      {
+        "type": "error",
+        "reason": "error"
+      }
+    ],
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "model": "anthropic.claude-sonnet-4-5",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error"
+    },
+    "response_hooks": 1,
+    "hook_error": "controlled hook failure"
+  }
+]

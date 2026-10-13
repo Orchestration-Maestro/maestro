@@ -54,9 +54,16 @@ pub const PROTOCOLS: [Protocol; 6] = [
     },
 ];
 
-/// The registered protocol identifiers in order.
+/// The SSE fixture identifiers in fixture order.
 pub fn apis() -> Vec<&'static str> {
     PROTOCOLS.iter().map(|protocol| protocol.api).collect()
+}
+
+/// The complete bundled registry inventory, separate from the SSE fixture protocols.
+pub fn registered_apis() -> Vec<&'static str> {
+    let mut apis = apis();
+    apis.push("bedrock-converse-stream");
+    apis
 }
 
 /// Serializes tests that read or change the process-wide registry.

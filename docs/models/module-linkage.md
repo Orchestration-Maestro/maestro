@@ -15,6 +15,7 @@ The registry starts with these protocols, in this order:
 4. `openai-responses`
 5. `azure-openai-responses`
 6. `openai-codex-responses`
+7. `bedrock-converse-stream`
 
 The simulated provider is never registered implicitly, and no placeholder stands in
 for a protocol whose adapter this crate does not contain.
@@ -46,15 +47,21 @@ registered custom callback keeps returning its own setup error immediately (insi
 the future for `complete`). A bundled callback never does: its setup failures are
 settled error streams.
 
-## Direct-only protocols
+## Cloud-conversation callback replacement
 
-`stream_bedrock` and `stream_simple_bedrock` (see [cloud conversations](cloud-conversations.md))
-are not in the registry above. `BedrockOptions` and `BedrockThinkingDisplay` are exported at
-the crate root; the stream functions are called directly from
-`maestro_models::providers::cloud::amazon_bedrock`. Until built-in registration covers them,
-`stream`, `stream_simple`, `complete` and
-`complete_simple` answer `bedrock-converse-stream` with `No API provider registered for api:
-bedrock-converse-stream`.
+[Cloud conversations](cloud-conversations.md) also support generic dispatch. Their typed
+stream functions remain in `maestro_models::providers::cloud::amazon_bedrock`;
+`BedrockOptions` and `BedrockThinkingDisplay` are exported at the crate root.
+
+`set_bedrock_provider_module` installs a `BedrockProviderModule` containing raw and simple
+callbacks. Each bundled invocation selects the current pair before calling it, without holding
+its slot lock. A retained registry handle selects the new pair on its next invocation; an
+already-started invocation keeps its selected stream. Registry clear, registration and reset
+do not clear the pair. The factory
+[`bedrock_provider::bedrock_provider_module`](../../crates/maestro-models/src/bedrock_provider.rs)
+returns the default adapter pair for restoring it. A replacement receives open options and
+typed objects unchanged; only the default pair decodes the extras below. Setup errors from
+either replacement callback settle into error streams, including under a pre-aborted signal.
 
 ## Raw extras
 
@@ -71,13 +78,15 @@ strings and a named function must be an object. Null handling is described below
 | `mistral-conversations` | `reasoningEffort` (`none`, `high`), `promptMode` (`reasoning`), `toolChoice` (`auto`, `none`, `any`, `required` or a named function) |
 | `openai-responses` | `reasoningEffort`, `reasoningSummary` (`auto`, `detailed`, `concise`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable) |
 | `azure-openai-responses` | `reasoningEffort`, `reasoningSummary`, `azureApiVersion`, `azureResourceName`, `azureBaseUrl`, `azureDeploymentName` |
+| `bedrock-converse-stream` | `region`, `profile`, `bearerToken`, `toolChoice` (`auto`, `any`, `none` or a named tool object), `reasoning` (`minimal` to `xhigh`), `thinkingBudgets` (object), `interleavedThinking`, `thinkingDisplay` (`summarized`, `omitted`), `requestMetadata` (string-valued object) |
 | `openai-codex-responses` | `reasoningEffort` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`), `reasoningSummary` (`auto`, `concise`, `detailed`, `off`, `on`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable), `textVerbosity` (`low`, `medium`, `high`) |
 
 A `null` summary and a missing summary both reach the adapter as no summary. A
 `null` service tier reaches the adapter as an explicit null tier and a missing
 one as no tier; the [responses page](responses.md) describes the payload built
 from them, including what a payload hook may change. Cloud response summaries also
-accept null as no summary. Other listed fields reject null.
+accept null as no summary. Other listed fields reject null. Within a cloud-conversation budget object, missing or null
+level slots use the adapter's existing budget defaults.
 
 See the [response-session guide](response-sessions.md) for adapter-owned request behavior.
 
@@ -103,6 +112,7 @@ let apis: Vec<String> = get_api_providers().into_iter().map(|provider| provider.
 assert_eq!(apis, [
     "anthropic-messages", "openai-completions", "mistral-conversations",
     "openai-responses", "azure-openai-responses", "openai-codex-responses",
+    "bedrock-converse-stream",
 ]);
 
 let model: Model = serde_json::from_value(serde_json::json!({

@@ -46,8 +46,9 @@ endpoint and profile region do not determine that display decision.
 fixed-budget Claude token limits and the selected budget slot, then calls `stream_bedrock`.
 Adaptive Claude and other models do not receive that adjustment.
 
-Text answers are reduced today. Thinking and tool-call event reduction and built-in dispatch
-registration remain in [#666](https://github.com/Orchestration-Maestro/maestro/issues/666).
+Text, thinking and tool-call updates reduce into the shared assistant message. Generic
+`stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled
+registration; [module linkage](module-linkage.md) describes callback replacement and raw extras.
 Hook-only service variants beyond the delivered text, image, reasoning, tool and cache shapes
 remain in [#740](https://github.com/Orchestration-Maestro/maestro/issues/740).
 
@@ -147,7 +148,8 @@ way, excludes destinations from proxying: `*` excludes all, `host` that host onl
 `*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
 JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
 or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
-are supported; SOCKS and proxy auto-configuration are not yet. A selected proxy that is not a
+are supported; SOCKS and proxy auto-configuration remain in
+[#871](https://github.com/Orchestration-Maestro/maestro/issues/871). A selected proxy that is not a
 URL, or whose scheme is not `http` or `https`, ends the stream with an error before the
 destination is contacted; a destination the exclusion list leaves out never reads its proxy. The
 default sender returns a redirect response as it is, without following it, so it ends the call as
@@ -178,14 +180,21 @@ stream uses the same prefixes. Other SDK failures keep the SDK's own text with i
 
 Events of a kind the SDK does not know are skipped before anything else sees them; the
 response hook waits for the first known event or the end of the stream. Events reduce into the one shared message: `messageStart` starts it, a text delta opens a text
-block for its block number when none is open and appends, `contentBlockStop` closes the block
-of that number, `messageStop` sets the stop reason (`end_turn` and `stop_sequence` stop,
+block for its block number when none is open and appends. Reasoning updates similarly open
+thinking blocks; text updates emit thinking deltas, while signatures append silently. A tool
+start appends a tool-call block, and each input fragment reparses its accumulated arguments
+through the [streamed JSON parser](../model-options.md). Deltas select the first still-open
+block with that service number and update only a matching content kind. Closing removes
+that open match, so reusing the number can create a fresh block. Public content indices
+follow arrival order rather than service numbering. Block numbers and unfinished JSON
+buffers stay private, including on successful EOF without block stops. `contentBlockStop`
+emits the selected block's text, thinking or finalized tool call; `messageStop` sets the stop reason (`end_turn` and `stop_sequence` stop,
 `max_tokens` and `model_context_window_exceeded` length, `tool_use` tool use, anything else
 error, which ends the call with `An unknown error occurred`), and `metadata` sets the usage counts, with
 the reported total unless it is zero. A message that starts with a user turn ends with
 `Unexpected assistant message start but got user message start instead`. An aborted signal ends
 the call with `Request was aborted` while the call waits for the response or an event, keeping
-the text received so far; a callback failure that happened first keeps its own message and only
+the content received so far; a callback failure that happened first keeps its own message and only
 takes the aborted stop reason.
 
 ```rust
