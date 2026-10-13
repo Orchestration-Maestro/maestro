@@ -70,3 +70,32 @@ carry a nonzero one and the byte limit, formatted as `<size>` from the record's 
 budget (50.0KB for a normal listing), when their truncation record says it cut. Only the
 result options decide expansion. Both renderers reuse the previous `Text` component of
 the row and leave it unchanged when a theme color is missing.
+
+## Search programs
+
+[`ToolsManager`](../crates/maestro-tools/src/search/tools_manager.rs) is native-only.
+Its constructor takes a binary-directory string and an optional replacement HTTP
+transport. `get_tool_path` checks that directory first, then probes `fd`, `fdfind`
+(in that order) or `rg` on `PATH` with `--version`. A candidate passing
+[`Path::exists`](https://doc.rust-lang.org/std/path/struct.Path.html#method.exists)
+wins even when it is not executable; a started probe counts regardless of exit status.
+Dropping discovery kills its running probe.
+
+`ensure_tool` returns an existing result without advice. Otherwise it reads
+`MAESTRO_OFFLINE` at the call through the [environment flag helper](text.md);
+an enabled flag skips acquisition.
+Android instead receives `pkg install fd` or `pkg install ripgrep` advice.
+
+Other hosts request the latest release from `sharkdp/fd` or `BurntSushi/ripgrep`
+on GitHub. Release lookup has a 10-second deadline and archive download a
+120-second deadline, each including the body. Supported assets are macOS/Linux
+`.tar.gz` archives extracted by system `tar`, and Windows `.zip` archives
+extracted in process. Each install stages inside a separately created directory,
+leaving an archive-named user file in the binary directory untouched. Unix
+permissions become executable before rename publication; Windows skips chmod.
+Cleanup is attempted when staging is dropped, without replacing the primary result.
+
+An acquisition failure returns `None` and writes `Failed to download <name>: <detail>`
+when an output is supplied. Optional output uses the caller's writer and colour flag:
+dim progress, yellow advice/failure, or plain lines. No output means silence; writer
+errors do not change availability. Find and grep execution are separate operations.

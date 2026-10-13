@@ -1,9 +1,11 @@
 # Text
 
 `maestro-text` is a core leaf below layer 0 with no workspace dependencies. It holds
-five stateless decisions; each caller keeps its own trimming, any-or-all semantics,
+six stateless decisions; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
+- **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
+  `true` or `yes` without trimming; absent values are false. Tools and packages share it.
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except
   U+0085, plus U+FEFF. `is_whitespace_scalar` tests membership. HTTP edge
   whitespace and JSON token whitespace are different rules and stay with their owners.

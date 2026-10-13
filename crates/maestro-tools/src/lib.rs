@@ -83,3 +83,6 @@ pub use write::{
     WriteOperations, WriteToolInput, WriteToolOptions, create_write_tool,
     create_write_tool_definition,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use search::tools_manager::{SearchTool, ToolsManager, ToolsManagerOutput};

@@ -1,0 +1,1754 @@
+{
+  "release_assets_follow_tool_platform_and_architecture": [
+    {
+      "tool": "fd",
+      "os": "macos",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-aarch64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "macos",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "macos",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "linux",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-aarch64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "linux",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "linux",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "tool": "fd",
+      "os": "windows",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-aarch64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "fd",
+      "os": "windows",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "fd",
+      "os": "windows",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "fd-v10.5.0-x86_64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "fd",
+      "os": "android",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "fd",
+      "os": "android",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "fd",
+      "os": "android",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "fd",
+      "os": "freebsd",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "fd",
+      "os": "freebsd",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "fd",
+      "os": "freebsd",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "macos",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-aarch64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "macos",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "macos",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-apple-darwin.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "linux",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-aarch64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "linux",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-unknown-linux-musl.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "linux",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-unknown-linux-musl.tar.gz"
+    },
+    {
+      "tool": "rg",
+      "os": "windows",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-aarch64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "rg",
+      "os": "windows",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "rg",
+      "os": "windows",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": "ripgrep-10.5.0-x86_64-pc-windows-msvc.zip"
+    },
+    {
+      "tool": "rg",
+      "os": "android",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "android",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "android",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "freebsd",
+      "arch": "aarch64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "freebsd",
+      "arch": "x86_64",
+      "version": "10.5.0",
+      "asset": null
+    },
+    {
+      "tool": "rg",
+      "os": "freebsd",
+      "arch": "x86",
+      "version": "10.5.0",
+      "asset": null
+    }
+  ],
+  "release_lookup_strips_one_lowercase_v": [
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"v1.2.3\"}",
+      "version": "1.2.3"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"1.2.3\"}",
+      "version": "1.2.3"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"vv1\"}",
+      "version": "v1"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"V1\"}",
+      "version": "V1"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"v\"}",
+      "version": ""
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"\"}",
+      "version": ""
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"v1.2.3-beta.1\"}",
+      "version": "1.2.3-beta.1"
+    }
+  ],
+  "release_lookup_reads_the_last_tag_name_text": [
+    {
+      "status": 200,
+      "body": "{}",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":null}",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":12}",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "[\"v1\"]",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":{}}",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "{\"other\":{},\"tag_name\":\"v2\"}",
+      "version": "2"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":null,\"tag_name\":\"v3\"}",
+      "version": "3"
+    },
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"v3\",\"tag_name\":null}",
+      "failure": null
+    },
+    {
+      "status": 200,
+      "body": "{",
+      "failure": null
+    }
+  ],
+  "release_lookup_accepts_only_success_statuses": [
+    {
+      "status": 200,
+      "body": "{\"tag_name\":\"v2\"}",
+      "version": "2"
+    },
+    {
+      "status": 201,
+      "body": "{\"tag_name\":\"v2\"}",
+      "version": "2"
+    },
+    {
+      "status": 299,
+      "body": "{\"tag_name\":\"v2\"}",
+      "version": "2"
+    },
+    {
+      "status": 300,
+      "body": "{\"tag_name\":\"v2\"}",
+      "failure": "GitHub API error: 300"
+    },
+    {
+      "status": 403,
+      "body": "{\"tag_name\":\"v2\"}",
+      "failure": "GitHub API error: 403"
+    },
+    {
+      "status": 404,
+      "body": "{\"tag_name\":\"v2\"}",
+      "failure": "GitHub API error: 404"
+    },
+    {
+      "status": 429,
+      "body": "{\"tag_name\":\"v2\"}",
+      "failure": "GitHub API error: 429"
+    },
+    {
+      "status": 500,
+      "body": "{\"tag_name\":\"v2\"}",
+      "failure": "GitHub API error: 500"
+    }
+  ],
+  "recursive_search_prefers_files_then_the_last_directory": [
+    {
+      "files": [
+        "fd"
+      ],
+      "links": [],
+      "found": "fd"
+    },
+    {
+      "files": [
+        "a/fd",
+        "z/fd"
+      ],
+      "links": [],
+      "found": "z/fd"
+    },
+    {
+      "files": [
+        "a/z/fd",
+        "b/fd"
+      ],
+      "links": [],
+      "found": "b/fd"
+    },
+    {
+      "files": [
+        "a/not-fd"
+      ],
+      "links": [],
+      "found": null
+    },
+    {
+      "files": [
+        "a/fd",
+        "fd"
+      ],
+      "links": [],
+      "found": "fd"
+    },
+    {
+      "files": [
+        "sub/fd",
+        "target"
+      ],
+      "links": [
+        [
+          "fd",
+          "target"
+        ]
+      ],
+      "found": "sub/fd"
+    }
+  ],
+  "windows_binary_directory_entries_carry_the_exe_suffix": [
+    {
+      "kind": "file",
+      "found": "<BIN>/fd.exe"
+    },
+    {
+      "kind": "directory",
+      "found": "<BIN>/fd.exe"
+    },
+    {
+      "kind": "symlink",
+      "found": "<BIN>/fd.exe"
+    }
+  ],
+  "missing_programs_get_platform_advice_or_a_lookup_failure": [
+    {
+      "id": "android-fd-advice",
+      "tool": "fd",
+      "os": "android",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "fd not found. Install with: pkg install fd"
+      ],
+      "last_line_prefix": null,
+      "requests": []
+    },
+    {
+      "id": "android-fd-advice-silent",
+      "tool": "fd",
+      "os": "android",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": []
+    },
+    {
+      "id": "freebsd-fd-unsupported",
+      "tool": "fd",
+      "os": "freebsd",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "fd not found. Downloading...",
+        "Failed to download fd: Unsupported platform: freebsd/x86_64"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "freebsd-fd-unsupported-silent",
+      "tool": "fd",
+      "os": "freebsd",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "linux-fd-lookup-failure",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 403,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "fd not found. Downloading...",
+        "Failed to download fd: GitHub API error: 403"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "linux-fd-lookup-failure-silent",
+      "tool": "fd",
+      "os": "linux",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 403,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "android-rg-advice",
+      "tool": "rg",
+      "os": "android",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "ripgrep not found. Install with: pkg install ripgrep"
+      ],
+      "last_line_prefix": null,
+      "requests": []
+    },
+    {
+      "id": "android-rg-advice-silent",
+      "tool": "rg",
+      "os": "android",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": []
+    },
+    {
+      "id": "freebsd-rg-unsupported",
+      "tool": "rg",
+      "os": "freebsd",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "ripgrep not found. Downloading...",
+        "Failed to download ripgrep: Unsupported platform: freebsd/x86_64"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "freebsd-rg-unsupported-silent",
+      "tool": "rg",
+      "os": "freebsd",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "linux-rg-lookup-failure",
+      "tool": "rg",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 403,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [
+        "ripgrep not found. Downloading...",
+        "Failed to download ripgrep: GitHub API error: 403"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    },
+    {
+      "id": "linux-rg-lookup-failure-silent",
+      "tool": "rg",
+      "os": "linux",
+      "silent": true,
+      "color": false,
+      "tag": "v1",
+      "api_status": 403,
+      "download": null,
+      "preexisting": null,
+      "bin_exists": false,
+      "result": null,
+      "binary": null,
+      "remaining": null,
+      "lines": [],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        }
+      ]
+    }
+  ],
+  "archive_downloads_accept_only_success_statuses": [
+    {
+      "id": "linux-download-status-200",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-download-status-204",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 204,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-download-status-205",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 205,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-download-status-206",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 206,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-download-status-300",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 300,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading...",
+        "Failed to download fd: Failed to download: 300"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-download-status-404",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 404,
+        "text": "archive bytes"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading...",
+        "Failed to download fd: Failed to download: 404"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "linux_archives_publish_an_executable_binary": [
+    {
+      "id": "linux-root-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-root.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "root",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-named-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-named.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "named",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-priority-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-priority.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "named",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-recursive-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-recursive.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "last",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-spaces-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-spaces.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "spaces",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-stored-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-stored.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "stored",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-missing-bin-dir-install",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-root.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": false,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "root",
+        "mode": 493
+      },
+      "remaining": [
+        "fd"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-ripgrep-prefix-free",
+      "tool": "rg",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "14.1.1",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-ripgrep.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/rg",
+      "binary": {
+        "contents": "ripgrep binary",
+        "mode": 493
+      },
+      "remaining": [
+        "rg"
+      ],
+      "lines": [
+        "ripgrep not found. Downloading...",
+        "ripgrep installed to <BIN>/rg"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/BurntSushi/ripgrep/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "windows_archives_publish_the_exe_unchanged": [
+    {
+      "id": "windows-root-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-root.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "root",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-named-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-named.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "named",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-priority-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-priority.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "named",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-recursive-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-recursive.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "last",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-spaces-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-spaces.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "spaces",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-stored-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-stored.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "stored",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd.exe"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "failed_extractions_publish_nothing": [
+    {
+      "id": "linux-missing-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-missing.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Binary not found in archive: expected fd under <BIN>/extract_tmp_fd_<PID>_",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-broken-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-broken.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-traversal-archive",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-traversal.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Failed to extract fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-missing-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-missing.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: Binary not found in archive: expected fd.exe under <BIN>/extract_tmp_fd_<PID>_",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-broken-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-broken.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "windows-traversal-archive",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-traversal.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "failed_download_leaves_no_archive_behind": [
+    {
+      "id": "linux-body-stream-failure",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "broken_after": "partial"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "fd not found. Downloading..."
+      ],
+      "last_line_prefix": "Failed to download fd: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1/fd-v1-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "user_file_named_like_the_asset_survives_an_install": [
+    {
+      "id": "linux-user-file-named-like-the-asset",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": false,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-root.tar.gz"
+      },
+      "preexisting": "fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+      "bin_exists": true,
+      "result": "<BIN>/fd",
+      "binary": {
+        "contents": "root",
+        "mode": 493
+      },
+      "remaining": [
+        "fd",
+        "fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz"
+      ],
+      "lines": [
+        "fd not found. Downloading...",
+        "fd installed to <BIN>/fd"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    }
+  ],
+  "progress_styles_follow_the_color_flag": [
+    {
+      "id": "windows-root-styled",
+      "tool": "fd",
+      "os": "windows",
+      "silent": false,
+      "color": true,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "windows-root.zip"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": "<BIN>/fd.exe",
+      "binary": {
+        "contents": "root",
+        "mode": 384
+      },
+      "remaining": [
+        "fd.exe"
+      ],
+      "lines": [
+        "\u001b[2mfd not found. Downloading...\u001b[0m",
+        "\u001b[2mfd installed to <BIN>/fd.exe\u001b[0m"
+      ],
+      "last_line_prefix": null,
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-pc-windows-msvc.zip",
+          "user_agent": null
+        }
+      ]
+    },
+    {
+      "id": "linux-broken-styled",
+      "tool": "fd",
+      "os": "linux",
+      "silent": false,
+      "color": true,
+      "tag": "v1.0.0",
+      "api_status": 200,
+      "download": {
+        "status": 200,
+        "archive": "linux-broken.tar.gz"
+      },
+      "preexisting": null,
+      "bin_exists": true,
+      "result": null,
+      "binary": null,
+      "remaining": [],
+      "lines": [
+        "\u001b[2mfd not found. Downloading...\u001b[0m"
+      ],
+      "last_line_prefix": "\u001b[33mFailed to download fd: Failed to extract fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz: ",
+      "requests": [
+        {
+          "url": "https://api.github.com/repos/sharkdp/fd/releases/latest",
+          "user_agent": "maestro-coding-agent"
+        },
+        {
+          "url": "https://github.com/sharkdp/fd/releases/download/v1.0.0/fd-v1.0.0-x86_64-unknown-linux-gnu.tar.gz",
+          "user_agent": null
+        }
+      ]
+    }
+  ]
+}
