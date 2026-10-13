@@ -1435,6 +1435,96 @@
     }
   },
   {
+    "test": "missing_empty_and_duplicate_ids_get_unique_generated_ids",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"repeated\",\"name\":\"inspect\",\"args\":{\"which\":\"first\"}}}]}}]}",
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"repeated\",\"name\":\"inspect\",\"args\":{\"which\":\"second\"}}}]}}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "repeated",
+            "name": "inspect",
+            "arguments": {
+              "which": "first"
+            }
+          },
+          {
+            "type": "toolCall",
+            "id": "@generated:inspect:1",
+            "name": "inspect",
+            "arguments": {
+              "which": "second"
+            }
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"which\":\"first\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "repeated",
+            "name": "inspect",
+            "arguments": {
+              "which": "first"
+            }
+          }
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 1
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 1,
+          "delta": "{\"which\":\"second\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 1,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "@generated:inspect:1",
+            "name": "inspect",
+            "arguments": {
+              "which": "second"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
     "test": "tool_calls_keep_server_ids_and_distinct_arguments",
     "input": {
       "chunks": [
@@ -4123,6 +4213,67 @@
     }
   },
   {
+    "test": "existing_tool_call_overrides_each_recognized_finish_reason",
+    "input": {
+      "chunks": [
+        "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"id\":\"earlier-call\",\"name\":\"inspect\",\"args\":{\"which\":\"earlier\"}}}]}}]}",
+        "{\"candidates\":[{\"finishReason\":\"MAX_TOKENS\"}]}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "earlier-call",
+            "name": "inspect",
+            "arguments": {
+              "which": "earlier"
+            }
+          }
+        ],
+        "stopReason": "toolUse",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      },
+      "events": [
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"which\":\"earlier\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0,
+          "toolCall": {
+            "type": "toolCall",
+            "id": "earlier-call",
+            "name": "inspect",
+            "arguments": {
+              "which": "earlier"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
     "test": "tool_without_finish_reason_keeps_the_previous_stop_outcome",
     "input": {
       "chunks": [
@@ -4738,6 +4889,52 @@
           "content": "cost"
         }
       ]
+    }
+  },
+  {
+    "test": "usage_updates_without_candidates_and_after_selected_parts",
+    "input": {
+      "chunks": [
+        "{\"responseId\":\"before-part-error\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"visible-before-error\"},null]}}],\"usageMetadata\":{\"promptTokenCount\":17,\"cachedContentTokenCount\":3,\"candidatesTokenCount\":7,\"thoughtsTokenCount\":2,\"totalTokenCount\":41}}"
+      ]
+    },
+    "expected": {
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "visible-before-error"
+          }
+        ],
+        "stopReason": "stop",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "responseId": "before-part-error"
+      },
+      "events": [
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "visible-before-error"
+        }
+      ],
+      "error": "@native-error"
     }
   },
   {

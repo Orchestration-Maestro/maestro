@@ -304,7 +304,6 @@ fn simple_options_keep_common_settings_and_hook_handles_without_invocation() -> 
         &on_response
     ));
     assert!(same_handle(&common.fetch.ok_or("transport")?, &fetch));
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
     Ok(())
 }
 

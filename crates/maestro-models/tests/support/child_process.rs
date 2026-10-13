@@ -12,8 +12,11 @@ pub fn child_case() -> Option<String> {
     std::env::var(CASE).ok()
 }
 
-/// Run `test` again in a child whose environment is `variables`, the case marker and the
-/// coverage profile path, returning what the child wrote.
+/// Run `test` again in a child whose environment holds only `variables` and the case marker,
+/// plus `LLVM_PROFILE_FILE` when this process has one, returning what the child wrote.
+///
+/// A `variables` entry replaces the inherited profile path, and the case marker replaces a
+/// `variables` entry of the same name.
 pub fn capture(test: &str, case: &str, variables: &[(&str, &str)]) -> TestResult<Output> {
     let mut command = Command::new(std::env::current_exe()?);
     command.env_clear();

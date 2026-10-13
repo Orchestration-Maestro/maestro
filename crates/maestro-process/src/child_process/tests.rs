@@ -475,6 +475,26 @@ fn escalation_checks_live_state_before_forced_kill() {
 }
 
 #[test]
+fn termination_requests_signal_only_a_running_child() {
+    runtime().block_on(async {
+        let mut reaped = CapturedChild::spawn(&mut Command::new("true")).unwrap();
+        reaped.child.wait().await.unwrap();
+        assert!(
+            !reaped.request_termination(),
+            "a reaped child is not signalled"
+        );
+
+        let (mut running, mut socket) = stubborn();
+        assert!(
+            running.request_termination(),
+            "a running child is signalled"
+        );
+        read_signal_answer(&mut socket);
+        running.terminate(Termination::Kill).await.unwrap();
+    });
+}
+
+#[test]
 fn wait_escalation_timer_kills_exactly_after_the_selected_delay() {
     // Idle paused-clock runtime jumps to the next armed timer: the wait ends exactly
     // when the escalation timer, armed by the request, fires.

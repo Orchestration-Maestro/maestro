@@ -342,15 +342,18 @@ fn native_child_abort_waits_for_cleanup() {
 fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
     runtime().block_on(async {
     use maestro_tui::autocomplete::AutocompleteOperations;
+    use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
+    use std::task::Poll;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let tree = Tree::new().unwrap();
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
         .await
         .unwrap();
+    // The direct child reports its process id, leaves a descendant holding both pipes and exits.
     let script = child_script(
         &tree,
         &format!(
-            "import os,socket\ndef hold(role):\n    s=socket.create_connection(('127.0.0.1',{}))\n    s.sendall(b'READY'+role); s.recv(1)\nif os.fork()==0:\n    hold(b'D'); os._exit(0)\nhold(b'P')",
+            "import os,socket\ndef connect(greeting):\n    s=socket.create_connection(('127.0.0.1',{}))\n    s.sendall(greeting); return s\nconnect(b'%d' % os.getpid()).close()\nif os.fork()==0:\n    connect(b'D').recv(1); os._exit(0)",
             listener.local_addr().unwrap().port()
         ),
     );
@@ -358,28 +361,36 @@ fn native_cancelled_search_does_not_wait_for_descendant_pipes() {
     let signal = Cancellation::new();
     let run = operations.run_fd(&script, &[], &signal);
     tokio::pin!(run);
-    let mut sockets = vec![];
-    let ready = async {
-        while sockets.len() < 2 {
-            let (mut socket, _) = listener.accept().await.unwrap();
-            let mut ready = [0; 6];
-            socket.read_exact(&mut ready).await.unwrap();
-            assert_eq!(&ready[..5], b"READY");
-            sockets.push((ready[5], socket));
-        }
+    let greetings = async {
+        let (mut child, _) = listener.accept().await.unwrap();
+        let mut pid = String::new();
+        child.read_to_string(&mut pid).await.unwrap();
+        let (mut descendant, _) = listener.accept().await.unwrap();
+        assert_eq!(descendant.read_u8().await.unwrap(), b'D');
+        (pid.parse().unwrap(), descendant)
     };
-    tokio::select! {
+    let (pid, mut descendant) = tokio::select! {
         _ = &mut run => panic!("search ended before cancellation"),
-        () = ready => {}
+        greetings = greetings => greetings,
+    };
+    // Once the direct child has exited, cancellation reaps it without waiting, so one poll
+    // after the abort settles a search that ignores the descendant's pipes. ECHILD means the
+    // search already reaped the child.
+    match waitid(
+        WaitId::Pid(Pid::from_raw(pid).unwrap()),
+        WaitIdOptions::EXITED | WaitIdOptions::NOWAIT,
+    ) {
+        Ok(_) | Err(rustix::io::Errno::CHILD) => {}
+        Err(error) => panic!("waiting for the direct child: {error}"),
     }
     signal.abort();
-    // The descendant still holds its pipes here; a search that waited for them
-    // would never settle until the release below.
-    let result = run.as_mut().await;
-    let (_, mut descendant) = sockets.remove(sockets.iter().position(|(role, _)| *role == b'D').unwrap());
-    let _ = descendant.write_all(b"go").await;
+    let polled = std::future::poll_fn(|cx| Poll::Ready(run.as_mut().poll(cx))).await;
+    descendant.write_all(b"g").await.unwrap();
     let mut rest = vec![];
-    let _ = descendant.read_to_end(&mut rest).await;
+    descendant.read_to_end(&mut rest).await.unwrap();
+    let Poll::Ready(result) = polled else {
+        panic!("cancellation waited for the descendant's pipes");
+    };
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::Interrupted);
     });
 }
