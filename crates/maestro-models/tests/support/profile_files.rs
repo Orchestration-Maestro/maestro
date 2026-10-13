@@ -233,6 +233,9 @@ impl Workdir {
     /// The token cache file a row starts with: valid, expired, or expired with every field
     /// that would let a refreshing provider renew it.
     fn sso_cache_text(input: &Input) -> String {
+        if input.session_refresh.is_some() {
+            return r#"{"accessToken":"expired-sso-token","expiresAt":"2000-01-01T00:00:00Z","clientId":"controlled-client","clientSecret":"controlled-secret","refreshToken":"controlled-refresh","registrationExpiresAt":"2099-01-01T00:00:00Z","region":"us-east-1","startUrl":"https://controlled.awsapps.com/start"}"#.to_owned();
+        }
         match input.sso.as_deref() {
             Some("expired") => {
                 r#"{"accessToken":"expired-sso-token","expiresAt":"2000-01-01T00:00:00Z"}"#
@@ -326,8 +329,11 @@ impl Workdir {
     fn selected_fields(&self, input: &Input) -> String {
         let mut fields = String::new();
         if input.keys.is_some() {
-            fields +=
-                "aws_access_key_id = profile-key\naws_secret_access_key = controlled-secret\n";
+            let key = input.static_key.as_deref().unwrap_or("profile-key");
+            let _ = writeln!(
+                fields,
+                "aws_access_key_id = {key}\naws_secret_access_key = controlled-secret"
+            );
         }
         if input.session_token.is_some() {
             fields += "aws_session_token = static-session-token\n";

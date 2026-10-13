@@ -255,7 +255,8 @@ fn answer_connection(
     connection.flush()
 }
 
-type Handler = std::sync::Arc<dyn Fn(&Received) -> Reply + Send + Sync>;
+/// One admitted connection, handled before the accept owner joins it.
+type Handler = std::sync::Arc<dyn Fn(TcpStream) -> std::io::Result<()> + Send + Sync>;
 
 /// Accept connections until `stopped` is set, then wait for every admitted request; the result
 /// is the first failure, after all of them were waited for.
@@ -274,10 +275,11 @@ fn serve_until_stopped(
                 break;
             }
         };
+        if stopped.load(std::sync::atomic::Ordering::SeqCst) {
+            break;
+        }
         let handler = std::sync::Arc::clone(handler);
-        connections.push(std::thread::spawn(move || {
-            answer_connection(connection, &*handler)
-        }));
+        connections.push(std::thread::spawn(move || handler(connection)));
     }
     connections
         .into_iter()
@@ -293,7 +295,21 @@ fn serve_until_stopped(
 pub fn serve_routed(
     handler: impl Fn(&Received) -> Reply + Send + Sync + 'static,
 ) -> TestResult<Routed> {
-    let handler: Handler = std::sync::Arc::new(handler);
+    start_routed(std::sync::Arc::new(move |connection| {
+        answer_connection(connection, &handler)
+    }))
+}
+
+/// Close each admitted connection before HTTP parsing, recording its admission.
+pub fn serve_closed(on_accept: impl Fn() + Send + Sync + 'static) -> TestResult<Routed> {
+    start_routed(std::sync::Arc::new(move |connection| {
+        on_accept();
+        connection.shutdown(std::net::Shutdown::Both)
+    }))
+}
+
+/// Start the shared accept/join owner with a connection handler.
+fn start_routed(handler: Handler) -> TestResult<Routed> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
     let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));

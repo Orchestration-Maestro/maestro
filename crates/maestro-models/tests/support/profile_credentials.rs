@@ -1,12 +1,10 @@
 //! Profile credential rows: each runs the public stream in a child whose environment and files
 //! come from the row, against services on a loopback server, and compares what both sides saw.
 
-use std::fmt::Write as _;
-use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
 
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-use maestro_models::{Fetch, StreamOptions};
+
 use serde::Deserialize;
 
 use crate::TestResult;
@@ -74,6 +72,7 @@ pub struct Input {
     pub inline_sso: Option<On>,
     pub instance: Option<On>,
     pub keys: Option<On>,
+    pub static_key: Option<String>,
     pub login: Option<Toggle>,
     pub message: Option<String>,
     pub mfa: Option<On>,
@@ -88,6 +87,7 @@ pub struct Input {
     pub session_decoy: Option<On>,
     pub session_omit: Option<String>,
     pub session_token: Option<On>,
+    pub session_refresh: Option<On>,
     pub source: Option<String>,
     pub source_profile: Option<String>,
     pub split: Option<On>,
@@ -168,46 +168,17 @@ fn cause(id: &str) -> Option<&'static str> {
     })
 }
 
-/// Tell the services that the conversation reached Bedrock, with the headers it signed with.
-fn report(endpoint: &str, request: &maestro_models::HttpRequest) {
-    let mut head =
-        String::from("POST /bedrock HTTP/1.1\r\ncontent-length: 0\r\nconnection: close\r\n");
-    for name in ["authorization", "x-amz-security-token"] {
-        if let Some(value) = request.headers.get(name) {
-            let _ = write!(head, "{name}: {value}\r\n");
-        }
-    }
-    head += "\r\n";
-    let address = endpoint.trim_start_matches("http://");
-    if let Ok(mut connection) = std::net::TcpStream::connect(address)
-        && connection.write_all(head.as_bytes()).is_ok()
-    {
-        connection.read_to_end(&mut Vec::new()).ok();
-    }
-}
-
-/// The conversation of a row inside the child: stream through a sender that reports to the
-/// services, then check how the stream ended.
+/// Run the conversation against the real loopback service and check its terminal events.
 async fn converse(row: &Row) -> TestResult {
     let endpoint = std::env::var("AWS_EC2_METADATA_SERVICE_ENDPOINT")?;
-    let scripted = bedrock::serve(bedrock::answer("answer")?);
-    let inner = scripted.fetch.clone();
-    let fetch: Fetch = Arc::new(move |request| {
-        report(&endpoint, &request);
-        inner(request)
-    });
     let options = BedrockOptions {
-        common: StreamOptions {
-            fetch: Some(fetch),
-            ..StreamOptions::default()
-        },
         region: Some("us-east-1".to_owned()),
         profile: (row.input.route.as_deref().unwrap_or("explicit") == "explicit")
             .then(|| "selected".to_owned()),
         ..BedrockOptions::default()
     };
     let stream = stream_bedrock(
-        bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?,
+        bedrock::model(&endpoint)?,
         bedrock::context("question")?,
         Some(options),
     );

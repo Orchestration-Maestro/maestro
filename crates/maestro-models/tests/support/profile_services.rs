@@ -244,10 +244,32 @@ fn token_refresh(input: &Input, request: &Received, log: &mut Log) -> Reply {
     )
 }
 
-/// Answer one request and record it.
-fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
+/// Renew a named session or deny its token exchange.
+fn oidc_refresh(input: &Input, log: &mut Log) -> Reply {
+    log.sequence.push("oidc".to_owned());
+    if input.session_refresh.is_some() && input.deny.is_none() {
+        json(
+            200,
+            r#"{"accessToken":"controlled-sso-token","refreshToken":"renewed-refresh","expiresIn":3600,"tokenType":"Bearer"}"#,
+        )
+    } else {
+        json(400, r#"{"error":"invalid_grant"}"#)
+    }
+}
+
+/// Normalize an absolute-form proxy target or retain the origin-form target.
+pub fn target(request: &Received) -> String {
     let target = request.request_line.split(' ').nth(1).unwrap_or_default();
-    let (path, query) = target.split_once('?').unwrap_or((target, ""));
+    url::Url::parse(target).map_or_else(
+        |_| target.to_owned(),
+        |url| url[url::Position::BeforePath..].to_owned(),
+    )
+}
+
+/// Answer one request and record it.
+pub fn answer(input: &Input, request: &Received, log: &mut Log, body: &[u8]) -> Reply {
+    let target = target(request);
+    let (path, query) = target.split_once('?').unwrap_or((&target, ""));
     match path {
         "/container" => {
             log.sequence.push("container".to_owned());
@@ -277,17 +299,19 @@ fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
             sso_credentials(input, request, query, log)
         }
         "/v1/token" => token_refresh(input, request, log),
-        "/token" => {
-            log.sequence.push("oidc".to_owned());
-            json(400, r#"{"error":"invalid_grant"}"#)
-        }
-        "/bedrock" => {
+        "/token" => oidc_refresh(input, log),
+        _ if path == "/bedrock" || path.ends_with("/converse-stream") => {
             log.sequence.push("bedrock".to_owned());
             log.sent = Some(Sent {
                 authorization: request.header("authorization").map(undated),
                 security_token: request.header("x-amz-security-token").map(str::to_owned),
             });
-            text(200, "")
+            Reply {
+                content_type: "application/vnd.amazon.eventstream",
+                headers: &[("x-amzn-requestid", "bedrock-response")],
+                body: body.to_vec(),
+                ..text(200, "")
+            }
         }
         _ => role_token(input, request, log),
     }
@@ -295,11 +319,12 @@ fn answer(input: &Input, request: &Received, log: &mut Log) -> Reply {
 
 /// Start the services of a row; `log` receives what they see.
 pub fn serve(input: &Input, log: &Arc<Mutex<Log>>) -> TestResult<Routed> {
+    let body = crate::bedrock::answer("answer")?.concat();
     let (input, log) = (input.clone(), Arc::clone(log));
     serve_routed(move |request| {
         let mut log = log
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        answer(&input, request, &mut log)
+        answer(&input, request, &mut log, &body)
     })
 }

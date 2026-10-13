@@ -31,6 +31,8 @@ mod loopback;
 mod profile_credentials;
 #[path = "support/profile_files.rs"]
 mod profile_files;
+#[path = "support/profile_routes.rs"]
+mod profile_routes;
 #[path = "support/profile_services.rs"]
 mod profile_services;
 #[allow(
@@ -353,4 +355,69 @@ fn routed_server_reports_a_failed_connection_after_joining() -> TestResult {
 #[test]
 fn duplicate_fixture_ids_are_rejected() -> TestResult {
     profile_credentials::duplicate_ids_are_rejected()
+}
+
+#[test]
+fn login_credentials_follow_proxy_and_bypass() -> TestResult {
+    profile_routes::check("login_credentials_follow_proxy_and_bypass")
+}
+
+#[test]
+fn role_credentials_follow_proxy_and_bypass() -> TestResult {
+    profile_routes::check("role_credentials_follow_proxy_and_bypass")
+}
+
+#[test]
+fn web_credentials_follow_proxy_and_bypass() -> TestResult {
+    profile_routes::check("web_credentials_follow_proxy_and_bypass")
+}
+
+#[test]
+fn sso_credentials_follow_proxy_and_bypass() -> TestResult {
+    profile_routes::check("sso_credentials_follow_proxy_and_bypass")
+}
+
+#[test]
+fn oidc_credentials_follow_proxy_and_bypass() -> TestResult {
+    profile_routes::check("oidc_credentials_follow_proxy_and_bypass")
+}
+
+#[test]
+fn environment_web_identity_uses_the_shared_route() -> TestResult {
+    profile_routes::check("environment_web_identity_uses_the_shared_route")
+}
+
+#[test]
+fn metadata_credentials_stay_direct_with_proxy() -> TestResult {
+    profile_routes::check("metadata_credentials_stay_direct_with_proxy")
+}
+
+#[test]
+fn credential_https_endpoints_select_https_proxy() -> TestResult {
+    profile_routes::check("credential_https_endpoints_select_https_proxy")
+}
+
+#[test]
+fn credential_routes_are_selected_per_destination() -> TestResult {
+    profile_routes::check("credential_routes_are_selected_per_destination")
+}
+
+#[test]
+fn sso_services_work_when_direct_access_is_refused() -> TestResult {
+    profile_routes::check("sso_services_work_when_direct_access_is_refused")
+}
+
+#[test]
+fn credential_service_failures_keep_their_chain_outcome() -> TestResult {
+    profile_routes::check("credential_service_failures_keep_their_chain_outcome")
+}
+
+#[test]
+fn non_network_authentication_does_not_contact_credential_services() -> TestResult {
+    profile_routes::check("non_network_authentication_does_not_contact_credential_services")
+}
+
+#[test]
+fn credential_services_reuse_the_supplied_sender() -> TestResult {
+    profile_routes::check("credential_services_reuse_the_supplied_sender")
 }
