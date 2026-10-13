@@ -1,5 +1,8 @@
 //! Region, endpoint and authentication choices, and the SDK client that sends the request.
 
+#[cfg(test)]
+mod tests;
+
 use std::collections::BTreeMap;
 use std::fmt;
 use std::pin::Pin;
@@ -246,29 +249,36 @@ pub(super) struct Service {
     observed: Arc<Mutex<Option<Observed>>>,
 }
 
-/// Pick the sender: the caller's, otherwise the default client shaped by the settings.
-fn transport(options: &BedrockOptions, settings: &Settings, env: Environment) -> Fetch {
-    options.common.fetch.clone().unwrap_or_else(|| {
-        let env = Arc::new(env);
-        let proxy: Option<ProxySelector> = settings
-            .proxy
-            .then(|| Arc::new(move |url: &Url| env.proxy_for(url)) as ProxySelector);
-        configured_fetch(Route {
-            proxy,
-            http1_only: settings.http1,
-        })
-    })
+/// Default client routing shaped by the settings.
+fn transport(settings: &Settings, env: Environment) -> Route {
+    let env = Arc::new(env);
+    let proxy: Option<ProxySelector> = settings
+        .proxy
+        .then(|| Arc::new(move |url: &Url| env.proxy_for(url)) as ProxySelector);
+    Route {
+        proxy,
+        http1_only: settings.http1,
+        ..Route::default()
+    }
 }
 
 /// Adapt a sender to the native SDK through the single connector implementation.
 fn bridge(
-    fetch: Fetch,
+    fetch: Option<Fetch>,
+    route: Route,
     signal: Option<Cancellation>,
     observed: Arc<Mutex<Option<Observed>>>,
 ) -> SharedHttpClient {
-    http_client_fn(move |_, _| {
+    http_client_fn(move |settings, _| {
+        let fetch = fetch.clone().unwrap_or_else(|| {
+            configured_fetch(Route {
+                connect_timeout: settings.connect_timeout(),
+                read_timeout: settings.read_timeout(),
+                ..route.clone()
+            })
+        });
         aws_smithy_runtime_api::client::http::SharedHttpConnector::new(Bridge {
-            fetch: Arc::clone(&fetch),
+            fetch,
             signal: signal.clone(),
             observed: Arc::clone(&observed),
         })
@@ -284,8 +294,12 @@ pub(super) async fn connect(
 ) -> Service {
     let observed = Arc::new(Mutex::new(None));
     let empty_profile = env.0.get("AWS_PROFILE").is_some_and(String::is_empty);
-    let fetch = transport(options, settings, env);
-    let http = bridge(fetch, options.common.signal.clone(), Arc::clone(&observed));
+    let http = bridge(
+        options.common.fetch.clone(),
+        transport(settings, env),
+        options.common.signal.clone(),
+        Arc::clone(&observed),
+    );
     let mut loader = aws_config::defaults(BehaviorVersion::latest());
     if let Some(profile) = &settings.profile {
         loader = loader.profile_name(profile);
@@ -303,11 +317,7 @@ pub(super) async fn connect(
     }
     config = match &settings.auth {
         Auth::Chain => {
-            let direct = bridge(
-                configured_fetch(Route::default()),
-                None,
-                Arc::new(Mutex::new(None)),
-            );
+            let direct = bridge(None, Route::default(), None, Arc::new(Mutex::new(None)));
             config.credentials_provider(default_provider(
                 settings.profile.as_deref(),
                 &shared,

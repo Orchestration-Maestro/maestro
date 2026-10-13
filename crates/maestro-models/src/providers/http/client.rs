@@ -54,13 +54,17 @@ pub(crate) type ProxySelector =
 
 /// Client choices a provider makes for its own requests.
 #[cfg(not(target_arch = "wasm32"))]
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(crate) struct Route {
     /// Proxy chosen per destination, checked before each request is sent so that an unusable
     /// choice fails it; without one the client uses none, whatever the environment.
     pub(crate) proxy: Option<ProxySelector>,
     /// Whether the connection speaks HTTP/1 only.
     pub(crate) http1_only: bool,
+    /// Deadline for establishing a connection, when supplied by the provider.
+    pub(crate) connect_timeout: Option<std::time::Duration>,
+    /// Deadline for each response read, when supplied by the provider.
+    pub(crate) read_timeout: Option<std::time::Duration>,
 }
 
 /// Build a sender over a private client that follows `route` and returns redirects unchanged,
@@ -71,6 +75,12 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
         .retry(reqwest::retry::never())
         .redirect(reqwest::redirect::Policy::none())
         .no_proxy();
+    if let Some(timeout) = route.connect_timeout {
+        builder = builder.connect_timeout(timeout);
+    }
+    if let Some(timeout) = route.read_timeout {
+        builder = builder.read_timeout(timeout);
+    }
     let check = route.proxy.clone();
     if let Some(select) = route.proxy {
         builder = builder.proxy(reqwest::Proxy::custom(move |url| {
