@@ -10,10 +10,10 @@ maestro-app = { path = "../maestro-app" }
 maestro-tui = { path = "../maestro-tui" }
 maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
+serde_json.workspace = true
 
 [dev-dependencies]
 serde.workspace = true
-serde_json.workspace = true
 
 [lints]
 workspace = true

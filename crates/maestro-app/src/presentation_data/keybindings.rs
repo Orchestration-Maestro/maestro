@@ -1,0 +1,58 @@
+//! Application action definitions extending the terminal toolkit defaults.
+use maestro_tui::{KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, TUI_KEYBINDINGS};
+use std::sync::LazyLock;
+
+/// Toolkit actions extended with tree-filter actions for caller-installed managers.
+pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
+    let mut definitions = TUI_KEYBINDINGS.clone();
+    definitions.extend(
+        [
+            (
+                "app.tree.filter.default",
+                "ctrl+d",
+                "Tree filter: default view",
+            ),
+            (
+                "app.tree.filter.noTools",
+                "ctrl+t",
+                "Tree filter: hide tool results",
+            ),
+            (
+                "app.tree.filter.userOnly",
+                "ctrl+u",
+                "Tree filter: user messages only",
+            ),
+            (
+                "app.tree.filter.labeledOnly",
+                "ctrl+l",
+                "Tree filter: labeled entries only",
+            ),
+            (
+                "app.tree.filter.all",
+                "ctrl+a",
+                "Tree filter: show all entries",
+            ),
+            (
+                "app.tree.filter.cycleForward",
+                "ctrl+o",
+                "Tree filter: cycle forward",
+            ),
+            (
+                "app.tree.filter.cycleBackward",
+                "shift+ctrl+o",
+                "Tree filter: cycle backward",
+            ),
+        ]
+        .into_iter()
+        .map(|(id, key, description)| {
+            (
+                id.to_owned(),
+                KeybindingDefinition {
+                    default_keys: KeybindingKeys::Single(key.to_owned()),
+                    description: Some(description.to_owned()),
+                },
+            )
+        }),
+    );
+    definitions
+});
