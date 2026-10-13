@@ -301,8 +301,9 @@ impl<'a> Walk<'a> {
     }
 
     /// SSO credentials; every failure once SSO is selected is final. A named session supplies
-    /// the start URL and region and nothing else, and its token is renewed natively; a profile
-    /// with only a start URL sends its cached token as it is, without renewing it.
+    /// the start URL and region and nothing else; a profile with only a start URL uses the legacy
+    /// token cache. This module checks no token expiry itself; the native SSO provider owns token
+    /// renewal and its failures.
     async fn sso(&self, profile: &Profile) -> provider::Result {
         let session_name = field(profile, "sso_session");
         let session = session_name

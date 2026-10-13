@@ -98,17 +98,9 @@ impl Workdir {
     }
 
     fn write_sso_cache(&self, input: &Input) -> TestResult {
-        let cache = self.0.join(".aws/sso/cache");
-        std::fs::create_dir_all(&cache)?;
-        let name = if input.sso.as_deref() == Some("session") {
-            SESSION_CACHE
-        } else {
-            START_URL_CACHE
-        };
-        std::fs::write(
-            cache.join(format!("{name}.json")),
-            Self::sso_cache_text(input),
-        )?;
+        let path = self.sso_cache_path(input);
+        std::fs::create_dir_all(self.0.join(".aws/sso/cache"))?;
+        std::fs::write(path, Self::sso_cache_text(input))?;
         Ok(())
     }
 
@@ -127,15 +119,19 @@ impl Workdir {
         .to_owned()
     }
 
-    /// Whether the token cache file still holds the bytes the row wrote.
-    pub fn sso_cache_unchanged(&self, input: &Input) -> TestResult<bool> {
+    /// The token cache file a row uses: named by the session, or by the start URL.
+    fn sso_cache_path(&self, input: &Input) -> std::path::PathBuf {
         let name = if input.sso.as_deref() == Some("session") {
             SESSION_CACHE
         } else {
             START_URL_CACHE
         };
-        let path = self.0.join(".aws/sso/cache").join(format!("{name}.json"));
-        Ok(std::fs::read_to_string(path)? == Self::sso_cache_text(input))
+        self.0.join(".aws/sso/cache").join(format!("{name}.json"))
+    }
+
+    /// Whether the token cache file still holds the bytes the row wrote.
+    pub fn sso_cache_unchanged(&self, input: &Input) -> TestResult<bool> {
+        Ok(std::fs::read_to_string(self.sso_cache_path(input))? == Self::sso_cache_text(input))
     }
 
     /// The number of times the credential process ran.
