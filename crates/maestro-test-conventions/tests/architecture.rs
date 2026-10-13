@@ -414,8 +414,6 @@ fn unknown_scoped_member_is_rejected() {
 
 #[test]
 fn forbidden_direct_edges_are_rejected() {
-    leaf_internal_dependencies_are_rejected();
-    core_to_dedicated_dependency_is_rejected();
     forbidden_policy_matrix();
     for (from, to) in [
         ("maestro-agent", "maestro-settings"),
@@ -435,6 +433,10 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro-process", "maestro-packages"),
         ("maestro-process", "maestro-tui"),
         ("maestro-models", "maestro-process"),
+        ("maestro-cli", "maestro-process"),
+        ("maestro-chat", "maestro-process"),
+        ("maestro-rpc", "maestro-process"),
+        ("maestro-web", "maestro-process"),
         ("maestro-text", "maestro-tools"),
     ] {
         let workspace = Workspace::new();
@@ -531,6 +533,7 @@ fn catalog_pattern_edge_is_scoped() {
 #[test]
 fn process_capture_consumers_may_declare_the_owner() {
     for from in [
+        "maestro-app",
         "maestro-tools",
         "maestro-packages",
         "maestro-tui",
@@ -662,7 +665,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        113
+        114
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -1399,6 +1402,8 @@ fn maestro_conventions_rejects_foreign_target_reverse_edges() {
 }
 
 fn forbidden_policy_matrix() {
+    leaf_internal_dependencies_are_rejected();
+    core_to_dedicated_dependency_is_rejected();
     #[cfg(unix)]
     policy_edge_matrix(false);
 }

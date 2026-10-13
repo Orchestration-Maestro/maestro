@@ -203,7 +203,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -277,15 +277,21 @@ deleted lines; moving lines is not a code saving.
 `maestro-process` is a core leaf below layer 0 with no workspace dependencies,
 including the path and cancellation leaves. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
-pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials and the
+pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, the application and the
 terminal toolkit may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. Its synchronous capture takes a caller-supplied timeout.
+with their feature owners. The shared launch contract includes synchronous capture
+with optional raw stdin and an optional caller-supplied timeout, inherited standard
+descriptors without a timeout, and background input transfer and direct-child
+reaping after acknowledged native startup. For capture and background launches,
+absent input uses the null device; present input closes its pipe after writing.
+None or zero disables the timeout; a selected timeout covers input transfer,
+child exit and captured pipe EOFs.
 On expiry, it attempts to force-kill and reap the direct child if it is still running;
 native errors can prevent this. If the direct child has already exited, it closes
-unfinished readers without signalling that child. It adds no general background
+unfinished pipe operations without signalling that child. It adds no general background
 runtime or default deadline. The
 conventions test checks dependency ownership across declaration forms, not target
 predicates; native-only manifests and the existing wasm and browser builds are

@@ -164,6 +164,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-watch",
             "maestro-text",
             "maestro-json",
+            "maestro-process",
         ],
     ),
     ("maestro-extensions-wasmtime", &["maestro-extensions"]),

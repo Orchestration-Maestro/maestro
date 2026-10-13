@@ -76,8 +76,8 @@ not public capabilities or feature-specific timing, process, subscription and
 teardown semantics; it introduces no generic executor or scheduling policy.
 
 The process leaf `maestro-process` is declared core below layer 0 with no workspace
-dependencies, including path and cancellation. Only tools, packages, credentials and the toolkit
-may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+dependencies, including path and cancellation. Only tools, packages, credentials,
+the application and the toolkit may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
 Synchronous capture follows the timeout handling in the
