@@ -1,0 +1,409 @@
+[
+  {
+    "chunksHex": [
+      "",
+      "e08080"
+    ],
+    "chunks": [
+      "",
+      "���"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e0",
+      "8080"
+    ],
+    "chunks": [
+      "",
+      "���"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e080",
+      "80"
+    ],
+    "chunks": [
+      "��",
+      "�"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e08080",
+      ""
+    ],
+    "chunks": [
+      "���",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "eda080"
+    ],
+    "chunks": [
+      "",
+      "���"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "ed",
+      "a080"
+    ],
+    "chunks": [
+      "",
+      "���"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "eda0",
+      "80"
+    ],
+    "chunks": [
+      "��",
+      "�"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "eda080",
+      ""
+    ],
+    "chunks": [
+      "���",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "f4908080"
+    ],
+    "chunks": [
+      "",
+      "����"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f4",
+      "908080"
+    ],
+    "chunks": [
+      "",
+      "����"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f490",
+      "8080"
+    ],
+    "chunks": [
+      "��",
+      "��"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f49080",
+      "80"
+    ],
+    "chunks": [
+      "���",
+      "�"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f4908080",
+      ""
+    ],
+    "chunks": [
+      "����",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "f0908d88"
+    ],
+    "chunks": [
+      "",
+      "𐍈"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f0",
+      "908d88"
+    ],
+    "chunks": [
+      "",
+      "𐍈"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f090",
+      "8d88"
+    ],
+    "chunks": [
+      "",
+      "𐍈"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f0908d",
+      "88"
+    ],
+    "chunks": [
+      "",
+      "𐍈"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "f0908d88",
+      ""
+    ],
+    "chunks": [
+      "𐍈",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "e282ac"
+    ],
+    "chunks": [
+      "",
+      "€"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e2",
+      "82ac"
+    ],
+    "chunks": [
+      "",
+      "€"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e282",
+      "ac"
+    ],
+    "chunks": [
+      "",
+      "€"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "e282ac",
+      ""
+    ],
+    "chunks": [
+      "€",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "f0908d"
+    ],
+    "chunks": [
+      "",
+      ""
+    ],
+    "final": "�"
+  },
+  {
+    "chunksHex": [
+      "f0",
+      "908d"
+    ],
+    "chunks": [
+      "",
+      ""
+    ],
+    "final": "�"
+  },
+  {
+    "chunksHex": [
+      "f090",
+      "8d"
+    ],
+    "chunks": [
+      "",
+      ""
+    ],
+    "final": "�"
+  },
+  {
+    "chunksHex": [
+      "f0908d",
+      ""
+    ],
+    "chunks": [
+      "",
+      ""
+    ],
+    "final": "�"
+  },
+  {
+    "chunksHex": [
+      "",
+      "808161"
+    ],
+    "chunks": [
+      "",
+      "��a"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "80",
+      "8161"
+    ],
+    "chunks": [
+      "�",
+      "�a"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "8081",
+      "61"
+    ],
+    "chunks": [
+      "��",
+      "a"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "808161",
+      ""
+    ],
+    "chunks": [
+      "��a",
+      ""
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "",
+      "efbbbfefbbbf"
+    ],
+    "chunks": [
+      "",
+      "﻿﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "ef",
+      "bbbfefbbbf"
+    ],
+    "chunks": [
+      "",
+      "﻿﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "efbb",
+      "bfefbbbf"
+    ],
+    "chunks": [
+      "",
+      "﻿﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "efbbbf",
+      "efbbbf"
+    ],
+    "chunks": [
+      "﻿",
+      "﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "efbbbfef",
+      "bbbf"
+    ],
+    "chunks": [
+      "﻿",
+      "﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "efbbbfefbb",
+      "bf"
+    ],
+    "chunks": [
+      "﻿",
+      "﻿"
+    ],
+    "final": ""
+  },
+  {
+    "chunksHex": [
+      "efbbbfefbbbf",
+      ""
+    ],
+    "chunks": [
+      "﻿﻿",
+      ""
+    ],
+    "final": ""
+  }
+]

@@ -15,7 +15,7 @@ use tokio::signal::unix::Signal;
 use tokio::time::{Instant, sleep_until};
 
 use super::Shared;
-use super::string_decoder::Utf8Stream;
+use maestro_text::Utf8Stream;
 
 /// The most bytes one read takes.
 const READ_SIZE: usize = 4096;

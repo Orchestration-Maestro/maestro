@@ -1,9 +1,12 @@
 # Text
 
 `maestro-text` is a core leaf below layer 0 with no workspace dependencies. It holds
-six stateless decisions; each caller keeps its own trimming, any-or-all semantics,
+text decisions and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
+- **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
+  and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
+  terminal input, tool output and message framing keep their own BOM policy.
 - **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except
