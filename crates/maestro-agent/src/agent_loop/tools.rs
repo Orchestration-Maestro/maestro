@@ -50,8 +50,8 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     ) -> Result<(Vec<Arc<RwLock<ToolResultMessage>>>, bool), DiagnosticErrorInfo> {
         let mut results = Vec::new();
         let mut all_terminate = !calls.is_empty();
-        for (index, call) in calls {
-            let preparation = self.preflight(response, (index, &call)).await?;
+        for (index, mut call) in calls {
+            let preparation = self.preflight(response, (index, &mut call)).await?;
             let (result, is_error) = self.invoke(response, &call, preparation).await?;
             all_terminate &= result.terminate == Some(true);
             let message = self.execution_end(call, result, is_error).await?;
@@ -70,8 +70,8 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let mut ready = Vec::new();
         let mut allowed = Vec::new();
         let mut all_terminate = !calls.is_empty();
-        for (index, (position, call)) in calls.into_iter().enumerate() {
-            let preparation = self.preflight(response, (position, &call)).await?;
+        for (index, (position, mut call)) in calls.into_iter().enumerate() {
+            let preparation = self.preflight(response, (position, &mut call)).await?;
             match preparation {
                 Ok(prepared) => {
                     allowed.push((index, call, prepared));
@@ -126,7 +126,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     async fn preflight(
         &self,
         response: &SharedAssistantMessage,
-        (index, call): (usize, &ToolCall),
+        (index, call): (usize, &mut ToolCall),
     ) -> Result<Result<Prepared, DiagnosticErrorInfo>, DiagnosticErrorInfo> {
         (self.emit)(AgentEvent::ToolExecutionStart {
             tool_call: call.clone(),
@@ -138,7 +138,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     async fn prepare_with_hook(
         &self,
         response: &SharedAssistantMessage,
-        (index, call): (usize, &ToolCall),
+        (index, call): (usize, &mut ToolCall),
     ) -> Result<Prepared, DiagnosticErrorInfo> {
         let mut prepared = self.prepare(response, (index, call))?;
         if let Some(before) = &self.config.before_tool_call
@@ -243,7 +243,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
     fn prepare(
         &self,
         response: &SharedAssistantMessage,
-        (index, call): (usize, &ToolCall),
+        (index, call): (usize, &mut ToolCall),
     ) -> Result<Prepared, DiagnosticErrorInfo> {
         let tool = self
             .lookup(&call.name)
@@ -251,15 +251,17 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let prepare = read(&tool).prepare_arguments.clone();
         let arguments = match prepare {
             Some(prepare) => {
-                let mut candidate = call.clone();
-                let mut raw = serde_json::Value::Object(candidate.arguments);
+                let mut raw = serde_json::Value::Object(call.arguments.clone());
                 let prepared = prepare(&mut raw);
-                if let serde_json::Value::Object(arguments) = raw
-                    && let Some(AssistantContent::ToolCall(retained)) =
-                        super::write(response).content.get_mut(index)
-                {
-                    retained.arguments = arguments;
+                if let serde_json::Value::Object(arguments) = raw {
+                    call.arguments = arguments;
                 }
+                if let Some(AssistantContent::ToolCall(retained)) =
+                    super::write(response).content.get_mut(index)
+                {
+                    retained.arguments.clone_from(&call.arguments);
+                }
+                let mut candidate = call.clone();
                 candidate.arguments = serde_json::from_value(prepared?)
                     .map_err(|error| failure(error.to_string()))?;
                 maestro_models::validate_tool_arguments(&read(&tool).definition, &candidate)?

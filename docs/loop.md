@@ -46,8 +46,10 @@ batch. The first exactly named declaration is selected. Optional argument
 preparation precedes [argument validation](models/arguments.md). The callback
 takes `&mut Value`; object mutations stay in the retained assistant call even
 if preparation or validation fails. Its returned value supplies validation
-without replacing the retained call. The before hook may edit validated
-arguments without another schema check. A blocked call
+without replacing the retained call. Before and after hooks and progress events
+observe the captured call's in-place object normalization, not the returned
+validation arguments. The before hook may edit validated arguments without
+another schema check. A blocked call
 uses its nonempty reason exactly, or `Tool execution was blocked` when the reason
 is absent or empty. Preparation, validation and before-hook failures skip execution
 and the after hook. Execution failures reach the after hook as tool-error

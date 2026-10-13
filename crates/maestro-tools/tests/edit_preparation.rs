@@ -1,6 +1,7 @@
 //! Preparation through the edit definition's public callback.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+mod edit_observers;
 mod edit_support;
 mod loop_support;
 mod read_support;
@@ -218,6 +219,16 @@ fn prepared_edit_runs_through_agent_loop() {
         );
         assert_eq!(turn.results[0]["isError"], false);
     }
+}
+
+#[test]
+fn sequential_edit_observers_share_normalized_call() {
+    edit_observers::observe(maestro_agent::ToolExecutionMode::Sequential);
+}
+
+#[test]
+fn parallel_edit_observers_share_normalized_call() {
+    edit_observers::observe(maestro_agent::ToolExecutionMode::Parallel);
 }
 
 #[test]

@@ -92,7 +92,9 @@ Preparation parses string-valued `edits` in the retained call only when the JSON
 result is an array. A complete top-level string pair `oldText`/`newText` is
 appended to the returned array (or a new array), removing those two keys only
 from the returned arguments and retaining other members. Partial
-pairs remain unchanged after array parsing. Preparation runs before the
+pairs remain unchanged after array parsing. Hooks and progress observe this
+in-place normalization, as described in [conversation operations](loop.md).
+Preparation runs before the
 [shared argument validation](models/arguments.md) in the agent loop and performs
 no file operations. Direct execution takes already prepared arguments.
 
