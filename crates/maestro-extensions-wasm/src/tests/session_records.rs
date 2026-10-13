@@ -242,3 +242,80 @@ async fn refused_entries(
     assert_eq!(Answer::of(delivered)?, Answer::returned(event, None));
     Ok(())
 }
+
+/// Re-encoding selects the stored member order rather than the incoming order.
+async fn shared_record_order(driver: &mut impl Driver) -> Result<(), String> {
+    let mut event = super::documents::document("session_before_compact");
+    event["branchEntries"] = json!([
+        {"type":"custom","id":"state","parentId":null,"timestamp":"literal",
+         "customType":"state","data":"opaque"},
+        {"type":"custom_message","id":"display","parentId":"state","timestamp":"literal",
+         "customType":"display","content":"hello","display":true,"details":"opaque"}
+    ]);
+    event["preparation"]["previousSummary"] = json!("earlier");
+    let reversed = event["preparation"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .rev()
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect();
+    event["preparation"] = serde_json::Value::Object(reversed);
+    let answer = ask(driver, &event, &json!({})).await?;
+    let encoded = answer.event.as_ref().unwrap();
+    assert_shared_member_order(encoded);
+    assert_eq!(answer, Answer::returned(&event, None));
+    Ok(())
+}
+#[test]
+fn maestro_shared_records_reencode_in_session_file_member_order() -> Result<(), String> {
+    on_both_adapters!(shared_record_order)
+}
+
+/// Checks the concrete entry and preparation declaration sequences.
+fn assert_shared_member_order(encoded: &serde_json::Value) {
+    for (index, expected) in [
+        vec!["type", "customType", "data", "id", "parentId", "timestamp"],
+        vec![
+            "type",
+            "customType",
+            "content",
+            "display",
+            "details",
+            "id",
+            "parentId",
+            "timestamp",
+        ],
+    ]
+    .iter()
+    .enumerate()
+    {
+        assert_eq!(
+            encoded["branchEntries"][index]
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            *expected
+        );
+    }
+    assert_eq!(
+        encoded["preparation"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        [
+            "firstKeptEntryId",
+            "messagesToSummarize",
+            "turnPrefixMessages",
+            "isSplitTurn",
+            "tokensBefore",
+            "previousSummary",
+            "fileOps",
+            "settings"
+        ]
+    );
+}

@@ -5,149 +5,31 @@
     clippy::excessive_nesting
 )]
 use crate::types::object;
-use crate::{AgentMessage, ExtensionResult, Presence, UserContent};
+use crate::{AgentMessage, ExtensionResult};
+pub use entry::{
+    LabelEntry, ModelChangeEntry, SessionEntryBase, SessionHeader, SessionInfoEntry,
+    ThinkingLevelChangeEntry,
+};
+use maestro_entry::session_manager as entry;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
-/// Identity and timestamp shared by session entries.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionEntryBase {
-    /// Uninterpreted entry identity.
-    pub id: String,
-    /// Parent identity, or null for a root entry.
-    pub parent_id: Option<String>,
-    /// Uninterpreted entry timestamp.
-    pub timestamp: String,
-}
-/// A conversation message stored as an entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "message", rename_all = "camelCase")]
-pub struct SessionMessageEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Stored conversation message.
-    pub message: AgentMessage,
-}
-/// An entry recording an open thinking-level string.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(
-    tag = "type",
-    rename = "thinking_level_change",
-    rename_all = "camelCase"
-)]
-pub struct ThinkingLevelChangeEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Authored thinking-level text.
-    pub thinking_level: String,
-}
-/// An entry recording provider and model selection.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "model_change", rename_all = "camelCase")]
-pub struct ModelChangeEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Provider identity.
-    pub provider: String,
-    /// Model identity.
-    pub model_id: String,
-}
-/// A persisted compaction with identity and origin metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "compaction", rename_all = "camelCase")]
-pub struct CompactionEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Summary text.
-    pub summary: String,
-    /// First entry kept after compaction.
-    pub first_kept_entry_id: String,
-    /// Context size before compaction.
-    pub tokens_before: f64,
-    /// Opaque JSON text, carried without parsing or reformatting.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub details: Presence<String>,
-    /// Whether a hook supplied the entry.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub from_hook: Presence<bool>,
-}
-/// A branch summary with its source entry and metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "branch_summary", rename_all = "camelCase")]
-pub struct BranchSummaryEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Entry from which the branch was summarized.
-    pub from_id: String,
-    /// Summary text.
-    pub summary: String,
-    /// Opaque JSON text, carried without parsing or reformatting.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub details: Presence<String>,
-    /// Whether a hook supplied the entry.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub from_hook: Presence<bool>,
-}
-/// Extension-defined state stored as an entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "custom", rename_all = "camelCase")]
-pub struct CustomEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Extension-defined entry kind.
-    pub custom_type: String,
-    /// Opaque JSON text, carried without parsing or reformatting.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub data: Presence<String>,
-}
-/// An extension-authored display message entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "custom_message", rename_all = "camelCase")]
-pub struct CustomMessageEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Extension-defined entry kind.
-    pub custom_type: String,
-    /// Display message content.
-    pub content: UserContent,
-    /// Opaque JSON text, carried without parsing or reformatting.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub details: Presence<String>,
-    /// Whether to display the message.
-    pub display: bool,
-}
-/// A label change targeting an entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "label", rename_all = "camelCase")]
-pub struct LabelEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Entry whose label changes.
-    pub target_id: String,
-    /// Supplied label, null or omitted.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub label: Presence<String>,
-}
-/// Session display-name metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "session_info", rename_all = "camelCase")]
-pub struct SessionInfoEntry {
-    /// Entry identity and timestamp.
-    #[serde(flatten)]
-    pub base: SessionEntryBase,
-    /// Supplied session display name, null or omitted.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub name: Presence<String>,
-}
+/// Message entry holding a typed agent message.
+pub type SessionMessageEntry = entry::SessionMessageEntry<AgentMessage>;
+/// A persisted compaction whose details are opaque JSON text.
+pub type CompactionEntry = entry::CompactionEntry<String>;
+/// A branch summary whose details are opaque JSON text.
+pub type BranchSummaryEntry = entry::BranchSummaryEntry<String>;
+/// Extension state whose data is opaque JSON text.
+pub type CustomEntry = entry::CustomEntry<String>;
+/// An extension display message whose details are opaque JSON text.
+pub type CustomMessageEntry = entry::CustomMessageEntry<String>;
+/// Plain parameters of a setup-created session.
+pub type NewSessionOptions = entry::NewSessionOptions<Option<String>>;
+/// Selected model identity in a built context.
+pub type SessionContextModel = entry::SessionContextModel<String>;
+/// Host-built conversation context.
+pub type SessionContext = entry::SessionContext<AgentMessage, String>;
 /// The nine tagged session-entry variants.
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
@@ -208,23 +90,6 @@ impl<'de> Deserialize<'de> for SessionEntry {
     }
 }
 
-/// The header selected by the host session reader.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "session", rename_all = "camelCase")]
-pub struct SessionHeader {
-    /// Optional format version.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub version: Presence<f64>,
-    /// Session identity.
-    pub id: String,
-    /// Uninterpreted creation timestamp.
-    pub timestamp: String,
-    /// Authored working directory.
-    pub cwd: String,
-    /// Optional parent session file.
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    pub parent_session: Presence<String>,
-}
 /// Retained read-only host session capability. Clones share the same owner.
 /// Host failures and selected-record decoding errors are returned to the caller.
 ///
@@ -300,37 +165,6 @@ port! {
     }
 }
 
-/// Plain parameters of a setup-created session.
-#[derive(Debug, Default, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NewSessionOptions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Optional caller-supplied session identity.
-    pub id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Optional literal parent-session path.
-    pub parent_session: Option<String>,
-}
-/// Selected model identity in a built context.
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionContextModel {
-    /// Provider identity chosen by the host.
-    pub provider: String,
-    /// Model identity chosen by the host.
-    pub model_id: String,
-}
-/// Host-built conversation context.
-#[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SessionContext {
-    /// Messages supplied by the host projection.
-    pub messages: Vec<AgentMessage>,
-    /// Open thinking-level string supplied by the host.
-    pub thinking_level: String,
-    /// Optional selected model identity.
-    pub model: Option<SessionContextModel>,
-}
 /// Writable setup capability, retaining its read view over the same session.
 #[derive(Clone)]
 pub struct SessionManager {

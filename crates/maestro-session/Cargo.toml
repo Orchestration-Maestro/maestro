@@ -11,6 +11,7 @@ maestro-text = { path = "../maestro-text" }
 maestro-path = { path = "../maestro-path" }
 maestro-agent = { path = "../maestro-agent" }
 maestro-models = { path = "../maestro-models" }
+maestro-entry = { path = "../maestro-entry" }
 maestro-request = { path = "../maestro-request" }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4", "v7"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std", "clock", "wasmbind"] }
