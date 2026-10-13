@@ -21,7 +21,7 @@ pub struct CompactionPreparation<M> {
     /// Summary of the previous compaction, if any.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub previous_summary: Presence<String>,
-    /// Files touched by the summarized messages.
+    /// File-operation sets supplied for this preparation.
     pub file_ops: FileOperations,
     /// Compaction settings in effect.
     pub settings: CompactionSettings,

@@ -31,7 +31,7 @@ write those identity members before their own fields. Preparation writes
 `firstKeptEntryId`, `messagesToSummarize`, `turnPrefixMessages`, `isSplitTurn`,
 `tokensBefore`, optional `previousSummary`, `fileOps`, `settings` in that order.
 
-Optional record members use the request owner's
+Optional entry/header fields and `previousSummary` use the request owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
 for decoding. `Omittable` controls serialization of context settings and the
 new-session parent: `Presence::Missing` and `None` are omitted; text is written,

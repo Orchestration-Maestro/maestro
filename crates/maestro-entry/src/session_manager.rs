@@ -119,7 +119,7 @@ pub struct BranchSummaryEntry<T = Value> {
     /// Entry identity and timestamp.
     #[serde(flatten)]
     pub base: SessionEntryBase,
-    /// Entry the branch was summarized from.
+    /// Branch-point identifier, or `"root"` for a branch before the first entry.
     pub from_id: String,
     /// Summary text.
     pub summary: String,
