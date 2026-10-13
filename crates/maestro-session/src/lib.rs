@@ -14,3 +14,5 @@ pub use session_manager::{
 
 /// Missing stored working-directory diagnostics.
 pub mod session_cwd;
+
+pub use maestro_request::presence::Presence;

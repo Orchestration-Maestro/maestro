@@ -11,6 +11,7 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
 serde_json.workspace = true
+regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [dev-dependencies]
 serde.workspace = true
