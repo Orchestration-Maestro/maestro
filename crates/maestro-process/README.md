@@ -18,6 +18,6 @@ empty stderr. An unsuccessful status is still a completed output.
 The caller's timeout covers both child exit and stdout EOF, without a post-exit
 grace. On expiry, unfinished readers close; the direct child is force-killed only
 if still running and reaped unless killing fails. Descendants are not signalled.
-The result is `SpawnSyncError::Timeout`. Other failures preserve their native
-error as the source of `Infrastructure`, `Spawn` or `Wait`; see
+The result is `SpawnSyncError::Timeout`. The non-timeout variants
+`Infrastructure`, `Spawn` and `Wait` expose an `io::Error` source; see
 [`wait_for_child_process`](src/child_process.rs) for wait errors.

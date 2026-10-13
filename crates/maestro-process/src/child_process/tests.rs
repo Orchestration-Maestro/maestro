@@ -569,3 +569,51 @@ fn sync_capture_uses_each_callers_timeout() {
         }
     });
 }
+
+#[test]
+fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
+    use std::{error::Error, io::Write};
+    let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let script = r"
+import os, socket, sys
+os.write(1, b'prefix')
+gone, alive = os.pipe()
+if os.fork(): os._exit(0)
+os.close(alive); os.read(gone, 1); os.close(gone)
+s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
+if s.recv(1):
+    try: os.write(1, b'tail'); result = b'writable'
+    except BrokenPipeError: result = b'closed'
+    s.sendall(result)
+s.close(); os._exit(0)
+";
+    paused_runtime().block_on(async {
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            script,
+            &listener.local_addr().unwrap().port().to_string(),
+        ]);
+        let timeout = Duration::from_secs(5);
+        let started = tokio::time::Instant::now();
+        let mut run = Box::pin(capture(&mut command, timeout));
+        assert!(is_pending(&mut run).await, "capture started");
+        // The holder connects only after the exit pipe reaches EOF. This blocking
+        // accept keeps the paused runtime from advancing during either startup.
+        let (mut holder, _) = listener.accept().unwrap();
+        assert_eq!(started.elapsed(), Duration::ZERO);
+        assert!(is_pending(&mut run).await, "stdout still held after exit");
+        tokio::time::advance(timeout).await;
+        let result = run.await;
+        // Release before assertions so a wrong result cannot strand the holder.
+        holder.write_all(b"!").unwrap();
+        let mut report = Vec::new();
+        holder.read_to_end(&mut report).unwrap();
+        let error = result.unwrap_err();
+        assert!(matches!(error, SpawnSyncError::Timeout));
+        assert!(error.source().is_none());
+        assert_eq!(error.to_string(), "The process timed out");
+        assert_eq!(report, b"closed");
+        assert_eq!(started.elapsed(), timeout);
+    });
+}
