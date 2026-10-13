@@ -1,12 +1,10 @@
 # File-changing tools
 
-`maestro-tools` delivers the native `write` tool, the file mutation queue that
-orders every file-changing tool and the pure matching core of `edit`. The `edit` tool
-itself, its diff output and its rendering continue in
-[#691](https://github.com/Orchestration-Maestro/maestro/issues/691),
-[#723](https://github.com/Orchestration-Maestro/maestro/issues/723) and
-[#692](https://github.com/Orchestration-Maestro/maestro/issues/692); they are not
-part of this crate yet.
+`maestro-tools` delivers the native `write` tool, the file mutation queue,
+original-snapshot edit matching, numbered diffs and read-only edit previews.
+The `edit` tool execution and rendering continue in
+[#691](https://github.com/Orchestration-Maestro/maestro/issues/691) and
+[#692](https://github.com/Orchestration-Maestro/maestro/issues/692).
 
 All three items are native-only: the `write` module, the queue and `edit_diff` are
 excluded from browser builds, which still build the portable tool definitions.
@@ -85,8 +83,8 @@ text for a failure. Display strings, tab expansion and key hints follow the
 
 ## Original-snapshot matching
 
-[`edit_diff`](../crates/maestro-tools/src/edit_diff.rs) matches edits and applies them;
-it reads no file and has no side effect. `apply_edits_to_normalized_content` takes
+[`edit_diff`](../crates/maestro-tools/src/edit_diff.rs) owns matching and previews.
+The pure matching operation `apply_edits_to_normalized_content` reads no file; it takes
 content that already uses LF endings (convert it with
 [`normalize_to_lf`](text.md)) and returns the comparison base with the edited text, or a
 diagnostic.
@@ -110,6 +108,25 @@ diagnostic.
 The nine failure messages are the exact texts in the module; single-edit calls use
 the unnumbered wording; multi-edit calls name `edits[n]` except for the no-change
 failure, which names no edit.
+
+## Numbered diffs and read-only previews
+
+[`generate_diff_string`](../crates/maestro-tools/src/edit_diff/numbered.rs) returns
+numbered changes and the first changed line in the new text. Omitted context selects
+four lines; explicit context includes zero. Identical texts return an empty diff
+and no first changed line.
+
+[`compute_edits_diff`](../crates/maestro-tools/src/edit_diff/preview.rs) checks
+readability, reads the target and returns a diff or caught failure without writing it.
+`compute_edit_diff` delegates one replacement to that operation. Path resolution
+uses [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs) when called;
+resolution failures are returned before a future is created. Access, read and
+matching failures are returned by the future. Access failures retain the authored
+path and supplied error code, including native numeric codes; read and matching
+failures retain their messages.
+
+Preview decodes bytes lossily, strips one leading BOM and normalizes newlines,
+then uses the [matching operation's](#original-snapshot-matching) comparison base.
 
 ## File mutation queue
 

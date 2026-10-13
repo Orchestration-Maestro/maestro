@@ -17,7 +17,7 @@ fn readable(path: &PathBuf) -> io::Result<()> {
 }
 
 /// The default operations: read, probe and sniff the local filesystem.
-pub(super) struct NativeReadOperations;
+pub(crate) struct NativeReadOperations;
 
 impl ReadOperations for NativeReadOperations {
     fn read_file(&self, absolute_path: String) -> BoxFuture<Result<Vec<u8>, DiagnosticErrorInfo>> {

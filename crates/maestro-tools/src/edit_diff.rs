@@ -1,7 +1,14 @@
 //! Original-snapshot edit matching: line endings, BOM, fuzzy normalization, unique
-//! matching and application of disjoint edits.
+//! matching, application of disjoint edits, numbered diffs and read-only previews.
 //!
-//! All positions and lengths are UTF-8 byte offsets into the text they describe.
+//! Matching positions and lengths are UTF-8 byte offsets into the text they describe.
+
+mod numbered;
+mod preview;
+mod text_diff;
+
+pub use numbered::{EditDiffResult, generate_diff_string};
+pub use preview::{EditDiffError, compute_edit_diff, compute_edits_diff};
 
 use crate::utils::diagnostics::failure;
 use icu_normalizer::ComposingNormalizer;
@@ -394,3 +401,6 @@ pub fn apply_edits_to_normalized_content(
         new_content,
     })
 }
+
+#[cfg(test)]
+mod tests;
