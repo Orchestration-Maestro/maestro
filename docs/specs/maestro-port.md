@@ -285,9 +285,10 @@ truncation, artifact files, presentation, result mapping and user-facing errors 
 with their feature owners. The shared launch contract includes synchronous capture
 with optional raw stdin and an optional caller-supplied timeout, inherited standard
 descriptors without a timeout, and background input transfer and direct-child
-reaping after acknowledged native startup. Absent input uses the null device;
-present input closes its pipe after writing. None or zero disables the timeout;
-a selected timeout covers input transfer, child exit and captured pipe EOFs.
+reaping after acknowledged native startup. For capture and background launches,
+absent input uses the null device; present input closes its pipe after writing.
+None or zero disables the timeout; a selected timeout covers input transfer,
+child exit and captured pipe EOFs.
 On expiry, it attempts to force-kill and reap the direct child if it is still running;
 native errors can prevent this. If the direct child has already exited, it closes
 unfinished pipe operations without signalling that child. It adds no general background
