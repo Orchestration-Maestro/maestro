@@ -9,7 +9,7 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, and it has no workspace dependencies.
-No reverse dependency or internal dev edge is permitted.
+No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
 owners; `maestro-text`, `maestro-json` and `maestro-entry` exist, and tool and brand are policy only with no crate
@@ -48,8 +48,11 @@ may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
-not satisfy a direct requirement. The internal dev-target allowlist is empty;
-the scenario harness is not a reusable test-support dependency. Both production
+not satisfy a direct requirement. The sole permitted internal development edge is
+`maestro-tui-crossterm` to `maestro-brand` for the terminal examples. The exception
+permits neither a normal/build brand dependency nor a theme dependency, and does
+not satisfy the adapter's required toolkit/text dependencies. The scenario harness
+is not a reusable test-support dependency. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.
 

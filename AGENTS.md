@@ -163,8 +163,11 @@ no placeholder crates. Frontends require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
 utility edge never supplies a required edge. Other non-leaves permit subsets.
-Production and test graphs are separately acyclic; the internal dev-target
-allowlist is empty. The scenario harness is not a general dev-dependency target.
+Production and test graphs are separately acyclic. The only internal development
+edge is `maestro-tui-crossterm` to `maestro-brand`, for terminal examples. Brand and
+theme remain forbidden as adapter normal/build dependencies; the development edge
+never satisfies the required toolkit/text set. The scenario harness is not a
+general dev-dependency target.
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
 its domain owner; renderer declarations retain their domain ownership.

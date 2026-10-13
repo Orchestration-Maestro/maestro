@@ -1017,7 +1017,7 @@ fn terminal_adapter_and_harness_require_toolkit() {
 }
 
 #[test]
-fn internal_dev_edges_are_rejected_for_every_member() {
+fn unapproved_internal_dev_edges_are_rejected_for_every_member() {
     #[cfg(unix)]
     policy_edge_matrix(true);
     #[cfg(not(unix))]
@@ -1425,7 +1425,8 @@ fn policy_edge_matrix(dev: bool) {
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !UTILITY_EXCLUDED.contains(&from);
-            if from == to || (!dev && (targets.contains(&to) || utility_edge)) {
+            let example_brand = dev && from == "maestro-tui-crossterm" && to == "maestro-brand";
+            if from == to || example_brand || (!dev && (targets.contains(&to) || utility_edge)) {
                 continue;
             }
             let mut declared = valid.clone();
@@ -1619,6 +1620,83 @@ fn harness_may_not_declare_text(toolkit: &str) {
         check_workspace(&harness.root),
         Err("forbidden production dependency: maestro-test-terminal -> maestro-text".into())
     );
+}
+
+#[test]
+fn terminal_example_brand_edge_is_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
+    let required = "[dependencies]\nmaestro-tui = { path = \"../maestro-tui\" }\nmaestro-text = { path = \"../maestro-text\" }\n";
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(unix)'.dev-dependencies",
+        "target.'cfg(target_os = \"none\")'.dev-dependencies",
+    ] {
+        workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("{required}[{kind}]\nbrand = {{ package = \"maestro-brand\", path = \"../maestro-brand\" }}"));
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}");
+    }
+    for (kind, extra) in DECLARATIONS {
+        workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("[{kind}]\nmaestro-tui = {{ path = \"../maestro-tui\" }}\nmaestro-text = {{ path = \"../maestro-text\" }}\nbrand = {{ package = \"maestro-brand\", path = \"../maestro-brand\"{extra} }}"));
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("forbidden production dependency: maestro-tui-crossterm -> maestro-brand".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
+fn terminal_example_brand_edge_keeps_required_runtime_dependencies() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
+    for (retained, missing) in [
+        ("maestro-text", "maestro-tui"),
+        ("maestro-tui", "maestro-text"),
+    ] {
+        workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", &format!("[dependencies]\n{retained} = {{ path = \"../{retained}\" }}\n[dev-dependencies]\nmaestro-brand = {{ path = \"../maestro-brand\" }}"));
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!(
+                "maestro-tui-crossterm: missing required direct dependency {missing}"
+            ))
+        );
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn terminal_example_brand_edge_checks_host_resolved_dependency_kind() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-tui-crossterm", "maestro-brand"]);
+    workspace.member("maestro-tui-crossterm", "maestro-tui-crossterm", "[dependencies]\nmaestro-tui = { path = \"../maestro-tui\" }\nmaestro-text = { path = \"../maestro-text\" }\n[dev-dependencies]\nmaestro-brand = { path = \"../maestro-brand\" }");
+    let valid = workspace.metadata();
+    workspace.metadata_probe(&valid, &valid, "ok");
+    for kind in [serde_json::Value::Null, serde_json::json!("build")] {
+        let mut resolved = valid.clone();
+        let node = resolved["resolve"]["nodes"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|node| {
+                node["id"]
+                    .as_str()
+                    .unwrap()
+                    .contains("maestro-tui-crossterm")
+            })
+            .unwrap();
+        let edge = node["deps"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|edge| edge["name"] == "maestro_brand")
+            .unwrap();
+        edge["dep_kinds"][0]["kind"] = kind;
+        workspace.metadata_probe(
+            &valid,
+            &resolved,
+            "forbidden production dependency: maestro-tui-crossterm -> maestro-brand",
+        );
+    }
 }
 
 #[test]
