@@ -6,6 +6,7 @@
   "maestro-catalog": "core",
   "maestro-credentials": "core",
   "maestro-entry": "core",
+  "maestro-export": "core",
   "maestro-extensions": "core",
   "maestro-extensions-wasm": "core",
   "maestro-json": "core",

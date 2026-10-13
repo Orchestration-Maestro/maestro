@@ -20,6 +20,13 @@ normalization. The guest authoring crate may depend on request,
 entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
+The declared `maestro-export` owner may depend directly on `maestro-json` and
+`maestro-text` for shared JSON and whitespace semantics. It may not depend on
+`maestro-web`; the application supplies the viewer bundle, as described in the
+[session export contract](specs/maestro-port.md#r04--session-trees-persistence-and-exports).
+The `export_reuses_text_and_json_without_frontend_edge` architecture test checks
+these permissions for normal, build, optional and foreign-target declarations.
+
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
 The binary composition root, conventions checker, terminal scenario harness and

@@ -474,6 +474,29 @@ fn forbidden_direct_edges_are_rejected() {
 }
 
 #[test]
+fn export_reuses_text_and_json_without_frontend_edge() {
+    for owner in ["maestro-text", "maestro-json"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-export", owner]);
+        check_permitted_declarations(&workspace, "maestro-export", owner, &[owner]);
+    }
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-export", "maestro-web"]);
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-export",
+            "maestro-export",
+            &format!("[{kind}]\nfrontend = {{ package = \"maestro-web\", path = \"../maestro-web\"{extra} }}"),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err("forbidden production dependency: maestro-export -> maestro-web".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
 fn catalog_pattern_edge_is_scoped() {
     for from in ["maestro-catalog", "maestro-resources", "maestro-packages"] {
         let workspace = Workspace::new();
@@ -639,7 +662,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        110
+        112
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
