@@ -2,6 +2,7 @@
 //!
 //! [`presentation_data`] holds the data frontends render but do not own.
 
+pub mod browser;
 pub mod presentation_data;
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};

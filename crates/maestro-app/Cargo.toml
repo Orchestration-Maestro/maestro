@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+num-traits.workspace = true
+ryu-js.workspace = true
 maestro-models = { path = "../maestro-models" }
 maestro-tools = { path = "../maestro-tools" }
 maestro-session = { path = "../maestro-session" }
@@ -20,7 +23,6 @@ maestro-tools = { path = "../maestro-tools" }
 
 [target.'cfg(unix)'.dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process"] }
-num-traits = "=0.2.19"
 
 [target.'cfg(unix)'.dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync"] }

@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "missing",
+    "expected": ""
+  },
+  {
+    "kind": "null",
+    "expected": ""
+  },
+  {
+    "kind": "boolean",
+    "value": false,
+    "expected": "FALSE"
+  },
+  {
+    "kind": "boolean",
+    "value": true,
+    "expected": "TRUE"
+  },
+  {
+    "kind": "string",
+    "value": "",
+    "expected": ""
+  },
+  {
+    "kind": "string",
+    "value": "  text\t\n",
+    "expected": "  text\t\n"
+  },
+  {
+    "kind": "string",
+    "value": "﻿A",
+    "expected": "﻿A"
+  },
+  {
+    "kind": "string",
+    "value": "TRUE",
+    "expected": "TRUE"
+  },
+  {
+    "kind": "string",
+    "value": "1.20",
+    "expected": "1.20"
+  },
+  {
+    "kind": "string",
+    "value": "<x> & café",
+    "expected": "<x> & café"
+  }
+]
