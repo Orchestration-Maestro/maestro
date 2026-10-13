@@ -582,12 +582,12 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
             .output()
             .unwrap();
         assert!(
-            output.status.success(),
+            output.status.success()
+                && String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"),
             "{}\n{}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         return;
     }
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
