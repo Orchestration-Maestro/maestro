@@ -1,6 +1,5 @@
 //! Generation settings and body-level request members of the public endpoint.
 
-use maestro_json::is_truthy;
 use serde_json::{Map, Value, json};
 
 use super::{Failure, Projection, Step, content, record, schema, select, tools, type_name};
@@ -61,20 +60,13 @@ const SAFETY: &[Step] = &[
 
 /// Select the generation object of a configuration, adding its body-level members to `body`.
 ///
-/// A structured response schema that is really a JSON schema moves to the JSON-schema member
-/// first, unless that member is already populated.
+/// Routes the response schema through the schema owner's JSON-alternative rule first.
 pub(super) fn generation(
     mut config: Value,
     body: &mut Map<String, Value>,
 ) -> Projection<Map<String, Value>> {
     if let Value::Object(members) = &mut config {
-        let movable = members
-            .get("responseSchema")
-            .is_some_and(schema::is_json_schema)
-            && !members.get("responseJsonSchema").is_some_and(is_truthy);
-        if movable && let Some(moved) = members.shift_remove("responseSchema") {
-            members.insert("responseJsonSchema".to_owned(), moved);
-        }
+        schema::route_json_schema(members, "responseSchema", "responseJsonSchema");
     }
     select(config, CONFIG, body)
 }

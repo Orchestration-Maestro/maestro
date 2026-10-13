@@ -94,7 +94,7 @@ fn parts(origin: Value) -> Projection<Vec<Value>> {
     }
 }
 
-/// A content from a single-content union: a content is kept, anything else is a user turn.
+/// Keep a content or wrap an admitted part-list union in a user turn.
 fn content(origin: Value) -> Projection<Value> {
     if is_content(&origin) {
         return Ok(origin);
@@ -136,7 +136,7 @@ pub(super) fn contents(origin: Value) -> Projection<Value> {
         .map(Value::Array)
 }
 
-/// Group a non-empty list: all contents stay as given, all parts become one user turn.
+/// Keep a non-empty content list or group admitted non-call parts into one user turn.
 fn turn_list(items: Vec<Value>) -> Projection<Vec<Value>> {
     let of_contents = is_content(&items[0]);
     let mut turns = Vec::new();

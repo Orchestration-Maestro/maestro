@@ -3,7 +3,7 @@
 use serde_json::{Map, Value};
 use std::mem;
 
-use super::{Failure, Projection, Step, malformed, record, schema};
+use super::{Failure, Projection, Step, record, schema};
 use maestro_json::is_truthy;
 
 /// Selection of a tool, in wire order; one tool may hold several kinds.
@@ -94,8 +94,7 @@ fn prepare(mut tool: Value) -> Projection<Value> {
     Ok(tool)
 }
 
-/// Convert a structured schema in place, or move a JSON schema to its alternative member
-/// unless that member is already populated.
+/// Convert a truthy structured declaration schema, or apply the schema owner's routing rule.
 fn reroute(
     declaration: &mut Map<String, Value>,
     schema_key: &str,
@@ -107,13 +106,10 @@ fn reroute(
     else {
         return Ok(());
     };
-    if !schema::is_json_schema(current) {
+    if schema::is_json_schema(current) {
+        schema::route_json_schema(declaration, schema_key, json_key);
+    } else {
         *current = schema::convert(mem::take(current))?;
-    } else if !declaration.get(json_key).is_some_and(is_truthy) {
-        let moved = declaration
-            .shift_remove(schema_key)
-            .ok_or_else(|| malformed("schema vanished"))?;
-        declaration.insert(json_key.to_owned(), moved);
     }
     Ok(())
 }

@@ -24,6 +24,16 @@ pub(super) fn is_json_schema(value: &Value) -> bool {
         .is_some_and(|schema| schema.contains_key("$schema"))
 }
 
+/// Move a `$schema`-bearing source to its JSON alternative when that destination is false-like.
+pub(super) fn route_json_schema(members: &mut Map<String, Value>, source: &str, destination: &str) {
+    if members.get(source).is_some_and(is_json_schema)
+        && !members.get(destination).is_some_and(is_truthy)
+        && let Some(schema) = members.shift_remove(source)
+    {
+        members.insert(destination.to_owned(), schema);
+    }
+}
+
 /// Convert a structured schema: type names, `items`, `anyOf` and `properties` are rewritten
 /// and `additionalProperties` is dropped at every converted node.
 pub(super) fn convert(schema: Value) -> Projection<Value> {
@@ -87,8 +97,8 @@ fn is_null_type(schema: &Value) -> bool {
 
 /// Replace a pure two-arm nullable wrapper by its other arm and mark the result nullable.
 ///
-/// A parent holding any other non-null member keeps its constraints and converts through the
-/// general union path instead.
+/// A parent holding any other non-null member is retained for ordinary schema conversion
+/// through the general union path instead.
 fn unwrap_nullable(
     mut source: Map<String, Value>,
     converted: &mut Map<String, Value>,

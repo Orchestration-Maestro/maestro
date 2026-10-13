@@ -235,8 +235,9 @@ the [JSON owner](../json.md). A model that is missing, empty or not text, or tha
 `..`, `?` or `&`, is rejected before contents and configuration are read; the first rejection
 in the order model, contents, configuration wins.
 
-- A content, a part, a text, or a list of parts or contents is accepted. A list mixing
-  contents and parts, or holding a call or response part outside a content, is rejected.
+- Contents accept a content, a text, an admitted part, or a non-empty homogeneous list of
+  contents or admitted parts. Empty lists, mixed content/part lists, and bare function-call
+  or function-response parts (single or in a list) are rejected.
 - A part may hold several members. File data, inline data and function calls select only
   the members the endpoint knows; other supported part members are copied whole.
 - Selected record members omit missing or null values, retain zero and false, and apply
@@ -248,6 +249,7 @@ in the order model, contents, configuration wins.
   `TYPE_UNSPECIFIED`), type arrays and `anyOf` lists drop their null type into `nullable`,
   `items`, `anyOf` and `properties` are converted recursively, and `additionalProperties`
   is dropped at converted nodes. A union collapses to its other arm only when it is a pure
-  nullable wrapper; a parent that holds other non-null members keeps them. A schema carrying
-  `$schema` is moved to its JSON-schema member when that member is absent, null, false, zero
-  or empty text, and is never converted there.
+  nullable wrapper; a parent that holds other non-null members is retained for ordinary
+  schema conversion. At the responseSchema and function parameters/response fields only,
+  a schema carrying `$schema` is moved to its JSON-schema alternative when that destination
+  is absent, null, false, zero or empty text, and is not converted in that alternative.
