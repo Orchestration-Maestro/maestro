@@ -49,9 +49,9 @@ The compiled filesystem-pattern policy uses the matcher attribution above.
 These are owned implementations; the original packages are not runtime
 dependencies.
 
-## Edit line diff
+## Edit diff
 
-The owned line diff derives from diff 8.0.4 (BSD-3-Clause).
+The owned line diff and word-level rendering derive from diff 8.0.4 (BSD-3-Clause).
 
 ```text
 BSD 3-Clause License

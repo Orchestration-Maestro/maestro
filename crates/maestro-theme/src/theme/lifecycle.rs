@@ -29,7 +29,8 @@ pub(super) struct Lifecycle {
 /// Handle that reads the currently published theme on every call.
 ///
 /// Cloning clones the handle; every clone reads the same slot.
-#[derive(Clone)]
+/// The default handle has an unpublished slot, like a newly created [`ThemeState`].
+#[derive(Clone, Default)]
 pub struct LiveTheme(Rc<RefCell<Option<Rc<Theme>>>>);
 
 impl LiveTheme {

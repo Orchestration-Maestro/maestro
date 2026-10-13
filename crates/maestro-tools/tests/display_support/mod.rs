@@ -636,3 +636,12 @@ pub fn check_rows(test: &str, plain: bool) {
         assert_rows(&case, &actual, plain);
     }
 }
+
+/// Load the shipped theme `name`, optionally selecting its color mode.
+pub fn shipped_theme(name: &str, mode: Option<ColorMode>) -> Rc<Theme> {
+    let path = format!(
+        "{}/../maestro-theme/assets/theme/{name}.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    Rc::new(maestro_theme::load_theme_from_path(&path, mode, &NativeThemeOperations).unwrap())
+}

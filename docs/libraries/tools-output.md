@@ -124,12 +124,13 @@ extra capability.
 | weezl | 0.1.12 | alloc, default, std | MIT OR Apache-2.0 |
 | zlib-rs | 0.6.8 | rust-allocator, std | Zlib |
 
-## Edit line diff
+## Edit diff
 
 The native [numbered edit diff](../tools-edit.md#numbered-diffs-and-read-only-previews)
-uses one owned line-token and sequence-selection core, derived from diff 8.0.4.
+and portable [word-level rendering](../tools-edit.md#diff-rendering)
+share one owned sequence-selection core, derived from diff 8.0.4.
 It adds no runtime dependency. The BSD-3-Clause attribution is retained in
-[the third-party notices](../../THIRD-PARTY-NOTICES.md#edit-line-diff).
+[the third-party notices](../../THIRD-PARTY-NOTICES.md#edit-diff).
 
 ## Search program acquisition
 
