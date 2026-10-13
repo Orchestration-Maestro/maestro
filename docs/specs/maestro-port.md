@@ -193,7 +193,7 @@ dependencies apart from the optional foundation utility described below.
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
-| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text` | 1 |
+| `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
@@ -277,12 +277,16 @@ deleted lines; moving lines is not a code saving.
 `maestro-process` is a core leaf below layer 0 with no workspace dependencies,
 including the path and cancellation leaves. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
-pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages and the
+pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials and the
 terminal toolkit may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. It adds no general background runtime or deadline. The
+with their feature owners. Its synchronous capture takes a caller-supplied timeout.
+On expiry, it attempts to force-kill and reap the direct child if it is still running;
+native errors can prevent this. If the direct child has already exited, it closes
+unfinished readers without signalling that child. It adds no general background
+runtime or default deadline. The
 conventions test checks dependency ownership across declaration forms, not target
 predicates; native-only manifests and the existing wasm and browser builds are
 qualified when the crate is extracted through
