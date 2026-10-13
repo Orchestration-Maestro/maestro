@@ -39,14 +39,12 @@ actual members are rejected.
 The specification table identifies leaves with no internal dependencies; the
 foundation utility `maestro-path` is also a leaf. The
 [architecture conventions test](../crates/maestro-test-conventions/tests/architecture.rs)
-checks the table against the enforced graph policy. Other crates may use a subset
-of their specification row, except these complete direct sets:
-
-- CLI and chat: application, toolkit, terminal adapter and theme.
-- RPC and web: application and theme.
-- Terminal adapter and terminal scenario harness: the toolkit. The adapter may also
-  depend on `maestro-text`; the adapter requires both, and an absent required toolkit or
-  text owner fails. The scenario harness may not import text.
+checks the table against the enforced graph policy. Frontend dependency requirements
+follow the [specification's dependency boundary](specs/maestro-port.md#common-semantic-and-boundary-contract).
+Other crates may use a subset of their specification row, except the terminal adapter
+and terminal scenario harness: both require the toolkit. The adapter also requires
+`maestro-text`; an absent required toolkit or text owner fails. The scenario harness
+may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
@@ -254,5 +252,7 @@ forbidden production dependency: maestro-settings -> maestro-models
 ```
 
 Removing the dependency passes. An otherwise empty CLI fixture instead reports
-`maestro-cli: missing required direct dependency maestro-app`; restoring all four
-direct dependencies passes. Source failures include the offending file and line.
+`maestro-cli: missing required direct dependency maestro-app`; restoring the
+application dependency passes. Other listed frontend edges are permitted, not
+required, and are declared only when used. Source failures include the offending
+file and line.
