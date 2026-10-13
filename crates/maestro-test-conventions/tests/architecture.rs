@@ -838,7 +838,7 @@ fn path_utility_has_no_outbound_edges() {
     }
 }
 
-/// Require the application edge with and without the optional utility edge.
+/// Verify that the optional utility edge cannot replace the required application edge.
 fn path_utility_does_not_replace_the_application() {
     for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
         let required = required_targets(frontend);
