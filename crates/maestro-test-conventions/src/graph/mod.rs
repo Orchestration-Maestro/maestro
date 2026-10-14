@@ -9,6 +9,7 @@ pub(crate) mod metadata;
 /// Scoped crate ownership and direct-dependency rules.
 mod policy;
 use metadata::{canonical, check_kind, members};
+pub(crate) use policy::UNIFIER;
 use policy::{UTILITY, rule, uses_utility};
 
 #[derive(Deserialize)]
@@ -41,6 +42,9 @@ impl Class {
         }
     }
 }
+
+/// The only target table that may declare the feature unifier.
+const NATIVE: &str = "cfg(not(target_arch = \"wasm32\"))";
 
 /// Validate declared and host-resolved workspace graphs.
 pub(crate) fn check(root: &Path) -> Result<Metadata, String> {
@@ -159,6 +163,12 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
             let member = path.as_ref().and_then(|path| names.get(path)).copied();
             let name = dependency.name.as_str();
             check_library_dependency(package.name.as_str(), name, &kind)?;
+            if member == Some(UNIFIER) && !native_normal(dependency, &kind) {
+                return Err(format!(
+                    "{}: {UNIFIER} must be a native, normal, non-optional dependency",
+                    package.name
+                ));
+            }
             if names.values().any(|member| *member == name) && member != Some(name) {
                 return Err(format!(
                     "dependency {} -> {name} must use a path to that workspace member",
@@ -175,6 +185,18 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
         }
     }
     Ok(edges)
+}
+
+/// Report whether a declaration is a non-optional normal dependency outside WebAssembly targets.
+fn native_normal(dependency: &cargo_metadata::Dependency, kind: &Kind) -> bool {
+    *kind == Kind::Normal
+        && !dependency.optional
+        && dependency
+            .target
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref()
+            == Some(NATIVE)
 }
 
 /// Check graph identities, cycles and each dependency's ownership policy.
@@ -216,6 +238,9 @@ fn validate(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
 fn validate_edge(edge: &Edge) -> Result<(), String> {
     let from = rule(&edge.from).ok_or("unknown scoped source")?;
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
+    if edge.to == UNIFIER {
+        return Ok(());
+    }
     if edge.to == UTILITY && edge.kind != Kind::Development && uses_utility(&edge.from) {
         return Ok(());
     }

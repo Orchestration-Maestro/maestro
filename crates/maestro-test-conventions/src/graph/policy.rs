@@ -207,9 +207,13 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "mae
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
 
+/// Generated crate that unifies native dependency features and exposes no API.
+pub(crate) const UNIFIER: &str = "maestro-dependencies";
+
 /// Report whether a crate may declare the foundation utility as a production dependency.
 pub(crate) fn uses_utility(name: &str) -> bool {
     name != UTILITY
+        && name != UNIFIER
         && !matches!(
             name,
             "maestro-watch"
@@ -231,6 +235,12 @@ pub(crate) fn uses_utility(name: &str) -> bool {
 
 /// Look up a scoped crate's classification and permitted dependencies.
 pub(crate) fn rule(name: &str) -> Option<Rule> {
+    if name == UNIFIER {
+        return Some(Rule {
+            class: "dedicated",
+            dependencies: &[],
+        });
+    }
     let dependencies = POLICY.iter().find(|row| row.0 == name)?.1;
     Some(Rule {
         class: if matches!(

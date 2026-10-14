@@ -114,6 +114,12 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
+- `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
+  dedicated, unpublished and without workspace dependencies. Members declare it only
+  as a non-optional normal dependency under `cfg(not(target_arch = "wasm32"))`; it
+  never supplies a required edge, and only its generated section may declare
+  `serde_json` directly (lint inheritance and the workspace precision entry still
+  apply).
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
   no workspace dependencies, including the path utility. Only theme/application
   may depend on watch; only settings/credentials may depend on lock. Follow the
@@ -158,9 +164,10 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, terminal scenario harness and repository tooling are dedicated.
+conventions checker, terminal scenario harness, repository tooling and the feature
+unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility. Sparse workspaces need
+no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The

@@ -320,6 +320,16 @@ permission, so being a text consumer does not authorize the utility. Shared path
 take supplied directory observations and add no global environment, filesystem service,
 directory cache, scheduler or workspace dependency.
 
+`maestro-dependencies` is the build-only feature unifier, generated and verified
+by `cargo hakari`. It is a dedicated, unpublished crate with an empty library, no
+public API and no workspace dependencies, including the path utility. Every other
+workspace member may declare it only as a non-optional normal dependency under
+`cfg(not(target_arch = "wasm32"))`, so browser and component builds never reach it.
+It never satisfies a required or exact direct dependency and never changes a
+member's layer. Its generated manifest section is the sole exception to member
+`serde_json` inheritance; the workspace precision declaration and lint inheritance
+still apply to it.
+
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
 terminal scenario harness remains forbidden from importing text.

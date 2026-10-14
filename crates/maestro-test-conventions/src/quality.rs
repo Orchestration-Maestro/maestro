@@ -4,6 +4,7 @@ use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::{spanned::Spanned, visit::Visit};
 
 use crate::generated;
+use crate::graph::UNIFIER;
 use crate::source::{
     Member, Source, cfg_test, exclude_test_item, impl_item_attributes, item_attributes,
     read_manifest, test_layout, trait_item_attributes,
@@ -204,6 +205,7 @@ const PROTECTED: &[(&str, &str)] = &[
 
 /// Require canonical workspace JSON precision and normal members' inheritance of precise entries.
 /// Dev/build declarations are excluded: their feature union can hide missing normal precision.
+/// The generated feature unifier is skipped: its direct entries mirror the resolved features.
 fn check_json_dependencies(root: &Path, members: &[Member]) -> Result<(), String> {
     let manifest = root.join("Cargo.toml");
     let document = read_manifest(&manifest)?;
@@ -224,7 +226,7 @@ fn check_json_dependencies(root: &Path, members: &[Member]) -> Result<(), String
             manifest.display()
         ));
     }
-    for member in members {
+    for member in members.iter().filter(|member| member.name != UNIFIER) {
         let manifest = member.directory.join("Cargo.toml");
         let document = read_manifest(&manifest)?;
         let normal = std::iter::once(("dependencies".to_owned(), document.get("dependencies")));

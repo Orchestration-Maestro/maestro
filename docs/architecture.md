@@ -28,10 +28,11 @@ these permissions for normal, build, optional and foreign-target declarations.
 
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
-The binary composition root, conventions checker, terminal scenario harness and
-repository tooling are `dedicated`; all product libraries and adapters are `core`.
+The binary composition root, conventions checker, terminal scenario harness,
+repository tooling and the feature unifier (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility. Classes are not numeric
+no internal dependencies apart from the optional utility and the native-only
+feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
@@ -110,6 +111,12 @@ namespace supplies a comparison base; otherwise, nonempty tails need a complete
 shared first component. Empty tails still permit component traversal. Without a
 shared base the normalized destination is returned: `D:a` to `D:b` under a UNC
 working directory with no drive entries yields `D:b`, not `..\b`.
+
+`maestro-dependencies` is the other named exception: every member may declare it,
+and only as a non-optional normal dependency under
+`cfg(not(target_arch = "wasm32"))`. It has no internal dependencies, is not listed
+in the specification table, cannot satisfy a required direct dependency and is the
+only crate whose direct `serde_json` entries bypass member inheritance.
 
 `maestro-path` has no internal dependencies and is the one named exception to
 leaf and exact-set rules. Any crate in the specification table may declare it as
