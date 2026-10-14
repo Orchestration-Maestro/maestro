@@ -26,7 +26,7 @@ pub struct XmlAttribute<'doc> {
 /// Parse XML, optionally removing a leading declaration; DOCTYPE is rejected.
 ///
 /// # Errors
-/// Returns an XML error for malformed input or a DOCTYPE declaration.
+/// Returns an XML error for malformed remaining XML or a DOCTYPE declaration.
 pub fn parse_xml_string(
     input: &str,
     trim_xml_declaration: bool,

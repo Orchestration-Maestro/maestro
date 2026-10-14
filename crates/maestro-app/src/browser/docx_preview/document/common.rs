@@ -18,7 +18,7 @@ pub enum LengthUsage {
     Percent,
 }
 
-/// Convert a length, retaining an existing lowercase unit suffix.
+/// Convert a length, retaining lowercase px/pt/% when the preceding character is not a line terminator.
 #[must_use]
 pub fn convert_length(value: Option<&str>, usage: LengthUsage) -> Option<String> {
     let value = value?;

@@ -10,7 +10,7 @@ use std::{
 pub(crate) struct OpenXmlPackage {
     /// Supplied archive bytes and native metadata.
     archive: Mutex<zip::ZipArchive<Cursor<Vec<u8>>>>,
-    /// Sanitized archive spelling to last entry index.
+    /// Sanitized archive spelling to last central-directory entry index.
     entries: HashMap<String, usize>,
     /// XML admission policy.
     options: Options,
@@ -24,11 +24,18 @@ impl OpenXmlPackage {
         let mut entries = HashMap::new();
         for index in 0..archive.len() {
             let entry = archive.by_index(index).map_err(archive_error)?;
-            entries.insert(utils::archive_name(entry.name()), index);
+            let candidate = (entry.central_header_start(), index);
+            entries
+                .entry(utils::archive_name(entry.name()))
+                .and_modify(|current| *current = candidate.max(*current))
+                .or_insert(candidate);
         }
         Ok(Self {
             archive: Mutex::new(archive),
-            entries,
+            entries: entries
+                .into_iter()
+                .map(|(name, (_, index))| (name, index))
+                .collect(),
             options,
         })
     }

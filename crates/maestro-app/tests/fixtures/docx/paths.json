@@ -192,7 +192,7 @@
       "value": "https://example.org/a",
       "base": "word/"
     },
-    "expected": "ple.org/a"
+    "expected": "https://example.org/a"
   },
   {
     "test": "relationship_targets_use_url_resolution",
@@ -200,7 +200,7 @@
       "value": "//elsewhere/a",
       "base": "word/"
     },
-    "expected": "here/a"
+    "expected": "http://elsewhere/a"
   },
   {
     "test": "relationship_targets_use_url_resolution",

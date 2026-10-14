@@ -13,7 +13,12 @@ pub(super) fn resolve_path(path: &str, base: &str) -> String {
         .and_then(|base| base.join(path))
         .map_or_else(
             |_| format!("{base}{path}"),
-            |url| url.as_str().chars().skip(12).collect(),
+            |url| {
+                url.as_str()
+                    .strip_prefix("http://docx/")
+                    .unwrap_or(url.as_str())
+                    .into()
+            },
         )
 }
 /// Admit archive dot segments without decoding escapes or backslashes.

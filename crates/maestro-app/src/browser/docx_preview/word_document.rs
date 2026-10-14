@@ -113,10 +113,13 @@ impl WordDocument {
     pub fn document_part(&self) -> Option<&Part> {
         self.document.map(|i| &self.parts[i])
     }
-    /// Resolve an ID from a supplied part or the root relationships to a stored part.
+    /// Resolve an ID using part relationships when present, otherwise roots, retaining the part folder.
     pub fn find_part_by_rel_id(&self, id: &str, base_part: Option<&Part>) -> Option<&Part> {
         let (rels, folder) = base_part.map_or((self.rels(), ""), |part| {
-            (part.rels.as_deref(), utils::split_path(&part.path).0)
+            (
+                part.rels.as_deref().or(self.rels()),
+                utils::split_path(&part.path).0,
+            )
         });
         let target = Relationship::find_target(rels, id)?;
         self.index

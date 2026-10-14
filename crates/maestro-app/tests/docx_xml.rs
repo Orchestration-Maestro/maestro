@@ -175,3 +175,25 @@ fn xml_numeric_attributes_keep_empty_defaults_and_prefix_rules() {
         );
     }
 }
+
+#[test]
+fn xml_child_queries_ignore_nested_matches_and_select_the_first_child() {
+    let parser = parse_xml_string(
+        "<r><wrapper><x n=\"nested\"/></wrapper><x n=\"first\"/><x n=\"second\"/></r>",
+        false,
+    )
+    .unwrap();
+    let root = parser.root();
+    assert_eq!(
+        parser
+            .elements(root, Some("x"))
+            .map(|c| parser.attr(c, "n"))
+            .collect::<Vec<_>>(),
+        [Some("first"), Some("second")]
+    );
+    assert_eq!(
+        parser.attr(parser.element(root, "x").unwrap(), "n"),
+        Some("first")
+    );
+    assert_eq!(parser.element_attr(root, "x", "n"), Some("first"));
+}

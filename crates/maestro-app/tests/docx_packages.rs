@@ -47,16 +47,17 @@ fn observe(document: &WordDocument, input: &Input) -> Value {
     });
     if let Some(ids) = &input.lookup {
         let base = document.document_part().unwrap();
+        let found: Vec<_> = ids
+            .iter()
+            .map(|id| document.find_part_by_rel_id(id, Some(base)))
+            .collect();
         observed["lookup"] = json!(
-            ids.iter()
-                .map(|id| document
-                    .find_part_by_rel_id(id, Some(base))
-                    .map(|p| p.path.as_str()))
+            found
+                .iter()
+                .map(|part| part.map(|p| p.path.as_str()))
                 .collect::<Vec<_>>()
         );
-        let one = document.find_part_by_rel_id(&ids[0], Some(base)).unwrap();
-        let two = document.find_part_by_rel_id(&ids[1], Some(base)).unwrap();
-        assert!(std::ptr::eq(one, two));
+        assert!(std::ptr::eq(found[0].unwrap(), found[1].unwrap()));
     }
     if let Some(id) = &input.root_lookup {
         observed["root_lookup"] = json!(
@@ -189,4 +190,59 @@ fn package_archive_names_are_sanitized_before_lookup() {
 #[test]
 fn document_xml_and_relationships_are_retained() {
     check("document_xml_and_relationships_are_retained");
+}
+
+#[test]
+fn document_missing_part_relationships_fall_back_but_empty_ones_do_not() {
+    let absent = WordDocument::load(
+        include_bytes!("fixtures/docx/packages/root-fallback-absent.docx"),
+        Options::default(),
+    )
+    .unwrap();
+    let part = absent.document_part().unwrap();
+    assert!(std::ptr::eq(
+        absent.find_part_by_rel_id("root", Some(part)).unwrap(),
+        part
+    ));
+    let empty = WordDocument::load(
+        include_bytes!("fixtures/docx/packages/root-fallback-empty.docx"),
+        Options::default(),
+    )
+    .unwrap();
+    assert!(
+        empty
+            .find_part_by_rel_id("root", empty.document_part())
+            .is_none()
+    );
+}
+
+#[test]
+fn package_collisions_select_the_last_central_directory_entry() {
+    let document = WordDocument::load(
+        include_bytes!("fixtures/docx/packages/central-order.docx"),
+        Options::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        document.document_part().unwrap().xml,
+        "<document>C</document>"
+    );
+}
+
+#[test]
+fn document_external_paths_keep_the_resolved_url_identity() {
+    let document = WordDocument::load(
+        include_bytes!("fixtures/docx/packages/external-paths.docx"),
+        Options::default(),
+    )
+    .unwrap();
+    let part = document.document_part().unwrap();
+    assert_eq!(
+        document.get_path_by_id(part, "https").as_deref(),
+        Some("https://example.org/a")
+    );
+    assert_eq!(
+        document.get_path_by_id(part, "network").as_deref(),
+        Some("http://elsewhere/a")
+    );
 }

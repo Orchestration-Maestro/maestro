@@ -34,8 +34,10 @@ comment parts; missing parts and unknown relationship types are tolerated. This
 is package loading, not text extraction, semantic document parsing or rendering.
 
 Parts retain decoded XML and ordered relationships. Relationship lookup borrows
-stored parts; resource lookup reads bytes on demand without network requests or
-filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
+stored parts. Missing part relationships fall back to root relationships while
+retaining the supplied part folder; an empty list does not fall back. External
+relationship paths retain their resolved absolute URLs. Resource lookup reads
+bytes on demand without network requests or filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute
