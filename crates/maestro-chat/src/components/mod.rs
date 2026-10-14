@@ -151,3 +151,70 @@ pub mod theme_selector;
 pub mod user_message_selector;
 
 pub mod oauth_selector;
+
+pub mod extension_selector;
+
+/// Builds padded dialog chrome and its live countdown title updater.
+fn dialog_chrome(
+    title: String,
+    body: Rc<dyn Component>,
+    theme: LiveTheme,
+    hint: String,
+    bold: bool,
+) -> (maestro_tui::Container, Rc<dyn Fn(f64)>) {
+    use maestro_tui::{Container, Spacer, Text};
+    let title_theme = theme.clone();
+    let color = move |text: &str| {
+        let text = if bold {
+            maestro_theme::Theme::bold(text, true)
+        } else {
+            text.to_owned()
+        };
+        paint(
+            title_theme.get().ok().as_deref(),
+            &ThemeColor::Accent,
+            &text,
+        )
+    };
+    let heading = Rc::new(Text::new(color(&title), 1, 0, None));
+    let container = Container::new();
+    container.add_child(Rc::new(dynamic_border::DynamicBorder::new(
+        theme.clone(),
+        None,
+    )));
+    container.add_child(Rc::new(Spacer::new(1)));
+    container.add_child(heading.clone());
+    container.add_child(Rc::new(Spacer::new(1)));
+    container.add_child(body);
+    container.add_child(Rc::new(Spacer::new(1)));
+    container.add_child(Rc::new(Text::new(hint, 1, 0, None)));
+    container.add_child(Rc::new(Spacer::new(1)));
+    container.add_child(Rc::new(dynamic_border::DynamicBorder::new(theme, None)));
+    let update = Rc::new(move |seconds: f64| {
+        let seconds = if seconds.is_infinite() {
+            "Infinity".to_owned()
+        } else {
+            format!("{seconds:.0}")
+        };
+        heading.set_text(color(&format!("{title} ({seconds}s)")));
+    });
+    (container, update)
+}
+
+/// Admits only positive supplied deadlines with a writer.
+fn dialog_countdown(
+    timeout: Option<f64>,
+    tui: Option<&maestro_tui::TUI>,
+    runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
+    update: Rc<dyn Fn(f64)>,
+    cancel: Rc<dyn Fn()>,
+) -> Option<countdown_timer::CountdownTimer> {
+    timeout
+        .filter(|timeout| *timeout > 0.0)
+        .zip(tui)
+        .map(|(timeout, tui)| {
+            countdown_timer::CountdownTimer::new(timeout, Some(tui), runtime, update, cancel)
+        })
+}
+
+pub mod extension_input;

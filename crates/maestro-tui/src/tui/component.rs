@@ -39,7 +39,7 @@ impl FocusFlag {
         self.focused.get()
     }
 
-    /// Records a focus change.
+    /// Records own state, then synchronously forwards to the optional child.
     pub fn set(&self, focused: bool) {
         self.focused.set(focused);
         if let Some(target) = &self.target {

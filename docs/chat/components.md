@@ -32,6 +32,9 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   component, focus and editor traits delegate to the same editor, with input
   capabilities using the custom router.
 
+The [extension question dialogs](extension-ui.md) provide clamped selection and
+text submission with optional countdowns and retained input focus.
+
 The [transcript messages](messages.md) provide user, assistant and expandable
 summary widgets over the same toolkit and live theme.
 

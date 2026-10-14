@@ -15,11 +15,14 @@ mod published;
 )]
 #[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
 mod recording_terminal;
+#[path = "support/runtime_spy.rs"]
+mod runtime_spy;
 use maestro_chat::DynamicBorder;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, TUI, TerminalImage};
 use manual_runtime::{ManualRuntime, ms};
 use recording_terminal::RecordingTerminal;
+use runtime_spy::Spy;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{
@@ -182,83 +185,6 @@ fn border_returns_painter_output_without_preserving_rule_glyphs() {
     assert_eq!(border.render(3), ["==="]);
 }
 
-/// A scheduling observer delegating every host effect to the existing manual runtime.
-#[derive(Clone, Default)]
-struct Spy {
-    /// Existing clock and scheduler.
-    clock: ManualRuntime,
-    /// Countdown callbacks and writer requests in invocation order.
-    events: Rc<RefCell<Vec<Value>>>,
-    /// Installed countdown delays.
-    delays: Rc<RefCell<Vec<u64>>>,
-    /// Pending countdown work only, not pending frames.
-    pending: Rc<Cell<usize>>,
-}
-/// A counted countdown continuation.
-struct SpyTimer {
-    /// Original cancellation handle.
-    timer: Box<dyn maestro_tui::tui::RenderTimer>,
-    /// Whether this callback is still pending.
-    active: Rc<Cell<bool>>,
-    /// Number of pending countdown callbacks.
-    pending: Rc<Cell<usize>>,
-}
-impl maestro_tui::tui::RenderTimer for SpyTimer {
-    fn cancel(&mut self) {
-        if self.active.replace(false) {
-            self.pending.set(self.pending.get() - 1);
-        }
-        self.timer.cancel();
-    }
-}
-impl maestro_tui::tui::TuiRuntime for Spy {
-    fn now(&self) -> std::time::Duration {
-        maestro_tui::tui::TuiRuntime::now(&self.clock)
-    }
-    fn schedule(
-        &self,
-        delay: std::time::Duration,
-        callback: maestro_tui::tui::RenderCallback,
-    ) -> Box<dyn maestro_tui::tui::RenderTimer> {
-        if delay != ms(1000) {
-            self.events.borrow_mut().push(serde_json::json!(["render"]));
-            return self.clock.schedule(delay, callback);
-        }
-        self.delays.borrow_mut().push(1000);
-        self.pending.set(self.pending.get() + 1);
-        let active = Rc::new(Cell::new(true));
-        let fired = active.clone();
-        let pending = self.pending.clone();
-        let timer = self.clock.schedule(
-            delay,
-            Box::new(move || {
-                fired.set(false);
-                pending.set(pending.get() - 1);
-                callback()
-            }),
-        );
-        Box::new(SpyTimer {
-            timer,
-            active,
-            pending: self.pending.clone(),
-        })
-    }
-    fn spawn_local(&self, future: maestro_tui::tui::LocalFuture) {
-        self.clock.spawn_local(future);
-    }
-    fn environment(&self, key: &str) -> Option<String> {
-        self.clock.environment(key)
-    }
-    fn log_context(&self) -> maestro_tui::tui::LogContext {
-        self.clock.log_context()
-    }
-    fn append_log(&self, path: &std::path::Path, contents: &str) -> std::io::Result<()> {
-        self.clock.append_log(path, contents)
-    }
-    fn write_log(&self, path: &std::path::Path, contents: &str) -> std::io::Result<()> {
-        self.clock.write_log(path, contents)
-    }
-}
 /// Writer over the scheduling observer.
 fn spy_writer(spy: &Spy) -> TUI {
     TUI::new(
