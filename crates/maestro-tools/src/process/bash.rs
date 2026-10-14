@@ -155,6 +155,7 @@ impl LocalBash {
             track_detached_child_pid(pid);
         }
         let mut expired = false;
+        let mut sink = |_, bytes: &[u8]| (options.on_data)(bytes);
         let output = wait_for_child_process(
             &mut child,
             WaitOptions {
@@ -162,7 +163,7 @@ impl LocalBash {
                 ..WaitOptions::default()
             },
             observe(pid, options.signal, options.timeout, &mut expired),
-            Some(options.on_data),
+            Some(&mut sink),
         )
         .await;
         if let Some(pid) = pid {

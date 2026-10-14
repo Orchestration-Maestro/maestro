@@ -6,3 +6,5 @@ pub mod tools_manager;
 
 pub mod find;
 mod listing;
+
+pub mod grep;

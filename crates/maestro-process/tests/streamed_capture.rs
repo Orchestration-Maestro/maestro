@@ -16,7 +16,7 @@ fn streamed_wait_delivers_chunks_without_retaining_them() {
             command.args(["-c", "printf 'raw\\000bytes'; printf 'diagnostic' >&2"]);
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let mut chunks = Vec::new();
-            let mut sink = |bytes: &[u8]| chunks.extend_from_slice(bytes);
+            let mut sink = |_, bytes: &[u8]| chunks.extend_from_slice(bytes);
             let output = wait_for_child_process(
                 &mut child,
                 WaitOptions::default(),
@@ -103,7 +103,7 @@ fn streamed_wait_continues_after_external_tree_kill() {
             let (tx, rx) = tokio::sync::oneshot::channel();
             let mut tx = Some(tx);
             let mut bytes = Vec::new();
-            let mut sink = |chunk: &[u8]| {
+            let mut sink = |_, chunk: &[u8]| {
                 bytes.extend_from_slice(chunk);
                 tx.take().unwrap().send(()).unwrap();
             };
@@ -137,7 +137,7 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
             command.args(["-c", "printf diagnostic >&2"]);
             let mut child = CapturedChild::spawn(&mut command).unwrap();
             let mut bytes = Vec::new();
-            let mut sink = |chunk: &[u8]| bytes.extend_from_slice(chunk);
+            let mut sink = |_, chunk: &[u8]| bytes.extend_from_slice(chunk);
             let output = wait_for_child_process(
                 &mut child,
                 WaitOptions {
@@ -173,4 +173,31 @@ fn assert_sync_session(parent_session: i32, parent_group: i32) {
         String::from_utf8(output.stdout).unwrap(),
         format!("{parent_session} {parent_group}\n")
     );
+}
+
+#[test]
+fn streamed_wait_tags_streams_without_reordering() {
+    use maestro_process::child_process::OutputStream;
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+        let mut command=tokio::process::Command::new("python3");
+        command.args(["-c",&format!("import socket,os\ns=socket.create_connection(('127.0.0.1',{port}))\nfor fd,data in [(1,b'a\\x00'),(2,b'b'),(1,b'c')]:\n os.write(fd,data)\n assert s.recv(1)==b'x'\n")]);
+        let mut child=CapturedChild::spawn(&mut command).unwrap();
+        let (mut socket,_)=listener.accept().unwrap();
+        let mut transcript=Vec::new();
+        let mut acknowledged=0;
+        let mut sink=|stream,bytes:&[u8]| {
+            transcript.extend(bytes.iter().map(|byte|(stream,*byte)));
+            if [2,3,4].get(acknowledged).is_some_and(|boundary| transcript.len() >= *boundary) {
+                socket.write_all(b"x").unwrap(); acknowledged+=1;
+            }
+        };
+        let output=wait_for_child_process(&mut child,WaitOptions::default(),std::future::pending(),Some(&mut sink)).await.unwrap();
+        assert!(output.status.success());assert!(output.stdout.is_empty() && output.stderr.is_empty());
+        assert_eq!(transcript,[(OutputStream::Stdout,b'a'),(OutputStream::Stdout,0),(OutputStream::Stderr,b'b'),(OutputStream::Stdout,b'c')]);
+        let mut tail=Vec::new();socket.read_to_end(&mut tail).unwrap();assert!(tail.is_empty());
+        assert_eq!(child.id(),None);
+    });
 }

@@ -21,8 +21,17 @@ pub use native::{kill_process, kill_process_group};
 /// Default post-exit pipe grace for local shells, in milliseconds.
 pub const EXIT_STDIO_GRACE_MS: u64 = 100;
 
-/// A synchronous raw-byte sink for a streaming wait.
-pub type OutputSink<'a> = &'a mut (dyn FnMut(&[u8]) + Send);
+/// Descriptor that produced a raw output chunk.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OutputStream {
+    /// Standard output.
+    Stdout,
+    /// Standard error.
+    Stderr,
+}
+
+/// A synchronous descriptor-tagged raw-byte sink for a streaming wait.
+pub type OutputSink<'a> = &'a mut (dyn FnMut(OutputStream, &[u8]) + Send);
 
 /// A spawned child with selected standard descriptors.
 pub struct CapturedChild {
@@ -264,9 +273,14 @@ async fn fill(
 }
 
 /// Delivers newly read bytes and removes only those bytes from retained output.
-fn deliver(buf: &mut Vec<u8>, start: Option<usize>, sink: &mut Option<OutputSink<'_>>) {
+fn deliver(
+    buf: &mut Vec<u8>,
+    start: Option<usize>,
+    sink: &mut Option<OutputSink<'_>>,
+    stream: OutputStream,
+) {
     if let (Some(start), Some(sink)) = (start, sink) {
-        sink(&buf[start..]);
+        sink(stream, &buf[start..]);
         buf.truncate(start);
     }
 }
@@ -341,8 +355,8 @@ where
                 escalation = None;
                 grace = timer(options.post_exit_grace);
             }
-            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value?, &mut on_data),
-            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == OutputMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data),
+            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value?, &mut on_data, OutputStream::Stdout),
+            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == OutputMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data, OutputStream::Stderr),
         }
     }
     child.stdout = None;

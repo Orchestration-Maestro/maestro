@@ -474,7 +474,7 @@ fn streamed_failure_preserves_prior_bytes_without_replay() {
         child.err.extend_from_slice(b"prior-err");
         child.stderr = Some(unreadable_stderr().await);
         let mut delivered = Vec::new();
-        let mut sink = |data: &[u8]| delivered.extend_from_slice(data);
+        let mut sink = |_, data: &[u8]| delivered.extend_from_slice(data);
         let error = wait_for_child_process(
             &mut child,
             WaitOptions::default(),
@@ -759,7 +759,7 @@ fn stream_callback_can_abort_the_same_wait() {
         let (tx, rx) = tokio::sync::oneshot::channel();
         let mut tx = Some(tx);
         let mut bytes = Vec::new();
-        let mut sink = |chunk: &[u8]| {
+        let mut sink = |_, chunk: &[u8]| {
             bytes.extend_from_slice(chunk);
             tx.take().unwrap().send(()).unwrap();
         };

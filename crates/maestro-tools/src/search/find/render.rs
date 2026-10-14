@@ -57,6 +57,8 @@ pub(super) fn render_result(
         count: result.details.as_ref().and_then(|d| d.result_limit_reached),
         truncation: result.details.as_ref().and_then(|d| d.truncation.as_ref()),
         noun: "results",
+        preview_lines: 20,
+        trailing_warning: None,
     };
     let text = render_listing(result, options, theme, context, view)?;
     Ok(into_text(context.last_component.as_ref(), text))

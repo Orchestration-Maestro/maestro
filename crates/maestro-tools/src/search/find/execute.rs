@@ -113,7 +113,7 @@ fn format_paths(
     } else {
         Vec::new()
     };
-    let (text, truncation) = select_listing(&body, notices);
+    let (text, truncation) = select_listing(&body, notices, None);
     let reported = reached || truncation.is_some();
     Ok(AgentToolResult {
         content: vec![text_block(text)],
