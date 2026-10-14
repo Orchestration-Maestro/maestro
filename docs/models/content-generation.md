@@ -335,8 +335,9 @@ selects whole data segments for this protocol; other callers retain field framin
 items feed the existing [response reducer](#response-reduction); a JSON null root becomes
 an empty response before reduction. A non-whitespace EOF tail
 fails. Complete non-data segments and the residual tail share bare-error classification:
-a numeric or decimal numeric-string code in `[400, 600)` produces a provider error across
-chunk and delimiter boundaries; other complete non-data segments are ignored.
+for bodies accepted by the JSON decoder within its nesting bound, a numeric or decimal
+numeric-string code in `[400, 600)` produces a provider error across chunk and delimiter
+boundaries; other complete non-data segments are ignored.
 Source and framing failures preserve
 prior content without closing its active block; [reducer failures](#response-reduction)
 retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.
