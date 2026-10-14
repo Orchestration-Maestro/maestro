@@ -3,7 +3,7 @@
 `maestro-tools` runs an explicit program with `exec_command` and waits with `sleep`.
 These operations and local shell operations are native-only, like the
 [read tool](tools-read.md#read-tool); the crate still builds for browser targets
-without them. The agent `bash` tool and its rendering are separate capabilities.
+without them. The native agent `bash` tool is described [below](#agent-bash-tool); its rendering is separate.
 
 ## Running a command
 
@@ -94,6 +94,7 @@ assert_eq!(result.exit_code, Some(0.0));
 # Ok(())
 # }
 ```
+
 ## Helper launches
 
 The application exposes native `spawn_sync`, `spawn`, `SpawnSyncOptions`,
@@ -140,3 +141,67 @@ and no status; nonzero status alone is not an error.
 An ordinary operation error returns unchanged without finalizing pending text or creating
 a line-only artifact. The first processing failure stops output updates and returns after
 the operation settles. Owned writers are flushed and closed; no durability is promised.
+
+## Agent bash tool
+
+`create_bash_tool_definition::<C>(cwd, bin_dir, options)` builds a native typed
+`ToolDefinition<C, BashToolInput, BashToolDetails>`; `C` is unused.
+`create_bash_tool(cwd, bin_dir, options)` uses the [definition wrapper](tools-read.md#tool-definitions)
+to return an executable agent tool. Both factories and the input, details,
+options and spawn-hook records are re-exported from `maestro-tools` and
+`maestro-app` on native targets. The caller supplies the resolved binary directory;
+[local shell operations](#local-shell-operations) own its environment insertion.
+
+`BashToolOptions::operations` replaces the local operation, taking precedence over
+`shell_path`. A nonempty `command_prefix` contributes its literal text and one
+newline before the input command. Each call builds fresh environment operands,
+then `spawn_hook` may replace the complete command, directory and environment;
+a hook error returns before progress or execution. `BashToolInput::timeout` is
+optional numeric seconds forwarded unchanged to the selected operation, as is
+the optional cancellation signal; supplied operations own those policies.
+
+An observer receives an empty-content update synchronously before the execution
+future is returned, after a successful hook. While accumulation succeeds, the first
+data callback publishes a snapshot immediately; later callbacks coalesce until 100 ms after the previous
+emission, or flush on settlement. Data updates carry one text block and present
+details, even when empty. Without an observer there is no progress timer.
+After settlement the execution releases its observer and pending timer.
+
+Output bytes are not sanitized. The [streaming accumulator](tools-read.md#native-streaming)
+owns decoding, tail selection and raw artifacts. On successful accumulation the tool
+finishes decoding and flushes dirty progress. It closes the artifact writer before
+returning; closure can itself report an I/O error. If accumulation
+fails, it stops consuming bytes, awaits the original operation's settlement and
+reports the first I/O failure; it adds no stop policy or default timeout.
+
+Zero or absent exit status succeeds. Empty successful output is `(no output)`;
+nonzero status appends `Command exited with code ...`. Abort and timeout append
+their respective status to output without inventing `(no output)`; timeout uses
+the operation's seconds. Other errors return their diagnostic message without partial output appended;
+native I/O codes are retained when available. Truncated final output includes a tail notice and details with
+its full raw-output path. A raw-only spill can appear in progress details without
+final truncation details.
+
+```rust,no_run
+use maestro_tools::{BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition};
+
+# async fn run() -> Result<(), maestro_models::DiagnosticErrorInfo> {
+let definition = create_bash_tool_definition::<()>(
+    "/repo".into(), "/tool-bin".into(), BashToolOptions::default(),
+);
+let result = (definition.execute)("call".into(), BashToolInput {
+    command: "printf hello".into(), timeout: Some(1.5),
+}, None, None, None).await?;
+assert!(result.details.is_none());
+
+let tool = create_bash_tool("/repo".into(), "/tool-bin".into(), BashToolOptions {
+    command_prefix: Some("export MODE=fixture".into()),
+    spawn_hook: Some(std::sync::Arc::new(|context| Ok(context))),
+    ..BashToolOptions::default()
+});
+let result = (tool.execute)("call".into(), serde_json::json!({
+    "command": "printf '%s' \"$MODE\"",
+}), None, None).await?;
+# Ok(())
+# }
+```
