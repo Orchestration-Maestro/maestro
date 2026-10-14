@@ -20,7 +20,9 @@ mod stream;
 mod wire;
 
 pub use api_client::{ApiClient, PreparedContentRequest};
-pub use projection::{ProjectedContentRequest, project_content_request};
+pub use projection::{
+    ProjectedContentRequest, project_content_request, project_vertex_content_request,
+};
 pub use request::{
     FunctionCallingConfig, GenerateContentConfig, GenerateContentParameters, ThinkingConfig,
     ToolConfig,

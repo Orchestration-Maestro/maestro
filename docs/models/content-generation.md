@@ -255,6 +255,47 @@ in the order model, contents, configuration wins.
   is absent, null, false, zero or empty text, and is not converted in that alternative.
 
 
+### Cloud projection
+
+`google_shared::project_vertex_content_request(params, project, location)` projects the
+selected cloud payload using the same content grouping and [schema/JSON owners](#request-projection).
+It reads no environment, calls no hook, authenticates nothing and sends nothing.
+Cloud invocation and native credentials are tracked separately in
+[#937](https://github.com/Orchestration-Maestro/maestro/issues/937) and
+[#936](https://github.com/Orchestration-Maestro/maestro/issues/936).
+
+Cloud model resources retain `projects/`, `publishers/` and `models/`; other names gain
+`publishers/google/models/`, or use the first two segments as publisher and model.
+Supplied project/location qualify cache names without trimming; absent scope spells
+`undefined` in those resource positions. An absent or null cloud model is diagnosed
+only after contents and configuration, while an invalid present model fails first.
+
+Cloud parts keep file data, inline data and function-call records whole, but reject
+`toolCall`, `toolResponse` and `partMetadata` on presence. Cloud tools keep nested
+records whole, select six declaration fields after shared schema preparation, and
+reject `fileSearch`, `mcpServers` and declaration `behavior` on presence.
+Cloud configuration retains routing, model selection (as `modelConfig`), audio timestamps,
+whole safety records, body-level labels and model armor. It rejects
+`enableEnhancedCivicAnswers` and tool configuration's `includeServerSideToolInvocations`
+on presence; function-calling configuration stays whole, including streamed arguments.
+Image output aliases form `imageOutputOptions`; an explicit object shallowly overlays
+its members after the aliases. The public endpoint's policies remain unchanged.
+
+```rust
+use maestro_models::providers::content::google_shared::project_vertex_content_request;
+use serde_json::json;
+
+let projected = project_vertex_content_request(json!({
+    "model": "acme/model-a/ignored", "contents": "hello",
+    "config": {"cachedContent": "entry", "modelSelectionConfig": {"preference": "quality"}}
+}), Some("sample-project"), Some("sample-region")).expect("supported payload");
+assert_eq!(projected.model, "publishers/acme/models/model-a");
+assert_eq!(projected.body["cachedContent"],
+    "projects/sample-project/locations/sample-region/cachedContents/entry");
+assert_eq!(projected.body["generationConfig"]["modelConfig"]["preference"], "quality");
+```
+
+
 ## Request transport
 
 [`create_client`](https://github.com/Orchestration-Maestro/maestro/blob/main/crates/maestro-models/src/providers/content/google.rs)
