@@ -1,7 +1,7 @@
 //! Building blocks shared by the native tool renderers.
 
 use crate::{
-    keybinding_hints::{EXPAND, key_hint},
+    keybinding_hints::{EXPAND, key_hint, plain_key_hint},
     utils::diagnostics::failure,
 };
 use maestro_models::DiagnosticErrorInfo;
@@ -48,8 +48,27 @@ pub(crate) fn expand_hint(
     theme: &Theme,
     live_theme: &LiveTheme,
 ) -> Result<String, DiagnosticErrorInfo> {
-    let more = paint(theme, &ThemeColor::Muted, &format!("\n... ({counts},"))?;
-    let hint = themed(key_hint(EXPAND, "to expand", live_theme))?;
+    format_expand_hint(counts, Some((theme, live_theme)))
+}
+
+/// Unstyled fallback using the same hint framing and current keybindings.
+pub(crate) fn plain_expand_hint(counts: &str) -> String {
+    format_expand_hint(counts, None).unwrap_or_default()
+}
+
+/// One template for fallible styled hints and their deferred plain fallback.
+fn format_expand_hint(
+    counts: &str,
+    themes: Option<(&Theme, &LiveTheme)>,
+) -> Result<String, DiagnosticErrorInfo> {
+    let prefix = format!("\n... ({counts},");
+    let (more, hint) = match themes {
+        Some((theme, live)) => (
+            paint(theme, &ThemeColor::Muted, &prefix)?,
+            themed(key_hint(EXPAND, "to expand", live))?,
+        ),
+        None => (prefix, plain_key_hint(EXPAND, "to expand")),
+    };
     Ok(format!("{more} {hint})"))
 }
 

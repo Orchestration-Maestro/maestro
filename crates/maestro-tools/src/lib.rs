@@ -2,6 +2,10 @@
 //! the file mutation queue, output and inline-image helpers and word-level edit diff rendering
 //! for Maestro tools.
 //!
+//! Native bash definitions retain `BashRenderState` for call/result timing and
+//! five-row visual previews. [`truncate_to_visual_lines`] also selects wrapped
+//! output independently on every target.
+//!
 //! ```
 //! use maestro_tools::{TruncationOptions, truncate_head};
 //!
@@ -69,9 +73,9 @@ pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::{
     bash::{
-        BashError, BashExecOptions, BashExecResult, BashOperations, BashSpawnContext,
-        BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
-        create_bash_tool_definition, create_local_bash_operations,
+        BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState,
+        BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
+        create_bash_tool, create_bash_tool_definition, create_local_bash_operations,
     },
     exec::{ExecOptions, ExecResult, exec_command},
     sleep::{SleepError, sleep},
@@ -110,6 +114,7 @@ pub use search::tools_manager::{SearchTool, ToolsManager, ToolsManagerOutput};
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::bash_executor::{BashExecutorOptions, BashResult, execute_bash_with_operations};
 
+pub use output::visual_truncate::{VisualTruncateResult, truncate_to_visual_lines};
 #[cfg(not(target_arch = "wasm32"))]
 pub use search::grep::{
     GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, create_grep_tool,

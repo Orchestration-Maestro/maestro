@@ -672,7 +672,8 @@ fn environment_definition(
     bases: &Arc<Mutex<Vec<Value>>>,
     calls: &Arc<Mutex<Vec<Value>>>,
     prefix: String,
-) -> maestro_tools::ToolDefinition<(), BashToolInput, BashToolDetails> {
+) -> maestro_tools::ToolDefinition<(), BashToolInput, BashToolDetails, maestro_tools::BashRenderState>
+{
     let hook_bases = bases.clone();
     let hook = Arc::new(move |mut context: BashSpawnContext| {
         hook_bases.lock().unwrap().push(selected_context(&context));

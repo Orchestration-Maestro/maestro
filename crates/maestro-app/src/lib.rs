@@ -10,9 +10,9 @@ pub use maestro_models::{ModelCost, Usage, UsageCost};
 pub use maestro_text::markup;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    BashOperations, BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput,
-    BashToolOptions, create_bash_tool, create_bash_tool_definition, create_local_bash_operations,
-    utils::shell::get_shell_config,
+    BashOperations, BashRenderState, BashSpawnContext, BashSpawnHook, BashToolDetails,
+    BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition,
+    create_local_bash_operations, utils::shell::get_shell_config,
 };
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
@@ -49,6 +49,7 @@ pub use maestro_json::compact_json;
 pub use maestro_text::truncate_utf16;
 /// Shared with the terminal frontend.
 pub use maestro_tools::output::render_utils::format_read_line_range;
+pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use utils::clipboard::{copy_to_clipboard, copy_to_clipboard_with};

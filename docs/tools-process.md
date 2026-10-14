@@ -3,7 +3,7 @@
 `maestro-tools` runs an explicit program with `exec_command` and waits with `sleep`.
 These operations and local shell operations are native-only, like the
 [read tool](tools-read.md#read-tool); the crate still builds for browser targets
-without them. The native agent `bash` tool is described [below](#agent-bash-tool); its rendering is separate.
+without them. The native agent `bash` tool is described [below](#agent-bash-tool); its rendering uses the same typed definition.
 
 ## Running a command
 
@@ -145,7 +145,7 @@ the operation settles. Owned writers are flushed and closed; no durability is pr
 ## Agent bash tool
 
 `create_bash_tool_definition::<C>(cwd, bin_dir, options)` builds a native typed
-`ToolDefinition<C, BashToolInput, BashToolDetails>`; `C` is unused.
+`ToolDefinition<C, BashToolInput, BashToolDetails, BashRenderState>`; `C` is unused.
 `create_bash_tool(cwd, bin_dir, options)` uses the [definition wrapper](tools-read.md#tool-definitions)
 to return an executable agent tool. Both factories and the input, details,
 options and spawn-hook records are re-exported from `maestro-tools` and
@@ -181,6 +181,33 @@ the operation's seconds. Other errors return their diagnostic message without pa
 native I/O codes are retained when available. Truncated final output includes a tail notice and details with
 its full raw-output path. A raw-only spill can appear in progress details without
 final truncation details.
+
+### Bash rendering
+
+Both definition callbacks read the published live theme. The call shows the authored
+command with a nonzero numeric timeout suffix. Results sanitize ordered text and
+[image fallbacks](tools-read.md#display-helpers), then trim boundary whitespace.
+Collapsed results show the last five visual rows after [toolkit wrapping](terminal/widgets.md#text);
+expanded results show the complete body. Hidden rows add a clipped hint using the
+[current expand keybindings](terminal/keybindings.md). A retained hint reads current
+bindings and colors when drawn, falling back to plain text if its theme becomes unavailable.
+
+Nonempty artifact paths and active truncation add an independent warning after the
+body. Execution-started calls capture the initial clock; results display `Elapsed`
+while partial and `Took` otherwise, with one decimal second. Final or error results
+freeze the first end time and cancel refresh. A partial error keeps the `Elapsed`
+label. Historical results without a start show no clock. A later partial result
+keeps a captured end time but resumes refresh until settled again.
+
+`BashRenderState` owns one one-second refresh timer, cancelled when its last row
+owner disappears. This timer uses the [shared toolkit runtime](terminal/widgets.md#loader)
+and changes no execution, artifact or progress policy. Reused result components
+refresh their body cache when content, expansion, width or explicit invalidation changes.
+
+`truncate_to_visual_lines(text, maximum, width, padding_x)` is also available at the
+tools and application roots on every target. It returns `VisualTruncateResult` with
+selected padded rows and the number of earlier rows skipped. Absent padding means
+zero; a zero maximum selects no rows. Wrapping and glyph clipping stay with [`Text`](terminal/widgets.md#text).
 
 ```rust,no_run
 use maestro_tools::{BashToolInput, BashToolOptions, create_bash_tool, create_bash_tool_definition};

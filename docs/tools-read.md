@@ -199,10 +199,11 @@ keybinding registry: `key_text` joins an action's keys with `/` in registry orde
 `key_hint` and `raw_key_hint` follow them with a space and the description, styling the
 keys dim and the description muted with the published theme.
 
-The crate-private [`output::render_parts`](../crates/maestro-tools/src/output/render_parts.rs) is shared by the read and `ls` renderers: `into_text`
+The crate-private [`output::render_parts`](../crates/maestro-tools/src/output/render_parts.rs) is shared by the native tool renderers: `into_text`
 (reuse the row's previous `Text`, or make one), `paint` and `themed` (style text, carrying a
 theme failure to the caller), `num` and `float` (number spelling) and `expand_hint` (the count
-of hidden lines followed by the live expand key). The crate-private `utils::diagnostics` holds
+of hidden lines followed by the live expand key). The bash preview uses the same
+framing through `plain_expand_hint` when a deferred hint cannot resolve its theme. The crate-private `utils::diagnostics` holds
 the failure records and the cancellation guard that every native tool's operations share.
 
 ## Read tool

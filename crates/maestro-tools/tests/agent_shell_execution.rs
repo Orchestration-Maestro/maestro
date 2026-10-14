@@ -20,8 +20,8 @@ fn bash_definition_keeps_schema_and_prompt() {
     assert!(tool.prompt_guidelines.is_none());
     assert!(tool.execution_mode.is_none());
     assert!(tool.prepare_arguments.is_none());
-    assert!(tool.render_call.is_none());
-    assert!(tool.render_result.is_none());
+    assert!(tool.render_call.is_some());
+    assert!(tool.render_result.is_some());
     assert!(tool.render_shell.is_none());
 }
 

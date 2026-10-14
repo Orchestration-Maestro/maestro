@@ -61,3 +61,7 @@ mod truncation_behavior;
 mod write_behavior;
 mod write_rendering;
 mod write_support;
+
+mod visual_tail;
+
+mod bash_rendering;

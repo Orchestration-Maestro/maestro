@@ -110,3 +110,25 @@ fn assert_root_result<D>(result: (Vec<maestro_models::UserBlock>, Option<D>)) {
         serde_json::json!([{ "type":"text", "text":"root output" }])
     );
 }
+
+#[test]
+fn bash_rendering_exports_share_the_domain_owners() {
+    use maestro_app::{
+        BashRenderState, BashToolDetails, BashToolInput, BashToolOptions, VisualTruncateResult,
+        create_bash_tool_definition, truncate_to_visual_lines,
+    };
+    let definition: maestro_tools::ToolDefinition<
+        (),
+        BashToolInput,
+        BashToolDetails,
+        BashRenderState,
+    > = create_bash_tool_definition(String::new(), String::new(), BashToolOptions::default());
+    assert!(definition.render_call.is_some());
+    assert!(definition.render_result.is_some());
+    let state = BashRenderState::default();
+    let _: maestro_tools::BashRenderState = state;
+    let result: VisualTruncateResult = truncate_to_visual_lines("a\nb\nc", 2, 4, None);
+    assert_eq!(result.visual_lines, ["b   ", "c   "]);
+    assert_eq!(result.skipped_count, 1);
+    let _: maestro_tools::VisualTruncateResult = result;
+}

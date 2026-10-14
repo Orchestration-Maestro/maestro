@@ -1,6 +1,6 @@
 //! Whole-second countdown policy over the toolkit runtime.
 use maestro_tui::TUI;
-use maestro_tui::tui::{RenderTimer, TuiRuntime};
+use maestro_tui::tui::{RepeatingTimer, TuiRuntime};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Duration;
@@ -20,7 +20,7 @@ struct State {
     /// Expiration notification.
     on_expire: Rc<dyn Fn()>,
     /// Owned continuation.
-    timer: RefCell<Option<Box<dyn RenderTimer>>>,
+    timer: RefCell<Option<RepeatingTimer>>,
 }
 impl CountdownTimer {
     /// Reports the initial ceiling immediately, then schedules one-second ticks.
@@ -53,13 +53,13 @@ impl State {
     /// Arms before notifying so a callback can dispose the next tick.
     fn arm(self: &Rc<Self>) {
         let weak = Rc::downgrade(self);
-        let timer = self.runtime.schedule(
+        let timer = RepeatingTimer::new(
+            Rc::clone(&self.runtime),
             Duration::from_secs(1),
-            Box::new(move || {
+            Rc::new(move || {
                 let Some(state) = weak.upgrade() else {
-                    return Ok(());
+                    return;
                 };
-                state.arm();
                 let remaining = state.remaining.get() - 1.0;
                 state.remaining.set(remaining);
                 (state.on_tick)(remaining);
@@ -70,7 +70,6 @@ impl State {
                     state.stop();
                     (state.on_expire)();
                 }
-                Ok(())
             }),
         );
         let previous = self.timer.replace(Some(timer));
@@ -78,13 +77,7 @@ impl State {
     }
     /// Shares explicit and last-owner teardown.
     fn stop(&self) {
-        if let Some(mut timer) = self.timer.take() {
-            timer.cancel();
-        }
-    }
-}
-impl Drop for State {
-    fn drop(&mut self) {
-        self.stop();
+        let timer = self.timer.take();
+        drop(timer);
     }
 }
