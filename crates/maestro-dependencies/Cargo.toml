@@ -76,12 +76,12 @@ futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
-linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "ioctl", "no_std", "prctl", "system"] }
+linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
-rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "net", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
@@ -104,12 +104,12 @@ futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
-linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "ioctl", "no_std", "prctl", "system"] }
+linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
-rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "net", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
@@ -141,6 +141,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -167,6 +168,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
