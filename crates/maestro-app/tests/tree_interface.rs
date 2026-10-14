@@ -3,11 +3,14 @@
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_tui::{KeybindingDefinition, KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
 use serde::Deserialize;
+use std::collections::HashSet;
 
-/// Recorded filter definitions without unused toolkit copies.
+/// Recorded application action identities and filter definitions.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Definitions {
+    /// Complete application action inventory.
+    application_action_ids: HashSet<String>,
     /// Action identity and its definition.
     filters: Vec<(String, Definition)>,
 }
@@ -29,10 +32,16 @@ fn tree_filter_definitions_keep_toolkit_defaults() {
         &KEYBINDINGS[..TUI_KEYBINDINGS.len()],
         TUI_KEYBINDINGS.as_slice()
     );
-    assert_eq!(
-        KEYBINDINGS.len(),
-        TUI_KEYBINDINGS.len() + fixture.filters.len() + 3
-    );
+    let mut ids = HashSet::new();
+    for (id, _) in KEYBINDINGS.iter() {
+        assert!(ids.insert(id), "Duplicate action id: {id}");
+    }
+    for (id, _) in &KEYBINDINGS[TUI_KEYBINDINGS.len()..] {
+        assert!(
+            fixture.application_action_ids.contains(id),
+            "Unrecorded application action id: {id}"
+        );
+    }
     let manager = KeybindingsManager::new(KEYBINDINGS.clone(), Vec::new());
     for (id, row) in fixture.filters {
         assert_eq!(
