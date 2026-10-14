@@ -17,7 +17,7 @@ pub struct Case {
     pub op: String,
     /// Operation inputs.
     pub input: Value,
-    /// Source-recorded output.
+    /// Source-derived expected output.
     pub expected: Value,
 }
 /// The complete corpus and its palette.

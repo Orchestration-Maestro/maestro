@@ -122,9 +122,10 @@ fn edit_header_selects_preview_before_settled_error() {
 /// Consume every result query through its owned formatting operation.
 fn result_cases(name: &str) {
     let theme = Rc::new(support::palette(0));
+    let args = json!({});
     for case in support::cases(name) {
         assert_eq!(case.op, "result");
-        let mut ctx = context(&case.input["args"], Rc::clone(&theme));
+        let mut ctx = context(&args, Rc::clone(&theme));
         ctx.is_error = case.input["isError"].as_bool().unwrap();
         assert_eq!(
             json!(

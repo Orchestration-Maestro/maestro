@@ -763,15 +763,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": []
@@ -784,15 +775,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -807,15 +789,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -831,15 +804,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -858,15 +822,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -887,15 +842,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -917,15 +863,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -943,15 +880,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -971,15 +899,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1000,15 +919,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1026,15 +936,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1054,15 +955,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1083,15 +975,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1122,15 +1005,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1163,15 +1037,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1205,15 +1070,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1231,15 +1087,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1259,15 +1106,6 @@
       "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1288,15 +1126,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1315,15 +1144,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1345,15 +1165,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1374,15 +1185,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1403,15 +1205,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1435,15 +1228,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1466,15 +1250,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1496,15 +1271,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1529,15 +1295,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -1561,15 +1318,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": null,
         "result": {
           "content": [
@@ -1591,15 +1339,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
           "firstChangedLine": 1
@@ -1624,15 +1363,6 @@
       "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
       "op": "result",
       "input": {
-        "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
-        },
         "preview": {
           "error": "preview failed"
         },
@@ -2131,13 +1861,7 @@
       "op": "box",
       "input": {
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": null,
         "width": 40
@@ -2153,13 +1877,7 @@
       "op": "box",
       "input": {
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "diff": "-1 alpha\n+1 beta",
@@ -2181,13 +1899,7 @@
       "op": "box",
       "input": {
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "diff": ""
@@ -2207,13 +1919,7 @@
       "op": "box",
       "input": {
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "error": ""
@@ -2233,13 +1939,7 @@
       "op": "box",
       "input": {
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "error": "preview failed"
@@ -2443,13 +2143,7 @@
           "toolErrorBg": "#2A1F1A"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": null,
         "width": 40
@@ -2479,13 +2173,7 @@
           "toolErrorBg": "#2A1F1A"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "diff": "-1 alpha\n+1 beta\n 2 keep",
@@ -2522,13 +2210,7 @@
           "toolErrorBg": "#2A1F1A"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "error": "preview failed"
@@ -2562,13 +2244,7 @@
           "toolErrorBg": "#F2E8DC"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": null,
         "width": 40
@@ -2598,13 +2274,7 @@
           "toolErrorBg": "#F2E8DC"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "diff": "-1 alpha\n+1 beta\n 2 keep",
@@ -2641,13 +2311,7 @@
           "toolErrorBg": "#F2E8DC"
         },
         "args": {
-          "path": "file",
-          "edits": [
-            {
-              "oldText": "alpha",
-              "newText": "beta"
-            }
-          ]
+          "path": "file"
         },
         "preview": {
           "error": "preview failed"

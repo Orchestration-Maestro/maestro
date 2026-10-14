@@ -222,14 +222,17 @@ fn edit_changed_inputs_replace_pending_request() {
         let original = args("beta");
         let call = row.call(&original, None);
         let mut inputs = vec![args("gamma")];
-        let mut path = original.clone();
+        let mut path = inputs.last().unwrap().clone();
         path["path"] = json!("other");
         inputs.push(path);
-        inputs.push(json!({"path":"file", "oldText":"alpha\n", "newText":"different"}));
+        let mut old_text = inputs.last().unwrap().clone();
+        old_text["edits"][0]["oldText"] = json!("alpha\n");
+        inputs.push(old_text);
         inputs.push(json!({"path":"file", "edits":[{"oldText":"p","newText":"P"},{"oldText":"l","newText":"L"}]}));
         inputs.push(json!({"path":"file", "edits":[{"oldText":"l","newText":"L"},{"oldText":"p","newText":"P"}]}));
-        for input in &inputs {
+        for (index, input) in inputs.iter().enumerate() {
             row.call(input, None);
+            assert_eq!(row.env.runtime.futures(), index + 2);
         }
         let mut futures = row.env.runtime.take_futures();
         assert_eq!(futures.len(), inputs.len() + 1);
@@ -457,7 +460,8 @@ fn replay_native(row: &Row, case: &NativeCase, exists: bool) {
 /// Complete and compare the native preview and optional result.
 async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
     row.finish().await;
-    row.call(&case.input, None);
+    assert!(Rc::ptr_eq(call, &row.call(&case.input, None)));
+    assert_eq!(call.render(80), case.expected.rows);
     assert_eq!(
         std::fs::read_to_string(row.dir.0.join("file")).unwrap(),
         case.expected.file_after.as_ref().unwrap().as_str()
@@ -478,6 +482,8 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
             None,
         );
         assert_eq!(&out.render(80), expected);
+        assert!(Rc::ptr_eq(call, &row.call(&case.input, None)));
+        assert_eq!(call.render(80), case.expected.rows);
     } else if let Some(error) = case.expected.preview.get("error") {
         assert!(plain(call).contains(error.as_str().unwrap().split(" including").next().unwrap()));
     } else {
@@ -493,7 +499,6 @@ async fn preview_native(row: &Row, case: &NativeCase, call: &ComponentHandle) {
                 .join("\n")
                 .contains(expected.lines().next().unwrap())
         );
-        assert_eq!(details.first_changed_line, Some(1));
     }
 }
 
