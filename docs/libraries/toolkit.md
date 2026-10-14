@@ -23,3 +23,9 @@ replaceable action map. Its direct closure is `equivalent =1.0.2` and
 `prohibit-unsafe` for case-insensitive session search expressions. Its parsed
 query interface exposes the compiled `regress::Regex`. It reuses the existing
 `memchr =2.8.3` dependency; versions and licenses are unchanged.
+
+For settings-panel numeric values, `maestro-chat` uses the workspace-pinned
+`ryu-js =1.0.3` with unchanged defaults and no optional features. Its shortest
+binary64 spelling preserves the supplied numeric value without normalization.
+It adds no active transitive dependencies and uses the Apache-2.0 license option.
+No library type appears in the settings interface.

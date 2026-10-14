@@ -17,13 +17,15 @@ fn row(text: (&str, &str, &str), current: String, values: &[&str]) -> SettingIte
         submenu: None,
     }
 }
-/// Creates the thirteen supplied rows in their display order.
+/// Creates the supplied rows in their display order.
 pub(super) fn rows(
     config: SettingsConfig,
     callbacks: &Rc<SettingsCallbacks>,
     theme: &LiveTheme,
+    supports_images: bool,
 ) -> Vec<SettingItem> {
     let mut items = session_rows(&config);
+    items.splice(1..1, display_rows(&config, supports_images));
     items.extend(behavior_rows(&config));
 
     items.push(warnings(config.warnings, callbacks.clone(), theme.clone()));
@@ -40,6 +42,126 @@ pub(super) fn rows(
         theme.clone(),
     ));
     items
+}
+/// Composes one display segment using the construction-time capability.
+fn display_rows(config: &SettingsConfig, supports_images: bool) -> Vec<SettingItem> {
+    let mut items = if supports_images {
+        inline_image_rows(config)
+    } else {
+        Vec::new()
+    };
+    items.extend(image_policy_rows(config));
+    items.extend(terminal_rows(config));
+    items
+}
+/// Inline image choices for image-capable terminals.
+fn inline_image_rows(config: &SettingsConfig) -> Vec<SettingItem> {
+    vec![
+        row(
+            (
+                "show-images",
+                "Show images",
+                "Render images inline in terminal",
+            ),
+            config.show_images.to_string(),
+            &["true", "false"],
+        ),
+        row(
+            (
+                "image-width-cells",
+                "Image width",
+                "Preferred inline image width in terminal cells",
+            ),
+            ryu_js::Buffer::new()
+                .format(config.image_width_cells)
+                .into(),
+            &["60", "80", "120"],
+        ),
+    ]
+}
+/// Image request policies and skill command registration.
+fn image_policy_rows(config: &SettingsConfig) -> Vec<SettingItem> {
+    vec![
+        row(
+            (
+                "auto-resize-images",
+                "Auto-resize images",
+                "Resize large images to 2000x2000 max for better model compatibility",
+            ),
+            config.auto_resize_images.to_string(),
+            &["true", "false"],
+        ),
+        row(
+            (
+                "block-images",
+                "Block images",
+                "Prevent images from being sent to LLM providers",
+            ),
+            config.block_images.to_string(),
+            &["true", "false"],
+        ),
+        row(
+            (
+                "skill-commands",
+                "Skill commands",
+                "Register skills as /skill:name commands",
+            ),
+            config.session.enable_skill_commands.to_string(),
+            &["true", "false"],
+        ),
+    ]
+}
+/// Terminal cursor, editor and progress choices.
+fn terminal_rows(config: &SettingsConfig) -> Vec<SettingItem> {
+    vec![
+        row(
+            (
+                "show-hardware-cursor",
+                "Show hardware cursor",
+                "Show the terminal cursor while still positioning it for IME support",
+            ),
+            config.terminal.show_hardware_cursor.to_string(),
+            &["true", "false"],
+        ),
+        row(
+            (
+                "editor-padding",
+                "Editor padding",
+                "Horizontal padding for input editor (0-3)",
+            ),
+            ryu_js::Buffer::new().format(config.editor_padding_x).into(),
+            &["0", "1", "2", "3"],
+        ),
+        row(
+            (
+                "autocomplete-max-visible",
+                "Autocomplete max items",
+                "Max visible items in autocomplete dropdown (3-20)",
+            ),
+            ryu_js::Buffer::new()
+                .format(config.autocomplete_max_visible)
+                .into(),
+            &["3", "5", "7", "10", "15", "20"],
+        ),
+        row(
+            (
+                "clear-on-shrink",
+                "Clear on shrink",
+                "Clear empty rows when content shrinks (may cause flicker)",
+            ),
+            config.terminal.clear_on_shrink.to_string(),
+            &["true", "false"],
+        ),
+        row(
+            (
+                "terminal-progress",
+                "Terminal progress",
+                "Show OSC 9;4 progress indicators in the terminal tab bar",
+            ),
+            config.terminal.show_terminal_progress.to_string(),
+            &["true", "false"],
+        ),
+    ]
 }
 /// Session policies preceding the behavior rows.
 fn session_rows(config: &SettingsConfig) -> Vec<SettingItem> {
@@ -265,7 +387,26 @@ fn themes(
 }
 /// Converts only the selected cyclic setting into its existing owner type.
 pub(super) fn change(callbacks: &SettingsCallbacks, id: &str, value: &str) {
+    let numeric_callback = match id {
+        "image-width-cells" => Some(&callbacks.on_image_width_cells_change),
+        "editor-padding" => Some(&callbacks.on_editor_padding_x_change),
+        "autocomplete-max-visible" => Some(&callbacks.on_autocomplete_max_visible_change),
+        _ => None,
+    };
+    if let Some(callback) = numeric_callback {
+        if let Ok(value) = value.parse() {
+            callback(value);
+        }
+        return;
+    }
     match id {
+        "show-images" => (callbacks.on_show_images_change)(value == "true"),
+        "auto-resize-images" => (callbacks.on_auto_resize_images_change)(value == "true"),
+        "block-images" => (callbacks.on_block_images_change)(value == "true"),
+        "skill-commands" => (callbacks.on_enable_skill_commands_change)(value == "true"),
+        "show-hardware-cursor" => (callbacks.on_show_hardware_cursor_change)(value == "true"),
+        "clear-on-shrink" => (callbacks.on_clear_on_shrink_change)(value == "true"),
+        "terminal-progress" => (callbacks.on_show_terminal_progress_change)(value == "true"),
         "autocompact" => (callbacks.on_auto_compact_change)(value == "true"),
         "steering-mode" => (callbacks.on_steering_mode_change)(delivery(value)),
         "follow-up-mode" => (callbacks.on_follow_up_mode_change)(delivery(value)),

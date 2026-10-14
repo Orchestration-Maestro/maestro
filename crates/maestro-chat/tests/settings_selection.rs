@@ -17,8 +17,12 @@ fn settings_rows_keep_text_order_and_initial_values() {
     {
         let (_, theme) = published::published(&colors(0));
         let events = Events::default();
-        let selector =
-            maestro_chat::SettingsSelectorComponent::new(config(), events.callbacks(true), theme);
+        let selector = maestro_chat::SettingsSelectorComponent::new(
+            config(),
+            events.callbacks(true),
+            theme,
+            &no_images(),
+        );
         assert_eq!(
             frame(&selector, &events, 80),
             Frame {
@@ -26,11 +30,11 @@ fn settings_rows_keep_text_order_and_initial_values() {
                 events: expected.events
             }
         );
-        assert_eq!(expected.items.len(), 13);
+        assert_eq!(expected.items.len(), 21);
         for (index, item) in expected.items.iter().enumerate() {
             assert_inventory_row(&selector, item);
             let list = selector.get_settings_list();
-            if index < 12 {
+            if index < 20 {
                 input(&**list, &["\x1b[B"]);
             }
         }
@@ -51,6 +55,7 @@ fn boolean_changes_report_only_the_selected_setting() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, &query.id);
         assert_eq!(frame(&selector, &events, 80), expected.before);
@@ -84,6 +89,7 @@ fn delivery_modes_remain_independent_on_constructor_and_change() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, &query.id);
         assert_eq!(frame(&selector, &events, 80), expected.before);
@@ -108,6 +114,7 @@ fn transport_cycles_all_four_typed_choices() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "transport");
         assert_eq!(frame(&selector, &events, 80), expected.before);
@@ -130,6 +137,7 @@ fn escape_action_and_tree_filter_cover_every_choice() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, &query.id);
         assert_eq!(frame(&selector, &events, 80), expected.before);
@@ -152,6 +160,7 @@ fn settings_search_dispatches_visible_rows_and_cancel() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         input(&**selector.get_settings_list(), &[&query.query]);
         assert_eq!(frame(&selector, &events, 80), expected.before);
@@ -172,6 +181,7 @@ fn settings_selected_descriptions_and_scroll_are_exact() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, &query.id);
         assert_eq!(frame(&selector, &events, 80), expected);
@@ -196,6 +206,7 @@ fn settings_layout_reuses_terminal_width_rules() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         if let Some(surface) = query.surface {
             select(&selector, &surface);
@@ -219,6 +230,7 @@ fn thinking_submenu_keeps_descriptions_and_typed_confirmation() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "thinking");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -243,6 +255,7 @@ fn thinking_submenu_handles_empty_singleton_duplicates_and_missing_current() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "thinking");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -267,6 +280,7 @@ fn thinking_cancel_retains_value_and_reopens_same_selection() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "thinking");
         input(
@@ -291,6 +305,7 @@ fn submenus_cap_visible_options_at_ten() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "thinking");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -316,6 +331,7 @@ fn theme_navigation_preview_cancel_and_confirm_follow_callback_order() {
             cfg,
             events.callbacks(query.preview),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "theme");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -338,6 +354,7 @@ fn theme_cancel_restores_latest_committed_value() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "theme");
         input(
@@ -363,6 +380,7 @@ fn warning_edits_keep_unknown_members_snapshots_and_reopened_state() {
             cfg,
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, "warnings");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -383,8 +401,12 @@ fn settings_live_colors_keep_captured_cursor_and_submenu_chrome() {
     {
         let events = Events::default();
         let (state, theme) = published::published(&colors(0));
-        let selector =
-            maestro_chat::SettingsSelectorComponent::new(config(), events.callbacks(true), theme);
+        let selector = maestro_chat::SettingsSelectorComponent::new(
+            config(),
+            events.callbacks(true),
+            theme,
+            &no_images(),
+        );
         assert_eq!(frame(&selector, &events, 80), expected.initial);
         select(&selector, "theme");
         input(&**selector.get_settings_list(), &["\r"]);
@@ -407,6 +429,7 @@ fn settings_and_submenus_use_live_keybindings() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         select(&selector, &query.id);
         keybindings::bindings(["k", "j", "x", "q"]);
@@ -433,6 +456,7 @@ fn settings_list_handle_survives_chrome_removal() {
             config(),
             events.callbacks(true),
             theme.clone(),
+            &no_images(),
         );
         let list = selector.get_settings_list().clone();
         assert_eq!(
@@ -472,8 +496,12 @@ fn warning_callback_reenters_after_state_is_committed() {
                 serde_json::to_value(lines).unwrap(),
             ]);
         });
-        let selector =
-            maestro_chat::SettingsSelectorComponent::new(config(), callbacks, theme.clone());
+        let selector = maestro_chat::SettingsSelectorComponent::new(
+            config(),
+            callbacks,
+            theme.clone(),
+            &no_images(),
+        );
         target.replace(std::rc::Rc::downgrade(selector.get_settings_list()));
         select(&selector, "warnings");
         input(&**selector.get_settings_list(), &["\r", "\r", "\x1b"]);
@@ -496,6 +524,7 @@ fn settings_callbacks_release_after_last_list_handle() {
         config(),
         callbacks,
         theme,
+        &no_images(),
     ));
     let owner = std::rc::Rc::downgrade(&parent);
     let list = parent.get_settings_list().clone();

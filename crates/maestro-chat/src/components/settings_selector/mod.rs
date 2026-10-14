@@ -1,4 +1,4 @@
-//! Searchable session and behavior settings with nested selectors.
+//! Searchable session, display and behavior settings with nested selectors.
 mod items;
 mod submenus;
 use super::dynamic_border::DynamicBorder;
@@ -8,7 +8,7 @@ use maestro_app::{
 };
 use maestro_theme::LiveTheme;
 use maestro_tui::components::settings_list::SettingsListOptions;
-use maestro_tui::{Component, Container, SettingsList};
+use maestro_tui::{Component, Container, SettingsList, TerminalImage};
 use std::rc::Rc;
 
 /// Session policies supplied to the settings panel.
@@ -17,6 +17,17 @@ pub struct SessionSettings {
     pub auto_compact: bool,
     /// Whether startup output is quiet.
     pub quiet_startup: bool,
+    /// Whether skills register commands.
+    pub enable_skill_commands: bool,
+}
+/// Resolved terminal display policies supplied to the panel.
+pub struct TerminalDisplaySettings {
+    /// Whether the hardware cursor is shown.
+    pub show_hardware_cursor: bool,
+    /// Whether shrinking content clears empty rows.
+    pub clear_on_shrink: bool,
+    /// Whether terminal tab progress is shown.
+    pub show_terminal_progress: bool,
 }
 /// Presentation and update policies supplied to the settings panel.
 pub struct BehaviorSettings {
@@ -36,6 +47,20 @@ pub struct SettingsConfig {
     pub session: SessionSettings,
     /// Behavior boolean policies.
     pub behavior: BehaviorSettings,
+    /// Whether inline images are shown.
+    pub show_images: bool,
+    /// Preferred inline image width in cells.
+    pub image_width_cells: f64,
+    /// Whether attached images are resized.
+    pub auto_resize_images: bool,
+    /// Whether provider requests exclude images.
+    pub block_images: bool,
+    /// Resolved terminal display policies.
+    pub terminal: TerminalDisplaySettings,
+    /// Supplied horizontal editor padding.
+    pub editor_padding_x: f64,
+    /// Supplied autocomplete window height.
+    pub autocomplete_max_visible: f64,
     /// Steering mode.
     pub steering_mode: MessageDeliveryMode,
     /// Follow up mode.
@@ -61,6 +86,26 @@ pub struct SettingsConfig {
 pub struct SettingsCallbacks {
     /// On auto compact change.
     pub on_auto_compact_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen show images value.
+    pub on_show_images_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen image width cells value.
+    pub on_image_width_cells_change: Rc<dyn Fn(f64)>,
+    /// Reports a chosen auto resize images value.
+    pub on_auto_resize_images_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen block images value.
+    pub on_block_images_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen enable skill commands value.
+    pub on_enable_skill_commands_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen show hardware cursor value.
+    pub on_show_hardware_cursor_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen editor padding x value.
+    pub on_editor_padding_x_change: Rc<dyn Fn(f64)>,
+    /// Reports a chosen autocomplete max visible value.
+    pub on_autocomplete_max_visible_change: Rc<dyn Fn(f64)>,
+    /// Reports a chosen clear on shrink value.
+    pub on_clear_on_shrink_change: Rc<dyn Fn(bool)>,
+    /// Reports a chosen show terminal progress value.
+    pub on_show_terminal_progress_change: Rc<dyn Fn(bool)>,
     /// On steering mode change.
     pub on_steering_mode_change: Rc<dyn Fn(MessageDeliveryMode)>,
     /// On follow up mode change.
@@ -100,9 +145,15 @@ pub struct SettingsSelectorComponent {
 impl SettingsSelectorComponent {
     /// Builds the searchable settings rows from supplied state.
     #[must_use]
-    pub fn new(config: SettingsConfig, callbacks: SettingsCallbacks, theme: LiveTheme) -> Self {
+    pub fn new(
+        config: SettingsConfig,
+        callbacks: SettingsCallbacks,
+        theme: LiveTheme,
+        terminal_image: &TerminalImage,
+    ) -> Self {
+        let supports_images = terminal_image.get_capabilities().images.is_some();
         let callbacks = Rc::new(callbacks);
-        let rows = items::rows(config, &callbacks, &theme);
+        let rows = items::rows(config, &callbacks, &theme, supports_images);
         let cancel = callbacks.on_cancel.clone();
         let settings_list = Rc::new(SettingsList::new(
             rows,

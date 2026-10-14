@@ -135,12 +135,16 @@ The inherited Container child editing interface remains available. Borders use
 the live theme, while help and list Text children retain the styling of their last
 owning update. The [toolkit](../terminal/components.md) owns wrapping and cursors.
 
-## Session and behaviour settings
+## Session, display and behaviour settings
 
-`SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`
-and `LiveTheme`. Boolean policies are grouped into `SessionSettings`
-(auto-compact and quiet startup) and `BehaviorSettings` (hidden thinking,
-collapsed changelog and install telemetry). Other fields use the existing
+`SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`,
+`LiveTheme` and a borrowed `maestro_tui::TerminalImage`. Boolean policies are
+grouped into `SessionSettings` (auto-compact, quiet startup and skill commands),
+`BehaviorSettings` (hidden thinking, collapsed changelog and install telemetry)
+and `TerminalDisplaySettings` (hardware cursor, clear on shrink and terminal
+progress). Image display, auto-resize and blocking are direct boolean fields;
+image width, editor padding and autocomplete height are supplied `f64` fields.
+Other fields use the existing
 `maestro_app` setting, transport and thinking types, with supplied available
 thinking levels and theme names. Configuration supplies state; the panel does
 not persist it.
@@ -148,10 +152,22 @@ not persist it.
 Render the outer component and route input/focus to `get_settings_list()`.
 This returns the same retained `SettingsList` handle, independently of the
 `Container` chrome. The searchable main view shows at most ten rows in this
-order: auto-compact, steering mode, follow-up mode, transport, hidden thinking,
-collapsed changelog, quiet startup, install telemetry, double-escape action,
-tree filter, warnings, thinking level and theme. The toolkit owns
+order: auto-compact, show images, image width, auto-resize images, block images,
+skill commands, hardware cursor, editor padding, autocomplete max items, clear
+on shrink, terminal progress, steering mode, follow-up mode, transport, hidden
+thinking, collapsed changelog, quiet startup, install telemetry, double-escape
+action, tree filter, warnings, thinking level and theme. Show images and image
+width appear only when the supplied terminal supports inline images, giving 23
+rows with image support and 21 without. Support is sampled once at construction;
+changing capabilities affects new panels, not retained ones. The toolkit owns
 [settings search and list rendering](../terminal/components.md).
+
+Numeric initial values keep their supplied value and shortest decimal spelling,
+including negative zero displayed as `0` and nonfinite values. Activation cycles
+image width through `60`, `80`, `120`, editor padding through `0`–`3`, and
+autocomplete height through `3`, `5`, `7`, `10`, `15`, `20`. An unmatched value
+advances to the first choice. These fixed decimal choices report `f64` values;
+boolean choices report `bool` values.
 
 Cyclic rows report only their typed change callback. Unknown stored delivery,
 transport and double-escape spellings remain visible until activation chooses
