@@ -97,30 +97,23 @@ impl BrowserAttachmentHost {
         ))
     }
     /// Apply modal visibility without replacing retained image/text objects.
-    fn visibility(&self) -> Result<(), AttachmentUiError> {
+    fn visibility(
+        &self,
+        placed: Option<egui::Id>,
+        previous: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
         let top = self.overlays.borrow().last().copied();
-        let updates: Vec<_> = self
-            .surfaces
-            .borrow()
-            .iter()
-            .map(|(id, s)| {
-                (
-                    s.wrapper.clone(),
-                    format!(
-                        "{}visibility:{};z-index:{};",
-                        s.style,
-                        if top.is_none_or(|top| top == *id) {
-                            "visible"
-                        } else {
-                            "hidden"
-                        },
-                        if top == Some(*id) { 51 } else { 1 }
-                    ),
-                )
-            })
-            .collect();
-        for (element, style) in updates {
-            element
+        let surfaces = self.surfaces.borrow();
+        for id in super::style_targets(surfaces.keys().copied(), placed, previous, top) {
+            let Some(s) = surfaces.get(&id) else { continue };
+            let visibility = if top.is_none_or(|top| top == id) {
+                "visible"
+            } else {
+                "hidden"
+            };
+            let z = if top == Some(id) { 51 } else { 1 };
+            let style = format!("{}visibility:{visibility};z-index:{z};", s.style);
+            s.wrapper
                 .set_attribute("style", &style)
                 .map_err(|error| host_error(&error))?;
         }
@@ -146,7 +139,10 @@ impl BrowserAttachmentHost {
         element
             .set_attribute(
                 "style",
-                &format!("width:100%;height:100%;box-sizing:border-box;{css}"),
+                &format!(
+                    "width:100%;height:100%;box-sizing:border-box;{css}{}",
+                    super::content_border(content)
+                ),
             )
             .map_err(|error| host_error(&error))
     }
@@ -212,9 +208,10 @@ impl AttachmentHost for BrowserAttachmentHost {
         })();
         self.surfaces.borrow_mut().insert(id, surface);
         result?;
-        self.visibility()
+        self.visibility(Some(id), self.overlays.borrow().last().copied())
     }
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+        let previous = self.overlays.borrow().last().copied();
         {
             let mut overlays = self.overlays.borrow_mut();
             if !visible {
@@ -223,7 +220,7 @@ impl AttachmentHost for BrowserAttachmentHost {
                 overlays.push(id);
             }
         }
-        self.visibility()
+        self.visibility(None, previous)
     }
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         self.document

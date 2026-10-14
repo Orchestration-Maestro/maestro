@@ -167,7 +167,7 @@ pub(crate) fn color(
 /// Apply the caller's control roles without installing fonts.
 pub(crate) fn style(ui: &mut egui::Ui, p: &BrandPresentation<'_>) -> Result<(), AttachmentUiError> {
     let v = ui.visuals_mut();
-    v.override_text_color = Some(color(p, "text")?);
+    v.override_text_color = None;
     v.panel_fill = color(p, "background")?;
     v.selection.bg_fill = color(p, "accent")?;
     v.selection.stroke.color = color(p, "on-accent")?;
@@ -278,3 +278,30 @@ pub(crate) fn ghost(
 mod placement;
 #[cfg(test)]
 mod tests;
+
+/// Supply the border on the native owner that would otherwise cover canvas paint.
+#[cfg(any(target_arch = "wasm32", test))]
+fn content_border(content: &AttachmentContent<'_>) -> &'static str {
+    match content {
+        AttachmentContent::Image {
+            fit: ImageFit::Cover,
+            ..
+        }
+        | AttachmentContent::Preview {
+            file_type: FileType::Pdf | FileType::Docx,
+            ..
+        } => "border:1px solid var(--maestro-color-border);",
+        _ => "",
+    }
+}
+/// Select retained surfaces whose placement or modal visibility changed.
+#[cfg(any(target_arch = "wasm32", test))]
+fn style_targets(
+    ids: impl Iterator<Item = egui::Id>,
+    placed: Option<egui::Id>,
+    previous: Option<egui::Id>,
+    current: Option<egui::Id>,
+) -> impl Iterator<Item = egui::Id> {
+    ids.take(if previous == current { 0 } else { usize::MAX })
+        .chain(placed.filter(move |_| previous == current))
+}

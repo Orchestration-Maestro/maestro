@@ -94,22 +94,14 @@ impl AttachmentOverlay {
                     header_background.bottom(),
                     egui::Stroke::new(1., color(p, "border")?),
                 );
-                let header = ui
-                    .horizontal(|ui| self.header(ui, i18n, p, &mut close))
+                ui.horizontal(|ui| self.header(ui, i18n, p, &mut close))
                     .inner?;
                 let bounds = egui::Rect::from_min_max(
-                    egui::pos2(context.content_rect().left(), header.bottom()),
+                    egui::pos2(context.content_rect().left(), header_background.bottom()),
                     context.content_rect().max,
                 );
                 let mut body_ui = ui.new_child(egui::UiBuilder::new().max_rect(bounds));
-                let body = self.body(&mut body_ui, i18n, p)?;
-                if context.input(|i| i.pointer.primary_clicked())
-                    && let Some(pos) = context.input(|i| i.pointer.interact_pos())
-                    && !header.contains(pos)
-                    && !body.contains(pos)
-                {
-                    close = true;
-                }
+                self.body(&mut body_ui, i18n, p)?;
                 Ok(())
             });
         area.inner?;
@@ -137,39 +129,43 @@ impl AttachmentOverlay {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
         close: &mut bool,
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<(), AttachmentUiError> {
         let name = self
             .attachment
             .try_borrow()
             .map_err(|_| AttachmentUiError::BorrowConflict)?
             .file_name
             .clone();
-        let start = ui.cursor().min;
         ui.set_min_height(48.);
-        ui.with_layout(
-            egui::Layout::right_to_left(egui::Align::Center),
-            |ui| -> Result<(), AttachmentUiError> {
-                let c = ghost(ui, p, "X")?;
-                *close |= c.clicked();
-                let d = ghost(ui, p, "Download")?;
-                if d.clicked() {
-                    self.host.download(Rc::clone(&self.attachment))?;
-                }
-                self.toggle(ui, i)?;
-                ui.add(
-                    egui::Label::new(
-                        egui::RichText::new(name).size(points(p.typography["body"].size) * 0.875),
-                    )
-                    .truncate(),
-                );
-                Ok(())
-            },
-        )
-        .inner?;
-        Ok(egui::Rect::from_min_max(
-            start,
-            egui::pos2(ui.max_rect().right(), ui.min_rect().bottom()),
-        ))
+        let header_rect = ui
+            .max_rect()
+            .shrink2(egui::vec2(points(p.spacing["md"]), points(p.spacing["xs"])));
+        let ui = &mut ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(header_rect)
+                .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        );
+        let (_, close_rect) = ui.allocate_space(egui::vec2(32., 32.));
+        let (_, download_rect) = ui.allocate_space(egui::vec2(32., 32.));
+        self.toggle(ui, i)?;
+        let mut download_ui = ui.new_child(egui::UiBuilder::new().max_rect(download_rect));
+        if ghost(&mut download_ui, p, "Download")?.clicked() {
+            self.host.download(Rc::clone(&self.attachment))?;
+        }
+        let mut close_ui = ui.new_child(egui::UiBuilder::new().max_rect(close_rect));
+        *close |= ghost(&mut close_ui, p, "X")?.clicked();
+        let mut name_ui = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(ui.available_rect_before_wrap())
+                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+        );
+        name_ui.add(
+            egui::Label::new(
+                egui::RichText::new(name).size(points(p.typography["body"].size) * 0.875),
+            )
+            .truncate(),
+        );
+        Ok(())
     }
     /// Select a supported document mode without dispatching repeated selections.
     fn toggle<F: ?Sized>(
@@ -196,9 +192,28 @@ impl AttachmentOverlay {
             FileType::Excel => "Spreadsheet",
             _ => return Ok(()),
         };
-        for (index, label) in [(true, "Text"), (false, label)] {
-            if ui
-                .selectable_label(self.extracted == index, i.text(label)?)
+        let labels = [i.text(label)?, i.text("Text")?];
+        let font = egui::TextStyle::Button.resolve(ui.style());
+        let width = labels
+            .iter()
+            .map(|label| {
+                let galley =
+                    ui.painter()
+                        .layout_no_wrap(label.clone(), font.clone(), egui::Color32::WHITE);
+                galley.size().x
+            })
+            .sum::<f32>()
+            + 4. * ui.spacing().button_padding.x
+            + ui.spacing().item_spacing.x;
+        let (_, rect) = ui.allocate_space(egui::vec2(width, 32.));
+        let mut toggle_ui = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(rect)
+                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+        );
+        for (index, label) in [false, true].into_iter().zip(labels) {
+            if toggle_ui
+                .selectable_label(self.extracted == index, label)
                 .clicked()
                 && self.extracted != index
             {

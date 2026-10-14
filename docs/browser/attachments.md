@@ -10,10 +10,12 @@ target; the remaining image area opens the overlay.
 
 Retain the `AttachmentOverlay` returned by a tile click, or construct one with
 `AttachmentOverlay::open`. Call `render` each frame and release it when it returns
-false. Escape, the close control and backdrop close it; filename/content interactions
-do not. Closing notifies the optional callback before removing its surfaces.
+false. Escape and the close control close it; filename and full-width content
+container interactions, including its side gutters, do not. Closing notifies the
+optional callback before removing its surfaces.
 Dropping either widget releases its surfaces, without synthesizing a close callback.
-No focus capture or restoration is performed.
+No focus capture or restoration is performed. Tab visits preview, text, download
+and close in that order, omitting unavailable toggle modes.
 
 The overlay shows original images, selectable literal text and presentation text.
 Only PDF, Word and spreadsheet attachments with nonempty extracted text have a

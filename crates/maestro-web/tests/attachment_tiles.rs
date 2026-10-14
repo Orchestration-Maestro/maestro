@@ -246,3 +246,38 @@ fn tile_replacement_reuses_and_releases_dom_surfaces() {
     drop(tile);
     assert_eq!(&host.effects.borrow()[n..], &[format!("remove:{id:?}")]);
 }
+#[test]
+fn tile_wide_caption_is_elided_inside_padded_bounds() {
+    let record = attachment();
+    record.borrow_mut().file_name = "WWWWWWWWWW".into();
+    let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
+    let mut frame = Frame::default();
+    frame.tile(&mut tile, vec![]).unwrap();
+    let text = frame
+        .shapes
+        .iter()
+        .find_map(|s| match &s.shape {
+            egui::Shape::Text(t) => Some((s.clip_rect, t)),
+            _ => None,
+        })
+        .unwrap();
+    assert!(text.1.galley.elided);
+    assert!(text.1.galley.size().x <= 48.);
+    assert!(
+        egui::Rect::from_min_max(egui::pos2(8., 8.), egui::pos2(56., 56.)).contains_rect(text.0)
+    );
+}
+#[test]
+fn tile_badge_and_remove_keep_visible_brand_boundaries() {
+    let record = attachment();
+    record.borrow_mut().mime_type = "application/pdf".into();
+    record.borrow_mut().preview = Some("pdf".into());
+    let mut tile = AttachmentTile::new(record, Rc::new(Host::default()));
+    tile.show_delete = true;
+    let mut frame = Frame::default();
+    frame.tile(&mut tile, vec![]).unwrap();
+    let p = frame.pack.presentation(frame.mode).unwrap();
+    let border = egui::Color32::from_hex(p.colors["border"]).unwrap();
+    assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Circle(c) if c.radius.to_bits() == 10_f32.to_bits() && c.stroke.color == border && c.stroke.width.to_bits() == 1_f32.to_bits())));
+    assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.rect.height().to_bits() == 19_f32.to_bits() && r.corner_radius.sw == 8 && r.corner_radius.se == 8 && r.corner_radius.nw == 0)));
+}

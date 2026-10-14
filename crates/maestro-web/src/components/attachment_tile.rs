@@ -77,14 +77,7 @@ impl AttachmentTile {
         if let Some(source) = preview {
             if let Some(badge) = badge {
                 occluders.push(badge);
-                ui.painter().rect_filled(badge, 0., color(p, "background")?);
-                ui.painter().text(
-                    badge.center(),
-                    egui::Align2::CENTER_CENTER,
-                    i.text("PDF")?,
-                    caption(ui),
-                    color(p, "muted")?,
-                );
+                pdf_badge(ui, badge, i, p)?;
             }
             self.host.present(
                 AttachmentSurface {
@@ -159,8 +152,12 @@ impl AttachmentTile {
         });
         let visible = !self.host.hover_capable()? || hovered || button.hovered();
         if visible {
-            ui.painter()
-                .circle_filled(rect.center(), 10., color(p, "panel")?);
+            ui.painter().circle(
+                rect.center(),
+                10.,
+                color(p, "panel")?,
+                egui::Stroke::new(1., color(p, "border")?),
+            );
             let role = if button.hovered() { "text" } else { "muted" };
             glyph(ui, rect.shrink(4.), "X", color(p, role)?)?;
         }
@@ -202,12 +199,40 @@ fn fallback(
     } else {
         name.to_owned()
     };
+    let bounds = rect.shrink(8.);
+    let mut job = egui::text::LayoutJob::simple(label, caption(ui), tint, bounds.width());
+    job.wrap.max_rows = 1;
+    let painter = ui
+        .painter()
+        .with_clip_rect(bounds.intersect(ui.clip_rect()));
+    let galley = painter.layout_job(job);
+    let pos = bounds.center_bottom() - egui::vec2(galley.size().x / 2., galley.size().y);
+    painter.galley(pos, galley, tint);
+    Ok(())
+}
+
+/// Paint the badge above the image with rounded lower corners.
+fn pdf_badge<F: ?Sized>(
+    ui: &egui::Ui,
+    badge: egui::Rect,
+    i: &I18n<F>,
+    p: &BrandPresentation<'_>,
+) -> Result<(), AttachmentUiError> {
+    ui.painter().rect_filled(
+        badge,
+        egui::CornerRadius {
+            nw: 0,
+            ne: 0,
+            ..egui::CornerRadius::from(points(p.radii["panel"]))
+        },
+        color(p, "background")?,
+    );
     ui.painter().text(
-        rect.center_bottom() - egui::vec2(0., 8.),
-        egui::Align2::CENTER_BOTTOM,
-        label,
+        badge.center(),
+        egui::Align2::CENTER_CENTER,
+        i.text("PDF")?,
         caption(ui),
-        tint,
+        color(p, "muted")?,
     );
     Ok(())
 }

@@ -131,9 +131,7 @@ fn overlay_toggle_gates_and_labels_each_supported_view() {
         frame.overlay(&mut overlay, vec![]).unwrap();
         frame.overlay(&mut overlay, vec![]).unwrap();
         let labels: Vec<_> = frame.texts().into_iter().filter(|s| s != &name).collect();
-        let mut expected = c.expected.modes.clone();
-        expected.reverse();
-        assert_eq!(labels, expected, "{}", c.name);
+        assert_eq!(labels, c.expected.modes, "{}", c.name);
         let accent =
             egui::Color32::from_hex(frame.pack.presentation(frame.mode).unwrap().colors["accent"])
                 .unwrap();
@@ -390,10 +388,10 @@ fn overlay_close_distinguishes_escape_backdrop_header_and_content() {
         };
         assert_eq!(
             frame.overlay(&mut overlay, events).unwrap(),
-            action < 3,
+            action < 3 || action == 4,
             "action {action}"
         );
-        if action >= 3 {
+        if action == 3 || action == 5 {
             let log = host.effects.borrow()[before..].to_vec();
             let c = log.iter().position(|s| s == "callback").unwrap();
             assert!(log[c + 1].starts_with("remove:"));
@@ -602,4 +600,58 @@ fn assert_error_survives_record_edits(
         assert!(frame.texts().contains(&message.into()));
         assert_eq!(host.surfaces.borrow().len(), before);
     }
+}
+
+#[test]
+fn overlay_tab_order_activates_preview_text_download_close() {
+    for toggles in [true, false] {
+        let record = attachment();
+        if toggles {
+            record.borrow_mut().mime_type = "application/pdf".into();
+        }
+        let host = Rc::new(Host::default());
+        let mut overlay = AttachmentOverlay::open(record, None, host.clone());
+        let mut frame = Frame::default();
+        frame.overlay(&mut overlay, vec![]).unwrap();
+        frame.overlay(&mut overlay, vec![]).unwrap();
+        for index in 0..if toggles { 4 } else { 2 } {
+            assert!(
+                frame
+                    .overlay(&mut overlay, key(egui::Key::Tab, egui::Modifiers::NONE))
+                    .unwrap()
+            );
+            let open = frame
+                .overlay(&mut overlay, key(egui::Key::Enter, egui::Modifiers::NONE))
+                .unwrap();
+            let close_index = if toggles { 3 } else { 1 };
+            assert_eq!(
+                open,
+                index != close_index,
+                "toggles={toggles}, index={index}"
+            );
+            if toggles && index == 1 {
+                frame.overlay(&mut overlay, vec![]).unwrap();
+                assert!(matches!(
+                    host.surfaces.borrow().last().unwrap().content,
+                    Content::Text(_, TextView::Extracted)
+                ));
+            }
+            assert_eq!(
+                host.downloads.borrow().len(),
+                usize::from(index >= close_index - 1)
+            );
+        }
+    }
+}
+#[test]
+fn overlay_filename_stays_left_of_right_aligned_controls() {
+    let mut overlay = AttachmentOverlay::open(attachment(), None, Rc::new(Host::default()));
+    let mut frame = Frame::default();
+    frame.overlay(&mut overlay, vec![]).unwrap();
+    frame.overlay(&mut overlay, vec![]).unwrap();
+    assert_eq!(frame.label("note.txt").left().to_bits(), 16_f32.to_bits());
+    assert!(frame.control(0).x > 750.);
+    assert!((8. ..=40.).contains(&frame.control(0).y));
+    assert!(frame.label("note.txt").bottom() <= 48.);
+    assert!(frame.label("note.txt").right() < frame.control(1).x);
 }

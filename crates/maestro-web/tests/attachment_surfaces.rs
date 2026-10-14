@@ -112,6 +112,8 @@ fn attachment_styles_follow_caller_brand_pack() {
         let p = frame.pack.presentation(mode).unwrap();
         let center = frame.label("PDF").center();
         let accent = egui::Color32::from_hex(p.colors["accent"]).unwrap();
+        let selected_text = egui::Color32::from_hex(p.colors["on-accent"]).unwrap();
+        assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Text(t) if t.galley.job.text == "PDF" && t.override_text_color.unwrap_or_else(|| { let color = t.galley.job.sections[0].format.color; if color == egui::Color32::PLACEHOLDER { t.fallback_color } else { color } }) == selected_text)));
         assert!(frame.shapes.iter().any(
             |s| matches!(&s.shape,egui::Shape::Rect(r) if r.rect.contains(center)&&r.fill==accent)
         ));
