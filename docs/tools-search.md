@@ -130,8 +130,9 @@ embedded newlines and directory markers. Native nonzero exits with records retur
 those records; without records they fail with trimmed stderr or an exit-code message.
 
 Relative returned paths are anchored at the search root; absolute results are
-projected against it through [lexical paths](../crates/maestro-path/src/lib.rs). The result keeps producer
-order and duplicates. No matches returns `No files found matching pattern` without
+projected against it through [lexical paths](../crates/maestro-path/src/lib.rs),
+including Windows drive context. Returned directory separators are retained as `/`;
+a backslash remains literal on POSIX. The result keeps producer order and duplicates. No matches returns `No files found matching pattern` without
 details. Nonempty bodies join with LF and use the shared
 [head selection](tools-read.md#limits-and-selection), with no separate line cap.
 Count and byte notices follow after a blank line, count first. Native positive

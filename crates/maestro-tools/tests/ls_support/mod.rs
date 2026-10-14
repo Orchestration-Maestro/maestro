@@ -628,6 +628,17 @@ impl ContextInput {
     }
 }
 
+/// Build the recorded setup with the selected renderer's palette keys.
+fn environment(input: &ContextInput, keys: &[String]) -> (Setup, Env) {
+    (
+        input.setup(),
+        Env::with(
+            Rc::new(palette_of(keys, input.theme_shift)),
+            Rc::new(NoLanguages),
+        ),
+    )
+}
+
 /// A recorded call rendering.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -725,13 +736,7 @@ pub fn render_case_as<D>(
 ) -> (Vec<String>, usize) {
     if case.op == "call" {
         let input: CallInput = serde_json::from_value(case.input.clone()).unwrap();
-        let (setup, env) = (
-            input.context.setup(),
-            Env::with(
-                Rc::new(palette_of(keys, input.context.theme_shift)),
-                Rc::new(NoLanguages),
-            ),
-        );
+        let (setup, env) = environment(&input.context, keys);
         let _bindings = bind(&setup.bindings);
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
@@ -739,13 +744,7 @@ pub fn render_case_as<D>(
         return (row.render(CALL_WIDTH), CALL_WIDTH);
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
-    let (setup, env) = (
-        input.context.setup(),
-        Env::with(
-            Rc::new(palette_of(keys, input.context.theme_shift)),
-            Rc::new(NoLanguages),
-        ),
-    );
+    let (setup, env) = environment(&input.context, keys);
     let _bindings = bind(&setup.bindings);
     let options = ToolRenderResultOptions {
         expanded: input.options.expanded,

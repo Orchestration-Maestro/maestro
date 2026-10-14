@@ -5,13 +5,13 @@ use crate::{
         render_parts::{float, num},
         text_block,
     },
-    path_utils::resolve_to_cwd,
+    path_utils::{resolve_path, resolve_to_cwd},
     search::{listing::select_listing, tools_manager::ToolsManager},
     utils::diagnostics::{aborted, diagnostic, failure, guarded},
 };
 use maestro_agent::AgentToolResult;
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use maestro_path::{Cwd, SEP, relative, resolve};
+use maestro_path::{Cwd, SEP, relative};
 use std::sync::Arc;
 /// Captured configuration of a search definition.
 pub(super) struct Finder {
@@ -23,17 +23,17 @@ pub(super) struct Finder {
     pub(super) tools_manager: Arc<ToolsManager>,
 }
 /// Project an already-valued path against its search root without authored expansion.
-fn relative_path(root: &str, path: &str) -> String {
+fn relative_path(root: &str, path: &str) -> Result<String, DiagnosticErrorInfo> {
+    let absolute = resolve_path(&[root, path]).map_err(|e| diagnostic(&e))?;
     let cwd = Cwd {
         current: root,
         drive_directories: &[],
     };
-    let absolute = resolve(&[root, path], &cwd);
     let mut result = relative(root, &absolute, &cwd).replace(SEP, "/");
-    if path.ends_with(SEP) && !result.ends_with('/') {
+    if (path.ends_with(SEP) || (cfg!(windows) && path.ends_with('/'))) && !result.ends_with('/') {
         result.push('/');
     }
-    result
+    Ok(result)
 }
 impl Finder {
     /// Run one search, preserving the producer's ordering and duplicates.
@@ -75,7 +75,7 @@ impl Finder {
         } else {
             super::native::search(&self.tools_manager, &root, &input.pattern, limit, signal).await?
         };
-        Ok(format_paths(&paths, &root, limit, native))
+        format_paths(&paths, &root, limit, native)
     }
 }
 
@@ -85,19 +85,20 @@ fn format_paths(
     root: &str,
     limit: f64,
     native: bool,
-) -> AgentToolResult<FindToolDetails> {
+) -> Result<AgentToolResult<FindToolDetails>, DiagnosticErrorInfo> {
     if paths.is_empty() {
-        return AgentToolResult {
+        return Ok(AgentToolResult {
             content: vec![text_block("No files found matching pattern".into())],
             details: None,
             terminate: None,
-        };
+        });
     }
+    let root = resolve_path(&[root]).map_err(|e| diagnostic(&e))?;
     let reached = (!native || limit > 0.0) && float(paths.len()) >= limit;
     let body = paths
         .iter()
-        .map(|path| relative_path(root, path))
-        .collect::<Vec<_>>()
+        .map(|path| relative_path(&root, path))
+        .collect::<Result<Vec<_>, _>>()?
         .join("\n");
     let notices = if reached {
         let advice = if native {
@@ -114,12 +115,12 @@ fn format_paths(
     };
     let (text, truncation) = select_listing(&body, notices);
     let reported = reached || truncation.is_some();
-    AgentToolResult {
+    Ok(AgentToolResult {
         content: vec![text_block(text)],
         details: reported.then_some(FindToolDetails {
             truncation,
             result_limit_reached: reached.then_some(limit),
         }),
         terminate: None,
-    }
+    })
 }

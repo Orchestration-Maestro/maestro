@@ -58,7 +58,7 @@ fn keys() -> Vec<String> {
         .unwrap()
         .theme_keys
 }
-/// Manager whose transport refuses and counts any native acquisition.
+/// Manager whose transport refuses and counts release fetches.
 pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {
     let count = Arc::clone(counter);
     let fetch: Fetch = Arc::new(move |_| {
@@ -164,7 +164,7 @@ async fn invoke(
     operations: &Arc<Scripted>,
     signal: &Cancellation,
     updates: &Arc<AtomicUsize>,
-    native_calls: &Arc<AtomicUsize>,
+    fetches: &Arc<AtomicUsize>,
 ) -> Result<Value, DiagnosticErrorInfo> {
     let input = &operations.input;
     let cwd = input.cwd.clone().unwrap_or_else(|| "/work".into());
@@ -175,7 +175,8 @@ async fn invoke(
     let options = FindToolOptions {
         operations: Some(Arc::clone(operations) as Arc<dyn FindOperations>),
     };
-    let tools_manager = manager("/unused".into(), native_calls);
+    let bin = TempDir::new();
+    let tools_manager = manager(bin.text(), fetches);
     let count = Arc::clone(updates);
     if input.wrapped {
         let tool = create_find_tool(cwd, options, tools_manager);
@@ -220,9 +221,9 @@ pub fn custom(case: &Case) -> Value {
         started: Cancellation::new(),
     });
     let updates = Arc::new(AtomicUsize::new(0));
-    let native_calls = Arc::new(AtomicUsize::new(0));
+    let fetches = Arc::new(AtomicUsize::new(0));
     let result = run(async {
-        let mut future = std::pin::pin!(invoke(&operations, &signal, &updates, &native_calls));
+        let mut future = std::pin::pin!(invoke(&operations, &signal, &updates, &fetches));
         if operations.input.pending.is_some() {
             assert!(future.as_mut().now_or_never().is_none());
             assert!(operations.started.is_aborted());
@@ -230,7 +231,7 @@ pub fn custom(case: &Case) -> Value {
         }
         future.await
     });
-    assert_eq!(native_calls.load(Ordering::SeqCst), 0);
+    assert_eq!(fetches.load(Ordering::SeqCst), 0);
     let calls = operations.calls.lock().unwrap().clone();
     let mut observed = json!({"calls":calls,"updates":updates.load(Ordering::SeqCst)});
     match result {
@@ -400,7 +401,12 @@ pub fn check_controlled(test: &str) {
         } else {
             executable(&root, "fd", &body);
         }
-        let count = Arc::new(AtomicUsize::new(0));
+        let fetches = Arc::new(AtomicUsize::new(0));
+        let updates = Arc::new(AtomicUsize::new(0));
+        let count = Arc::clone(&updates);
+        let update: maestro_agent::AgentToolUpdateCallback = Arc::new(move |_| {
+            count.fetch_add(1, Ordering::SeqCst);
+        });
         let signal = Cancellation::new();
         if input.abort.is_some() {
             assert_eq!(input.abort.as_deref(), Some("ensure"));
@@ -410,15 +416,16 @@ pub fn check_controlled(test: &str) {
         let tool = create_find_tool(
             input.cwd.unwrap_or_else(|| "/work".into()),
             FindToolOptions::default(),
-            manager(root.text(), &count),
+            manager(root.text(), &fetches),
         );
         let output = run((tool.execute)(
             "call".into(),
             input.params.unwrap_or_else(|| json!({"pattern":"*"})),
             Some(signal),
-            None,
+            Some(update),
         ));
-        let mut actual = json!({"updates":count.load(Ordering::SeqCst)});
+        let mut actual = json!({"updates":updates.load(Ordering::SeqCst)});
+        assert_eq!(fetches.load(Ordering::SeqCst), 0);
         match output {
             Ok(r) => actual["result"] = result_json(&r.content, r.details),
             Err(e) => {

@@ -80,9 +80,73 @@ fn find_factory_forwards_custom_operations_without_native_work() {
     find_support::check_custom("find_factory_forwards_custom_operations_without_native_work");
 }
 
+/// A completed custom route must not even run an installed PATH discovery probe.
+#[cfg(unix)]
+#[test]
+fn find_custom_route_never_probes_native_programs() {
+    let root = read_support::TempDir::new();
+    let marker = root.0.join("probed");
+    let test = "find_custom_route_never_probes_native_programs";
+    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        let script = format!(
+            "#!/usr/bin/python3\nfrom pathlib import Path\nPath({}).write_text('probed')\n",
+            serde_json::json!(marker.to_str().unwrap())
+        );
+        for name in ["fd", "fdfind"] {
+            find_support::executable(&root, name, &script);
+        }
+        assert!(
+            std::process::Command::new(root.0.join("fd"))
+                .arg("--version")
+                .status()
+                .unwrap()
+                .success()
+        );
+        assert_eq!(std::fs::read_to_string(&marker).unwrap(), "probed");
+        std::fs::remove_file(&marker).unwrap();
+        assert!(!read_support::isolated(
+            test,
+            "probe",
+            &[("PATH", Some(root.text().as_str()))]
+        ));
+        assert!(!marker.exists(), "custom execution ran native discovery");
+        return;
+    }
+    find_support::check_custom("find_factory_forwards_custom_operations_without_native_work");
+}
+
 #[test]
 fn find_paths_resolve_at_execution() {
     find_support::check_custom("find_paths_resolve_at_execution");
+}
+
+/// Drive context and both separator spellings survive supplied-operation projection.
+#[cfg(windows)]
+#[test]
+fn find_windows_results_keep_drive_context_and_directory_suffix() {
+    let case = display_support::Case {
+        test: String::new(),
+        id: String::new(),
+        op: "custom".into(),
+        input: serde_json::json!({"cwd":"C:\\work", "results":["C:/work/sub/"]}),
+        expected: serde_json::Value::Null,
+    };
+    assert_eq!(
+        find_support::custom(&case)["result"]["content"][0]["text"],
+        "sub/"
+    );
+    let current = std::env::current_dir().unwrap();
+    let current = current.to_str().unwrap();
+    if current.as_bytes().get(1) == Some(&b':') {
+        let case = display_support::Case {
+            input: serde_json::json!({"cwd":"\\work", "results":[format!("{}\\work\\a", &current[..2])]}),
+            ..case
+        };
+        assert_eq!(
+            find_support::custom(&case)["result"]["content"][0]["text"],
+            "a"
+        );
+    }
 }
 
 #[test]
@@ -473,13 +537,13 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
     let test = "find_acquisition_is_silent_and_abort_prevents_launch";
     let root = read_support::TempDir::new();
     if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
-        assert!(!read_support::isolated(
+        assert_silent_child(read_support::isolated_os_output(
             test,
             "no-path",
             &[
-                ("PATH", Some(root.text().as_str())),
-                ("MAESTRO_OFFLINE", Some("0"))
-            ]
+                ("PATH", Some(root.0.as_os_str())),
+                ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new("0"))),
+            ],
         ));
         let sock = root.0.join("probe.sock");
         find_support::executable(
@@ -490,13 +554,13 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
                 serde_json::json!(sock.to_str().unwrap())
             ),
         );
-        assert!(!read_support::isolated(
+        assert_silent_child(read_support::isolated_os_output(
             test,
             "probe",
             &[
-                ("PATH", Some(root.text().as_str())),
-                ("MAESTRO_FIND_PROBE", Some(root.text().as_str()))
-            ]
+                ("PATH", Some(root.0.as_os_str())),
+                ("MAESTRO_FIND_PROBE", Some(root.0.as_os_str())),
+            ],
         ));
         return;
     }
@@ -508,6 +572,20 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
             abort_download(&root).await;
         }
     });
+}
+/// Ignore only harness lines, not the successful child's acquisition output.
+#[cfg(unix)]
+fn assert_silent_child(output: std::process::Output) {
+    assert!(output.stderr.is_empty(), "{:?}", output.stderr);
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    for line in stdout.lines().filter(|line| !line.is_empty()) {
+        assert!(
+            line == "running 1 test"
+                || line == "test find_acquisition_is_silent_and_abort_prevents_launch ... ok"
+                || line.starts_with("test result: ok. 1 passed; 0 failed;"),
+            "unexpected child output: {line}"
+        );
+    }
 }
 /// Cancel a live discovery probe and observe its owned socket closing.
 #[cfg(unix)]
@@ -561,6 +639,11 @@ async fn unavailable_and_pre_abort(root: &read_support::TempDir) {
         "Operation aborted"
     );
     assert_eq!(calls.load(Ordering::SeqCst), 0);
+    let updates = Arc::new(AtomicUsize::new(0));
+    let count = Arc::clone(&updates);
+    let update: maestro_agent::AgentToolUpdateCallback = Arc::new(move |_| {
+        count.fetch_add(1, Ordering::SeqCst);
+    });
     let unavailable =
         find_support::cases("find_native_failures_and_partial_output_follow_exit_rules")
             .into_iter()
@@ -573,7 +656,7 @@ async fn unavailable_and_pre_abort(root: &read_support::TempDir) {
             "call".into(),
             serde_json::json!({"pattern":"*"}),
             None,
-            None
+            Some(update)
         )
         .await
         .err()
@@ -581,7 +664,10 @@ async fn unavailable_and_pre_abort(root: &read_support::TempDir) {
         .message,
         unavailable.expected["error"].as_str().unwrap()
     );
-    assert_eq!(unavailable.expected["updates"], serde_json::json!(0));
+    assert_eq!(
+        serde_json::json!(updates.load(Ordering::SeqCst)),
+        unavailable.expected["updates"]
+    );
     assert_eq!(calls.load(Ordering::SeqCst), 1);
 }
 /// Cancel after the supplied acquisition transport registers its started witness.
