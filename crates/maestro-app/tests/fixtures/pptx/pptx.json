@@ -1,0 +1,1907 @@
+{
+  "rows": [
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "suffix",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "uppercase_suffix",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "DECK.PPTX",
+        "mime": "image/png"
+      },
+      "expected": {
+        "attachment": {
+          "id": "DECK.PPTX_<generated>",
+          "type": "document",
+          "fileName": "DECK.PPTX",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"DECK.PPTX\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "suffix_before_text",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": "text/plain"
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "mime",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.bin",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.bin_<generated>",
+          "type": "document",
+          "fileName": "deck.bin",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.bin\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "mime_before_image",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.png",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.png_<generated>",
+          "type": "document",
+          "fileName": "deck.png",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.png\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_detection_selects_mime_or_suffix",
+      "case": "mime_before_excel",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.xlsx",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.xlsx_<generated>",
+          "type": "document",
+          "fileName": "deck.xlsx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.xlsx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "file_renamed.pptx",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "override": "renamed.pptx"
+      },
+      "expected": {
+        "attachment": {
+          "id": "renamed.pptx_<generated>",
+          "type": "document",
+          "fileName": "renamed.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"renamed.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "blob_None",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "blob",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      },
+      "expected": {
+        "attachment": {
+          "id": "unnamed_<generated>",
+          "type": "document",
+          "fileName": "unnamed",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"unnamed\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "buffer_bytes.pptx",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "buffer",
+        "override": "bytes.pptx"
+      },
+      "expected": {
+        "attachment": {
+          "id": "bytes.pptx_<generated>",
+          "type": "document",
+          "fileName": "bytes.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"bytes.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "url_None",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "url",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "url": "https://example.invalid/path/deck.PPTX"
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.PPTX_<generated>",
+          "type": "document",
+          "fileName": "deck.PPTX",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.PPTX\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "url_chosen.pptx",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "url",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "override": "chosen.pptx",
+        "url": "https://example.invalid/empty/"
+      },
+      "expected": {
+        "attachment": {
+          "id": "chosen.pptx_<generated>",
+          "type": "document",
+          "fileName": "chosen.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"chosen.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_source_routes_retain_original_metadata",
+      "case": "file_",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "override": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_package_keeps_outer_wrapper",
+      "case": "no_parts",
+      "input": {
+        "file": "packages/02.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 22,
+          "content": "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_slides_use_numeric_order",
+      "case": "2_before_10",
+      "input": {
+        "file": "packages/03.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 705,
+          "content": "UEsDBBQAAAAAAAAAIQDepeIkbQAAAG0AAAAWAAAAcHB0L3NsaWRlcy9zbGlkZTEwLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+dGVuPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAMtlnvxtAAAAbQAAABUAAABwcHQvc2xpZGVzL3NsaWRlMi54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnR3bzwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQD6pRYCbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5vbmU8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQDepeIkbQAAAG0AAAAWAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMTAueG1sUEsBAhQDFAAAAAAAAAAhAMtlnvxtAAAAbQAAABUAAAAAAAAAAAAAAIABoQAAAHBwdC9zbGlkZXMvc2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQD6pRYCbQAAAG0AAAAVAAAAAAAAAAAAAACAAUEBAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAMAAwDKAAAA4QEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\none\n</slide>\n<slide number=\"2\">\ntwo\n</slide>\n<slide number=\"3\">\nten\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_slides_use_numeric_order",
+      "case": "numbers_beyond_u64",
+      "input": {
+        "file": "packages/04.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 561,
+          "content": "UEsDBBQAAAAAAAAAIQAyX1PtcAAAAHAAAAApAAAAcHB0L3NsaWRlcy9zbGlkZTE4NDQ2NzQ0MDczNzA5NTUxNjE2MC54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PmxhcmdlcjwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQCAVwi2cQAAAHEAAAAoAAAAcHB0L3NsaWRlcy9zbGlkZTE4NDQ2NzQ0MDczNzA5NTUxNjE2LnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+c21hbGxlcjwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhADJfU+1wAAAAcAAAACkAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxODQ0Njc0NDA3MzcwOTU1MTYxNjAueG1sUEsBAhQDFAAAAAAAAAAhAIBXCLZxAAAAcQAAACgAAAAAAAAAAAAAAIABtwAAAHBwdC9zbGlkZXMvc2xpZGUxODQ0Njc0NDA3MzcwOTU1MTYxNi54bWxQSwUGAAAAAAIAAgCtAAAAbgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nsmaller\n</slide>\n<slide number=\"2\">\nlarger\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_numeric_ties_keep_archive_order",
+      "case": "equal_numbers",
+      "input": {
+        "file": "packages/05.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 724,
+          "content": "UEsDBBQAAAAAAAAAIQDgfe0QcgAAAHIAAAAWAAAAcHB0L3NsaWRlcy9zbGlkZTAyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+emVyby10d288L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAy2We/G0AAABtAAAAFQAAAHBwdC9zbGlkZXMvc2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+dHdvPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAD+CFMBzAAAAcwAAABkAAAB4L3BwdC9zbGlkZXMvc2xpZGUwMDIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD50d28tYWdhaW48L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQDgfe0QcgAAAHIAAAAWAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMDIueG1sUEsBAhQDFAAAAAAAAAAhAMtlnvxtAAAAbQAAABUAAAAAAAAAAAAAAIABpgAAAHBwdC9zbGlkZXMvc2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQA/ghTAcwAAAHMAAAAZAAAAAAAAAAAAAACAAUYBAAB4L3BwdC9zbGlkZXMvc2xpZGUwMDIueG1sUEsFBgAAAAADAAMAzgAAAPABAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nzero-two\n</slide>\n<slide number=\"2\">\ntwo\n</slide>\n<slide number=\"3\">\ntwo-again\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_numeric_ties_keep_archive_order",
+      "case": "rounded_integer_ties",
+      "input": {
+        "file": "packages/06.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 818,
+          "content": "UEsDBBQAAAAAAAAAIQBwvVoBdwAAAHcAAAAkAAAAcHB0L3NsaWRlcy9zbGlkZTkwMDcxOTkyNTQ3NDA5OTMueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5yb3VuZGVkLWZpcnN0PC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAIvta9F4AAAAeAAAACQAAABwcHQvc2xpZGVzL3NsaWRlOTAwNzE5OTI1NDc0MDk5Mi54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnJvdW5kZWQtc2Vjb25kPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAIBXCLZxAAAAcQAAACQAAABwcHQvc2xpZGVzL3NsaWRlOTAwNzE5OTI1NDc0MDk5MS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnNtYWxsZXI8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQBwvVoBdwAAAHcAAAAkAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlOTAwNzE5OTI1NDc0MDk5My54bWxQSwECFAMUAAAAAAAAACEAi+1r0XgAAAB4AAAAJAAAAAAAAAAAAAAAgAG5AAAAcHB0L3NsaWRlcy9zbGlkZTkwMDcxOTkyNTQ3NDA5OTIueG1sUEsBAhQDFAAAAAAAAAAhAIBXCLZxAAAAcQAAACQAAAAAAAAAAAAAAIABcwEAAHBwdC9zbGlkZXMvc2xpZGU5MDA3MTk5MjU0NzQwOTkxLnhtbFBLBQYAAAAAAwADAPYAAAAmAgAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nsmaller\n</slide>\n<slide number=\"2\">\nrounded-first\n</slide>\n<slide number=\"3\">\nrounded-second\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_duplicate_names_replace_without_reordering",
+      "case": "last_data_first_position",
+      "input": {
+        "file": "packages/07.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 718,
+          "content": "UEsDBBQAAAAAAAAAIQBxW008bQAAAG0AAAAWAAAAcHB0L3NsaWRlcy9zbGlkZTAyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+b2xkPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhALNMwINwAAAAcAAAABUAAABwcHQvc2xpZGVzL3NsaWRlMi54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnNlY29uZDwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQAZCWVIdQAAAHUAAAAWAAAAcHB0L3NsaWRlcy9zbGlkZTAyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+cmVwbGFjZW1lbnQ8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQBxW008bQAAAG0AAAAWAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMDIueG1sUEsBAhQDFAAAAAAAAAAhALNMwINwAAAAcAAAABUAAAAAAAAAAAAAAIABoQAAAHBwdC9zbGlkZXMvc2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQAZCWVIdQAAAHUAAAAWAAAAAAAAAAAAAACAAUQBAABwcHQvc2xpZGVzL3NsaWRlMDIueG1sUEsFBgAAAAADAAMAywAAAO0BAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nreplacement\n</slide>\n<slide number=\"2\">\nsecond\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entry_selection_keeps_suffix_and_ascii_digits",
+      "case": "path_decoys",
+      "input": {
+        "file": "packages/08.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 2640,
+          "content": "UEsDBBQAAAAAAAAAIQCL5HLhcgAAAHIAAAAbAAAAZXh0cmEvcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5wcmVmaXhlZDwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQBndlUcbgAAAG4AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTAueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD56ZXJvPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAAQrkgJvAAAAbwAAABYAAABwcHQvc2xpZGVzL3NsaWRlMDMueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD50aHJlZTwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQB2X+k3dAAAAHQAAAAVAAAAUFBUL3NsaWRlcy9zbGlkZTQueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD53cm9uZyBjYXNlPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhABbup9R2AAAAdgAAABkAAABwcHQvc2xpZGVzL3NsaWRlNS54bWwuYmFrPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD53cm9uZyBzdWZmaXg8L2E6dD48L3A6c2xkPlBLAwQUAAAIAAAAACEAwJfnPnYAAAB2AAAAFwAAAHBwdC9zbGlkZXMvc2xpZGXvvJYueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD53cm9uZyBkaWdpdHM8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEATD7EN3gAAAB4AAAAFAAAAHBwdC9zbGlkZXMvc2xpZGUueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5taXNzaW5nIGRpZ2l0czwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQDETih3dgAAAHYAAAAcAAAAcHB0L3NsaWRlcy9uZXN0ZWQvc2xpZGU3LnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+d3JvbmcgZm9sZGVyPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAK4vS9t3AAAAdwAAABYAAABwcHQvc2xpZGVzL3NsaWRlOC54bWwKPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5maW5hbCBuZXdsaW5lPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAMIiH3pzAAAAcwAAABYAAABwcHQvc2xpZGVzL3NsaWRlOS54bWwvPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5kaXJlY3Rvcnk8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAb5YHtXUAAAB1AAAAFgAAAHBwdFxzbGlkZXNcc2xpZGUxMC54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PmJhY2tzbGFzaGVzPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAi+Ry4XIAAAByAAAAGwAAAAAAAAAAAAAAgAEAAAAAZXh0cmEvcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAGd2VRxuAAAAbgAAABUAAAAAAAAAAAAAAIABqwAAAHBwdC9zbGlkZXMvc2xpZGUwLnhtbFBLAQIUAxQAAAAAAAAAIQAEK5ICbwAAAG8AAAAWAAAAAAAAAAAAAACAAUwBAABwcHQvc2xpZGVzL3NsaWRlMDMueG1sUEsBAhQDFAAAAAAAAAAhAHZf6Td0AAAAdAAAABUAAAAAAAAAAAAAAIAB7wEAAFBQVC9zbGlkZXMvc2xpZGU0LnhtbFBLAQIUAxQAAAAAAAAAIQAW7qfUdgAAAHYAAAAZAAAAAAAAAAAAAACAAZYCAABwcHQvc2xpZGVzL3NsaWRlNS54bWwuYmFrUEsBAhQDFAAACAAAAAAhAMCX5z52AAAAdgAAABcAAAAAAAAAAAAAAIABQwMAAHBwdC9zbGlkZXMvc2xpZGXvvJYueG1sUEsBAhQDFAAAAAAAAAAhAEw+xDd4AAAAeAAAABQAAAAAAAAAAAAAAIAB7gMAAHBwdC9zbGlkZXMvc2xpZGUueG1sUEsBAhQDFAAAAAAAAAAhAMROKHd2AAAAdgAAABwAAAAAAAAAAAAAAIABmAQAAHBwdC9zbGlkZXMvbmVzdGVkL3NsaWRlNy54bWxQSwECFAMUAAAAAAAAACEAri9L23cAAAB3AAAAFgAAAAAAAAAAAAAAgAFIBQAAcHB0L3NsaWRlcy9zbGlkZTgueG1sClBLAQIUAxQAAAAAAAAAIQDCIh96cwAAAHMAAAAWAAAAAAAAAAAAAACAAfMFAABwcHQvc2xpZGVzL3NsaWRlOS54bWwvUEsBAhQDFAAAAAAAAAAhAG+WB7V1AAAAdQAAABYAAAAAAAAAAAAAAIABmgYAAHBwdFxzbGlkZXNcc2xpZGUxMC54bWxQSwUGAAAAAAsACwD3AgAAQwcAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nzero\n</slide>\n<slide number=\"2\">\nprefixed\n</slide>\n<slide number=\"3\">\nthree\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_rooted_names_read_exact_entries",
+      "case": "leading_root",
+      "input": {
+        "file": "packages/09.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 486,
+          "content": "UEsDBBQAAAAAAAAAIQBRs0t/cAAAAHAAAAAWAAAAL3BwdC9zbGlkZXMvc2xpZGUxLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+cm9vdGVkPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhANVIsZJyAAAAcgAAABUAAABwcHQvc2xpZGVzL3NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnVucm9vdGVkPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAUbNLf3AAAABwAAAAFgAAAAAAAAAAAAAAgAEAAAAAL3BwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQDVSLGScgAAAHIAAAAVAAAAAAAAAAAAAACAAaQAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAIAAgCHAAAASQEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nrooted\n</slide>\n<slide number=\"2\">\nunrooted\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_archive_names_reuse_dot_sanitization",
+      "case": "sanitized_name",
+      "input": {
+        "file": "packages/10.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQABRXffcwAAAHMAAAAcAAAAYS8uLi9wcHQvLi9zbGlkZXMvc2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+c2FuaXRpemVkPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAPqlFgJtAAAAbQAAABUAAABwcHQvc2xpZGVzL3NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0Pm9uZTwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAAFFd99zAAAAcwAAABwAAAAAAAAAAAAAAIABAAAAAGEvLi4vcHB0Ly4vc2xpZGVzL3NsaWRlMi54bWxQSwECFAMUAAAAAAAAACEA+qUWAm0AAABtAAAAFQAAAAAAAAAAAAAAgAGtAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAACAAIAjQAAAE0BAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\none\n</slide>\n<slide number=\"2\">\nsanitized\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_blank_slides_still_count_for_ordinals",
+      "case": "blank_gap",
+      "input": {
+        "file": "packages/11.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 601,
+          "content": "UEsDBBQAAAAAAAAAIQD9Afa1cQAAAHEAAAAWAAAAcHB0L3NsaWRlcy9zbGlkZTEwLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+dmlzaWJsZTwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQCT1TUcBAAAAAQAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAvPlBLAwQUAAAAAAAAACEAQIzhVmoAAABqAAAAFQAAAHBwdC9zbGlkZXMvc2xpZGUzLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEA/QH2tXEAAABxAAAAFgAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEwLnhtbFBLAQIUAxQAAAAAAAAAIQCT1TUcBAAAAAQAAAAVAAAAAAAAAAAAAACAAaUAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAQIzhVmoAAABqAAAAFQAAAAAAAAAAAAAAgAHcAAAAcHB0L3NsaWRlcy9zbGlkZTMueG1sUEsFBgAAAAADAAMAygAAAHkBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"3\">\nvisible\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_runs_and_whitespace_have_distinct_wrappers",
+      "case": "no_match",
+      "input": {
+        "file": "packages/12.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 144,
+          "content": "UEsDBBQAAAAAAAAAIQCT1TUcBAAAAAQAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAvPlBLAQIUAxQAAAAAAAAAIQCT1TUcBAAAAAQAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAEAAQBDAAAANwAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_runs_and_whitespace_have_distinct_wrappers",
+      "case": "empty",
+      "input": {
+        "file": "packages/13.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 246,
+          "content": "UEsDBBQAAAAAAAAAIQBAjOFWagAAAGoAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD48L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQBAjOFWagAAAGoAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAEAAQBDAAAAnQAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_runs_and_whitespace_have_distinct_wrappers",
+      "case": "self_closing",
+      "input": {
+        "file": "packages/14.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 217,
+          "content": "UEsDBBQAAAAAAAAAIQCjWc1zTQAAAE0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQvPjwvcD5QSwECFAMUAAAAAAAAACEAo1nNc00AAABNAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAIAAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_runs_and_whitespace_have_distinct_wrappers",
+      "case": "whitespace",
+      "input": {
+        "file": "packages/15.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 250,
+          "content": "UEsDBBQAAAAAAAAAIQCEjzZcbgAAAG4AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4gCQ0KPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAhI82XG4AAABuAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAKEAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_runs_and_whitespace_have_distinct_wrappers",
+      "case": "matched_then_empty",
+      "input": {
+        "file": "packages/16.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 234,
+          "content": "UEsDBBQAAAAAAAAAIQCav10qXgAAAF4AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+IDwvYTp0PjxhOnQ+PC9hOnQ+PC9wPlBLAQIUAxQAAAAAAAAAIQCav10qXgAAAF4AAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAEAAQBDAAAAkQAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_runs_keep_source_order_and_padding",
+      "case": "multiple_runs",
+      "input": {
+        "file": "packages/17.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 289,
+          "content": "UEsDBBQAAAAAAAAAIQBzmnvtlQAAAJUAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+ICBmaXJzdCAgPC9hOnQ+PGE6dD5zZWNvbmQ8L2E6dD48YTp0PiAgZmlyc3QgIDwvYTp0PjwvcD5QSwECFAMUAAAAAAAAACEAc5p77ZUAAACVAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAMgAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n  first  \nsecond\n  first  \n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_text_matching_keeps_literal_prefix_rules",
+      "case": "prefix_decoys",
+      "input": {
+        "file": "packages/18.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 329,
+          "content": "UEsDBBQAAAAAAAAAIQCZKcAnvQAAAL0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHAgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iIHhtbG5zOmI9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48Yjp0PmFsaWFzPC9iOnQ+PEE6dD5jYXNlPC9BOnQ+PGE6dCBhOng9IjEiPmtlcHQ8L2E6dD48L3A+UEsBAhQDFAAAAAAAAAAhAJkpwCe9AAAAvQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAADwAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nkept\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_raw_matching_does_not_validate_whole_xml",
+      "case": "unbound_prefix",
+      "input": {
+        "file": "packages/19.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 158,
+          "content": "UEsDBBQAAAAAAAAAIQAM7b9LEgAAABIAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPGE6dD51bmJvdW5kPC9hOnQ+UEsBAhQDFAAAAAAAAAAhAAztv0sSAAAAEgAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAABFAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nunbound\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_raw_matching_does_not_validate_whole_xml",
+      "case": "broken_outer",
+      "input": {
+        "file": "packages/20.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 179,
+          "content": "UEsDBBQAAAAAAAAAIQB1dyb6JwAAACcAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sYnJva2VuIDxhOnQ+a2VwdDwvYTp0PiB1bmNsb3NlZCA8b3V0ZXI+UEsBAhQDFAAAAAAAAAAhAHV3JvonAAAAJwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAABaAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nkept\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_raw_matching_does_not_validate_whole_xml",
+      "case": "nested_run",
+      "input": {
+        "file": "packages/21.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 182,
+          "content": "UEsDBBQAAAAAAAAAIQCmMSqbKgAAACoAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPGE6dD5sb3N0PGNoaWxkLz50YWlsPC9hOnQ+PGE6dD5rZXB0PC9hOnQ+UEsBAhQDFAAAAAAAAAAhAKYxKpsqAAAAKgAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAABdAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nkept\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_raw_matching_does_not_validate_whole_xml",
+      "case": "cdata",
+      "input": {
+        "file": "packages/22.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 182,
+          "content": "UEsDBBQAAAAAAAAAIQA+JNWzKgAAACoAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPGE6dD48IVtDREFUQVtsb3N0XV0+PC9hOnQ+PGE6dD5rZXB0PC9hOnQ+UEsBAhQDFAAAAAAAAAAhAD4k1bMqAAAAKgAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAABdAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nkept\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_raw_matching_does_not_validate_whole_xml",
+      "case": "comment",
+      "input": {
+        "file": "packages/23.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 192,
+          "content": "UEsDBBQAAAAAAAAAIQCbZ5luNAAAADQAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPCEtLSA8YTp0Pmluc2lkZSBjb21tZW50PC9hOnQ+IC0tPjxhOnQ+b3V0c2lkZTwvYTp0PlBLAQIUAxQAAAAAAAAAIQCbZ5luNAAAADQAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAEAAQBDAAAAZwAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\ninside comment\noutside\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+0009",
+      "input": {
+        "file": "packages/24.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQDDpXwzawAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4JPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAMOlfDNrAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4JPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAw6V8M2sAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAMOlfDNrAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+000A",
+      "input": {
+        "file": "packages/25.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQC6zwEiawAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4KPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhALrPASJrAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4KPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAus8BImsAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhALrPASJrAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+000B",
+      "input": {
+        "file": "packages/26.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQBSFPqbawAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4LPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAFIU+ptrAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4LPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAUhT6m2sAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAFIU+ptrAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+000C",
+      "input": {
+        "file": "packages/27.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQBIG/sAawAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4MPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAEgb+wBrAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4MPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEASBv7AGsAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAEgb+wBrAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+000D",
+      "input": {
+        "file": "packages/28.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQCgwAC5awAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4NPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAKDAALlrAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4NPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAoMAAuWsAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAKDAALlrAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+0020",
+      "input": {
+        "file": "packages/29.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 492,
+          "content": "UEsDBBQAAAAAAAAAIQAyjMvNawAAAGsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4gPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhADKMy81rAAAAawAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4gPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAMozLzWsAAABrAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhADKMy81rAAAAawAAAB8AAAAAAAAAAAAAAIABngAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWxQSwUGAAAAAAIAAgCQAAAARgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+00A0",
+      "input": {
+        "file": "packages/30.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 494,
+          "content": "UEsDBBQAAAAAAAAAIQCJA8DfbAAAAGwAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7CoDwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQCJA8DfbAAAAGwAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+wqA8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQCJA8DfbAAAAGwAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAiQPA32wAAABsAAAAHwAAAAAAAAAAAAAAgAGfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbFBLBQYAAAAAAgACAJAAAABIAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+1680",
+      "input": {
+        "file": "packages/31.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQA9jyqRbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7hmoA8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAPY8qkW0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuGagDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAD2PKpFtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQA9jyqRbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2000",
+      "input": {
+        "file": "packages/32.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQALUCTQbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIA8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAC1Ak0G0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAgDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAAtQJNBtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQALUCTQbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2001",
+      "input": {
+        "file": "packages/33.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQDji99pbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIE8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEA44vfaW0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAgTwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAOOL32ltAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQDji99pbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2002",
+      "input": {
+        "file": "packages/34.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQCa4aJ4bQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igII8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAmuGieG0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAgjwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAJrhonhtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQCa4aJ4bQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2003",
+      "input": {
+        "file": "packages/35.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQByOlnBbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIM8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAcjpZwW0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAgzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAHI6WcFtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQByOlnBbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2004",
+      "input": {
+        "file": "packages/36.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQBoNVhabQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIQ8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAaDVYWm0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAhDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAGg1WFptAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQBoNVhabQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2005",
+      "input": {
+        "file": "packages/37.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQCA7qPjbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIU8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAgO6j420AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAhTwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAIDuo+NtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQCA7qPjbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2006",
+      "input": {
+        "file": "packages/38.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQD5hN7ybQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIY8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEA+YTe8m0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAhjwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAPmE3vJtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQD5hN7ybQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2007",
+      "input": {
+        "file": "packages/39.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQARXyVLbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIc8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAEV8lS20AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAhzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhABFfJUttAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQARXyVLbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2008",
+      "input": {
+        "file": "packages/40.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQCMnK0fbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIg8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAjJytH20AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAiDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAIycrR9tAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQCMnK0fbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2009",
+      "input": {
+        "file": "packages/41.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQBkR1ambQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIk8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAZEdWpm0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAiTwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAGRHVqZtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQBkR1ambQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+200A",
+      "input": {
+        "file": "packages/42.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQAdLSu3bQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIo8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAHS0rt20AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAijwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAB0tK7dtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQAdLSu3bQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2028",
+      "input": {
+        "file": "packages/43.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQASomiXbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igKg8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAEqJol20AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAqDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhABKiaJdtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQASomiXbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+2029",
+      "input": {
+        "file": "packages/44.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQD6eZMubQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igKk8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEA+nmTLm0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAqTwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAPp5ky5tAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQD6eZMubQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+202F",
+      "input": {
+        "file": "packages/45.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQAIrWkMbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igK88L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEACK1pDG0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKArzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAAitaQxtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQAIrWkMbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+205F",
+      "input": {
+        "file": "packages/46.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQBInaZubQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igZ88L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEASJ2mbm0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKBnzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAEidpm5tAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQBInaZubQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+3000",
+      "input": {
+        "file": "packages/47.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQBIm4JXbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7jgIA8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEASJuCV20AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuOAgDwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAEibgldtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQBIm4JXbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+FEFF",
+      "input": {
+        "file": "packages/48.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQAL/3bxbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7vu788L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAC/928W0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0Pu+7vzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAAv/dvFtAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQAL/3bxbQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n</slide>\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+0085",
+      "input": {
+        "file": "packages/49.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 494,
+          "content": "UEsDBBQAAAAAAAAAIQCcg4JkbAAAAGwAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7ChTwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQCcg4JkbAAAAGwAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+woU8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQCcg4JkbAAAAGwAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAnIOCZGwAAABsAAAAHwAAAAAAAAAAAAAAgAGfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbFBLBQYAAAAAAgACAJAAAABIAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n\n</slide>\n<notes>\n[Slide 1 notes]: \n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+180E",
+      "input": {
+        "file": "packages/50.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQCHaPJ5bQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7hoI48L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAh2jyeW0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuGgjjwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAIdo8nltAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQCHaPJ5bQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n᠎\n</slide>\n<notes>\n[Slide 1 notes]: ᠎\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_run_filter_uses_shared_whitespace_scalars",
+      "case": "U+200B",
+      "input": {
+        "file": "packages/51.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 496,
+          "content": "UEsDBBQAAAAAAAAAIQD19tAObQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD7igIs8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEA9fbQDm0AAABtAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PuKAizwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAPX20A5tAAAAbQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLAQIUAxQAAAAAAAAAIQD19tAObQAAAG0AAAAfAAAAAAAAAAAAAACAAaAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsFBgAAAAACAAIAkAAAAEoBAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n​\n</slide>\n<notes>\n[Slide 1 notes]: ​\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_notes_follow_slides_in_numeric_order",
+      "case": "ordered_notes",
+      "input": {
+        "file": "packages/52.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 978,
+          "content": "UEsDBBQAAAAAAAAAIQDepeIkbQAAAG0AAAAgAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxMC54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnRlbjwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQDLZZ78bQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD50d288L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAKvc63nMAAABzAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMi54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PnR3byBub3RlczwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQD6pRYCbQAAAG0AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5vbmU8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQDepeIkbQAAAG0AAAAgAAAAAAAAAAAAAACAAQAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEwLnhtbFBLAQIUAxQAAAAAAAAAIQDLZZ78bQAAAG0AAAAVAAAAAAAAAAAAAACAAasAAABwcHQvc2xpZGVzL3NsaWRlMi54bWxQSwECFAMUAAAAAAAAACEAKvc63nMAAABzAAAAHwAAAAAAAAAAAAAAgAFLAQAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQD6pRYCbQAAAG0AAAAVAAAAAAAAAAAAAACAAfsBAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAQABAAhAQAAmwIAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\none\n</slide>\n<slide number=\"2\">\ntwo\n</slide>\n<notes>\n[Slide 2 notes]: two notes\n[Slide 10 notes]: ten\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_notes_keep_number_spelling_and_tie_order",
+      "case": "zero_padded_labels",
+      "input": {
+        "file": "packages/53.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 1024,
+          "content": "UEsDBBQAAAAAAAAAIQDDsxnCbwAAAG8AAAAhAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUwMDIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5maXJzdDwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQCzTMCDcAAAAHAAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+c2Vjb25kPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAGC7bAJvAAAAbwAAACAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTAyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+dGhpcmQ8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAZ3ZVHG4AAABuAAAAHwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMC54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0Pnplcm88L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQDDsxnCbwAAAG8AAAAhAAAAAAAAAAAAAACAAQAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTAwMi54bWxQSwECFAMUAAAAAAAAACEAs0zAg3AAAABwAAAAHwAAAAAAAAAAAAAAgAGuAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQBgu2wCbwAAAG8AAAAgAAAAAAAAAAAAAACAAVsBAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTAyLnhtbFBLAQIUAxQAAAAAAAAAIQBndlUcbgAAAG4AAAAfAAAAAAAAAAAAAACAAQgCAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTAueG1sUEsFBgAAAAAEAAQANwEAALMCAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n[Slide 0 notes]: zero\n[Slide 002 notes]: first\n[Slide 2 notes]: second\n[Slide 02 notes]: third\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_notes_still_emit_notes_wrapper",
+      "case": "no_text",
+      "input": {
+        "file": "packages/54.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 164,
+          "content": "UEsDBBQAAAAAAAAAIQCT1TUcBAAAAAQAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbDxwLz5QSwECFAMUAAAAAAAAACEAk9U1HAQAAAAEAAAAHwAAAAAAAAAAAAAAgAEAAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbFBLBQYAAAAAAQABAE0AAABBAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_notes_still_emit_notes_wrapper",
+      "case": "empty_text",
+      "input": {
+        "file": "packages/55.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 266,
+          "content": "UEsDBBQAAAAAAAAAIQBAjOFWagAAAGoAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAQIzhVmoAAABqAAAAHwAAAAAAAAAAAAAAgAEAAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbFBLBQYAAAAAAQABAE0AAACnAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_empty_notes_still_emit_notes_wrapper",
+      "case": "whitespace",
+      "input": {
+        "file": "packages/56.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 269,
+          "content": "UEsDBBQAAAAAAAAAIQBXANxLbQAAAG0AAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+IAkKPC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAVwDcS20AAABtAAAAHwAAAAAAAAAAAAAAgAEAAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUxLnhtbFBLBQYAAAAAAQABAE0AAACqAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_notes_join_runs_without_trimming",
+      "case": "multiple_runs",
+      "input": {
+        "file": "packages/57.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 284,
+          "content": "UEsDBBQAAAAAAAAAIQDDftdIfAAAAHwAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGU1LnhtbDxwIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0PiBmaXJzdCA8L2E6dD48YTp0PnNlY29uZDwvYTp0PjxhOnQ+IGZpcnN0IDwvYTp0PjwvcD5QSwECFAMUAAAAAAAAACEAw37XSHwAAAB8AAAAHwAAAAAAAAAAAAAAgAEAAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGU1LnhtbFBLBQYAAAAAAQABAE0AAAC5AAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n[Slide 5 notes]:  first  second  first \n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entities_decode_once_after_run_filter",
+      "case": "predefined",
+      "input": {
+        "file": "packages/58.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 540,
+          "content": "UEsDBBQAAAAAAAAAIQCtR4d4gwAAAIMAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mYW1wOyZsdDsmZ3Q7JnF1b3Q7JmFwb3M7PC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAK1Hh3iDAAAAgwAAAB8AAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mYW1wOyZsdDsmZ3Q7JnF1b3Q7JmFwb3M7PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEArUeHeIMAAACDAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhAK1Hh3iDAAAAgwAAAB8AAAAAAAAAAAAAAIABtgAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMi54bWxQSwUGAAAAAAIAAgCQAAAAdgEAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n&<>\"'\n</slide>\n<notes>\n[Slide 2 notes]: &<>\"'\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entities_decode_once_after_run_filter",
+      "case": "numeric",
+      "input": {
+        "file": "packages/59.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 536,
+          "content": "UEsDBBQAAAAAAAAAIQAnWTihgQAAAIEAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mIzY1OyYjeDFGNjAwOyYjMTI4NTEyOzwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQAnWTihgQAAAIEAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+JiM2NTsmI3gxRjYwMDsmIzEyODUxMjs8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQAnWTihgQAAAIEAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAJ1k4oYEAAACBAAAAHwAAAAAAAAAAAAAAgAG0AAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLBQYAAAAAAgACAJAAAAByAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nA😀😀\n</slide>\n<notes>\n[Slide 2 notes]: A😀😀\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entities_decode_once_after_run_filter",
+      "case": "once",
+      "input": {
+        "file": "packages/60.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 506,
+          "content": "UEsDBBQAAAAAAAAAIQDA0Hi0cgAAAHIAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mYW1wO2x0OzwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQDA0Hi0cgAAAHIAAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+JmFtcDtsdDs8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQDA0Hi0cgAAAHIAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAwNB4tHIAAAByAAAAHwAAAAAAAAAAAAAAgAGlAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLBQYAAAAAAgACAJAAAABUAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n&lt;\n</slide>\n<notes>\n[Slide 2 notes]: &lt;\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entities_decode_once_after_run_filter",
+      "case": "space_after_filter",
+      "input": {
+        "file": "packages/61.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 500,
+          "content": "UEsDBBQAAAAAAAAAIQA4m5zjbwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mIzMyOzwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQA4m5zjbwAAAG8AAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+JiMzMjs8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQA4m5zjbwAAAG8AAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAOJuc428AAABvAAAAHwAAAAAAAAAAAAAAgAGiAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLBQYAAAAAAgACAJAAAABOAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n \n</slide>\n<notes>\n[Slide 2 notes]:  \n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entities_decode_once_after_run_filter",
+      "case": "line_after_filter",
+      "input": {
+        "file": "packages/62.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 500,
+          "content": "UEsDBBQAAAAAAAAAIQA97f79bwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mI3hBOzwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQA97f79bwAAAG8AAAAfAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+JiN4QTs8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQA97f79bwAAAG8AAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwECFAMUAAAAAAAAACEAPe3+/W8AAABvAAAAHwAAAAAAAAAAAAAAgAGiAAAAcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLBQYAAAAAAgACAJAAAABOAQAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n\n\n</slide>\n<notes>\n[Slide 2 notes]: \n\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_invalid_entity_fragments_keep_original_run",
+      "case": "unknown",
+      "input": {
+        "file": "packages/63.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 263,
+          "content": "UEsDBBQAAAAAAAAAIQDa123kewAAAHsAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD54ICZ1bmtub3duOyAmYW1wOzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhANrXbeR7AAAAewAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACuAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nx &unknown; &amp;\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_invalid_entity_fragments_keep_original_run",
+      "case": "bare_amp",
+      "input": {
+        "file": "packages/64.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 257,
+          "content": "UEsDBBQAAAAAAAAAIQB5HA9EdQAAAHUAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD54ICYgeSAmYW1wOzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAHkcD0R1AAAAdQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACoAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nx & y &amp;\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_invalid_entity_fragments_keep_original_run",
+      "case": "invalid_scalar",
+      "input": {
+        "file": "packages/65.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 256,
+          "content": "UEsDBBQAAAAAAAAAIQB+JTtudAAAAHQAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD4mIzA7ICZhbXA7PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAfiU7bnQAAAB0AAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAKcAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n&#0; &amp;\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_invalid_entity_fragments_keep_original_run",
+      "case": "bad_close",
+      "input": {
+        "file": "packages/66.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 257,
+          "content": "UEsDBBQAAAAAAAAAIQCqFOSwdQAAAHUAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD54IF1dPiAmYW1wOzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKoU5LB1AAAAdQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACoAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nx ]]> &amp;\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entity_decoding_keeps_literal_line_endings",
+      "case": "crlf",
+      "input": {
+        "file": "packages/67.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 262,
+          "content": "UEsDBBQAAAAAAAAAIQCUqx1ZegAAAHoAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5sZWZ0DQomYW1wO3JpZ2h0PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAlKsdWXoAAAB6AAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAK0AAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nleft\r\n&right\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entity_decoding_keeps_literal_line_endings",
+      "case": "carriage_return",
+      "input": {
+        "file": "packages/68.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 261,
+          "content": "UEsDBBQAAAAAAAAAIQBSCzeCeQAAAHkAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5sZWZ0DSYjMTM7cmlnaHQ8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQBSCzeCeQAAAHkAAAAVAAAAAAAAAAAAAACAAQAAAABwcHQvc2xpZGVzL3NsaWRlMS54bWxQSwUGAAAAAAEAAQBDAAAArAAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nleft\r\rright\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_filenames_remain_literal_in_wrapper",
+      "case": "literal_filename",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "a\" &amp; <tail>.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "a\" &amp; <tail>.pptx_<generated>",
+          "type": "document",
+          "fileName": "a\" &amp; <tail>.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"a\" &amp; <tail>.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_stored_and_deflated_parts_keep_same_text",
+      "case": "0",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 251,
+          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_stored_and_deflated_parts_keep_same_text",
+      "case": "8",
+      "input": {
+        "file": "packages/69.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 235,
+          "content": "UEsDBBQAAAAIAAAAIQCh3bPuXwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sLY1LCoUwDACvIj2AkbdwEWrvErRaIUlD24ce3w/uZpjFeMPKS3cKa0Wb3L8omvucJpdaMwSoc4pCtc8W9W5rLkLt1rLBUujYdROG3zCMILSrC56whRSZs4cHPbyfcAFQSwECFAMUAAAACAAAACEAod2z7l8AAABvAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsFBgAAAAABAAEAQwAAAJIAAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_processing_errors_keep_kind_and_source",
+      "case": "not_zip",
+      "input": {
+        "file": "packages/70.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "error_kind": "Pptx",
+        "prefix": "Failed to process PPTX: "
+      }
+    },
+    {
+      "test": "pptx_processing_errors_keep_kind_and_source",
+      "case": "truncated_zip",
+      "input": {
+        "file": "packages/71.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "error_kind": "Pptx",
+        "prefix": "Failed to process PPTX: "
+      }
+    },
+    {
+      "test": "pptx_processing_errors_keep_kind_and_source",
+      "case": "bad_deflate",
+      "input": {
+        "file": "packages/72.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "error_kind": "Pptx",
+        "prefix": "Failed to process PPTX: "
+      }
+    },
+    {
+      "test": "pptx_url_failures_precede_package_processing",
+      "case": "connection",
+      "input": {
+        "file": "packages/73.pptx",
+        "source": "url",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "url": "https://example.invalid/deck.pptx",
+        "transport": "connection"
+      },
+      "expected": {
+        "error_kind": "Fetch"
+      }
+    },
+    {
+      "test": "pptx_url_failures_precede_package_processing",
+      "case": "status",
+      "input": {
+        "file": "packages/73.pptx",
+        "source": "url",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "url": "https://example.invalid/deck.pptx",
+        "transport": "status"
+      },
+      "expected": {
+        "error_kind": "HttpStatus"
+      }
+    },
+    {
+      "test": "pptx_mime_matching_is_exact",
+      "case": "uppercase",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "url",
+        "mime": "APPLICATION/VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.PRESENTATION",
+        "url": "https://example.invalid/deck.bin"
+      },
+      "expected": {
+        "error": "Unsupported file type: APPLICATION/VND.OPENXMLFORMATS-OFFICEDOCUMENT.PRESENTATIONML.PRESENTATION"
+      }
+    },
+    {
+      "test": "pptx_mime_matching_is_exact",
+      "case": "parameters",
+      "input": {
+        "file": "packages/01.pptx",
+        "source": "url",
+        "mime": "application/vnd.openxmlformats-officedocument.presentationml.presentation; charset=utf-8",
+        "url": "https://example.invalid/deck.bin"
+      },
+      "expected": {
+        "error": "Unsupported file type: application/vnd.openxmlformats-officedocument.presentationml.presentation; charset=utf-8"
+      }
+    },
+    {
+      "test": "pptx_duplicate_names_replace_without_reordering",
+      "case": "sanitized_duplicate_ties",
+      "input": {
+        "file": "packages/74.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 970,
+          "content": "UEsDBBQAAAAAAAAAIQBxW008bQAAAG0AAAAbAAAAYS8uLi9wcHQvc2xpZGVzL3NsaWRlMDIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5vbGQ8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAs0zAg3AAAABwAAAAFQAAAHBwdC9zbGlkZXMvc2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+c2Vjb25kPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhABkJZUh1AAAAdQAAABYAAABwcHQvc2xpZGVzL3NsaWRlMDIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5yZXBsYWNlbWVudDwvYTp0PjwvcDpzbGQ+UEsDBBQAAAAAAAAAIQD48F+gcAAAAHAAAAAbAAAAYS8uLi9wcHQvc2xpZGVzL3NsaWRlMDIueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5sYXRlc3Q8L2E6dD48L3A6c2xkPlBLAQIUAxQAAAAAAAAAIQBxW008bQAAAG0AAAAbAAAAAAAAAAAAAACAAQAAAABhLy4uL3BwdC9zbGlkZXMvc2xpZGUwMi54bWxQSwECFAMUAAAAAAAAACEAs0zAg3AAAABwAAAAFQAAAAAAAAAAAAAAgAGmAAAAcHB0L3NsaWRlcy9zbGlkZTIueG1sUEsBAhQDFAAAAAAAAAAhABkJZUh1AAAAdQAAABYAAAAAAAAAAAAAAIABSQEAAHBwdC9zbGlkZXMvc2xpZGUwMi54bWxQSwECFAMUAAAAAAAAACEA+PBfoHAAAABwAAAAGwAAAAAAAAAAAAAAgAHyAQAAYS8uLi9wcHQvc2xpZGVzL3NsaWRlMDIueG1sUEsFBgAAAAAEAAQAGQEAAJsCAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nlatest\n</slide>\n<slide number=\"2\">\nsecond\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_part_text_keeps_bom_inside_runs",
+      "case": "inner_bom",
+      "input": {
+        "file": "packages/75.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 161,
+          "content": "UEsDBBQAAAAAAAAAIQCmHuFKFQAAABUAAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1s77u/PGE6dD7vu79ib2R5PC9hOnQ+UEsBAhQDFAAAAAAAAAAhAKYe4UoVAAAAFQAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAABIAAAAAAA=",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\n﻿body\n</slide>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_entry_selection_keeps_suffix_and_ascii_digits",
+      "case": "note_path_decoys",
+      "input": {
+        "file": "packages/76.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 1324,
+          "content": "UEsDBBQAAAAAAAAAIQDHqrPVeAAAAHgAAAAlAAAAZXh0cmEvcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbDxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+cHJlZml4ZWQgbm90ZXM8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAdl/pN3QAAAB0AAAAHwAAAFBQVC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMS54bWw8cDpzbGQgeG1sbnM6cD0idXJuOnAiIHhtbG5zOmE9Imh0dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9kcmF3aW5nbWwvMjAwNi9tYWluIj48YTp0Pndyb25nIGNhc2U8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAFu6n1HYAAAB2AAAAIwAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMy54bWwuYmFrPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD53cm9uZyBzdWZmaXg8L2E6dD48L3A6c2xkPlBLAwQUAAAAAAAAACEAri9L23cAAAB3AAAAIAAAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlNC54bWwKPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5maW5hbCBuZXdsaW5lPC9hOnQ+PC9wOnNsZD5QSwMEFAAAAAAAAAAhAMIiH3pzAAAAcwAAACAAAABwcHQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTUueG1sLzxwOnNsZCB4bWxuczpwPSJ1cm46cCIgeG1sbnM6YT0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL2RyYXdpbmdtbC8yMDA2L21haW4iPjxhOnQ+ZGlyZWN0b3J5PC9hOnQ+PC9wOnNsZD5QSwECFAMUAAAAAAAAACEAx6qz1XgAAAB4AAAAJQAAAAAAAAAAAAAAgAEAAAAAZXh0cmEvcHB0L25vdGVzU2xpZGVzL25vdGVzU2xpZGUyLnhtbFBLAQIUAxQAAAAAAAAAIQB2X+k3dAAAAHQAAAAfAAAAAAAAAAAAAACAAbsAAABQUFQvbm90ZXNTbGlkZXMvbm90ZXNTbGlkZTEueG1sUEsBAhQDFAAAAAAAAAAhABbup9R2AAAAdgAAACMAAAAAAAAAAAAAAIABbAEAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlMy54bWwuYmFrUEsBAhQDFAAAAAAAAAAhAK4vS9t3AAAAdwAAACAAAAAAAAAAAAAAAIABIwIAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlNC54bWwKUEsBAhQDFAAAAAAAAAAhAMIiH3pzAAAAcwAAACAAAAAAAAAAAAAAAIAB2AIAAHBwdC9ub3Rlc1NsaWRlcy9ub3Rlc1NsaWRlNS54bWwvUEsFBgAAAAAFAAUAjQEAAIkDAAAAAA==",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<notes>\n[Slide 2 notes]: prefixed notes\n</notes>\n</pptx>"
+        }
+      }
+    },
+    {
+      "test": "pptx_unselected_parts_are_not_decompressed",
+      "case": "unread_bad_deflate",
+      "input": {
+        "file": "packages/77.pptx",
+        "source": "file",
+        "name": "deck.pptx",
+        "mime": ""
+      },
+      "expected": {
+        "attachment": {
+          "id": "deck.pptx_<generated>",
+          "type": "document",
+          "fileName": "deck.pptx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          "size": 387,
+          "content": "UEsDBBQAAAAIAAAAIQCh3bPuXwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sLY1LCoUwDACvIj2AkbdwEWrvErRaIUlD24ce3w/uZpjFeMPKS3cKa0Wb3L8omvucJpdaMwSoc4pCtc8W9W5rLkLt1rLBUujYdROG3zCMILSrC56whRSZs4cHPbyfcAFQSwMEFAAAAAgAAAAhAJhJ60sUAAAAEgAAABwAAABwcHQvc2xpZGVNYXN0ZXJzL21hc3RlcjEueG1s/80rTs1JTS5JTVEoSKzMyU9MAQBQSwECFAMUAAAACAAAACEAod2z7l8AAABvAAAAFQAAAAAAAAAAAAAAgAEAAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sUEsBAhQDFAAAAAgAAAAhAJhJ60sUAAAAEgAAABwAAAAAAAAAAAAAAIABkgAAAHBwdC9zbGlkZU1hc3RlcnMvbWFzdGVyMS54bWxQSwUGAAAAAAIAAgCNAAAA4AAAAAAA",
+          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
+        }
+      }
+    }
+  ]
+}

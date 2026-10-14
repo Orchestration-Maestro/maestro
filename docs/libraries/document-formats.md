@@ -1,11 +1,13 @@
 # Document-format libraries
 
 The application's [Word package reader](../application/document-formats.md#word-package-reader)
-uses these existing lockfile packages on native and browser targets:
+and [presentation attachment extraction](../application/browser-attachments.md#loading)
+share one package reader using these existing lockfile packages on native and browser targets:
 
 | Package | Pin | Direct features | License choice |
 |---|---|---|---|
 | zip | 6.0.0 | defaults off; `deflate-flate2` | MIT |
+| indexmap | 2.14.2 | defaults (`std`); ordered package-name identity | MIT |
 | roxmltree | 0.21.1 | defaults off; `std`, `positions` | MIT |
 | url | 2.5.8 | defaults | MIT |
 | ryu-js | 1.0.3 | existing fixed-place number formatter | Apache-2.0 |
@@ -25,12 +27,14 @@ proc-macro2, quote, syn, unicode-ident, potential_utf, writeable, zerovec, yoke,
 yoke-derive, stable_deref_trait, utf8_iter, litemap, tinystr, zerofrom,
 zerofrom-derive, zerotrie, zerovec-derive, smallvec, utf16_iter and write16.
 Retain the MIT/Apache-2.0 and Unicode-3.0 license notices for this closure.
-The lockfile update adds only the application's three direct dependency edges,
+Presentation extraction adds only the application's direct indexmap edge,
 not new resolved packages.
 
 The XML adapter excludes namespace declarations from ordinary attributes,
 concatenates descendant text and rejects DOCTYPE using the parser's native
 policy. It retains source text separately from borrowed views. It adds no XML
 schema validator, network resolver, renderer or archive-writing interface.
+Presentation extraction reuses this parser for matched-run entity decoding, not
+whole-slide admission; literal carriage returns are protected before decoding.
 
 Source attribution is in the [third-party notices](../../THIRD-PARTY-NOTICES.md#word-package-reading).

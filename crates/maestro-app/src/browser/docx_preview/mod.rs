@@ -2,6 +2,7 @@
 mod document;
 pub use document::common::{LengthUsage, convert_boolean, convert_length};
 mod parser;
+pub(crate) use parser::xml_parser::decode_text;
 pub use parser::xml_parser::{XmlAttribute, XmlElement, XmlParser, parse_xml_string};
 
 /// Failure opening an archive or one of its XML parts.
@@ -29,6 +30,7 @@ impl std::fmt::Display for DocxError {
 }
 impl std::error::Error for DocxError {}
 mod common;
+pub(crate) use common::open_xml_package::OpenXmlPackage;
 #[cfg(test)]
 mod tests;
 mod utils;

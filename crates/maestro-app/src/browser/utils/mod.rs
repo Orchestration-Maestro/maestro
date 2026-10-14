@@ -1,5 +1,5 @@
 //! Browser attachment and provider utilities.
-/// Image and text attachment loading.
+/// Image, text and presentation attachment loading.
 pub mod attachment_utils;
 
 /// Provider-specific CORS proxy policy.

@@ -22,9 +22,30 @@ are case-sensitive. Existing text MIME strings, including parameters, are kept;
 a suffix-only text match uses `text/plain`.
 
 PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
-Those formats currently return `AttachmentError::Unsupported`; their extractors
-are separate deliveries. Transport/body errors retain the original `FetchError`,
-while rejected response status has its own `HttpStatus` variant.
+PowerPoint recognition uses the exact presentation MIME or a case-insensitive
+`.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
+precedes spreadsheet recognition. PDF, Word and spreadsheets still return
+`AttachmentError::Unsupported`. Transport/body errors retain the original
+`FetchError`, while rejected response status has its own `HttpStatus` variant.
+
+Presentation documents retain the original bytes/name/size, use the canonical
+presentation MIME and have extracted text without a preview. The
+[shared package reader](document-formats.md#word-package-reader) supplies selected
+parts. Slides are numerically ordered with stable ties; labels are their one-based
+selected positions, including omitted blank parts. Notes follow slides in numeric
+order and retain the filename's digit spelling in `[Slide <digits> notes]:` headings.
+The outer `<pptx filename="<name>">` wrapper retains the literal filename.
+
+Literal nonempty `<a:t>` runs are collected without requiring valid whole-part XML.
+Whitespace-only runs are filtered without trimming other runs. Accepted XML
+entities are decoded once; invalid fragments retain the original complete run.
+Slide runs are joined by LF inside `<slide number="<position>">`; note runs use
+one space. A slide with no matched run is omitted, but a whitespace-only match
+keeps an empty slide wrapper. Selected notes always produce a `<notes>` wrapper,
+with headings only for retained text. Wrapper separators are LF. Package failures
+return `AttachmentError::Pptx`, display `Failed to process PPTX: ` before the
+package diagnostic and expose the retained package error through `Error::source`.
+This additional variant requires exhaustive SDK matches to handle it.
 
 ## Messages
 
