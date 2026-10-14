@@ -10,3 +10,10 @@ pub use components::bordered_loader::{BorderedLoader, BorderedLoaderOptions};
 
 pub use components::custom_editor::{ActionHandlers, CustomEditor};
 pub use components::session_selector_search::*;
+pub use components::user_message::UserMessageComponent;
+
+pub use components::assistant_message::{AssistantMessageComponent, AssistantMessageOptions};
+
+pub use components::branch_summary_message::BranchSummaryMessageComponent;
+
+pub use components::compaction_summary_message::CompactionSummaryMessageComponent;

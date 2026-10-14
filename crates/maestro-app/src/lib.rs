@@ -32,5 +32,8 @@ pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, ren
 
 pub use maestro_agent::{AgentMessage, CustomAgentMessages};
 pub use maestro_models::{
-    Fetch, FetchError, ImageContent, Message, TextContent, UserBlock, UserContent, default_fetch,
+    AssistantContent, AssistantMessage, Fetch, FetchError, ImageContent, Message,
+    SharedAssistantMessage, StopReason, TextContent, UserBlock, UserContent, default_fetch,
 };
+pub use maestro_session::messages::{BranchSummaryMessage, CompactionSummaryMessage};
+pub use maestro_text::number_format::LocaleNumberFormat;
