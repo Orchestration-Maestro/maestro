@@ -2815,6 +2815,7 @@ dependencies = [
  "maestro-theme",
  "maestro-tui",
  "regress",
+ "ryu-js",
  "serde",
  "serde_json",
  "tokio",

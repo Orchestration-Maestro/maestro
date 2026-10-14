@@ -37,7 +37,8 @@ pub use components::model_selector::{
     ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions,
 };
 pub use components::settings_selector::{
-    BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig, SettingsSelectorComponent,
+    BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig,
+    SettingsSelectorComponent, TerminalDisplaySettings,
 };
 pub use components::tree_selector::{FilterMode, SessionTreeNode, TreeList};
 

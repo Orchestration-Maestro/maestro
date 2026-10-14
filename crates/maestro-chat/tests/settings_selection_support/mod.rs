@@ -3,7 +3,9 @@ use maestro_app::{
     DoubleEscapeAction, MessageDeliveryMode, ThinkingLevel, Transport, TransportSetting,
     TreeFilterMode, WarningSettings,
 };
-use maestro_chat::{BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig};
+use maestro_chat::{
+    BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig, TerminalDisplaySettings,
+};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::Component;
 use serde::{Deserialize, de::DeserializeOwned};
@@ -23,8 +25,6 @@ struct Case {
 }
 /// Decode one nonempty group.
 pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
-    let rows: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/settings_selection.json")).unwrap();
     let owners = [
         "settings_rows_keep_text_order_and_initial_values",
         "boolean_changes_report_only_the_selected_setting",
@@ -46,7 +46,22 @@ pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)
         "settings_list_handle_survives_chrome_removal",
         "warning_callback_reenters_after_state_is_committed",
     ];
-    assert_eq!(rows.len(), 106);
+    corpus_cases(
+        include_str!("../fixtures/settings_selection.json"),
+        &owners,
+        106,
+        name,
+    )
+}
+/// Decodes a strict, complete fixture with its owning test inventory.
+pub fn corpus_cases<I: DeserializeOwned, E: DeserializeOwned>(
+    fixture: &str,
+    owners: &[&str],
+    count: usize,
+    name: &str,
+) -> Vec<(I, E)> {
+    let rows: Vec<Case> = serde_json::from_str(fixture).unwrap();
+    assert_eq!(rows.len(), count);
     let mut queries = std::collections::HashSet::new();
     for row in &rows {
         assert!(owners.contains(&row.test.as_str()), "orphan corpus group");
@@ -145,12 +160,24 @@ pub fn config() -> SettingsConfig {
         session: SessionSettings {
             auto_compact: true,
             quiet_startup: false,
+            enable_skill_commands: true,
         },
         behavior: BehaviorSettings {
             hide_thinking_block: false,
             collapse_changelog: true,
             enable_install_telemetry: false,
         },
+        show_images: false,
+        image_width_cells: 80.0,
+        auto_resize_images: true,
+        block_images: false,
+        terminal: TerminalDisplaySettings {
+            show_hardware_cursor: false,
+            clear_on_shrink: false,
+            show_terminal_progress: false,
+        },
+        editor_padding_x: 0.0,
+        autocomplete_max_visible: 5.0,
         steering_mode: MessageDeliveryMode::OneAtATime,
         follow_up_mode: MessageDeliveryMode::All,
         transport: TransportSetting::Auto,
@@ -191,6 +218,14 @@ impl Events {
         let events = self.clone();
         Rc::new(move |value| events.push(name, value.into()))
     }
+    /// Numeric callback for finite chosen values.
+    fn numeric(&self, name: &'static str) -> Rc<dyn Fn(f64)> {
+        let events = self.clone();
+        Rc::new(move |value| {
+            let value = serde_json::from_str(ryu_js::Buffer::new().format(value)).unwrap();
+            events.push(name, value);
+        })
+    }
     /// Text callback.
     fn text(&self, name: &'static str) -> Rc<dyn Fn(&str)> {
         let events = self.clone();
@@ -208,6 +243,17 @@ impl Events {
         let cancel = self.clone();
         SettingsCallbacks {
             on_auto_compact_change: self.boolean("AutoCompact"),
+            on_show_images_change: self.boolean("ShowImages"),
+            on_image_width_cells_change: self.numeric("ImageWidthCells"),
+            on_auto_resize_images_change: self.boolean("AutoResizeImages"),
+            on_block_images_change: self.boolean("BlockImages"),
+            on_enable_skill_commands_change: self.boolean("EnableSkillCommands"),
+            on_show_hardware_cursor_change: self.boolean("ShowHardwareCursor"),
+            on_editor_padding_x_change: self.numeric("EditorPaddingX"),
+            on_autocomplete_max_visible_change: self.numeric("AutocompleteMaxVisible"),
+            on_clear_on_shrink_change: self.boolean("ClearOnShrink"),
+            on_show_terminal_progress_change: self.boolean("ShowTerminalProgress"),
+
             on_steering_mode_change: Rc::new(move |value: MessageDeliveryMode| {
                 steering.push("SteeringMode", value.as_str().into());
             }),
@@ -253,8 +299,26 @@ pub fn input(component: &dyn Component, keys: &[&str]) {
 }
 /// Moves through the original ordered list using live keys.
 pub fn select(selector: &maestro_chat::SettingsSelectorComponent, id: &str) {
+    select_with_images(selector, id, false);
+}
+/// Moves through the capability-specific ordered list using live keys.
+pub fn select_with_images(
+    selector: &maestro_chat::SettingsSelectorComponent,
+    id: &str,
+    images: bool,
+) {
     let ids = [
         "autocompact",
+        "show-images",
+        "image-width-cells",
+        "auto-resize-images",
+        "block-images",
+        "skill-commands",
+        "show-hardware-cursor",
+        "editor-padding",
+        "autocomplete-max-visible",
+        "clear-on-shrink",
+        "terminal-progress",
         "steering-mode",
         "follow-up-mode",
         "transport",
@@ -268,7 +332,11 @@ pub fn select(selector: &maestro_chat::SettingsSelectorComponent, id: &str) {
         "thinking",
         "theme",
     ];
-    let index = ids.iter().position(|candidate| *candidate == id).unwrap();
+    let index = ids
+        .iter()
+        .filter(|candidate| images || !matches!(**candidate, "show-images" | "image-width-cells"))
+        .position(|candidate| *candidate == id)
+        .unwrap();
     for _ in 0..index {
         input(&**selector.get_settings_list(), &["\x1b[B"]);
     }
@@ -307,6 +375,13 @@ pub struct BooleanInput {
 /// Applies one supplied boolean without changing its sibling policies.
 pub fn set_boolean(config: &mut SettingsConfig, field: &str, value: bool) {
     match field {
+        "showImages" => config.show_images = value,
+        "autoResizeImages" => config.auto_resize_images = value,
+        "blockImages" => config.block_images = value,
+        "enableSkillCommands" => config.session.enable_skill_commands = value,
+        "showHardwareCursor" => config.terminal.show_hardware_cursor = value,
+        "clearOnShrink" => config.terminal.clear_on_shrink = value,
+        "showTerminalProgress" => config.terminal.show_terminal_progress = value,
         "autoCompact" => config.session.auto_compact = value,
         "hideThinkingBlock" => config.behavior.hide_thinking_block = value,
         "collapseChangelog" => config.behavior.collapse_changelog = value,
@@ -565,4 +640,11 @@ pub fn assert_inventory_row(selector: &maestro_chat::SettingsSelectorComponent, 
                 .ends_with(&item.current_value)
         );
     }
+}
+
+/// A controlled terminal without inline image support.
+pub fn no_images() -> maestro_tui::TerminalImage {
+    let terminal = maestro_tui::TerminalImage::new(|_| None, || 1);
+    terminal.set_capabilities(maestro_tui::TerminalCapabilities::default());
+    terminal
 }
