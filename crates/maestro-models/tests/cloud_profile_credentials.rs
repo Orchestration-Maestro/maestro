@@ -3,44 +3,10 @@
 
 #![cfg(unix)]
 
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/child_process.rs"]
-mod child_process;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[path = "support/profile_credentials.rs"]
-mod profile_credentials;
-#[path = "support/profile_files.rs"]
-mod profile_files;
-#[path = "support/profile_routes.rs"]
-mod profile_routes;
-#[path = "support/profile_services.rs"]
-mod profile_services;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::chat;
+use crate::loopback;
+use crate::profile_credentials;
+use crate::profile_routes;
 
 use chat::TestResult;
 use profile_credentials::check_rows;

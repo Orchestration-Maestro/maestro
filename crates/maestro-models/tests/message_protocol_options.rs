@@ -1,19 +1,8 @@
 //! Authorization and thinking through the public message-protocol entries.
-#[allow(dead_code, reason = "Each test binary uses part of the chat fixtures.")]
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/json.rs"]
-mod json;
-#[path = "support/message_options.rs"]
-mod message_options;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the message fixtures."
-)]
-#[path = "support/messages.rs"]
-mod messages;
+use crate::chat;
+use crate::child_process;
+use crate::message_options;
+use crate::messages;
 
 #[test]
 fn messages_select_subscription_auth() -> chat::TestResult {
@@ -230,7 +219,7 @@ async fn subscription_name_is_visible_at_open() -> chat::TestResult {
 }
 
 /// Complete set of fixture owners; unknown rows cannot be silently filtered out.
-const TEST_NAMES: [&str; 20] = [
+pub(crate) const TEST_NAMES: [&str; 20] = [
     "messages_select_subscription_auth",
     "messages_select_account_auth",
     "messages_select_gateway_auth",

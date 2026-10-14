@@ -1,14 +1,8 @@
 //! Cloud endpoint stream lifecycle through controlled public invocations.
+use crate::azure_endpoint as endpoint;
+use crate::chat;
 use chat::TestResult;
 use serde_json::{Value, json};
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/azure_endpoint.rs"]
-mod endpoint;
-#[path = "support/json.rs"]
-mod json;
 
 #[test]
 fn azure_sequence_hooks_and_preserve_failures() -> chat::TestResult {
@@ -66,22 +60,9 @@ fn azure_return_http_errors_and_detect_overflow() -> chat::TestResult {
     )
 }
 
-#[path = "support/azure_cases.rs"]
-mod azure_cases;
-#[path = "support/response_output.rs"]
-mod response_output;
+use crate::azure_cases;
 
-#[allow(dead_code, reason = "Cloud runtime tests use finite exchanges only.")]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[path = "support/response_runtime.rs"]
-mod runtime;
-#[allow(
-    dead_code,
-    reason = "Cloud runtime tests use the controlled attempt queue only."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::response_runtime as runtime;
 
 #[test]
 fn azure_gate_hooks_and_cancel_partial_output() -> chat::TestResult {

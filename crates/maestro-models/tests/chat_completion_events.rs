@@ -1,25 +1,11 @@
 //! Stream reduction for direct chat-completion invocations.
 
-#[path = "support/cases.rs"]
-mod cases;
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/json.rs"]
-mod json;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the loopback server."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the scripted transport."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::cases;
+use crate::chat;
+use crate::child_process;
+use crate::json;
+use crate::loopback;
+use crate::transport;
 
 use std::collections::BTreeMap;
 use std::future::poll_fn;

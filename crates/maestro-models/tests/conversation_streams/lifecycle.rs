@@ -2,7 +2,7 @@
 #![cfg(test)]
 use crate::{
     chat::{self, TestResult},
-    corpus,
+    conversation_streams::corpus,
 };
 use futures_util::StreamExt;
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;

@@ -4,16 +4,10 @@
     reason = "each test binary uses a subset of the shared support"
 )]
 
-#[path = "support/bundled.rs"]
-mod bundled;
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/environment_rows.rs"]
-mod environment_rows;
-#[path = "support/key_selection.rs"]
-mod key_selection;
+use crate::bundled;
+use crate::chat;
+use crate::child_process;
+use crate::key_selection;
 
 use bundled::{PROTOCOLS, Protocol};
 use chat::{TestResult, block_on};

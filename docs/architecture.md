@@ -259,3 +259,8 @@ Removing the dependency passes. An otherwise empty CLI fixture instead reports
 application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
+
+Integration tests in `maestro-models` share `tests/integration.rs`. Add new
+`tests/*.rs` files as unconditional out-of-line modules in that root; support
+modules stay in their existing directories. The conventions check requires
+`autotests = false` and one runnable `integration` target for this crate.

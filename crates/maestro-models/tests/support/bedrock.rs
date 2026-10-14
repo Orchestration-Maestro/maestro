@@ -622,5 +622,4 @@ pub fn held(before: Vec<Vec<u8>>, after: Vec<Vec<u8>>) -> Held {
     }
 }
 
-#[path = "json.rs"]
-pub mod json;
+pub(crate) use crate::json;

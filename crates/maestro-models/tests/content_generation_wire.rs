@@ -4,10 +4,8 @@
     reason = "each test binary uses a subset of the shared support"
 )]
 
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/content_wire.rs"]
-mod content_wire;
+use crate::chat;
+use crate::content_wire;
 
 use std::sync::{Arc, Mutex};
 

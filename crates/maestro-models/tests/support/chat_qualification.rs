@@ -273,7 +273,7 @@ pub fn assert_rows(test: &str) -> TestResult {
         let full_name = if let Some((file, _)) = owned[0].test.split_once(".rs::")
             && let Some(module) = file.split("chat_tool_choices/").nth(1)
         {
-            format!("chat_tool_choices::{module}::{test}")
+            format!("chat_tool_choices::suite::{module}::{test}")
         } else {
             test.to_owned()
         };

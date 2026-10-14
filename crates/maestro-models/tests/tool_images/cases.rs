@@ -1,6 +1,6 @@
 //! Two-turn tool image continuations.
 
-use crate::{cache_overflow_images::assert_rows, chat::TestResult};
+use crate::tool_images::{cache_overflow_images::assert_rows, chat::TestResult};
 
 /// An image-only tool result continues the first turn's returned call.
 #[test]

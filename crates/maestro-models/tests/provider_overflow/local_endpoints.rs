@@ -1,6 +1,6 @@
 //! Overflow signals of locally served descriptors.
 
-use crate::{cache_overflow_images::assert_rows, chat::TestResult};
+use crate::provider_overflow::{cache_overflow_images::assert_rows, chat::TestResult};
 
 /// Local descriptors report explicit overflow errors but not silent truncation.
 #[test]

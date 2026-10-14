@@ -1,25 +1,9 @@
 //! Direct Bedrock conversation streams through the SDK with a controlled sender.
 
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::bedrock;
+use crate::chat;
+use crate::child_process;
+use crate::transport;
 
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
 use std::sync::Arc;

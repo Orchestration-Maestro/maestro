@@ -1,5 +1,4 @@
-#[path = "support/environment_children.rs"]
-mod children;
+use crate::environment_children as children;
 
 use children::{Directory, TestResult, child, run, vars};
 

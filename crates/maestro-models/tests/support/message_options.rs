@@ -561,7 +561,7 @@ pub async fn assert_rows(test: &str) -> TestResult {
     let mut queries = HashSet::new();
     for row in &rows {
         assert!(
-            crate::TEST_NAMES.contains(&row.test.as_str()),
+            crate::message_protocol_options::TEST_NAMES.contains(&row.test.as_str()),
             "unknown fixture owner {}",
             row.test
         );

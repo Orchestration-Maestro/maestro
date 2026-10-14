@@ -1,6 +1,6 @@
 //! Closed ownership for recorded empty-content invocations.
 
-use crate::{chat::TestResult, response_qualification::assert_corpus_rows};
+use crate::empty_content::{chat::TestResult, response_qualification::assert_corpus_rows};
 
 /// Execute only the named test's recorded invocations.
 pub(super) fn assert_rows(test: &str) -> TestResult {

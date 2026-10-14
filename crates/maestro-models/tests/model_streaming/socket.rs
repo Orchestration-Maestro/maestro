@@ -1,7 +1,7 @@
 //! Native socket completions retain actual returned history.
 
 use super::cases::assert_socket_rows;
-use crate::chat::TestResult;
+use crate::model_streaming::chat::TestResult;
 
 #[test]
 fn maestro_socket_completions_continue_with_actual_assistants() -> TestResult {

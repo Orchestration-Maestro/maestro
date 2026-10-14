@@ -1,6 +1,6 @@
 //! Controlled public dispatch observations.
 
-use crate::{chat::TestResult, qualification};
+use crate::chat_tool_choices::{chat::TestResult, qualification};
 
 /// Raw and simple public routes forward each admitted tool choice.
 #[test]

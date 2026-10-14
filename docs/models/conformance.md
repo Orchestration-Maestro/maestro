@@ -27,7 +27,8 @@ or live billing. See [chat completions](chat-completions.md) for adapter rules a
 ## Run the cases
 
 ```sh
-cargo test -p maestro-models --locked --test chat_empty_tools \
+cargo test -p maestro-models --locked --test integration -- \
+  chat_empty_tools::
   --test chat_response_identity --test chat_tool_choices --test routed_cache_write
 ```
 
@@ -124,7 +125,8 @@ The message cases cover:
 Run these cases without provider credentials:
 
 ```sh
-cargo test -p maestro-models --locked --test message_eager_input \
+cargo test -p maestro-models --locked --test integration -- \
+  message_eager_input::
   --test message_long_retention --test message_thinking_disabled \
   --test message_adaptive_thinking --test account_tool_names \
   --test account_message_routing
@@ -214,7 +216,8 @@ These controlled responses establish local request and decoding observations,
 not live authentication acceptance, cache hits or remote answer quality.
 
 ```sh
-cargo test -p maestro-models --locked --test response_identity \
+cargo test -p maestro-models --locked --test integration -- \
+  response_identity::
   --test response_reasoning_replay --test response_affinity \
   --test response_session_affinity --test response_tool_images \
   --test interleaved_reasoning --test invocation_cancellation \
@@ -248,7 +251,8 @@ These finite fixtures qualify local conversion, not remote reasoning quality,
 authentication validity or server schema acceptance.
 
 ```sh
-cargo test -p maestro-models --locked --test cloud_model_routes \
+cargo test -p maestro-models --locked --test integration -- \
+  cloud_model_routes::
   --test content_thinking_disabled --test conversation_reasoning \
   --test conversation_tool_schema --test missing_tool_results \
   --test provider_unicode
@@ -276,7 +280,8 @@ requests. See [response sessions](response-sessions.md) for socket behavior.
 These local observations do not establish live account validity or model quality.
 
 ```sh
-cargo test -p maestro-models --locked --test empty_content --test model_streaming
+cargo test -p maestro-models --locked --test integration -- \
+  empty_content:: model_streaming::
 cargo llvm-cov -p maestro-models --locked --fail-under-lines 80
 ```
 
@@ -307,6 +312,7 @@ establish server cache hits, live authentication or image understanding. See [me
 the adapter rules.
 
 ```sh
-cargo test -p maestro-models --locked --test cache_preferences \
+cargo test -p maestro-models --locked --test integration -- \
+  cache_preferences::
   --test provider_overflow --test tool_images
 ```

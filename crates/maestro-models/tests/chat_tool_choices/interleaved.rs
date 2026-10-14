@@ -1,6 +1,6 @@
 //! Controlled public dispatch observations.
 
-use crate::{chat::TestResult, qualification};
+use crate::chat_tool_choices::{chat::TestResult, qualification};
 
 /// Stable tool indices retain initial identity when provider identifiers change.
 #[test]

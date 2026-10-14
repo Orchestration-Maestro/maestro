@@ -4,14 +4,9 @@
     reason = "each test binary uses a subset of the shared support"
 )]
 
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/content_preparation.rs"]
-mod content_preparation;
-#[path = "support/environment_rows.rs"]
-mod environment_rows;
+use crate::chat;
+use crate::content_preparation;
+use crate::environment_rows;
 
 use chat::TestResult;
 use content_preparation::assert_rows;

@@ -4,8 +4,7 @@
     reason = "shared chat support serves multiple test binaries"
 )]
 
-#[path = "support/chat.rs"]
-mod chat;
+use crate::chat;
 
 use std::collections::HashSet;
 

@@ -10,6 +10,8 @@ mod comments;
 mod generated;
 /// Workspace membership and dependency graph checks.
 mod graph;
+/// Single-target integration-test packaging checks.
+mod integration_tests;
 /// Source-size and protected-lint checks.
 mod quality;
 /// Repeated documentation and test source layout checks.
@@ -31,6 +33,9 @@ mod time_limits;
 /// allowed. This scan does not expand macros, infer receiver types, resolve
 /// arbitrary re-exports/function values or evaluate compound configurations.
 ///
+/// Migrated integration-test roots are checked structurally for one runnable
+/// target and unconditional out-of-line declarations of top-level test files.
+///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
@@ -47,6 +52,7 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     let metadata = graph::check(root)?;
     let members = source::load(&metadata)?;
+    integration_tests::check(&members)?;
     boundaries::check(&members)?;
     comments::check(&members)?;
     repetition::check(&members)?;

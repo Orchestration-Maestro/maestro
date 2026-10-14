@@ -355,3 +355,8 @@ file-level import aliases. Production deadlines remain allowed. The scan does no
 model local shadowing, expand macros, infer receiver types, resolve arbitrary
 re-exports/function values or evaluate compound configurations; those forms and
 sleep-based watchdogs require source review.
+
+Integration tests in `maestro-models` share `tests/integration.rs`. Add new
+`tests/*.rs` files as unconditional out-of-line modules in that root; support
+modules stay in their existing directories. The conventions check requires
+`autotests = false` and one runnable `integration` target for this crate.

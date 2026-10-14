@@ -510,7 +510,7 @@ fn test_path(owner: &str, test: &str) -> TestResult<String> {
     ] {
         if let Some((_, module)) = owner.split_once(&format!("{directory}/")) {
             return Ok(format!(
-                "{directory}::{}::{test}",
+                "{directory}::suite::{}::{test}",
                 module.split('.').next().ok_or("module")?
             ));
         }

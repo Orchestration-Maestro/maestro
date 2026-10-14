@@ -1,25 +1,9 @@
 //! Cloud conversation reduction through controlled native event-stream frames.
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::bedrock;
+use crate::chat;
+use crate::transport;
 
-#[path = "support/child_process.rs"]
-mod child_process;
+use crate::child_process;
 use chat::{TestResult, block_on};
 
 use bedrock::corpus;

@@ -12,7 +12,7 @@ fn maestro_response_refresh_keeps_stderr_clean() {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
-                    "maestro_response_refresh_keeps_stderr_clean",
+                    "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
                     "--nocapture",
                 ])
                 .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
@@ -22,6 +22,10 @@ fn maestro_response_refresh_keeps_stderr_clean() {
                 output.status.success(),
                 "{}",
                 String::from_utf8_lossy(&output.stdout)
+            );
+            crate::child_process::assert_executed(
+                &output,
+                "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
             );
             assert!(
                 output.stderr.is_empty(),

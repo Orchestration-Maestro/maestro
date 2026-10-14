@@ -3,7 +3,7 @@
 use crate::{
     bundled, chat, child_process,
     json::{canonical, event_record},
-    messages, probes,
+    message_probes as probes, messages,
 };
 use chat::TestResult;
 use maestro_models::{

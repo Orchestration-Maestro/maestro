@@ -1,7 +1,6 @@
 //! Gateway and account helpers shared by chat-completion adapters.
 
-#[path = "support/child_process.rs"]
-mod child_process;
+use crate::child_process;
 
 use child_process::{TestResult, child_case, rerun};
 use indexmap::IndexMap;

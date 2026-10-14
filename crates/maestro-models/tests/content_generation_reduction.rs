@@ -1,10 +1,7 @@
 //! Reduction of content-generation response items through the public processor.
 
-#[allow(dead_code, reason = "Each test binary uses part of the chat helpers.")]
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/json.rs"]
-mod json;
+use crate::chat;
+use crate::json;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
