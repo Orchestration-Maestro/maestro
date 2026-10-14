@@ -21,6 +21,19 @@ formatting. These operations have no I/O and do not render a workbook preview.
   The standard epoch retains day zero and the synthetic February 29, 1900.
   Calendar conversion uses date-only arithmetic, not the host timezone.
 
+- `write_date` renders one selected `DateToken` from a borrowed `DateCode` and
+  caller-selected subsecond precision. It includes English month/weekday names,
+  Buddhist years, 12/24-hour clocks and elapsed totals from the serial day.
+  It does not reparse the serial, select AM/PM or apply date-wide carry.
+- `write_num` renders one selected numeric pattern with a `NumberToken` selecting
+  ordinary or accounting-parenthesis handling. Patterns support scale modifiers,
+  padding, ASCII grouping, fractions, digit masks and scientific/engineering text.
+  Grouped decimal rounding carries into the integer field; engineering rounding
+  preserves displacement and mantissa carry. Decimal fields with `0`/`#` integer placeholders retain finite
+  integral values without lossy scaling. Zero fixed denominators fail.
+  `FormatError` distinguishes unsupported number patterns from invalid date fields;
+  callers need not parse its display text.
+
 The [numeric/calendar library inventory](../libraries/spreadsheet-formats.md)
 documents the underlying primitives. Custom format evaluation, mutable format
 loading, date-valued General input and alternate calendars are not exposed by

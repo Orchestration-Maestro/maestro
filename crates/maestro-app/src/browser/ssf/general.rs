@@ -67,7 +67,8 @@ pub(super) fn precision(value: f64, count: usize, exponential: bool) -> String {
     let sign = if value < 0.0 { "-" } else { "" };
     let text =
         if exponential || exponent < -6 || exponent >= i32::try_from(count).unwrap_or(i32::MAX) {
-            format!("{}.{}e{exponent:+}", &digits[..1], &digits[1..])
+            let separator = if digits.len() > 1 { "." } else { "" };
+            format!("{}{separator}{}e{exponent:+}", &digits[..1], &digits[1..])
         } else if exponent < 0 {
             format!(
                 "0.{}{digits}",

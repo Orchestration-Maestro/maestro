@@ -4,8 +4,12 @@ use std::collections::BTreeMap;
 
 mod general;
 mod parse_date_code;
+mod write_date;
+mod write_num;
 pub use general::{GeneralValue, general};
 pub use parse_date_code::{DateCode, parse_date_code};
+pub use write_date::write_date;
+pub use write_num::write_num;
 
 /// Initial built-in format strings.
 const BUILTINS: &[(u32, &str)] = &[
@@ -111,3 +115,57 @@ pub fn frac(value: f64, denominator: u32, mixed: bool) -> [f64; 3] {
         [0.0, signed, divisor]
     }
 }
+
+/// Selected numeric writer mode.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NumberToken {
+    /// Ordinary numeric placeholders.
+    Number,
+    /// Accounting parentheses around negative values.
+    Parenthesis,
+}
+
+/// Selected calendar or time field.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DateToken {
+    /// Calendar year with the Buddhist offset.
+    BuddhistYear,
+    /// Gregorian calendar year.
+    Year,
+    /// Calendar month or its English name.
+    Month,
+    /// Calendar day or weekday name.
+    Day,
+    /// Twelve-hour clock hour.
+    Hour12,
+    /// Twenty-four-hour clock hour.
+    Hour24,
+    /// Clock minute.
+    Minute,
+    /// Clock second or fractional second.
+    Second,
+    /// Total elapsed hours, minutes or seconds.
+    Elapsed,
+    /// Untruncated calendar year.
+    Era,
+}
+
+/// Failure to render a selected field pattern.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FormatError {
+    /// The selected date field does not support this pattern.
+    InvalidDateFormat(DateToken),
+    /// The numeric pattern is unsupported.
+    UnsupportedNumberFormat,
+}
+
+impl std::fmt::Display for FormatError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidDateFormat(kind) => write!(formatter, "invalid date format for {kind:?}"),
+            Self::UnsupportedNumberFormat => formatter.write_str("unsupported number format"),
+        }
+    }
+}
+
+impl std::error::Error for FormatError {}
