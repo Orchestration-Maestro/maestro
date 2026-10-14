@@ -1,6 +1,7 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
+use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
 use std::{
@@ -12,6 +13,11 @@ use std::{
     time::Duration,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+#[allow(
+    dead_code,
+    reason = "Shared polling helpers serve multiple integration targets."
+)]
+mod process_support;
 mod read_support;
 use read_support::TempDir;
 
@@ -280,51 +286,177 @@ async fn next_chunk(
     }
 }
 
+/// Termination policy exercised against the gated native child.
+#[derive(Clone, Copy)]
+enum Stop {
+    /// Abort from the complete readiness callback.
+    Abort,
+    /// Expire the operation timer after the alive acknowledgement.
+    Timeout,
+}
+
+#[test]
+fn local_bash_aborts_from_stream_callback() {
+    runtime().block_on(termination_case(Stop::Abort));
+}
+
 #[test]
 fn local_bash_timeout_fires_at_twenty_five_not_twenty_four_milliseconds() {
-    runtime().block_on(async {
-        let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
-        let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
-        let mut sink = |data: &[u8]| {
-            sender.send(data.to_vec()).unwrap();
-        };
-        let dir = TempDir::new();
-        let gate = dir.0.join("alive");
-        let command = format!(
-            "printf ready; while [ ! -f '{}' ]; do :; done; printf alive; exec /bin/sleep 60",
-            gate.display()
-        );
-        let mut operation = operations.exec(
-            &command,
-            "/",
-            BashExecOptions {
-                on_data: &mut sink,
-                signal: None,
-                timeout: Some(0.025),
-                env: None,
-            },
-        );
-        let waker = Waker::from(Arc::new(Wakes::default()));
-        assert_eq!(
-            next_chunk(&mut operation, &mut receiver, &waker).await,
-            b"ready"
-        );
-        tokio::time::advance(Duration::from_millis(24)).await;
-        assert_pending(&mut operation, &waker);
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&gate)
-            .unwrap();
-        assert_eq!(
-            next_chunk(&mut operation, &mut receiver, &waker).await,
-            b"alive"
-        );
-        tokio::time::advance(Duration::from_millis(1)).await;
-        let error = operation.await.unwrap_err();
-        assert!(matches!(error, maestro_tools::BashError::Timeout(_)));
-        assert_eq!(error.to_string(), "timeout:0.025");
-    });
+    runtime().block_on(termination_case(Stop::Timeout));
+}
+
+/// Observations retained while polling the same operation through cleanup.
+#[derive(Default)]
+struct ChildWitness {
+    /// Unconsumed callback bytes, including any partial acknowledgement.
+    bytes: Vec<u8>,
+    /// Root PID reported by the native shell.
+    pid: Option<u32>,
+    /// Result of the same execution, captured at most once.
+    settled: Option<Result<maestro_tools::BashExecResult, maestro_tools::BashError>>,
+}
+
+impl ChildWitness {
+    /// Saves settlement so a completed future is never polled twice.
+    async fn poll(&mut self, operation: &mut Operation<'_>) {
+        if self.settled.is_none()
+            && let Poll::Ready(result) =
+                process_support::poll_once(&mut std::pin::Pin::new(operation)).await
+        {
+            self.settled = Some(result);
+        }
+    }
+
+    /// Collects a complete acknowledgement while keeping the clock driver runnable.
+    async fn line(
+        &mut self,
+        operation: &mut Operation<'_>,
+        receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
+    ) -> Vec<u8> {
+        loop {
+            self.poll(operation).await;
+            while let Ok(chunk) = receiver.try_recv() {
+                self.bytes.extend(chunk);
+            }
+            if let Some(end) = self.bytes.iter().position(|byte| *byte == b'\n') {
+                return self.bytes.drain(..=end).collect();
+            }
+            assert!(
+                self.settled.is_none(),
+                "child settled before acknowledgement"
+            );
+            tokio::task::yield_now().await;
+        }
+    }
+}
+
+/// Creates a gate without truncating an existing entry.
+fn release(dir: &TempDir, name: &str) -> std::io::Result<std::fs::File> {
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(dir.0.join(name))
+}
+
+/// Observes the 24ms acknowledgement and delivers the timer at exactly 25ms.
+async fn drive_timeout(
+    witness: &mut ChildWitness,
+    operation: &mut Operation<'_>,
+    receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
+    dir: &TempDir,
+) {
+    let start = tokio::time::Instant::now();
+    tokio::time::advance(Duration::from_millis(24)).await;
+    witness.poll(operation).await;
+    assert!(witness.settled.is_none());
+    release(dir, "alive").unwrap();
+    assert_eq!(witness.line(operation, receiver).await, b"alive\n");
+    tokio::time::advance(Duration::from_millis(1)).await;
+    tokio::time::sleep(Duration::ZERO).await;
+    assert_eq!(start.elapsed(), Duration::from_millis(25));
+    witness.poll(operation).await;
+}
+
+/// Attempts both gate releases, terminating a known PID on errors other than an existing gate.
+/// Then drives the same execution to settlement.
+async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>, dir: &TempDir) {
+    for name in ["alive", "release"] {
+        if let Err(error) = release(dir, name)
+            && error.kind() != std::io::ErrorKind::AlreadyExists
+            && let Some(pid) = witness.pid
+        {
+            maestro_tools::utils::shell::kill_process_tree(pid);
+        }
+    }
+    while witness.settled.is_none() {
+        witness.poll(operation).await;
+        tokio::task::yield_now().await;
+    }
+}
+
+/// Proves the selected stop effect before checking its final error.
+async fn termination_case(stop: Stop) {
+    let dir = TempDir::new();
+    let cwd = dir.text();
+    let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
+    let signal = Cancellation::new();
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    let mut readiness = Vec::new();
+    let mut sink = |data: &[u8]| {
+        readiness.extend_from_slice(data);
+        if matches!(stop, Stop::Abort) && readiness.contains(&b'\n') {
+            signal.abort();
+        }
+        let _ = sender.send(data.to_vec());
+    };
+    let mut operation = operations.exec(
+        "printf '%s\\n' \"$$\"; while [ ! -f alive ] && [ ! -f release ]; do :; done; printf 'alive\\n'; while [ ! -f release ]; do :; done; printf survived > survived",
+        &cwd,
+        BashExecOptions {
+            on_data: &mut sink,
+            signal: Some(&signal),
+            timeout: matches!(stop, Stop::Timeout).then_some(0.025),
+            env: None,
+        },
+    );
+    let mut witness = ChildWitness::default();
+    let observation = std::panic::AssertUnwindSafe(async {
+        let line = witness.line(&mut operation, &mut receiver).await;
+        witness.pid = Some(std::str::from_utf8(&line).unwrap().trim().parse().unwrap());
+        match stop {
+            Stop::Abort => witness.poll(&mut operation).await,
+            Stop::Timeout => drive_timeout(&mut witness, &mut operation, &mut receiver, &dir).await,
+        }
+    })
+    .catch_unwind()
+    .await;
+    settle_child(&mut witness, &mut operation, &dir).await;
+    if let Err(panic) = observation {
+        std::panic::resume_unwind(panic);
+    }
+    assert_termination(stop, &signal, witness, &dir);
+}
+
+/// Checks the reaped root, closed marker observation set and exact error.
+fn assert_termination(stop: Stop, signal: &Cancellation, witness: ChildWitness, dir: &TempDir) {
+    #[cfg(target_os = "linux")]
+    assert!(!std::path::Path::new(&format!("/proc/{}", witness.pid.unwrap())).exists());
+    assert!(
+        !dir.0.join("survived").exists(),
+        "child survived the stop effect"
+    );
+    let error = witness.settled.unwrap().unwrap_err();
+    match stop {
+        Stop::Abort => {
+            assert!(signal.is_aborted());
+            assert!(matches!(error, maestro_tools::BashError::Aborted));
+            assert_eq!(error.to_string(), "aborted");
+        }
+        Stop::Timeout => {
+            assert!(matches!(error, maestro_tools::BashError::Timeout(_)));
+            assert_eq!(error.to_string(), "timeout:0.025");
+        }
+    }
 }
 
 /// Polls the operation once and rejects premature settlement.

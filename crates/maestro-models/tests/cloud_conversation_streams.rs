@@ -27,10 +27,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use maestro_models::{
     AssistantContent, AssistantMessage, BoxFuture, Cancellation, DiagnosticErrorInfo, FetchError,
-    ProviderResponse, StreamOptions,
+    ProviderResponse,
 };
 use serde_json::json;
 
+use bedrock::{diagnostic as callback_error, options};
 use chat::{TestResult, block_on};
 
 /// Compare token counts and costs, which are exact except for the rates' rounding.
@@ -45,18 +46,6 @@ fn near(actual: &[f64], expected: &[f64]) {
 type EventCase<'a> = (&'a str, Vec<Vec<u8>>, Vec<&'a str>, Vec<&'a str>);
 
 const ENDPOINT: &str = "https://bedrock-runtime.eu-central-1.amazonaws.com";
-
-/// Options that authenticate with a bearer token and send through `scripted`.
-fn options(scripted: &transport::Transport) -> BedrockOptions {
-    BedrockOptions {
-        common: StreamOptions {
-            fetch: Some(scripted.fetch.clone()),
-            ..StreamOptions::default()
-        },
-        bearer_token: Some("fixture-token".into()),
-        ..BedrockOptions::default()
-    }
-}
 
 /// Run a conversation to its end and return its update labels and final message.
 async fn run(chunks: Vec<Vec<u8>>) -> TestResult<(Vec<String>, AssistantMessage)> {
@@ -345,16 +334,6 @@ fn usage_preserves_reported_totals_and_zero_fallback() -> TestResult {
         );
         Ok(())
     })
-}
-
-/// The error a callback reports.
-fn callback_error(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: message.to_owned(),
-        stack: None,
-        code: None,
-    }
 }
 
 /// Run one conversation with prepared options and return its labels and final message.

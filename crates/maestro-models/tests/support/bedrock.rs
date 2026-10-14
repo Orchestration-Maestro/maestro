@@ -266,6 +266,7 @@ fn common(
     })
 }
 
+/// Options with the supplied transport, fixture bearer token and remaining defaults.
 pub fn options(scripted: &transport::Transport) -> BedrockOptions {
     BedrockOptions {
         common: StreamOptions {
@@ -295,6 +296,7 @@ fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
     }
 }
 
+/// Diagnostic with the supplied message and absent name, stack and code.
 pub fn diagnostic(text: &str) -> maestro_models::DiagnosticErrorInfo {
     maestro_models::DiagnosticErrorInfo {
         name: None,
