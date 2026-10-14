@@ -149,3 +149,5 @@ pub mod show_images_selector;
 pub mod theme_selector;
 
 pub mod user_message_selector;
+
+pub mod oauth_selector;

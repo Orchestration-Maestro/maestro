@@ -25,3 +25,7 @@ pub use components::show_images_selector::ShowImagesSelectorComponent;
 pub use components::theme_selector::ThemeSelectorComponent;
 
 pub use components::user_message_selector::UserMessageSelectorComponent;
+
+pub use components::oauth_selector::{
+    AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
+};

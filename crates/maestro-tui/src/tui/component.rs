@@ -1,6 +1,6 @@
 //! What a renderable terminal component can do.
 
-use std::cell::Cell;
+use std::{cell::Cell, rc::Rc};
 
 /// Marker a focused component emits where the hardware cursor belongs.
 ///
@@ -16,18 +16,35 @@ pub trait InputHandler {
 /// Whether a component has keyboard focus: the component owns the flag, the writer
 /// sets it when focus moves, and the component reads it when it renders.
 #[derive(Default)]
-pub struct FocusFlag(Cell<bool>);
+pub struct FocusFlag {
+    /// This component's own focus state.
+    focused: Cell<bool>,
+    /// Child receiving each focus change immediately.
+    target: Option<Rc<dyn Focusable>>,
+}
 
 impl FocusFlag {
+    /// Creates an independent flag that forwards focus changes to a child.
+    #[must_use]
+    pub fn forwarding(target: Rc<dyn Focusable>) -> Self {
+        Self {
+            focused: Cell::new(false),
+            target: Some(target),
+        }
+    }
+
     /// Whether the component has focus.
     #[must_use]
     pub fn get(&self) -> bool {
-        self.0.get()
+        self.focused.get()
     }
 
     /// Records a focus change.
     pub fn set(&self, focused: bool) {
-        self.0.set(focused);
+        self.focused.set(focused);
+        if let Some(target) = &self.target {
+            target.focus_flag().set(focused);
+        }
     }
 }
 
