@@ -25,7 +25,9 @@ The conventions check requires `workspace.dependencies.serde_json` to name
 including aliases, targets and optional entries, must inherit a workspace entry
 that enables it. Dev/build declarations are outside member inheritance enforcement
 and do not supply the required workspace feature; test feature unification can
-otherwise hide missing normal precision.
+otherwise hide missing normal precision. The generated `maestro-dependencies`
+member is exempt from member JSON inheritance; the workspace `serde_json`
+precision requirement still applies.
 
 ## Feature unification
 

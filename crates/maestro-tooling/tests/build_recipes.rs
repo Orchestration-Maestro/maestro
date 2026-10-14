@@ -136,7 +136,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     ));
 }
 
-/// Checks that each test phase stops on failure without skipping doctests.
+/// Checks that test phases stop on failure.
 fn assert_test_phase_failures(workspace: &Workspace) {
     for (phase, expected) in [
         ("nextest", "cargo nextest|run|--workspace|--locked\n"),

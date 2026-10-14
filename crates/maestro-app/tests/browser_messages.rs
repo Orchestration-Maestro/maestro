@@ -211,6 +211,26 @@ fn browser_message_predicates_compare_exact_roles() {
         /// Exact role spelling.
         role: String,
     }
+    let messages: Vec<_> = corpus()
+        .into_iter()
+        .filter(|row| row.suite == "history")
+        .flat_map(|row| {
+            serde_json::from_value::<History>(row.input)
+                .unwrap()
+                .messages
+        })
+        .collect();
+    for role in ["user", "assistant", "toolResult"] {
+        let value = message(messages.iter().find(|value| value["role"] == role).unwrap());
+        assert!(matches!(
+            (&value, role),
+            (AgentMessage::User(_), "user")
+                | (AgentMessage::Assistant(_), "assistant")
+                | (AgentMessage::ToolResult(_), "toolResult")
+        ));
+        assert!(!is_user_message_with_attachments(&value));
+        assert!(!is_artifact_message(&value));
+    }
     for row in corpus().into_iter().filter(|row| row.suite == "guards") {
         let input: Input = serde_json::from_value(row.input).unwrap();
         let value = AgentMessage::Custom(Arc::new(RwLock::new(Foreign(input.role))));
