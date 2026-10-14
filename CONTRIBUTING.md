@@ -40,6 +40,8 @@ just test
 ```
 
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
+A test that binds the fixed OAuth callback port goes in a module named
+`oauth_callback`, which nextest runs one at a time.
 Development and test builds retain file:line debug information, not debugger
 variable views.
 
