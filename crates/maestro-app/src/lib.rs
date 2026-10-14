@@ -57,3 +57,10 @@ pub use maestro_credentials::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use utils::clipboard::{copy_to_clipboard, copy_to_clipboard_with};
+
+pub use maestro_catalog::{
+    CatalogError, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
+    ScopedModel, model_id_comparator,
+};
+pub use maestro_models::models_are_equal;
+pub use maestro_settings::SettingsManager;
