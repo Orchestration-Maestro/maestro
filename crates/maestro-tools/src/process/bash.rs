@@ -64,6 +64,12 @@ impl From<io::Error> for BashError {
     }
 }
 
+impl From<maestro_models::DiagnosticErrorInfo> for BashError {
+    fn from(error: maestro_models::DiagnosticErrorInfo) -> Self {
+        Self::Other(Box::new(error))
+    }
+}
+
 /// A replaceable operation that streams raw bytes from a shell command.
 pub trait BashOperations: Send + Sync {
     /// Executes the literal command in the supplied directory.

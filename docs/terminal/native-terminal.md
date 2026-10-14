@@ -114,7 +114,8 @@ was started. Standard input that was not a terminal has no attributes to restore
 
 ## Input
 
-Standard input is read as a stream of UTF-8, at most 4096 bytes per read: a read takes what
+Standard input uses the shared [streaming text decoder](../text.md) and is read as UTF-8,
+at most 4096 bytes per read: a read takes what
 is available at that moment, and a longer burst arrives in consecutive reads. A character
 split across reads is held until it completes, and invalid bytes become U+FFFD; only text
 that is complete reaches the toolkit's shared `StdinBuffer`. Its framing and release rules

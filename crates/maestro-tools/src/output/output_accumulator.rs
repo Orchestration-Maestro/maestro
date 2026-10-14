@@ -172,10 +172,7 @@ impl OutputAccumulator {
     /// # Errors
     /// Returns the writer's flush error; the artifact is not known complete.
     pub fn close_temp_file(&mut self) -> io::Result<()> {
-        if let Some(mut writer) = self.writer.take() {
-            writer.flush()?;
-        }
-        Ok(())
+        close_artifact(self.writer.take())
     }
     /// Return the current decoded line's byte count.
     #[must_use]
@@ -243,14 +240,7 @@ impl OutputAccumulator {
         if self.path.is_some() || self.writer.is_some() {
             return Ok(());
         }
-        let id = random_id()?;
-        let root = std::env::temp_dir();
-        let root = root.to_string_lossy();
-        let path = maestro_path::join(&[&root, &format!("{}-{id}.log", self.prefix)]);
-        let file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)?;
+        let (path, file) = open_artifact(&self.prefix)?;
         let mut writer = BufWriter::new(file);
         writer.write_all(&self.raw)?;
         self.raw = Vec::new();
@@ -258,6 +248,24 @@ impl OutputAccumulator {
         self.writer = Some(writer);
         Ok(())
     }
+}
+
+/// Flush and release an owned writer without requesting durability.
+pub(crate) fn close_artifact(writer: Option<impl Write>) -> io::Result<()> {
+    writer.map_or(Ok(()), |mut writer| writer.flush())
+}
+
+/// Open one exclusively created artifact using the shared random filename convention.
+pub(crate) fn open_artifact(prefix: &str) -> io::Result<(String, File)> {
+    let id = random_id()?;
+    let root = std::env::temp_dir();
+    let root = root.to_string_lossy();
+    let path = maestro_path::join(&[&root, &format!("{prefix}-{id}.log")]);
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?;
+    Ok((path, file))
 }
 
 /// Generate eight random bytes as sixteen lowercase hexadecimal digits.

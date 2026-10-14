@@ -1,0 +1,191 @@
+//! Direct shell execution with cleaned rolling output and sanitized overflow artifacts.
+use super::bash::{BashError, BashExecOptions, BashOperations};
+use crate::output::{
+    output_accumulator::{close_artifact, open_artifact},
+    render_utils::{AnsiStream, normalize_display_text},
+    truncate::{DEFAULT_MAX_BYTES, TruncationOptions, truncate_tail},
+};
+use crate::utils::shell::sanitize_binary_output;
+use maestro_models::Cancellation;
+use maestro_text::Utf8Stream;
+use std::{collections::VecDeque, io::Write};
+
+/// Optional cleaned-output callback and cancellation signal.
+#[derive(Default)]
+pub struct BashExecutorOptions<'a> {
+    /// Receives each cleaned raw chunk synchronously, including empty chunks.
+    pub on_chunk: Option<&'a mut (dyn FnMut(&str) + Send)>,
+    /// The signal forwarded unchanged to the operation.
+    pub signal: Option<&'a Cancellation>,
+}
+/// Selected direct output and its execution status.
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BashResult {
+    /// Cleaned tail selected with the shared default limits.
+    pub output: String,
+    /// Supplied numeric status, absent when cancelled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<f64>,
+    /// Whether the signal was aborted at settlement.
+    pub cancelled: bool,
+    /// Whether final tail selection removed output.
+    pub truncated: bool,
+    /// Sanitized artifact created by raw overflow or final truncation.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_output_path: Option<String>,
+}
+/// Invoke the supplied operation with literal operands and direct output policy.
+///
+/// # Errors
+/// Returns the original ordinary operation error or first output-processing failure.
+pub async fn execute_bash_with_operations(
+    command: &str,
+    cwd: &str,
+    operations: &dyn BashOperations,
+    mut options: BashExecutorOptions<'_>,
+) -> Result<BashResult, BashError> {
+    let mut state = Output::default();
+    let mut failure = None;
+    let mut sink = |bytes: &[u8]| {
+        if failure.is_none() {
+            state.raw_bytes += bytes.len();
+            let text = state.decoder.push(bytes);
+            failure = state.accept(&text, false, &mut options.on_chunk).err();
+        }
+    };
+    let outcome = operations
+        .exec(
+            command,
+            cwd,
+            BashExecOptions {
+                on_data: &mut sink,
+                signal: options.signal,
+                timeout: None,
+                env: None,
+            },
+        )
+        .await;
+    let cancelled = options.signal.is_some_and(Cancellation::is_aborted);
+    let selected = match (failure, outcome) {
+        (Some(error), _) => Err(error),
+        (None, Err(error)) if !cancelled => Err(error),
+        (None, outcome) => state.settle(
+            outcome.ok().and_then(|result| result.exit_code),
+            cancelled,
+            &mut options.on_chunk,
+        ),
+    };
+    let closed = close_artifact(state.writer.take());
+    let result = selected?;
+    closed?;
+    Ok(result)
+}
+/// Direct policy state; artifact contents differ from raw tool-output artifacts.
+#[derive(Default)]
+struct Output {
+    /// Raw UTF-8 carry.
+    decoder: Utf8Stream,
+    /// Held escape suffix.
+    ansi: AnsiStream,
+    /// Whether initial BOM selection has run.
+    started: bool,
+    /// Total received raw bytes.
+    raw_bytes: usize,
+    /// Whole cleaned chunks in arrival order.
+    chunks: VecDeque<String>,
+    /// Retained UTF-8 byte length.
+    bytes: usize,
+    /// Artifact identity after creation.
+    path: Option<String>,
+    /// Synchronous writer, released at settlement.
+    writer: Option<Box<dyn Write + Send>>,
+}
+impl Output {
+    /// Decode caller-owned initial BOM policy and strip escapes before storing text.
+    fn accept(
+        &mut self,
+        text: &str,
+        finalizing: bool,
+        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+    ) -> Result<(), BashError> {
+        let text = if !self.started && !text.is_empty() {
+            self.started = true;
+            text.strip_prefix('\u{feff}').unwrap_or(text)
+        } else {
+            text
+        };
+        let mut clean = self.ansi.push(text)?;
+        if finalizing {
+            clean.push_str(&self.ansi.finish()?);
+        }
+        let clean = normalize_display_text(&sanitize_binary_output(&clean));
+        if !finalizing || !clean.is_empty() {
+            self.store(clean, callback)?;
+        }
+        Ok(())
+    }
+    /// Spill before storing the crossing chunk, then evict whole oldest chunks by bytes.
+    fn store(
+        &mut self,
+        text: String,
+        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+    ) -> Result<(), BashError> {
+        if self.raw_bytes > DEFAULT_MAX_BYTES {
+            self.spill()?;
+        }
+        if let Some(writer) = &mut self.writer {
+            writer.write_all(text.as_bytes())?;
+        }
+        self.bytes += text.len();
+        self.chunks.push_back(text);
+        while self.bytes > DEFAULT_MAX_BYTES * 2 && self.chunks.len() > 1 {
+            if let Some(oldest) = self.chunks.pop_front() {
+                self.bytes -= oldest.len();
+            }
+        }
+        if let Some(callback) = callback
+            && let Some(last) = self.chunks.back()
+        {
+            callback(last);
+        }
+        Ok(())
+    }
+    /// Open once, replaying the retained sanitized prefix before any crossing chunk.
+    fn spill(&mut self) -> Result<(), BashError> {
+        if self.writer.is_none() {
+            let (path, mut file) = open_artifact("maestro-bash")?;
+            for chunk in &self.chunks {
+                file.write_all(chunk.as_bytes())?;
+            }
+            self.path = Some(path);
+            self.writer = Some(Box::new(file));
+        }
+        Ok(())
+    }
+    /// Flush decoder and escape carry before shared tail selection.
+    fn settle(
+        &mut self,
+        exit_code: Option<f64>,
+        cancelled: bool,
+        callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
+    ) -> Result<BashResult, BashError> {
+        let rest = self.decoder.finish();
+        self.accept(&rest, true, callback)?;
+        let text: String = self.chunks.iter().map(String::as_str).collect();
+        let selected = truncate_tail(&text, TruncationOptions::default());
+        if selected.truncated {
+            self.spill()?;
+        }
+        Ok(BashResult {
+            output: selected.content,
+            exit_code: if cancelled { None } else { exit_code },
+            cancelled,
+            truncated: selected.truncated,
+            full_output_path: self.path.take(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests;

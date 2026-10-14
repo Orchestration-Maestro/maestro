@@ -157,3 +157,6 @@ are later scope, not active foundation concepts.
 - **SettingsList:** A terminal settings component with optional label search.
 
 - **Utf8Stream:** The text leaf's raw streaming decoder; callers own BOM selection and framing.
+
+- **BashExecutorOptions:** Optional cleaned-chunk callback and signal for direct shell execution.
+- **BashResult:** Direct shell selected text, numeric status, cancellation and artifact observations.
