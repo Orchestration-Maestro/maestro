@@ -73,6 +73,26 @@ struct ProducerCase {
     expected: Value,
 }
 #[test]
+fn native_bash_result_uses_shared_record() {
+    let native = maestro_tools::BashResult {
+        output: "literal output".into(),
+        exit_code: Some(0.0),
+        cancelled: false,
+        truncated: false,
+        full_output_path: None,
+    };
+    let shared: maestro_tool::bash_executor::BashResult<Option<f64>, Option<String>> = native;
+    let result: maestro_tools::process::bash_executor::BashResult = shared;
+    assert_eq!(
+        serde_json::to_value(result).unwrap(),
+        serde_json::json!({
+            "output": "literal output", "exitCode": 0.0,
+            "cancelled": false, "truncated": false
+        })
+    );
+}
+
+#[test]
 fn native_record_aliases_keep_producer_fields() {
     let cases: Vec<ProducerCase> =
         serde_json::from_str(include_str!("fixtures/shared_producer_cases.json")).unwrap();

@@ -19,22 +19,7 @@ pub struct BashExecutorOptions<'a> {
     pub signal: Option<&'a Cancellation>,
 }
 /// Selected direct output and its execution status.
-#[derive(Debug, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BashResult {
-    /// Cleaned tail selected with the shared default limits.
-    pub output: String,
-    /// Supplied numeric status, absent when cancelled.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub exit_code: Option<f64>,
-    /// Whether the signal was aborted after final output callbacks.
-    pub cancelled: bool,
-    /// Whether final tail selection removed output.
-    pub truncated: bool,
-    /// Sanitized artifact created by raw overflow or final truncation.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub full_output_path: Option<String>,
-}
+pub type BashResult = maestro_tool::bash_executor::BashResult<Option<f64>, Option<String>>;
 /// Invoke the supplied operation with literal operands and direct output policy.
 ///
 /// # Errors
