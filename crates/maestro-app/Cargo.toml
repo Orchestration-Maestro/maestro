@@ -12,6 +12,9 @@ maestro-agent = { path = "../maestro-agent" }
 serde.workspace = true
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 rand = "=0.10.3"
+zip = { version = "=6.0.0", default-features = false, features = ["deflate-flate2"] }
+roxmltree = { version = "=0.21.1", default-features = false, features = ["std", "positions"] }
+url = "=2.5.8"
 ryu-js.workspace = true
 futures-util.workspace = true
 maestro-models = { path = "../maestro-models" }

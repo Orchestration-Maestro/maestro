@@ -1,0 +1,836 @@
+[
+  {
+    "test": "xml_children_and_attributes_keep_local_names_and_order",
+    "input": {
+      "xml": "<r xmlns=\"urn:r\" xmlns:a=\"urn:a\" xmlns:b=\"urn:b\" a:v=\"one\" b:v=\"two\" v=\"plain\">head<a:x n=\"first\"/><b:x n=\"second\"/><x n=\"third\"/>tail<!--ignored--><?keep value?></r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": "urn:r",
+        "attributes": [
+          {
+            "local_name": "v",
+            "namespace": "urn:a",
+            "value": "one"
+          },
+          {
+            "local_name": "v",
+            "namespace": "urn:b",
+            "value": "two"
+          },
+          {
+            "local_name": "v",
+            "namespace": null,
+            "value": "plain"
+          }
+        ],
+        "children": [
+          "head",
+          {
+            "local_name": "x",
+            "namespace": "urn:a",
+            "attributes": [
+              {
+                "local_name": "n",
+                "namespace": null,
+                "value": "first"
+              }
+            ],
+            "children": []
+          },
+          {
+            "local_name": "x",
+            "namespace": "urn:b",
+            "attributes": [
+              {
+                "local_name": "n",
+                "namespace": null,
+                "value": "second"
+              }
+            ],
+            "children": []
+          },
+          {
+            "local_name": "x",
+            "namespace": "urn:r",
+            "attributes": [
+              {
+                "local_name": "n",
+                "namespace": null,
+                "value": "third"
+              }
+            ],
+            "children": []
+          },
+          "tail"
+        ]
+      },
+      "element_names": [
+        "x",
+        "x",
+        "x"
+      ],
+      "selected_x": [
+        "first",
+        "second",
+        "third"
+      ],
+      "first_x": "first",
+      "first_v": "one",
+      "missing": null,
+      "text": "headtail"
+    }
+  },
+  {
+    "test": "xml_entities_cdata_and_whitespace_survive",
+    "input": {
+      "xml": "<r a=\"x&#9;y\tz&#10;k\nl\"> a&amp;b<![CDATA[<c>]]>&#x1F600;\r\n </r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [
+          {
+            "local_name": "a",
+            "namespace": null,
+            "value": "x\ty z\nk l"
+          }
+        ],
+        "children": [
+          " a&b<c>\ud83d\ude00\n "
+        ]
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": " a&b<c>\ud83d\ude00\n "
+    }
+  },
+  {
+    "test": "xml_namespaces_are_scoped_not_inferred_from_prefixes",
+    "input": {
+      "xml": "<r xmlns=\"urn:r\" xmlns:a=\"urn:a\"><a:x xmlns:a=\"urn:b\" a:v=\"1\"/><x xmlns=\"\" v=\"2\"/></r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": "urn:r",
+        "attributes": [],
+        "children": [
+          {
+            "local_name": "x",
+            "namespace": "urn:b",
+            "attributes": [
+              {
+                "local_name": "v",
+                "namespace": "urn:b",
+                "value": "1"
+              }
+            ],
+            "children": []
+          },
+          {
+            "local_name": "x",
+            "namespace": null,
+            "attributes": [
+              {
+                "local_name": "v",
+                "namespace": null,
+                "value": "2"
+              }
+            ],
+            "children": []
+          }
+        ]
+      },
+      "element_names": [
+        "x",
+        "x"
+      ],
+      "selected_x": [
+        null,
+        null
+      ],
+      "first_x": null,
+      "first_v": null,
+      "missing": null,
+      "text": ""
+    }
+  },
+  {
+    "test": "xml_declarations_and_bom_follow_the_option",
+    "input": {
+      "xml": "\ufeff<?xml version=\"1.0\"?><r/>",
+      "trim": true
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": []
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": ""
+    }
+  },
+  {
+    "test": "xml_declarations_and_bom_follow_the_option",
+    "input": {
+      "xml": " <?xml version=\"1.0\"?><r/>",
+      "trim": true
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": []
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": ""
+    }
+  },
+  {
+    "test": "xml_declarations_and_bom_follow_the_option",
+    "input": {
+      "xml": " <?xml version=\"1.0\"?><r/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_declarations_and_bom_follow_the_option",
+    "input": {
+      "xml": "<?xml\nversion=\"1.0\"?><r/>",
+      "trim": true
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": []
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": ""
+    }
+  },
+  {
+    "test": "xml_declarations_and_bom_follow_the_option",
+    "input": {
+      "xml": "<?xml version=\"1.0\" encoding=\"windows-1252\"?><r>\u00e9</r>",
+      "trim": true
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": [
+          "\u00e9"
+        ]
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": "\u00e9"
+    }
+  },
+  {
+    "test": "xml_declaration_trimming_preserves_content_between_instructions",
+    "input": {
+      "xml": "<?xml version=\"1.0\"?><r><?a?>kept<?b?></r>",
+      "trim": true
+    },
+    "expected": {
+      "element_names": [],
+      "first_v": null,
+      "missing": null,
+      "selected_x": [],
+      "text": "kept",
+      "tree": {
+        "attributes": [],
+        "children": [
+          "kept"
+        ],
+        "local_name": "r",
+        "namespace": null
+      }
+    }
+  },
+  {
+    "test": "xml_declaration_trimming_preserves_content_between_instructions",
+    "input": {
+      "xml": "<r><?a?>kept<?b?></r>",
+      "trim": true
+    },
+    "expected": {
+      "element_names": [],
+      "first_v": null,
+      "missing": null,
+      "selected_x": [],
+      "text": "kept",
+      "tree": {
+        "attributes": [],
+        "children": [
+          "kept"
+        ],
+        "local_name": "r",
+        "namespace": null
+      }
+    }
+  },
+  {
+    "test": "xml_parsererror_elements_are_data",
+    "input": {
+      "xml": "<r><parsererror>ordinary text</parsererror></r>",
+      "trim": false
+    },
+    "expected": {
+      "element_names": [
+        "parsererror"
+      ],
+      "first_v": null,
+      "missing": null,
+      "selected_x": [],
+      "text": "ordinary text",
+      "tree": {
+        "attributes": [],
+        "children": [
+          {
+            "attributes": [],
+            "children": [
+              "ordinary text"
+            ],
+            "local_name": "parsererror",
+            "namespace": null
+          }
+        ],
+        "local_name": "r",
+        "namespace": null
+      }
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r><x></r>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r a=\"1\" a=\"2\"/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r>&unknown;</r>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r/><s/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<r xmlns:a=\"u\" xmlns:b=\"u\" a:v=\"1\" b:v=\"2\"/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "<a:r/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_invalid_documents_fail_without_partial_success",
+    "input": {
+      "xml": "",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_doctype_is_rejected_at_the_package_boundary",
+    "input": {
+      "xml": "<!DOCTYPE r [<!ENTITY e \"expanded\">]><r>&e;</r>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_entities_cdata_and_whitespace_survive",
+    "input": {
+      "xml": "<r a=\"&#xD;&#xA;\">a\rb\r\nc</r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [
+          {
+            "local_name": "a",
+            "namespace": null,
+            "value": "\r\n"
+          }
+        ],
+        "children": [
+          "a\nb\nc"
+        ]
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": "a\nb\nc"
+    }
+  },
+  {
+    "test": "xml_doctype_is_rejected_at_the_package_boundary",
+    "input": {
+      "xml": "<!DOCTYPE r><r/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_doctype_is_rejected_at_the_package_boundary",
+    "input": {
+      "xml": "<!DOCTYPE r SYSTEM \"https://example.invalid/never.dtd\"><r/>",
+      "trim": false
+    },
+    "expected": {
+      "error": "Xml"
+    }
+  },
+  {
+    "test": "xml_entities_cdata_and_whitespace_survive",
+    "input": {
+      "xml": "<r><![CDATA[<!DOCTYPE r>]]></r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": [
+          "<!DOCTYPE r>"
+        ]
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": "<!DOCTYPE r>"
+    }
+  },
+  {
+    "test": "xml_entities_cdata_and_whitespace_survive",
+    "input": {
+      "xml": "<!-- <!DOCTYPE r> --><r>safe</r>",
+      "trim": false
+    },
+    "expected": {
+      "tree": {
+        "local_name": "r",
+        "namespace": null,
+        "attributes": [],
+        "children": [
+          "safe"
+        ]
+      },
+      "element_names": [],
+      "selected_x": [],
+      "first_v": null,
+      "missing": null,
+      "text": "safe"
+    }
+  },
+  {
+    "test": "xml_children_and_attributes_keep_local_names_and_order",
+    "input": {
+      "xml": "<r xmlns:v=\"urn:decl\" v=\"real\"><x n=\"ok\"/></r>",
+      "trim": false
+    },
+    "expected": {
+      "element_names": [
+        "x"
+      ],
+      "first_v": "real",
+      "first_x": "ok",
+      "missing": null,
+      "selected_x": [
+        "ok"
+      ],
+      "text": "",
+      "tree": {
+        "attributes": [
+          {
+            "local_name": "v",
+            "namespace": null,
+            "value": "real"
+          }
+        ],
+        "children": [
+          {
+            "attributes": [
+              {
+                "local_name": "n",
+                "namespace": null,
+                "value": "ok"
+              }
+            ],
+            "children": [],
+            "local_name": "x",
+            "namespace": null
+          }
+        ],
+        "local_name": "r",
+        "namespace": null
+      }
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": null
+    },
+    "expected": {
+      "int": 17,
+      "hex": 17,
+      "float": 17,
+      "bool": true,
+      "length": null
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": ""
+    },
+    "expected": {
+      "int": 17,
+      "hex": 17,
+      "float": 17,
+      "bool": true,
+      "length": "NaNpt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "0"
+    },
+    "expected": {
+      "int": 0,
+      "hex": 0,
+      "float": 0,
+      "bool": false,
+      "length": "0.00pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "12"
+    },
+    "expected": {
+      "int": 12,
+      "hex": 18,
+      "float": 12,
+      "bool": true,
+      "length": "0.60pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "-12"
+    },
+    "expected": {
+      "int": -12,
+      "hex": -18,
+      "float": -12,
+      "bool": true,
+      "length": "-0.60pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "12.75junk"
+    },
+    "expected": {
+      "int": 12,
+      "hex": 18,
+      "float": 12.75,
+      "bool": true,
+      "length": "0.60pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "  +42x"
+    },
+    "expected": {
+      "int": 42,
+      "hex": 66,
+      "float": 42,
+      "bool": true,
+      "length": "2.10pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "0x10"
+    },
+    "expected": {
+      "int": 16,
+      "hex": 16,
+      "float": 0,
+      "bool": true,
+      "length": "0.80pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "-0x10"
+    },
+    "expected": {
+      "int": -16,
+      "hex": -16,
+      "float": {
+        "special": "negative_zero"
+      },
+      "bool": true,
+      "length": "-0.80pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "0b11"
+    },
+    "expected": {
+      "int": 0,
+      "hex": 2833,
+      "float": 0,
+      "bool": true,
+      "length": "0.00pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "1e2"
+    },
+    "expected": {
+      "int": 1,
+      "hex": 482,
+      "float": 100,
+      "bool": true,
+      "length": "0.05pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "1e"
+    },
+    "expected": {
+      "int": 1,
+      "hex": 30,
+      "float": 1,
+      "bool": true,
+      "length": "0.05pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "1.5e-2tail"
+    },
+    "expected": {
+      "int": 1,
+      "hex": 1,
+      "float": 0.015,
+      "bool": true,
+      "length": "0.05pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "-Infinity"
+    },
+    "expected": {
+      "int": {
+        "special": "nan"
+      },
+      "hex": {
+        "special": "nan"
+      },
+      "float": {
+        "special": "negative_infinity"
+      },
+      "bool": true,
+      "length": "NaNpt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "Infinity"
+    },
+    "expected": {
+      "int": {
+        "special": "nan"
+      },
+      "hex": {
+        "special": "nan"
+      },
+      "float": {
+        "special": "positive_infinity"
+      },
+      "bool": true,
+      "length": "NaNpt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "NaN"
+    },
+    "expected": {
+      "int": {
+        "special": "nan"
+      },
+      "hex": {
+        "special": "nan"
+      },
+      "float": {
+        "special": "nan"
+      },
+      "bool": true,
+      "length": "NaNpt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "abc"
+    },
+    "expected": {
+      "int": {
+        "special": "nan"
+      },
+      "hex": 2748,
+      "float": {
+        "special": "nan"
+      },
+      "bool": true,
+      "length": "NaNpt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "\ufeff12"
+    },
+    "expected": {
+      "int": 12,
+      "hex": 18,
+      "float": 12,
+      "bool": true,
+      "length": "0.60pt"
+    }
+  },
+  {
+    "test": "xml_numeric_attributes_keep_empty_defaults_and_prefix_rules",
+    "input": {
+      "value": "\u008512"
+    },
+    "expected": {
+      "int": {
+        "special": "nan"
+      },
+      "hex": {
+        "special": "nan"
+      },
+      "float": {
+        "special": "nan"
+      },
+      "bool": true,
+      "length": "NaNpt"
+    }
+  }
+]

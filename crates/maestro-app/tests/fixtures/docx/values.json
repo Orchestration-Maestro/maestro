@@ -1,0 +1,738 @@
+[
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": null,
+      "usage": "Dxa"
+    },
+    "expected": null
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "",
+      "usage": "Dxa"
+    },
+    "expected": "NaNpt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "0",
+      "usage": "Dxa"
+    },
+    "expected": "0.00pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "1",
+      "usage": "Dxa"
+    },
+    "expected": "0.05pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "-1",
+      "usage": "Dxa"
+    },
+    "expected": "-0.05pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "20",
+      "usage": "Dxa"
+    },
+    "expected": "1.00pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "1.5",
+      "usage": "Dxa"
+    },
+    "expected": "0.05pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "12abc",
+      "usage": "Dxa"
+    },
+    "expected": "0.60pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "0x10",
+      "usage": "Dxa"
+    },
+    "expected": "0.80pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "-0x10",
+      "usage": "Dxa"
+    },
+    "expected": "-0.80pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "  +42x",
+      "usage": "Dxa"
+    },
+    "expected": "2.10pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "\ufeff20",
+      "usage": "Dxa"
+    },
+    "expected": "1.00pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "\u008520",
+      "usage": "Dxa"
+    },
+    "expected": "NaNpt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "abc",
+      "usage": "Dxa"
+    },
+    "expected": "NaNpt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "1e2",
+      "usage": "Dxa"
+    },
+    "expected": "0.05pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "2px",
+      "usage": "Dxa"
+    },
+    "expected": "2px"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "2pt",
+      "usage": "Dxa"
+    },
+    "expected": "2pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "50%",
+      "usage": "Dxa"
+    },
+    "expected": "50%"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "pt",
+      "usage": "Dxa"
+    },
+    "expected": "NaNpt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "1PT",
+      "usage": "Dxa"
+    },
+    "expected": "0.05pt"
+  },
+  {
+    "test": "length_values_keep_units_and_numeric_prefixes",
+    "input": {
+      "value": "1px\n",
+      "usage": "Dxa"
+    },
+    "expected": "0.05pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "Dxa"
+    },
+    "expected": "0.10pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "Dxa"
+    },
+    "expected": "4.80pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "Dxa"
+    },
+    "expected": "4.85pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "Dxa"
+    },
+    "expected": "-0.50pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "Dxa"
+    },
+    "expected": "635.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "1",
+      "usage": "Emu"
+    },
+    "expected": "0.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "Emu"
+    },
+    "expected": "0.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "Emu"
+    },
+    "expected": "0.01pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "Emu"
+    },
+    "expected": "0.01pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "Emu"
+    },
+    "expected": "-0.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "Emu"
+    },
+    "expected": "1.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "1",
+      "usage": "FontSize"
+    },
+    "expected": "0.50pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "FontSize"
+    },
+    "expected": "1.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "FontSize"
+    },
+    "expected": "48.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "FontSize"
+    },
+    "expected": "48.50pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "FontSize"
+    },
+    "expected": "-5.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "FontSize"
+    },
+    "expected": "6350.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "1",
+      "usage": "Border"
+    },
+    "expected": "0.25pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "Border"
+    },
+    "expected": "0.25pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "Border"
+    },
+    "expected": "12.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "Border"
+    },
+    "expected": "12.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "Border"
+    },
+    "expected": "0.25pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "Border"
+    },
+    "expected": "12.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "1",
+      "usage": "Point"
+    },
+    "expected": "1.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "Point"
+    },
+    "expected": "2.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "Point"
+    },
+    "expected": "96.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "Point"
+    },
+    "expected": "97.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "Point"
+    },
+    "expected": "-10.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "Point"
+    },
+    "expected": "12700.00pt"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "1",
+      "usage": "Percent"
+    },
+    "expected": "0.02%"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "2",
+      "usage": "Percent"
+    },
+    "expected": "0.04%"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "96",
+      "usage": "Percent"
+    },
+    "expected": "1.92%"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "97",
+      "usage": "Percent"
+    },
+    "expected": "1.94%"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "-10",
+      "usage": "Percent"
+    },
+    "expected": "-0.20%"
+  },
+  {
+    "test": "length_scales_and_border_clamps_are_distinct",
+    "input": {
+      "value": "12700",
+      "usage": "Percent"
+    },
+    "expected": "254.00%"
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": null,
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": null,
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": null,
+      "fallback": null
+    },
+    "expected": null
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "",
+      "fallback": null
+    },
+    "expected": null
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "1",
+      "fallback": false
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "1",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "1",
+      "fallback": null
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "0",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "0",
+      "fallback": true
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "0",
+      "fallback": null
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "on",
+      "fallback": false
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "on",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "on",
+      "fallback": null
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "off",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "off",
+      "fallback": true
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "off",
+      "fallback": null
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "true",
+      "fallback": false
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "true",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "true",
+      "fallback": null
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "false",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "false",
+      "fallback": true
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "false",
+      "fallback": null
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "TRUE",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "TRUE",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "TRUE",
+      "fallback": null
+    },
+    "expected": null
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "yes",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "yes",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "yes",
+      "fallback": null
+    },
+    "expected": null
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": " true ",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": " true ",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": " true ",
+      "fallback": null
+    },
+    "expected": null
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "2",
+      "fallback": false
+    },
+    "expected": false
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "2",
+      "fallback": true
+    },
+    "expected": true
+  },
+  {
+    "test": "boolean_tokens_preserve_the_selected_fallback",
+    "input": {
+      "value": "2",
+      "fallback": null
+    },
+    "expected": null
+  }
+]
