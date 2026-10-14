@@ -68,3 +68,37 @@ the supplied runtime. That one-shot keeps the original cancellation callback;
 removing the panel, replacing the list callback or cancelling early does not
 suppress it. The callback is released after it runs. Nonempty construction
 schedules no cancellation.
+
+## Provider authentication picker
+
+`OAuthSelectorComponent::new` takes an `Arc<maestro_app::AuthStorage>`, ordered
+`AuthSelectorProvider` records, select/cancel callbacks and `OAuthSelectorOptions`.
+Options supply `OAuthSelectorMode::Login` or `Logout`, a `LiveTheme` and an optional
+`get_auth_status` callback. `AuthType::OAuth` offers subscription authentication;
+`AuthType::ApiKey` offers key configuration. The caller supplies and classifies
+providers; order and duplicate choices are retained.
+
+Stored credentials show configured status when their kind matches, or a warning
+when the stored kind differs. Unstored subscription choices are unconfigured.
+Unstored key choices show environment, runtime, fallback, model-file key or
+model-file command status from the supplied resolver, or the store's default.
+Status labels follow the source even when its `configured` flag is false.
+The picker only reads credentials; callbacks own authentication and logout.
+The application root exposes the existing credential records, status, store and
+interchangeable memory/backend contracts.
+
+Typing filters names, identities and authentication kinds through the
+[shared fuzzy matcher](../terminal/completion.md#shared-fuzzy-ranking). Filtering
+retains the selected position when possible and clamps it otherwise. Up/down
+clamp rather than wrap. The list shows at most eight choices with an absolute
+position count when rows are hidden. Confirm reports the selected provider ID;
+cancel reports cancellation. Input uses the current configurable keybindings.
+
+Focus the picker itself: its independent focus flag immediately forwards changes
+to the retained search input. The inherited `Container` child array can be edited,
+cleared or replaced without discarding selection or the retained input's submission
+callback. Direct edits to that child do not filter until input reaches the picker.
+Title styling is captured at construction, list styling and visible statuses at
+rebuild, and borders read the live theme at render. Render, invalidation and
+confirmation alone do not rebuild the list. Text and cursor layout belong to the
+[terminal toolkit](../terminal/input.md).

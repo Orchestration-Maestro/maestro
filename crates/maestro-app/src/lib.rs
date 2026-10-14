@@ -51,5 +51,9 @@ pub use maestro_text::truncate_utf16;
 pub use maestro_tools::output::render_utils::format_read_line_range;
 pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 
+pub use maestro_credentials::{
+    ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
+    InMemoryAuthStorageBackend, OAuthCredential,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use utils::clipboard::{copy_to_clipboard, copy_to_clipboard_with};
