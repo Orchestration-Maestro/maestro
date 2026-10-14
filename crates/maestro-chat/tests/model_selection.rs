@@ -28,21 +28,21 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-/// Execute each query in a separate process, which owns global registry/binding state.
+/// Execute each test group in a separate process, which owns global registry/binding state.
 fn replay(name: &str) {
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
-        subprocess::run_child(
-            name,
-            &[
-                ("LC_ALL", Some("en_US.UTF-8")),
-                ("ANTHROPIC_API_KEY", None),
-                ("OPENAI_API_KEY", None),
-                ("GOOGLE_API_KEY", None),
-                ("AWS_PROFILE", None),
-                ("AWS_ACCESS_KEY_ID", None),
-                ("AWS_SECRET_ACCESS_KEY", None),
-            ],
-        );
+        let credentials = std::env::current_exe()
+            .unwrap()
+            .join("absent-credentials.json")
+            .to_string_lossy()
+            .into_owned();
+        assert!(!std::path::Path::new(&credentials).exists());
+        let mut environment = AUTH_ENVIRONMENT.to_vec();
+        environment.extend([
+            ("LC_ALL", Some("en_US.UTF-8")),
+            ("GOOGLE_APPLICATION_CREDENTIALS", Some(&credentials)),
+        ]);
+        subprocess::run_child(name, &environment);
         return;
     }
     for case in cases(name) {
@@ -163,7 +163,7 @@ struct Fixture {
 impl Fixture {
     /// Builds the public picker through real controlled owners.
     fn new(query: &mut Query) -> Self {
-        assert!(!query.current_shared);
+        assert!(!query.current_shared || !query.scoped.is_empty());
         bindings(std::mem::take(&mut query.bindings));
         let (theme, live) = published::published(&colors(0));
         let (mut registry, reads) = registry(query);
@@ -179,7 +179,11 @@ impl Fixture {
         let (callbacks, release) = observed.callbacks(query.reenter);
         let scoped: Vec<_> = query.scoped.iter().map(Descriptor::handle).collect();
         let options = ModelSelectorOptions {
-            current_model: query.current.as_ref().map(Descriptor::handle),
+            current_model: if query.current_shared {
+                Some(scoped[0].clone())
+            } else {
+                query.current.as_ref().map(Descriptor::handle)
+            },
             scoped_models: scoped
                 .iter()
                 .map(|model| ScopedModel {

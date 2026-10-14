@@ -13,6 +13,49 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+/// Every accepted environment authentication route, excluded from each child.
+pub const AUTH_ENVIRONMENT: &[(&str, Option<&str>)] = &[
+    ("COPILOT_GITHUB_TOKEN", None),
+    ("GH_TOKEN", None),
+    ("GITHUB_TOKEN", None),
+    ("ANTHROPIC_OAUTH_TOKEN", None),
+    ("ANTHROPIC_API_KEY", None),
+    ("OPENAI_API_KEY", None),
+    ("AZURE_OPENAI_API_KEY", None),
+    ("DEEPSEEK_API_KEY", None),
+    ("GEMINI_API_KEY", None),
+    ("GOOGLE_CLOUD_API_KEY", None),
+    ("GROQ_API_KEY", None),
+    ("CEREBRAS_API_KEY", None),
+    ("XAI_API_KEY", None),
+    ("OPENROUTER_API_KEY", None),
+    ("AI_GATEWAY_API_KEY", None),
+    ("ZAI_API_KEY", None),
+    ("MISTRAL_API_KEY", None),
+    ("MINIMAX_API_KEY", None),
+    ("MINIMAX_CN_API_KEY", None),
+    ("MOONSHOT_API_KEY", None),
+    ("HF_TOKEN", None),
+    ("FIREWORKS_API_KEY", None),
+    ("OPENCODE_API_KEY", None),
+    ("KIMI_API_KEY", None),
+    ("CLOUDFLARE_API_KEY", None),
+    ("XIAOMI_API_KEY", None),
+    ("XIAOMI_TOKEN_PLAN_CN_API_KEY", None),
+    ("XIAOMI_TOKEN_PLAN_AMS_API_KEY", None),
+    ("XIAOMI_TOKEN_PLAN_SGP_API_KEY", None),
+    ("GOOGLE_CLOUD_PROJECT", None),
+    ("GCLOUD_PROJECT", None),
+    ("GOOGLE_CLOUD_LOCATION", None),
+    ("AWS_PROFILE", None),
+    ("AWS_ACCESS_KEY_ID", None),
+    ("AWS_SECRET_ACCESS_KEY", None),
+    ("AWS_BEARER_TOKEN_BEDROCK", None),
+    ("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", None),
+    ("AWS_CONTAINER_CREDENTIALS_FULL_URI", None),
+    ("AWS_WEB_IDENTITY_TOKEN_FILE", None),
+];
+
 /// One minimal model observation.
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -101,7 +144,7 @@ pub struct Query {
     pub scoped: Vec<Descriptor>,
     /// Current descriptor, independent unless explicitly shared.
     pub current: Option<Descriptor>,
-    /// Alias the first available descriptor.
+    /// Alias the first scoped fallback descriptor.
     #[serde(default)]
     pub current_shared: bool,
     /// Initial query.
