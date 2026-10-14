@@ -2,9 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod display_support;
-mod ls_support;
-mod read_support;
+use crate::ls_support;
+use crate::read_support;
 
 use ls_support::{
     Case, Scripted, assert_effects, cases, check_execute, check_native, execute, execute_input,

@@ -1,9 +1,9 @@
 //! Synchronous progress and per-call throttling through supplied operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod agent_shell_support;
-mod process_support;
-mod read_support;
+use crate::agent_shell_support;
+use crate::process_support;
+use crate::read_support;
 use agent_shell_support::{Immediate, cases, result_value, runtime};
 use maestro_tools::{BashExecResult, BashToolInput, BashToolOptions, create_bash_tool_definition};
 use serde_json::json;

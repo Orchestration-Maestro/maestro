@@ -1,4 +1,5 @@
 //! Observe normalized calls separately from execution arguments through the loop.
+#![cfg(test)]
 use crate::{loop_support, read_support};
 use maestro_agent::{AgentContext, AgentEvent, ToolExecutionMode, run_agent_loop};
 use maestro_tools::{EditToolOptions, create_edit_tool};

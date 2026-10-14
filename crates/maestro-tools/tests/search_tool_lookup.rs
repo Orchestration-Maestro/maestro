@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-mod read_support;
+use crate::read_support;
 
 use maestro_models::Fetch;
 use maestro_tools::{SearchTool, ToolsManager, ToolsManagerOutput};

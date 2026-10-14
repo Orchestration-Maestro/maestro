@@ -4,10 +4,12 @@ use crate::source::{Member, read_manifest};
 
 /// Check migrated members with top-level integration sources.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
-    for member in members
-        .iter()
-        .filter(|member| matches!(member.name.as_str(), "maestro-models" | "maestro-tui"))
-    {
+    for member in members.iter().filter(|member| {
+        matches!(
+            member.name.as_str(),
+            "maestro-agent" | "maestro-models" | "maestro-tools" | "maestro-tui"
+        )
+    }) {
         check_member(member)?;
     }
     Ok(())

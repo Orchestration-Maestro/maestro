@@ -1,8 +1,7 @@
 //! Concurrent tool batches through awaited conversation operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Shared controlled conversation fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{AgentEvent, AgentMessage, run_agent_loop};
 use std::sync::{Arc, Mutex};
 use support::*;

@@ -1,7 +1,7 @@
 //! Read-only edit previews through the public operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod read_support;
+use crate::read_support;
 use maestro_tools::edit_diff::{Edit, EditDiffResult, compute_edit_diff, compute_edits_diff};
 use read_support::{TempDir, isolated, run};
 use serde::Deserialize;

@@ -1,8 +1,8 @@
 //! Ownership, forwarding and settlement of observable raw operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Shared controlled model and task fixtures.
-pub mod support;
+use crate::maestro_proxy_stream::child_process;
+use crate::support;
 use maestro_agent::{AgentEvent, AgentLoopOptions, AgentMessage, agent_loop, agent_loop_continue};
 use maestro_models::{AssistantMessageEventStream, Cancellation, EventStream, StopReason};
 use std::{
@@ -450,16 +450,15 @@ fn maestro_raw_failure_reports_without_finishing_stream() {
         failure_child();
         return;
     }
+    let test =
+        child_process::selector("maestro_raw_failure_reports_without_finishing_stream").unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "maestro_raw_failure_reports_without_finishing_stream",
-            "--nocapture",
-        ])
+        .args(["--exact", &test, "--nocapture"])
         .env("MAESTRO_RAW_FAILURE_CHILD", "1")
         .output()
         .unwrap();
     assert!(output.status.success());
+    child_process::assert_executed(&output, &test);
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
         "transform failure\nconversion failure\nmodel failure\nstop failure\ntransform failure\nconversion failure\nmodel failure\nstop failure\n"

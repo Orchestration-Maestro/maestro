@@ -25,7 +25,7 @@ fn bash_definition_keeps_schema_and_prompt() {
     assert!(tool.render_shell.is_none());
 }
 
-mod agent_shell_support;
+use crate::agent_shell_support;
 use agent_shell_support::cases;
 
 #[test]

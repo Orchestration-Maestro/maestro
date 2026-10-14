@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod display_support;
+use crate::display_support;
 
 use display_support::NoLanguages;
 use futures_util::FutureExt;

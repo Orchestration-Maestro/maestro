@@ -2,7 +2,7 @@
 //! path abbreviation, key hints and result text.
 #![cfg(test)]
 
-mod display_support;
+use crate::display_support;
 
 use display_support::{Env, bind, cases};
 use maestro_agent::AgentToolResult;

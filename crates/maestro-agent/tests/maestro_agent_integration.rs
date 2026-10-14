@@ -1,8 +1,7 @@
 //! Agent scenarios through the registered scripted model adapter.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled public-operation fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{AgentMessage, ThinkingLevel};
 use maestro_models::{
     AssistantContent, FauxAssistantMessageOptions, FauxResponseStep, FauxToolCallOptions,

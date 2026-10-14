@@ -1,8 +1,7 @@
 //! Executable observations behind the Agent guide, run offline with controlled adapters.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled public-operation fixtures.
-pub mod support;
+use crate::support;
 use futures_util::FutureExt;
 use maestro_agent::{
     Agent, AgentContext, AgentEvent, AgentInitialState, AgentLoopOptions, AgentMessage,

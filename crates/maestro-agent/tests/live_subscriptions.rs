@@ -1,8 +1,7 @@
 //! Live identity-bearing listener membership through public operations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled model and execution fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{AgentEvent, AgentListener, AgentMessage, Subscription};
 use std::sync::{Arc, Mutex};
 use support::owned::{agent, input};

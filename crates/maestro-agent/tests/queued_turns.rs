@@ -1,8 +1,7 @@
 //! Public queue policy at conversation boundaries.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled public-operation fixtures.
-pub mod support;
+use crate::support;
 
 /// Complete recorded queue decisions through public operations.
 #[test]

@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod display_support;
-mod read_support;
-mod write_support;
+use crate::display_support;
+use crate::read_support;
+use crate::write_support;
 
 use display_support::{
     Env, Probe, Setup, WIDTH, bind, context, native_highlighter, padded, palette_of, unstyled_blank,

@@ -1,6 +1,6 @@
 //! Public numbered diff rendering witnesses.
-mod diff_support;
-mod display_support;
+use crate::diff_support;
+use crate::display_support;
 
 #[test]
 fn diff_raw_lines_preserve_framing() {

@@ -378,7 +378,7 @@ model local shadowing, expand macros, infer receiver types, resolve arbitrary
 re-exports/function values or evaluate compound configurations; those forms and
 sleep-based watchdogs require source review.
 
-Integration tests in `maestro-models` and `maestro-tui` share `tests/integration.rs`. Add new
+Integration tests in `maestro-agent`, `maestro-models`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support
 modules stay in their existing directories. When top-level integration-test
 sources exist, the conventions check requires `autotests = false` and one

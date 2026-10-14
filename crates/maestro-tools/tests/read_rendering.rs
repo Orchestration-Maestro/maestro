@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod display_support;
+use crate::display_support;
 
 use display_support::{
     Env, Probe, Setup, WIDTH, assert_rows, bare_theme, bind, cases, check_rows, context,
@@ -603,23 +603,11 @@ fn documentation_paths_respect_windows_roots_and_separators() {
 #[cfg(unix)]
 #[test]
 fn classification_reads_the_process_directory_only_for_operands_that_need_it() {
-    const CHILD: &str = "MAESTRO_READ_RENDER_CHILD";
-    if std::env::var_os(CHILD).is_none() {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "classification_reads_the_process_directory_only_for_operands_that_need_it",
-                "--nocapture",
-            ])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
+    if !crate::read_support::isolated(
+        "classification_reads_the_process_directory_only_for_operands_that_need_it",
+        "gone",
+        &[],
+    ) {
         return;
     }
     let parent = std::env::temp_dir().join(format!("maestro-render-gone-{}", std::process::id()));

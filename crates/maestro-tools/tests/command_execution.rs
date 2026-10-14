@@ -1,7 +1,7 @@
 //! Explicit command execution observed through its public operation.
 #![cfg(test)]
 #![cfg(unix)]
-mod process_support;
+use crate::process_support;
 
 use maestro_models::Cancellation;
 use maestro_tools::{ExecOptions, ExecResult, exec_command};

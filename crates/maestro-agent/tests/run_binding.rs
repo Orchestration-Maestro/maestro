@@ -1,8 +1,7 @@
 //! Captured run inputs and shared model identity.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled model and execution fixtures.
-pub mod support;
+use crate::support;
 use maestro_models::AssistantMessageEventStream;
 use std::sync::{Arc, RwLock};
 use tokio::sync::Notify;
@@ -63,7 +62,8 @@ fn captured_model_edits_survive_slot_replacement() {
 /// Execute the controlled public operation.
 async fn captured_model_edits_survive_slot_replacement_case() {
     let (agent, tasks) = support::owned::agent();
-    let captured = agent.state().read().unwrap().model.clone();
+    let captured = Arc::new(RwLock::new(support::model()));
+    agent.state().write().unwrap().model = Arc::clone(&captured);
     *agent.stream_fn.write().unwrap() = Some(Arc::new(|model, _, _, _| {
         assert_eq!(model.id, "captured-edited");
         support::ready(Err(support::owned::failure("original\nerror")))

@@ -1,8 +1,7 @@
 //! Continuation through the public conversation owner.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled public-operation fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{Agent, AgentMessage};
 use std::sync::Arc;
 
