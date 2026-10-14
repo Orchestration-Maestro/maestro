@@ -5,6 +5,7 @@ use super::{
     display_support::{self as display, Env, Setup},
     edit_render_support::Case,
 };
+use maestro_tools::output::render_utils::ToolRenderResultLike;
 use maestro_tools::{BashToolOptions, create_bash_tool_definition};
 use serde::Deserialize;
 use serde_json::Value;
@@ -106,7 +107,7 @@ fn bash_call_formats_partial_arguments() {
         assert_eq!(input.len(), 2);
         let args = &case.input["args"];
         let ctx = display::context(args, &setup(), &env, None);
-        let component = tool.render_call.as_ref().unwrap()(args, &env.theme, &ctx).unwrap();
+        let component = tool.render_call.as_ref().unwrap()(Some(args), &env.theme, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(
                 component.render(usize::try_from(case.input["width"].as_u64().unwrap()).unwrap())
@@ -135,7 +136,7 @@ fn bash_elapsed_uses_one_decimal_seconds() {
             result.unwrap();
         }
         let ctx = display::context(&args, &setup, &env, None);
-        tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+        tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
         let delta = case.input["ms"].as_u64().unwrap();
         // A fractional origin at 50 ms rejects truncating after subtraction.
         let fraction = if delta == 50 { 1 } else { 999 };
@@ -146,11 +147,11 @@ fn bash_elapsed_uses_one_decimal_seconds() {
             result.unwrap();
         }
         let row = tool.render_result.as_ref().unwrap()(
-            &maestro_agent::AgentToolResult {
+            &ToolRenderResultLike::from(&maestro_agent::AgentToolResult {
                 content: vec![],
                 details: None,
                 terminate: None,
-            },
+            }),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -299,12 +300,12 @@ fn result_case(case: &Case) -> Vec<String> {
     if let Some(start) = input.state.started_at {
         advance(&env, start);
         ctx.phase.execution_started = true;
-        tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+        tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
     }
     if let Some(end) = input.state.ended_at {
         advance(&env, end);
         tool.render_result.as_ref().unwrap()(
-            &empty(),
+            &ToolRenderResultLike::from(&empty()),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -316,7 +317,7 @@ fn result_case(case: &Case) -> Vec<String> {
     }
     advance(&env, input.now.unwrap_or(10000));
     let row = tool.render_result.as_ref().unwrap()(
-        &input.result.native(),
+        &ToolRenderResultLike::from(&input.result.native()),
         maestro_tools::ToolRenderResultOptions {
             expanded: input.expanded,
             is_partial: input.partial,
@@ -451,7 +452,7 @@ fn timeline_case(case: Case) {
                 observed_end = None;
             }
             ctx.last_component = call.clone();
-            let next = tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+            let next = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
             frame(&expected[index], "call", call.as_ref(), &next, 40);
             call = Some(next);
             index += 1;
@@ -464,7 +465,7 @@ fn timeline_case(case: Case) {
             }
             ctx.last_component = result.clone();
             let next = tool.render_result.as_ref().unwrap()(
-                &record.native(),
+                &ToolRenderResultLike::from(&record.native()),
                 maestro_tools::ToolRenderResultOptions {
                     expanded: false,
                     is_partial: partial,
@@ -585,7 +586,7 @@ fn bash_result_cache_tracks_content_width_and_expansion() {
                 != Some((input.text.as_str(), input.expanded))
             {
                 let next = tool.render_result.as_ref().unwrap()(
-                    &text_result(&input.text),
+                    &ToolRenderResultLike::from(&text_result(&input.text)),
                     maestro_tools::ToolRenderResultOptions {
                         expanded: input.expanded,
                         is_partial: false,
@@ -626,7 +627,7 @@ fn bash_renderers_read_the_published_theme() {
         let mut ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
         let decoy = display::bare_theme();
-        let original = tool.render_call.as_ref().unwrap()(&args, &decoy, &ctx).unwrap();
+        let original = tool.render_call.as_ref().unwrap()(Some(&args), &decoy, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(original.render(30)).unwrap(),
             case.expected["original"]
@@ -635,13 +636,13 @@ fn bash_renderers_read_the_published_theme() {
             .set_theme_instance(std::rc::Rc::clone(&self::env(20).theme))
             .unwrap();
         ctx.last_component = Some(original);
-        let replacement = tool.render_call.as_ref().unwrap()(&args, &decoy, &ctx).unwrap();
+        let replacement = tool.render_call.as_ref().unwrap()(Some(&args), &decoy, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(replacement.render(30)).unwrap(),
             case.expected["replacement"]
         );
         let result = tool.render_result.as_ref().unwrap()(
-            &text_result("live"),
+            &ToolRenderResultLike::from(&text_result("live")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -678,11 +679,11 @@ fn bash_renderers_reuse_matching_components() {
             Some(Rc::new(maestro_tui::Container::new())),
         );
         let tool = definition();
-        let first = tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+        let first = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
         assert!(!Rc::ptr_eq(ctx.last_component.as_ref().unwrap(), &first));
         ctx.last_component = Some(Rc::clone(&first));
         let second = tool.render_call.as_ref().unwrap()(
-            &serde_json::json!({"command":"second"}),
+            Some(&serde_json::json!({"command":"second"})),
             &env.theme,
             &ctx,
         )
@@ -700,14 +701,15 @@ fn bash_renderers_reuse_matching_components() {
             expanded: false,
             is_partial: false,
         };
-        let first =
-            tool.render_result.as_ref().unwrap()(&text_result("old"), options, &env.theme, &ctx)
-                .unwrap();
+        let render = tool.render_result.as_ref().unwrap();
+        let old = text_result("old");
+        let old = ToolRenderResultLike::from(&old);
+        let first = render(&old, options, &env.theme, &ctx).unwrap();
         assert!(!Rc::ptr_eq(ctx.last_component.as_ref().unwrap(), &first));
         ctx.last_component = Some(Rc::clone(&first));
-        let second =
-            tool.render_result.as_ref().unwrap()(&text_result("new"), options, &env.theme, &ctx)
-                .unwrap();
+        let new = text_result("new");
+        let new = ToolRenderResultLike::from(&new);
+        let second = render(&new, options, &env.theme, &ctx).unwrap();
         assert_eq!(
             Value::Bool(Rc::ptr_eq(&first, &second)),
             case.expected["resultSame"]
@@ -732,7 +734,7 @@ fn bash_expand_hint_changes_on_retained_render() {
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
         let row = tool.render_result.as_ref().unwrap()(
-            &text_result("1\n2\n3\n4\n5\n6"),
+            &ToolRenderResultLike::from(&text_result("1\n2\n3\n4\n5\n6")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -804,9 +806,9 @@ fn bash_dropped_row_releases_refresh() {
             notifications.set(notifications.get() + 1);
         });
         let tool = definition();
-        let call = tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
         let row = tool.render_result.as_ref().unwrap()(
-            &text_result("running"),
+            &ToolRenderResultLike::from(&text_result("running")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: true,
@@ -870,7 +872,7 @@ fn bash_default_themes_keep_role_colors() {
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
         advance(&env, 9000);
-        let call = tool.render_call.as_ref().unwrap()(&args, &env.theme, &ctx).unwrap();
+        let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
         assert_eq!(
             serde_json::to_value(call.render(input.width)).unwrap(),
             case.expected["header"]
@@ -891,7 +893,7 @@ fn bash_default_themes_keep_role_colors() {
             )),
         });
         let row = tool.render_result.as_ref().unwrap()(
-            &result,
+            &ToolRenderResultLike::from(&result),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
