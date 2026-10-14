@@ -70,6 +70,11 @@ pub use maestro_catalog::{
 pub use maestro_models::models_are_equal;
 pub use maestro_settings::SettingsManager;
 
+pub use browser::storage::{
+    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, CustomProvidersStore,
+    IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
+    StorageBackend, StorageTransaction, Store, StoreConfig,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_resources::NativeResourceOperations;
 pub use maestro_resources::{

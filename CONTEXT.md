@@ -87,6 +87,10 @@ are later scope, not active foundation concepts.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
 - **AuthStorage:** The owner of accepted stored credentials, their ordered listing, drainable errors and per-provider persistence through a replaceable raw-text backend, plus request key selection, OAuth login and locked token refresh; the [credentials documentation](docs/credentials.md) describes them, and the provider registry and refresh operation belong to the [OAuth documentation](docs/models/oauth.md).
 
+- **Browser store**: application-owned policy for a named collection behind an injected
+  multi-collection backend; distinct from native raw-byte storage. See
+  [browser collection storage](docs/application/browser-storage.md).
+
 ### Extensibility
 
 - **Extension:** Admitted behavior that owns declared capabilities.

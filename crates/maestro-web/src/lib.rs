@@ -18,3 +18,9 @@ pub use maestro_app::browser::utils::attachment_utils::{Attachment, load_attachm
 pub use maestro_app::browser::utils::proxy_utils::{
     apply_proxy_if_needed, create_stream_fn, is_cors_error, should_use_proxy_for_provider,
 };
+
+pub use maestro_app::{
+    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, CustomProvidersStore,
+    IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
+    StorageBackend, StorageTransaction, Store, StoreConfig,
+};
