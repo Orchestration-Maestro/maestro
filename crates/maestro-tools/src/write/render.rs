@@ -3,7 +3,7 @@
 use super::highlight::{HighlightCache, language_of, rebuild, rows, update};
 use crate::{
     output::{
-        render_parts::{expand_hint, into_text, paint},
+        render_parts::{downcast, expand_hint, into_text, paint},
         render_utils::{
             PREVIEW_LINES, normalize_display_text, path_display, replace_tabs, selected_path, str,
             without_trailing_empty,
@@ -16,7 +16,7 @@ use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
 use serde_json::Value;
-use std::{any::Any, borrow::Cow, cell::RefCell, rc::Rc};
+use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
 /// Result of a render step.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
@@ -37,12 +37,6 @@ impl Component for WriteCall {
     fn invalidate(&self) {
         self.text.invalidate();
     }
-}
-
-/// The component as a `T`, sharing it, when it is one.
-fn downcast<T: Any>(handle: &ComponentHandle) -> Option<Rc<T>> {
-    let any: Rc<dyn Any> = Rc::<dyn Component>::clone(handle);
-    any.downcast::<T>().ok()
 }
 
 /// The row's previous component when it is a write call, otherwise a new one.

@@ -1,0 +1,2370 @@
+{
+  "colors": {
+    "toolTitle": 1,
+    "accent": 2,
+    "toolOutput": 3,
+    "error": 4,
+    "toolDiffContext": 5,
+    "toolDiffRemoved": 6,
+    "toolDiffAdded": 7
+  },
+  "backgrounds": {
+    "toolPendingBg": 11,
+    "toolSuccessBg": 12,
+    "toolErrorBg": 13
+  },
+  "cases": [
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": null,
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {},
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": [],
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": ""
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": null
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": 8
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "file_path": "alias"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": "alias"
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": null,
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": "alias"
+      },
+      "expected": {
+        "path": "alias",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": 9,
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": "alias"
+      },
+      "expected": {
+        "path": "alias",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": "alias"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": ""
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "file_path": null
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "oldText": "",
+        "newText": ""
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "",
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": []
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [],
+        "oldText": "a",
+        "newText": "b"
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "a",
+            "newText": "b"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": "[{\"oldText\":\"a\",\"newText\":\"b\"}]"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          },
+          {
+            "oldText": "c"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          null
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          4
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": 1,
+            "newText": "b"
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "a",
+            "newText": null
+          }
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ],
+        "oldText": "legacy",
+        "newText": "other"
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          null
+        ],
+        "oldText": "legacy",
+        "newText": "other"
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "legacy",
+            "newText": "other"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "",
+            "newText": ""
+          }
+        ]
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "",
+            "newText": ""
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "z",
+            "newText": "Z"
+          },
+          {
+            "oldText": "a",
+            "newText": "A"
+          },
+          {
+            "oldText": "z",
+            "newText": "Z"
+          }
+        ]
+      },
+      "expected": {
+        "path": "file",
+        "edits": [
+          {
+            "oldText": "z",
+            "newText": "Z"
+          },
+          {
+            "oldText": "a",
+            "newText": "A"
+          },
+          {
+            "oldText": "z",
+            "newText": "Z"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "file_path": "alias",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "expected": {
+        "path": "alias",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "edits": [
+          [
+            "a",
+            "b"
+          ]
+        ]
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "oldText": "a"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "newText": "b"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "file",
+        "oldText": 1,
+        "newText": "b"
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": " ",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "expected": {
+        "path": " ",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "﻿",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "expected": {
+        "path": "﻿",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_preview_selects_complete_inputs",
+      "op": "select",
+      "input": {
+        "path": "",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      },
+      "expected": {
+        "path": "",
+        "edits": [
+          {
+            "oldText": "alpha",
+            "newText": "beta"
+          }
+        ]
+      }
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {},
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": null
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": 4
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;4m[invalid arg]\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": ""
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "file"
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "file",
+        "file_path": "alias"
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2malias\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "file",
+        "file_path": null
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "file",
+        "file_path": ""
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;3m...\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "file",
+        "file_path": 4
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;4m[invalid arg]\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "a\tb"
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2ma\tb\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "a\r\nb"
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2ma\r\nb\u001b[39m"
+    },
+    {
+      "test": "edit_title_uses_display_alias_precedence",
+      "op": "title",
+      "input": {
+        "path": "a﻿bc"
+      },
+      "expected": "\u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2ma﻿bc\u001b[39m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": null,
+        "settled": false
+      },
+      "expected": "\u001b[48;5;11mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": null,
+        "settled": true
+      },
+      "expected": "\u001b[48;5;13mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "settled": false
+      },
+      "expected": "\u001b[48;5;12mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "settled": true
+      },
+      "expected": "\u001b[48;5;12mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "diff": "",
+          "firstChangedLine": 0
+        },
+        "settled": false
+      },
+      "expected": "\u001b[48;5;12mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "diff": "",
+          "firstChangedLine": 0
+        },
+        "settled": true
+      },
+      "expected": "\u001b[48;5;12mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "settled": false
+      },
+      "expected": "\u001b[48;5;13mROW\u001b[49m"
+    },
+    {
+      "test": "edit_header_selects_preview_before_settled_error",
+      "op": "background",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "settled": true
+      },
+      "expected": "\u001b[48;5;13mROW\u001b[49m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": []
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": []
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": []
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "preview failed"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mpreview failed\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "preview failed"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "preview failed"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mpreview failed\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mz\na\nz\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mz\na\nz\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "z"
+            },
+            {
+              "type": "image",
+              "data": "x",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "a"
+            },
+            {
+              "type": "text",
+              "text": "z"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mz\na\nz\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first\r\nsecond\tend\u001b[31mred\u001b[39m"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mfirst\r\nsecond\tend\u001b[31mred\u001b[39m\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first\r\nsecond\tend\u001b[31mred\u001b[39m"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mfirst\r\nsecond\tend\u001b[31mred\u001b[39m\u001b[39m"
+    },
+    {
+      "test": "edit_result_errors_keep_text_order_and_suppress_duplicates",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first\r\nsecond\tend\u001b[31mred\u001b[39m"
+            }
+          ]
+        },
+        "isError": true
+      },
+      "expected": "\u001b[38;5;4mfirst\r\nsecond\tend\u001b[31mred\u001b[39m\u001b[39m"
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": null
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": null
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": null
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": ""
+          }
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": ""
+          }
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": ""
+          }
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "isError": false
+      },
+      "expected": "\u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m"
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "isError": false
+      },
+      "expected": null
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "isError": false
+      },
+      "expected": "\u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m"
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": null,
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 left\n+1 right",
+            "firstChangedLine": 7
+          }
+        },
+        "isError": false
+      },
+      "expected": "\u001b[38;5;6m-1 \u001b[7mleft\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mright\u001b[27m\u001b[39m"
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 left\n+1 right",
+            "firstChangedLine": 7
+          }
+        },
+        "isError": false
+      },
+      "expected": "\u001b[38;5;6m-1 \u001b[7mleft\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mright\u001b[27m\u001b[39m"
+    },
+    {
+      "test": "edit_result_success_only_emits_a_distinct_nonempty_diff",
+      "op": "result",
+      "input": {
+        "preview": {
+          "error": "preview failed"
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 left\n+1 right",
+            "firstChangedLine": 7
+          }
+        },
+        "isError": false
+      },
+      "expected": "\u001b[38;5;6m-1 \u001b[7mleft\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mright\u001b[27m\u001b[39m"
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "diff": "-1 alpha\n+1 beta"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "error": "preview failed"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "preview failed"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": null,
+        "next": {
+          "error": "other error"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "other error"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": false,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "error": "preview failed"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "preview failed"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "next": {
+          "error": "other error"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "other error"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta"
+        }
+      },
+      "expected": {
+        "changed": false,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "error": "preview failed"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "preview failed"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "next": {
+          "error": "other error"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "other error"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 2
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "diff": "-1 alpha\n+1 beta"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 alpha\n+1 beta"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "diff": "-1 other\n+1 next",
+          "firstChangedLine": 1
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "error": "preview failed"
+        }
+      },
+      "expected": {
+        "changed": false,
+        "preview": {
+          "error": "preview failed"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_preview_changes_compare_variant_text_and_first_line",
+      "op": "set",
+      "input": {
+        "old": {
+          "error": "preview failed"
+        },
+        "next": {
+          "error": "other error"
+        }
+      },
+      "expected": {
+        "changed": true,
+        "preview": {
+          "error": "other error"
+        },
+        "pending": false
+      }
+    },
+    {
+      "test": "edit_box_layout_keeps_padding_and_preview_spacing",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "file"
+        },
+        "preview": null,
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;5;11m                                        \u001b[49m",
+        "\u001b[48;5;11m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;5;11m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_keeps_padding_and_preview_spacing",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "diff": "-1 alpha\n+1 beta",
+          "firstChangedLine": 1
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;5;12m                                        \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;5;12m                                        \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m                               \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                \u001b[49m",
+        "\u001b[48;5;12m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_keeps_padding_and_preview_spacing",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "diff": ""
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;5;12m                                        \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;5;12m                                        \u001b[49m",
+        "\u001b[48;5;12m                                        \u001b[49m",
+        "\u001b[48;5;12m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_keeps_padding_and_preview_spacing",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "error": ""
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;5;13m                                        \u001b[49m",
+        "\u001b[48;5;13m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;5;13m                                        \u001b[49m",
+        "\u001b[48;5;13m                                        \u001b[49m",
+        "\u001b[48;5;13m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_keeps_padding_and_preview_spacing",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "error": "preview failed"
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;5;13m                                        \u001b[49m",
+        "\u001b[48;5;13m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;5;13m                                        \u001b[49m",
+        "\u001b[48;5;13m \u001b[38;5;4mpreview failed\u001b[39m                         \u001b[49m",
+        "\u001b[48;5;13m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_wraps_through_existing_widgets",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "a/long/file-name.txt"
+        },
+        "preview": {
+          "diff": "-1 old text\n+1 new text",
+          "firstChangedLine": 1
+        },
+        "width": 20
+      },
+      "expected": [
+        "\u001b[48;5;12m                    \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m               \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;2ma/long/file-name.t \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;2mxt\u001b[39m                 \u001b[49m",
+        "\u001b[48;5;12m                    \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;6m-1 \u001b[7mold\u001b[27m text\u001b[39m        \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;7m+1 \u001b[7mnew\u001b[27m text\u001b[39m        \u001b[49m",
+        "\u001b[48;5;12m                    \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_box_layout_wraps_through_existing_widgets",
+      "op": "box",
+      "input": {
+        "args": {
+          "path": "a/long/file-name.txt"
+        },
+        "preview": {
+          "diff": "-1 old text\n+1 new text",
+          "firstChangedLine": 1
+        },
+        "width": 80
+      },
+      "expected": [
+        "\u001b[48;5;12m                                                                                \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;1m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;2ma/long/file-name.txt\u001b[39m                                                      \u001b[49m",
+        "\u001b[48;5;12m                                                                                \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;6m-1 \u001b[7mold\u001b[27m text\u001b[39m                                                                    \u001b[49m",
+        "\u001b[48;5;12m \u001b[38;5;7m+1 \u001b[7mnew\u001b[27m text\u001b[39m                                                                    \u001b[49m",
+        "\u001b[48;5;12m                                                                                \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_result_without_call_renders_detached_output",
+      "op": "detached",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "context": {
+          "expanded": true,
+          "isPartial": true
+        }
+      },
+      "expected": [
+        "",
+        " \u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m                               ",
+        " \u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                "
+      ]
+    },
+    {
+      "test": "edit_result_without_call_renders_detached_output",
+      "op": "detached",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": true
+        },
+        "context": {
+          "expanded": true,
+          "isPartial": false
+        }
+      },
+      "expected": [
+        "",
+        " \u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m                               ",
+        " \u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                "
+      ]
+    },
+    {
+      "test": "edit_result_without_call_renders_detached_output",
+      "op": "detached",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "context": {
+          "expanded": false,
+          "isPartial": true
+        }
+      },
+      "expected": [
+        "",
+        " \u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m                               ",
+        " \u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                "
+      ]
+    },
+    {
+      "test": "edit_result_without_call_renders_detached_output",
+      "op": "detached",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "options": {
+          "expanded": true,
+          "isPartial": true
+        },
+        "context": {
+          "expanded": false,
+          "isPartial": false
+        }
+      },
+      "expected": [
+        "",
+        " \u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m                               ",
+        " \u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                "
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#D9A066",
+          "toolOutput": "#D9A066",
+          "error": "#FF6A1A",
+          "toolDiffContext": "#D9A066",
+          "toolDiffRemoved": "#FF6A1A",
+          "toolDiffAdded": "#FF6A1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#2A1F1A",
+          "toolSuccessBg": "#2A1F1A",
+          "toolErrorBg": "#2A1F1A"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": null,
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;217;160;102mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#D9A066",
+          "toolOutput": "#D9A066",
+          "error": "#FF6A1A",
+          "toolDiffContext": "#D9A066",
+          "toolDiffRemoved": "#FF6A1A",
+          "toolDiffAdded": "#FF6A1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#2A1F1A",
+          "toolSuccessBg": "#2A1F1A",
+          "toolErrorBg": "#2A1F1A"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "diff": "-1 alpha\n+1 beta\n 2 keep",
+          "firstChangedLine": 1
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;217;160;102mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;255;106;26m-1 \u001b[7malpha\u001b[27m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;255;106;26m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m 2 keep\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#D9A066",
+          "toolOutput": "#D9A066",
+          "error": "#FF6A1A",
+          "toolDiffContext": "#D9A066",
+          "toolDiffRemoved": "#FF6A1A",
+          "toolDiffAdded": "#FF6A1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#2A1F1A",
+          "toolSuccessBg": "#2A1F1A",
+          "toolErrorBg": "#2A1F1A"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "error": "preview failed"
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;217;160;102mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;255;106;26mpreview failed\u001b[39m                         \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#2A1F1A",
+          "toolOutput": "#2A1F1A",
+          "error": "#2A1F1A",
+          "toolDiffContext": "#2A1F1A",
+          "toolDiffRemoved": "#2A1F1A",
+          "toolDiffAdded": "#2A1F1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#F2E8DC",
+          "toolSuccessBg": "#F2E8DC",
+          "toolErrorBg": "#F2E8DC"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": null,
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;42;31;26mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#2A1F1A",
+          "toolOutput": "#2A1F1A",
+          "error": "#2A1F1A",
+          "toolDiffContext": "#2A1F1A",
+          "toolDiffRemoved": "#2A1F1A",
+          "toolDiffAdded": "#2A1F1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#F2E8DC",
+          "toolSuccessBg": "#F2E8DC",
+          "toolErrorBg": "#F2E8DC"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "diff": "-1 alpha\n+1 beta\n 2 keep",
+          "firstChangedLine": 1
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;42;31;26mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m-1 \u001b[7malpha\u001b[27m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m+1 \u001b[7mbeta\u001b[27m\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m 2 keep\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "brand",
+      "input": {
+        "colors": {
+          "toolTitle": "",
+          "accent": "#2A1F1A",
+          "toolOutput": "#2A1F1A",
+          "error": "#2A1F1A",
+          "toolDiffContext": "#2A1F1A",
+          "toolDiffRemoved": "#2A1F1A",
+          "toolDiffAdded": "#2A1F1A"
+        },
+        "backgrounds": {
+          "toolPendingBg": "#F2E8DC",
+          "toolSuccessBg": "#F2E8DC",
+          "toolErrorBg": "#F2E8DC"
+        },
+        "args": {
+          "path": "file"
+        },
+        "preview": {
+          "error": "preview failed"
+        },
+        "width": 40
+      },
+      "expected": [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[39m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;2;42;31;26mfile\u001b[39m                              \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26mpreview failed\u001b[39m                         \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    },
+    {
+      "test": "edit_theme_replacement_updates_background_and_rebuilt_text",
+      "op": "theme_routes",
+      "input": {
+        "args": {
+          "path": "file",
+          "edits": [
+            {
+              "oldText": "alpha",
+              "newText": "beta"
+            }
+          ]
+        },
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully replaced 1 block(s) in file."
+            }
+          ],
+          "details": {
+            "diff": "-1 alpha\n+1 beta",
+            "firstChangedLine": 1
+          }
+        },
+        "titleColors": {
+          "toolTitle": 41,
+          "accent": 42,
+          "toolOutput": 43,
+          "error": 44,
+          "toolDiffContext": 45,
+          "toolDiffRemoved": 46,
+          "toolDiffAdded": 47
+        }
+      },
+      "expected": {
+        "title": "\u001b[38;5;41m\u001b[1medit\u001b[22m\u001b[39m \u001b[38;5;42mfile\u001b[39m",
+        "diff": "\u001b[38;5;6m-1 \u001b[7malpha\u001b[27m\u001b[39m\n\u001b[38;5;7m+1 \u001b[7mbeta\u001b[27m\u001b[39m"
+      }
+    }
+  ]
+}

@@ -89,7 +89,7 @@ fn edit_definition_keeps_schema_and_prompt_metadata() {
     let row = rows("edit_definition_keeps_schema_and_prompt_metadata").remove(0);
     assert_eq!(row.input, serde_json::json!({}));
     assert_eq!(tool.render_shell, Some(ToolRenderShell::SelfRendered));
-    assert!(tool.render_call.is_none() && tool.render_result.is_none());
+    assert!(tool.render_call.is_some() && tool.render_result.is_some());
     assert_eq!(
         serde_json::json!({
             "name": tool.definition.name, "label": tool.label,

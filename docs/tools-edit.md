@@ -2,8 +2,8 @@
 
 `maestro-tools` delivers the native `write` and `edit` tools, the file mutation queue,
 original-snapshot edit matching, numbered diffs and read-only edit previews.
-The portable shared diff renderer is available separately; retained edit previews
-continue in [#897](https://github.com/Orchestration-Maestro/maestro/issues/897).
+The portable shared diff renderer is available separately. Native edit definitions
+retain boxed call previews and a separate result component.
 
 The `write` and `edit` modules, the queue and `edit_diff` are native-only and
 excluded from browser builds, which still build the portable tool definitions.
@@ -86,7 +86,31 @@ text for a failure. Display strings, tab expansion and key hints follow the
 native definition; `create_edit_tool` wraps it without caller context. Required
 arguments are `path` and `edits`, an array of `{ "oldText": "…", "newText": "…" }`
 replacements. Both object levels reject additional properties during shared
-validation. There are no rendering callbacks yet.
+validation. Both rendering callbacks share an opaque `EditRenderState`.
+
+### Retained edit rendering
+
+The call renderer prefers its previous edit component, otherwise the component in
+row state, otherwise a new padded box. Complete preview inputs use the render
+context's working directory and supplied [terminal runtime](terminal/rendering.md),
+not the definition's execution operations. Preview selection accepts an ordered
+nonempty array of string pairs, or a complete top-level string pair; it does not
+run argument preparation. Display aliases follow the [display helpers](tools-read.md#display-helpers).
+
+Only the current outstanding preview may publish; any result revokes that request.
+A successful result with details rebuilds an existing call preview when its diff
+or first changed line changes, without requiring complete arguments or a file
+read. An execution error does not erase an existing preview. Results suppress
+ordinary success text and duplicate preview text; detached results reuse their
+own container. Diff styling belongs to the [diff renderer](#diff-rendering) and
+padding and wrapping belong to the [terminal components](terminal/components.md).
+
+The supplied runtime owns preview futures. The invalidator must not strongly
+retain its owning runtime or writer; use a weak render request and weak row
+ownership. Dropping the last call component prevents its pending preview from
+publishing or requesting a redraw.
+
+### Preparation and execution
 
 Preparation parses string-valued `edits` in the retained call only when the JSON
 result is an array. A complete top-level string pair `oldText`/`newText` is

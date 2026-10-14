@@ -2,6 +2,9 @@
 #![cfg(test)]
 #![allow(dead_code)] // each test binary uses a different part of these helpers
 
+#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
+pub mod manual_runtime;
+
 use maestro_agent::AgentToolResult;
 use maestro_models::UserBlock;
 use maestro_theme::{
@@ -359,6 +362,8 @@ impl Drop for Bindings {
 
 /// The collaborators a renderer receives besides its arguments.
 pub struct Env {
+    /// Controlled terminal runtime.
+    pub runtime: Rc<manual_runtime::ManualRuntime>,
     /// Owner of the published theme.
     pub state: Rc<ThemeState>,
     /// The published theme's handle.
@@ -394,6 +399,7 @@ impl Env {
         state.set_theme_instance(Rc::clone(&theme)).unwrap();
         let live = state.theme();
         Self {
+            runtime: Rc::new(manual_runtime::ManualRuntime::default()),
             state,
             live,
             theme,
@@ -477,12 +483,12 @@ impl Setup {
 }
 
 /// A render context over `args` for the recorded setup.
-pub fn context<'a>(
+pub fn context<'a, S: Default>(
     args: &'a Value,
     setup: &Setup,
     env: &Env,
     last: Option<ComponentHandle>,
-) -> ToolRenderContext<'a> {
+) -> ToolRenderContext<'a, S> {
     env.terminal.set_capabilities(TerminalCapabilities {
         images: setup.images,
         true_color: true,
@@ -492,8 +498,9 @@ pub fn context<'a>(
         args,
         tool_call_id: "call".into(),
         invalidate: Rc::new(|| {}),
+        runtime: env.runtime.clone(),
         last_component: last,
-        state: Rc::new(RefCell::new(Value::Null)),
+        state: Rc::new(RefCell::new(S::default())),
         cwd: setup.cwd.clone(),
         phase: setup.phase,
         expanded: setup.expanded,
