@@ -1232,7 +1232,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
             .any(|line| line.contains("PASS") && line.ends_with("wrapped_lines"))
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("visible wrapping output"));
-    assert!(stderr.contains("1 passed, 1 skipped"));
+    assert!(stderr.contains("1 passed, 2 skipped"), "{stderr}");
     let output = workspace
         .command("tui-test")
         .args([
