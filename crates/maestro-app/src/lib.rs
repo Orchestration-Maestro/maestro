@@ -37,3 +37,6 @@ pub use maestro_models::{
 };
 pub use maestro_session::messages::{BranchSummaryMessage, CompactionSummaryMessage};
 pub use maestro_text::number_format::LocaleNumberFormat;
+
+/// Agent reasoning levels, including disabled reasoning.
+pub use maestro_agent::ThinkingLevel;

@@ -187,7 +187,7 @@ fn notice(message: &AssistantMessage) -> Option<String> {
         _ => None,
     }
 }
-message_children!(AssistantMessageComponent, Container, container);
+component_children!(AssistantMessageComponent, Container, container);
 impl Component for AssistantMessageComponent {
     fn render(&self, width: usize) -> Vec<String> {
         let lines = self.container.render(width);

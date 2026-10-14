@@ -17,3 +17,11 @@ pub use components::assistant_message::{AssistantMessageComponent, AssistantMess
 pub use components::branch_summary_message::BranchSummaryMessageComponent;
 
 pub use components::compaction_summary_message::CompactionSummaryMessageComponent;
+
+pub use components::thinking_selector::ThinkingSelectorComponent;
+
+pub use components::show_images_selector::ShowImagesSelectorComponent;
+
+pub use components::theme_selector::ThemeSelectorComponent;
+
+pub use components::user_message_selector::UserMessageSelectorComponent;
