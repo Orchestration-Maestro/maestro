@@ -2719,6 +2719,53 @@
             "details": null,
             "isError": true
           }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolName": "custom",
+            "content": []
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": null,
+            "toolName": "custom",
+            "content": []
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "empty-name",
+            "toolName": "",
+            "content": []
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "null-name",
+            "toolName": null,
+            "content": []
+          }
         }
       ],
       "returns": {
@@ -2730,11 +2777,17 @@
           {
             "collapsed": "",
             "expanded": ""
+          },
+          {
+            "collapsed": "empty-name"
+          },
+          {
+            "expanded": "null-name"
           }
         ]
       },
       "expected": {
-        "json": "{\"orphan\":{\"resultHtmlExpanded\":\"orphan\"},\"unnamed\":{},\"err\":{\"resultHtmlCollapsed\":\"\",\"resultHtmlExpanded\":\"\"}}",
+        "json": "{\"orphan\":{\"resultHtmlExpanded\":\"orphan\"},\"unnamed\":{},\"err\":{\"resultHtmlCollapsed\":\"\",\"resultHtmlExpanded\":\"\"},\"empty-name\":{\"resultHtmlCollapsed\":\"empty-name\"},\"null-name\":{\"resultHtmlExpanded\":\"null-name\"}}",
         "calls": [
           {
             "kind": "result",
@@ -2763,10 +2816,10 @@
             "id": "unnamed",
             "name": "",
             "content": [],
+            "isError": false,
             "details": {
               "absent": true
-            },
-            "isError": false
+            }
           },
           {
             "kind": "result",
@@ -2780,6 +2833,26 @@
             ],
             "details": null,
             "isError": true
+          },
+          {
+            "kind": "result",
+            "id": "empty-name",
+            "name": "",
+            "content": [],
+            "isError": false,
+            "details": {
+              "absent": true
+            }
+          },
+          {
+            "kind": "result",
+            "id": "null-name",
+            "name": "",
+            "content": [],
+            "isError": false,
+            "details": {
+              "absent": true
+            }
           }
         ]
       }

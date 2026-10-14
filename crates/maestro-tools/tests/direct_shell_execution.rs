@@ -580,6 +580,21 @@ fn maestro_direct_bash_finishes_after_inherited_pipe_grace() {
             },
         )
         .await;
+        let pid = std::fs::read_to_string(&guard.pid_file)
+            .unwrap()
+            .trim()
+            .parse::<u32>()
+            .unwrap();
+        assert!(pid > 0);
+        let alive = std::process::Command::new("node")
+            .args([
+                "-e",
+                "process.kill(Number(process.argv[1]), 0)",
+                &pid.to_string(),
+            ])
+            .status()
+            .unwrap();
+        assert!(alive.success(), "pipe-holding descendant must remain alive");
         drop(guard);
         let result = result.unwrap();
         assert!(result.output.contains("child-exiting"));
