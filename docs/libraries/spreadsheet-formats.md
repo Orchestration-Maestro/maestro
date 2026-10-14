@@ -10,8 +10,11 @@
 | num-traits | `=0.2.19` | Existing defaults and `std` | Apache-2.0 |
 
 [ryu-js](https://docs.rs/ryu-js/1.0.3/ryu_js/) supplies shortest and fixed numeric
-spelling. General significant/exponential formatting and serial normalization
-share an application-owned decimal adapter.
+spelling. General significant/exponential formatting, serial normalization and
+numeric-pattern scientific/engineering writers share an application-owned decimal
+adapter. Numeric-pattern writers also reuse bounded fraction approximation and
+supplied calendar observations. Their comma/period separators and placeholder
+precision are pattern-defined, not locale-number formatting.
 [chrono::NaiveDate](https://docs.rs/chrono/0.4.45/chrono/struct.NaiveDate.html)
 supplies date-only calendar arithmetic. No clock, timezone or browser-binding
 feature is requested by this application dependency.
