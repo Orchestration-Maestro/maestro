@@ -1,11 +1,61 @@
-//! The service input records a conversation is made of. Every member is optional and absent
-//! members are left out on encoding, so a record holds whatever mix of members a payload hook
-//! returns and an empty one stays `{}`; members a record does not declare are dropped on decoding.
+//! Service input records and declared union selection. Known records omit absent members
+//! and discard undeclared members; unions can select one literal open member instead.
 
 use base64::Engine as _;
 use indexmap::IndexMap;
+use serde::de::{DeserializeOwned, Error as _};
+use serde::ser::SerializeMap as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
+
+/// A typed known record or a selected open union member.
+pub(super) enum Union<T> {
+    /// The known members, including an empty record without fallback.
+    Known(T),
+    /// A literal member name with its document value.
+    Unknown(String, Value),
+}
+
+impl<T> From<T> for Union<T> {
+    fn from(known: T) -> Self {
+        Self::Known(known)
+    }
+}
+
+impl<T: Serialize> Serialize for Union<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Known(known) => known.serialize(serializer),
+            Self::Unknown(name, value) => {
+                let mut member = serializer.serialize_map(Some(1))?;
+                member.serialize_entry(name, value)?;
+                member.end()
+            }
+        }
+    }
+}
+
+impl<'de, T: DeserializeOwned + Serialize> Deserialize<'de> for Union<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let mut members = serde_json::Map::<String, Value>::deserialize(deserializer)?;
+        let candidate = members.shift_remove("$unknown");
+        let known: T = serde_json::from_value(Value::Object(members)).map_err(D::Error::custom)?;
+        let emitted = serde_json::to_value(&known).map_err(D::Error::custom)?;
+        if emitted
+            .as_object()
+            .is_some_and(|members| !members.is_empty())
+        {
+            return Ok(Self::Known(known));
+        }
+        match candidate.filter(|value| !value.is_null()) {
+            Some(candidate) => {
+                let (name, value) = serde_json::from_value(candidate).map_err(D::Error::custom)?;
+                Ok(Self::Unknown(name, value))
+            }
+            None => Ok(Self::Known(known)),
+        }
+    }
+}
 
 /// A list that keeps its present entries, whatever a `null` entry stood for.
 pub(super) fn list<'de, D, T>(deserializer: D) -> Result<Option<Vec<T>>, D::Error>
@@ -79,7 +129,7 @@ pub(super) struct ImageBlock {
     pub(super) format: Option<String>,
     /// The `source` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) source: Option<ImageSource>,
+    pub(super) source: Option<Union<ImageSource>>,
     /// The `error` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) error: Option<ErrorBlock>,
@@ -160,7 +210,7 @@ pub(super) struct ToolResultBlock {
     pub(super) tool_use_id: Option<String>,
     /// The `content` member.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
-    pub(super) content: Option<Vec<ToolResultContentBlock>>,
+    pub(super) content: Option<Vec<Union<ToolResultContentBlock>>>,
     /// The `status` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) status: Option<String>,
@@ -208,13 +258,13 @@ pub(super) struct ContentBlock {
     pub(super) tool_result: Option<ToolResultBlock>,
     /// The `guardContent` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) guard_content: Option<GuardrailConverseContentBlock>,
+    pub(super) guard_content: Option<Union<GuardrailConverseContentBlock>>,
     /// The `cachePoint` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) cache_point: Option<CachePointBlock>,
     /// The `reasoningContent` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) reasoning_content: Option<ReasoningContentBlock>,
+    pub(super) reasoning_content: Option<Union<ReasoningContentBlock>>,
     /// The `citationsContent` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) citations_content: Option<CitationsContentBlock>,
@@ -232,7 +282,7 @@ pub(super) struct SystemContentBlock {
     pub(super) text: Option<String>,
     /// The `guardContent` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) guard_content: Option<GuardrailConverseContentBlock>,
+    pub(super) guard_content: Option<Union<GuardrailConverseContentBlock>>,
     /// The `cachePoint` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) cache_point: Option<CachePointBlock>,
@@ -256,7 +306,7 @@ pub(super) struct ToolSpecification {
     pub(super) name: Option<String>,
     /// The `inputSchema` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) input_schema: Option<ToolInputSchema>,
+    pub(super) input_schema: Option<Union<ToolInputSchema>>,
     /// The `description` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) description: Option<String>,
@@ -315,10 +365,10 @@ pub(super) struct ToolChoiceBlock {
 pub(super) struct ToolConfiguration {
     /// Declared tools.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
-    pub(super) tools: Option<Vec<Tool>>,
+    pub(super) tools: Option<Vec<Union<Tool>>>,
     /// Tool choice.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) tool_choice: Option<ToolChoiceBlock>,
+    pub(super) tool_choice: Option<Union<ToolChoiceBlock>>,
 }
 
 /// The selected members of `S3Location`.
@@ -360,7 +410,7 @@ pub(super) struct DocumentBlock {
     pub(super) name: Option<String>,
     /// The `source` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) source: Option<DocumentSource>,
+    pub(super) source: Option<Union<DocumentSource>>,
     /// The `format` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) format: Option<String>,
@@ -387,7 +437,7 @@ pub(super) struct DocumentSource {
     pub(super) text: Option<String>,
     /// The `content` member.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
-    pub(super) content: Option<Vec<DocumentContentBlock>>,
+    pub(super) content: Option<Vec<Union<DocumentContentBlock>>>,
 }
 
 /// Known fields of `DocumentContentBlock`.
@@ -411,7 +461,7 @@ pub(super) struct VideoBlock {
     pub(super) format: Option<String>,
     /// The `source` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) source: Option<VideoSource>,
+    pub(super) source: Option<Union<VideoSource>>,
 }
 
 /// Known fields of `VideoSource`.
@@ -426,7 +476,7 @@ pub(super) struct AudioBlock {
     pub(super) format: Option<String>,
     /// The `source` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) source: Option<AudioSource>,
+    pub(super) source: Option<Union<AudioSource>>,
     /// The `error` member.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) error: Option<ErrorBlock>,
@@ -489,7 +539,7 @@ pub(super) struct GuardrailConverseImageBlock {
     pub(super) format: Option<String>,
     /// The `source` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) source: Option<GuardrailConverseImageSource>,
+    pub(super) source: Option<Union<GuardrailConverseImageSource>>,
 }
 
 /// The selected members of `GuardrailConverseImageSource`.
@@ -507,7 +557,7 @@ pub(super) struct GuardrailConverseImageSource {
 pub(super) struct CitationsContentBlock {
     /// The `content` member.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
-    pub(super) content: Option<Vec<CitationGeneratedContent>>,
+    pub(super) content: Option<Vec<Union<CitationGeneratedContent>>>,
     /// The `citations` member.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
     pub(super) citations: Option<Vec<Citation>>,
@@ -528,10 +578,10 @@ pub(super) struct Citation {
     pub(super) source: Option<String>,
     /// The `sourceContent` member.
     #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "list")]
-    pub(super) source_content: Option<Vec<CitationSourceContent>>,
+    pub(super) source_content: Option<Vec<Union<CitationSourceContent>>>,
     /// The `location` member.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) location: Option<CitationLocation>,
+    pub(super) location: Option<Union<CitationLocation>>,
 }
 
 /// Known fields of `CitationSourceContent`.
@@ -608,3 +658,6 @@ pub(super) struct SearchResultLocation {
 
 /// Known fields of `SystemTool`.
 pub(super) type SystemTool = NamedToolChoice;
+
+/// Known fields of `PromptVariableValues`.
+pub(super) type PromptVariableValues = TextBlock;
