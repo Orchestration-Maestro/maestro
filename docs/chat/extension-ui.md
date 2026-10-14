@@ -79,10 +79,12 @@ Callbacks may reenter rendering and input.
 
 The runtime's nonempty `VISUAL` wins over nonempty `EDITOR`. Selection is sampled
 independently when preparing help and on each invocation. With neither configured,
-the action does nothing. Commands split on literal ASCII spaces, preserving empty
-arguments; quotes and tabs are not parsed. Unix executes directly. Windows uses
+the action does nothing. On Unix, commands split on literal ASCII spaces, preserving
+empty arguments; quotes and tabs are not parsed, and execution is direct. Windows uses
 the configured command interpreter, defaulting to `cmd.exe`, before invoking the
-same inherited-terminal process bridge. No deadline is added.
+same inherited-terminal process bridge. The generated Windows path is quoted as one
+literal operand for that interpreter; the configured command keeps its shell syntax.
+No deadline is added.
 
 The current text is written as UTF-8 to
 `maestro-extension-editor-{milliseconds}.md` in the native temporary directory.

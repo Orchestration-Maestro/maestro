@@ -26,6 +26,8 @@ pub use components::theme_selector::ThemeSelectorComponent;
 
 pub use components::user_message_selector::UserMessageSelectorComponent;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use components::extension_editor::{ExtensionEditorComponent, ExtensionEditorOptions};
 pub use components::oauth_selector::{
     AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
 };
@@ -51,5 +53,3 @@ pub use components::session_selector::*;
 
 #[cfg(test)]
 extern crate self as maestro_chat;
-#[cfg(not(target_arch = "wasm32"))]
-pub use components::extension_editor::{ExtensionEditorComponent, ExtensionEditorOptions};

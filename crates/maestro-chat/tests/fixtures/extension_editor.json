@@ -5058,7 +5058,7 @@
           "/d",
           "/s",
           "/c",
-          "\"ed --wait C:\\Temp Dir\\file.md\""
+          "\"ed --wait \"C:\\Temp Dir\\file.md\"\""
         ],
         "windows_verbatim_arguments": true
       }
@@ -5084,7 +5084,7 @@
           "/d",
           "/s",
           "/c",
-          "\"ed  --wait  C:\\Temp Dir\\file.md\""
+          "\"ed  --wait  \"C:\\Temp Dir\\file.md\"\""
         ],
         "windows_verbatim_arguments": true
       }
@@ -5108,7 +5108,7 @@
           "/d",
           "/s",
           "/c",
-          "\"ed --wait C:\\Temp Dir\\file.md\""
+          "\"ed --wait \"C:\\Temp Dir\\file.md\"\""
         ],
         "windows_verbatim_arguments": true
       }
@@ -5134,7 +5134,7 @@
           "/d",
           "/s",
           "/c",
-          "\"ed  --wait  C:\\Temp Dir\\file.md\""
+          "\"ed  --wait  \"C:\\Temp Dir\\file.md\"\""
         ],
         "windows_verbatim_arguments": true
       }
@@ -5156,7 +5156,7 @@
         "file": "custom-shell.exe",
         "args": [
           "-c",
-          "ed --wait C:\\Temp Dir\\file.md"
+          "ed --wait 'C:\\Temp Dir\\file.md'"
         ],
         "windows_verbatim_arguments": false
       }
@@ -5180,7 +5180,7 @@
         "file": "custom-shell.exe",
         "args": [
           "-c",
-          "ed  --wait  C:\\Temp Dir\\file.md"
+          "ed  --wait  'C:\\Temp Dir\\file.md'"
         ],
         "windows_verbatim_arguments": false
       }

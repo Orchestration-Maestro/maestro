@@ -67,9 +67,31 @@ fn external_editor_windows_uses_shell_while_unix_executes_directly() {
             .chain(input.args)
             .collect::<Vec<_>>()
             .join(" ");
-        let (file, args, verbatim) = windows_command(&command, &path, input.comspec);
+        let (file, args, verbatim) = windows_command(&command, &path, input.comspec.as_deref());
         assert_eq!(file, expected.launch.file);
         assert_eq!(args, expected.launch.args);
         assert_eq!(verbatim, expected.launch.windows_verbatim_arguments);
     }
+}
+
+#[test]
+fn external_editor_windows_keeps_temp_path_one_literal_operand() {
+    let path = r"C:\Temp Dir & files\editor's.md";
+    let (_, args, verbatim) = windows_command("editor --wait", path, None);
+    assert!(verbatim);
+    assert_eq!(
+        args,
+        [
+            "/d",
+            "/s",
+            "/c",
+            r#""editor --wait "C:\Temp Dir & files\editor's.md"""#
+        ]
+    );
+    let (_, args, verbatim) = windows_command("editor --wait", path, Some("bash.exe"));
+    assert!(!verbatim);
+    assert_eq!(
+        args,
+        ["-c", r"editor --wait 'C:\Temp Dir & files\editor'\''s.md'"]
+    );
 }

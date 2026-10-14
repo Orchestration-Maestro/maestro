@@ -203,7 +203,7 @@ impl Component for ExtensionEditorComponent {
     }
 }
 
-/// Builds the platform launch from literal ASCII-space tokens, with the path last.
+/// Builds the launch with the path last; only non-Windows commands split on ASCII spaces.
 fn native_command(
     command: &str,
     path: &Path,
@@ -222,7 +222,7 @@ fn native_command(
         let (shell, mut args, verbatim) = windows_command(
             command,
             &path.to_string_lossy(),
-            _runtime.environment("comspec"),
+            _runtime.environment("comspec").as_deref(),
         );
         let mut command = std::process::Command::new(shell);
         if verbatim {
@@ -254,23 +254,19 @@ fn editor_hint(theme: &LiveTheme, runtime: &dyn TuiRuntime) -> Result<String, Th
 
 /// Returns native interpreter arguments while preserving the original command string.
 #[cfg(any(windows, test))]
-fn windows_command(
-    command: &str,
-    path: &str,
-    shell: Option<String>,
-) -> (String, Vec<String>, bool) {
-    let shell = shell
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "cmd.exe".into());
-    let name = shell.rsplit('\\').next().unwrap_or_default();
-    let verbatim = name.eq_ignore_ascii_case("cmd.exe") || name.eq_ignore_ascii_case("cmd");
-    let text = format!("{command} {path}");
-    let args = if verbatim {
-        vec!["/d".into(), "/s".into(), "/c".into(), format!("\"{text}\"")]
+fn windows_command(command: &str, path: &str, shell: Option<&str>) -> (String, Vec<String>, bool) {
+    let mut launch = maestro_app::windows_shell_launch(command, shell);
+    let operand = if launch.verbatim {
+        format!(" \"{path}\"")
     } else {
-        vec!["-c".into(), text]
+        format!(" '{}'", path.replace('\'', "'\\''"))
     };
-    (shell, args, verbatim)
+    if let Some(text) = launch.args.last_mut() {
+        // The cmd command text ends in the shell owner's closing quote.
+        let index = text.len() - usize::from(launch.verbatim);
+        text.insert_str(index, &operand);
+    }
+    (launch.executable, launch.args, launch.verbatim)
 }
 #[cfg(test)]
 mod tests;
