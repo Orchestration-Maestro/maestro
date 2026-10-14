@@ -11,9 +11,7 @@ use display_support::{
 };
 use maestro_agent::AgentToolResult;
 use maestro_models::{ImageContent, TextContent, UserBlock};
-use maestro_theme::{
-    NativeThemeOperations, SyntaxHighlighter, ThemeColor, ThemeDirectories, ThemeState,
-};
+use maestro_theme::{SyntaxHighlighter, ThemeColor};
 use maestro_tools::{
     ToolDefinition, ToolRenderResultOptions, WriteOperations, WriteToolInput, WriteToolOptions,
     create_write_tool_definition, key_hint, output::render_utils::strip_ansi,
@@ -435,22 +433,11 @@ fn write_preview_callbacks_never_mutate_files() {
     assert!(ops.calls().is_empty());
 }
 
-/// Load the shipped theme `name`.
-fn shipped_theme(name: &str) -> Rc<maestro_theme::Theme> {
-    let directories = ThemeDirectories {
-        themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/../maestro-theme/assets/theme").into(),
-        custom_themes_dir: String::new(),
-    };
-    ThemeState::new(directories, Rc::new(NativeThemeOperations))
-        .get_theme_by_name(name)
-        .unwrap()
-}
-
 #[test]
 fn write_rendering_uses_theme_roles_without_new_tokens() {
     let _bindings = bind(&["ctrl+o".to_owned()]);
     for name in ["dark", "light"] {
-        let theme = shipped_theme(name);
+        let theme = display_support::shipped_theme(name, None);
         let env = Env::with(Rc::clone(&theme), native_highlighter());
         let fg = |color: ThemeColor, text: &str| theme.fg(&color, text).unwrap();
         let title = fg(

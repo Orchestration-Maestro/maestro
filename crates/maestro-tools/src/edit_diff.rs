@@ -190,19 +190,9 @@ struct Hit {
 /// Count occurrences of the nonempty `needle`, overlapping ones included, in linear time.
 fn count_overlapping(haystack: &str, needle: &str) -> usize {
     let needle = needle.as_bytes();
-    let mut border = vec![0usize; needle.len()];
-    let mut matched = 0;
-    for at in 1..needle.len() {
-        while matched > 0 && needle[at] != needle[matched] {
-            matched = border[matched - 1];
-        }
-        if needle[at] == needle[matched] {
-            matched += 1;
-        }
-        border[at] = matched;
-    }
+    let border = crate::diff::sequence::prefix_lengths(needle);
     let mut count = 0;
-    matched = 0;
+    let mut matched = 0;
     for &byte in haystack.as_bytes() {
         while matched > 0 && (matched == needle.len() || byte != needle[matched]) {
             matched = border[matched - 1];

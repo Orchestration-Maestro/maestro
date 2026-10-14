@@ -124,6 +124,7 @@ Constructing it reads nothing.
 
 ## Live theme and change callback
 
+`LiveTheme::default()` creates an unpublished slot.
 `ThemeState::theme` returns a `LiveTheme` handle whose `get` returns the
 currently published instance; clones read the same slot, and an `Rc<Theme>` already
 returned stays what it was. Before the first publication `get` fails with

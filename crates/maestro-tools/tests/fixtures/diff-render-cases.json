@@ -1,0 +1,4694 @@
+{
+  "palette": {
+    "toolDiffContext": 1,
+    "toolDiffRemoved": 2,
+    "toolDiffAdded": 3
+  },
+  "groups": {
+    "diff_raw_lines_preserve_framing": [
+      {
+        "input": {
+          "diff": ""
+        },
+        "expected": "\u001b[38;5;1m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\n"
+        },
+        "expected": "\u001b[38;5;1m\u001b[39m\n\u001b[38;5;1m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\n\n"
+        },
+        "expected": "\u001b[38;5;1m\u001b[39m\n\u001b[38;5;1m\u001b[39m\n\u001b[38;5;1m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "raw\tvalue"
+        },
+        "expected": "\u001b[38;5;1mraw\tvalue\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "     ..."
+        },
+        "expected": "\u001b[38;5;1m     ...\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "z1 text"
+        },
+        "expected": "\u001b[38;5;1mz1 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-x text"
+        },
+        "expected": "\u001b[38;5;1m-x text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+12"
+        },
+        "expected": "\u001b[38;5;1m+12\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+12x text"
+        },
+        "expected": "\u001b[38;5;1m+12x text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " heading"
+        },
+        "expected": "\u001b[38;5;1m heading\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 old\n\n+1 new"
+        },
+        "expected": "\u001b[38;5;2m-1 old\u001b[39m\n\u001b[38;5;1m\u001b[39m\n\u001b[38;5;3m+1 new\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "first\nlast\n"
+        },
+        "expected": "\u001b[38;5;1mfirst\u001b[39m\n\u001b[38;5;1mlast\u001b[39m\n\u001b[38;5;1m\u001b[39m"
+      }
+    ],
+    "diff_line_fields_follow_display_grammar": [
+      {
+        "input": {
+          "diff": "-123 text"
+        },
+        "expected": "\u001b[38;5;2m-123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "- 001 text"
+        },
+        "expected": "\u001b[38;5;2m- 001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "- text"
+        },
+        "expected": "\u001b[38;5;2m- text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-   "
+        },
+        "expected": "\u001b[38;5;2m-   \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \ttext"
+        },
+        "expected": "\u001b[38;5;2m-1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 text\r"
+        },
+        "expected": "\u001b[38;5;1m-1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m-1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 text "
+        },
+        "expected": "\u001b[38;5;1m-1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 text more"
+        },
+        "expected": "\u001b[38;5;1m-1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-١ text"
+        },
+        "expected": "\u001b[38;5;1m-١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+123 text"
+        },
+        "expected": "\u001b[38;5;3m+123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+ 001 text"
+        },
+        "expected": "\u001b[38;5;3m+ 001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+ text"
+        },
+        "expected": "\u001b[38;5;3m+ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+   "
+        },
+        "expected": "\u001b[38;5;3m+   \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 \ttext"
+        },
+        "expected": "\u001b[38;5;3m+1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 text\r"
+        },
+        "expected": "\u001b[38;5;1m+1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m+1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 text "
+        },
+        "expected": "\u001b[38;5;1m+1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 text more"
+        },
+        "expected": "\u001b[38;5;1m+1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+١ text"
+        },
+        "expected": "\u001b[38;5;1m+١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 123 text"
+        },
+        "expected": "\u001b[38;5;1m 123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "  001 text"
+        },
+        "expected": "\u001b[38;5;1m  001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "  text"
+        },
+        "expected": "\u001b[38;5;1m  text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "    "
+        },
+        "expected": "\u001b[38;5;1m    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 \ttext"
+        },
+        "expected": "\u001b[38;5;1m 1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text\r"
+        },
+        "expected": "\u001b[38;5;1m 1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m 1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text "
+        },
+        "expected": "\u001b[38;5;1m 1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text more"
+        },
+        "expected": "\u001b[38;5;1m 1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " ١ text"
+        },
+        "expected": "\u001b[38;5;1m ١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t123 text"
+        },
+        "expected": "\u001b[38;5;1m 123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t 001 text"
+        },
+        "expected": "\u001b[38;5;1m  001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t text"
+        },
+        "expected": "\u001b[38;5;1m  text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t   "
+        },
+        "expected": "\u001b[38;5;1m    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t1 \ttext"
+        },
+        "expected": "\u001b[38;5;1m 1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t1 text\r"
+        },
+        "expected": "\u001b[38;5;1m\t1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m\t1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t1 text "
+        },
+        "expected": "\u001b[38;5;1m\t1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t1 text more"
+        },
+        "expected": "\u001b[38;5;1m\t1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "\t١ text"
+        },
+        "expected": "\u001b[38;5;1m\t١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿123 text"
+        },
+        "expected": "\u001b[38;5;1m 123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿ 001 text"
+        },
+        "expected": "\u001b[38;5;1m  001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿ text"
+        },
+        "expected": "\u001b[38;5;1m  text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿   "
+        },
+        "expected": "\u001b[38;5;1m    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿1 \ttext"
+        },
+        "expected": "\u001b[38;5;1m 1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿1 text\r"
+        },
+        "expected": "\u001b[38;5;1m﻿1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m﻿1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿1 text "
+        },
+        "expected": "\u001b[38;5;1m﻿1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿1 text more"
+        },
+        "expected": "\u001b[38;5;1m﻿1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "﻿١ text"
+        },
+        "expected": "\u001b[38;5;1m﻿١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "123 text"
+        },
+        "expected": "\u001b[38;5;1m123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 001 text"
+        },
+        "expected": "\u001b[38;5;1m 001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " text"
+        },
+        "expected": "\u001b[38;5;1m text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "   "
+        },
+        "expected": "\u001b[38;5;1m   \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "1 \ttext"
+        },
+        "expected": "\u001b[38;5;1m1 \ttext\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "1 text\r"
+        },
+        "expected": "\u001b[38;5;1m1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "1 text "
+        },
+        "expected": "\u001b[38;5;1m1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "1 text more"
+        },
+        "expected": "\u001b[38;5;1m1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "١ text"
+        },
+        "expected": "\u001b[38;5;1m١ text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 123 text"
+        },
+        "expected": "\u001b[38;5;1m 123 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "  001 text"
+        },
+        "expected": "\u001b[38;5;1m  001 text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "  text"
+        },
+        "expected": "\u001b[38;5;1m  text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "    "
+        },
+        "expected": "\u001b[38;5;1m    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 \ttext"
+        },
+        "expected": "\u001b[38;5;1m 1    text\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text\r"
+        },
+        "expected": "\u001b[38;5;1m 1 text\r\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text\rmore"
+        },
+        "expected": "\u001b[38;5;1m 1 text\rmore\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text "
+        },
+        "expected": "\u001b[38;5;1m 1 text \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 text more"
+        },
+        "expected": "\u001b[38;5;1m 1 text more\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " ١ text"
+        },
+        "expected": "\u001b[38;5;1m ١ text\u001b[39m"
+      }
+    ],
+    "diff_standalone_rows_keep_order_and_tabs": [
+      {
+        "input": {
+          "diff": "+1 new"
+        },
+        "expected": "\u001b[38;5;3m+1 new\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone"
+        },
+        "expected": "\u001b[38;5;2m-1 gone\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 1 keep\tthis"
+        },
+        "expected": "\u001b[38;5;1m 1 keep   this\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+  9 \tadd"
+        },
+        "expected": "\u001b[38;5;3m+  9    add\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-  9 \tremove"
+        },
+        "expected": "\u001b[38;5;2m-  9    remove\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "   9 \tcontext"
+        },
+        "expected": "\u001b[38;5;1m   9    context\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 same\n+1 same"
+        },
+        "expected": "\u001b[38;5;3m+1 same\u001b[39m\n\u001b[38;5;3m+1 same\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": " 9 z\n 1 a\n 9 z"
+        },
+        "expected": "\u001b[38;5;1m 9 z\u001b[39m\n\u001b[38;5;1m 1 a\u001b[39m\n\u001b[38;5;1m 9 z\u001b[39m"
+      }
+    ],
+    "diff_only_single_line_pairs_use_inverse": [
+      {
+        "input": {
+          "diff": "-2 a\n+2 b"
+        },
+        "expected": "\u001b[38;5;2m-2 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+2 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-2 a\n-3 z\n+2 b"
+        },
+        "expected": "\u001b[38;5;2m-2 a\u001b[39m\n\u001b[38;5;2m-3 z\u001b[39m\n\u001b[38;5;3m+2 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-2 a\n+2 b\n+3 y"
+        },
+        "expected": "\u001b[38;5;2m-2 a\u001b[39m\n\u001b[38;5;3m+2 b\u001b[39m\n\u001b[38;5;3m+3 y\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-2 a\n-3 z\n+2 b\n+3 y"
+        },
+        "expected": "\u001b[38;5;2m-2 a\u001b[39m\n\u001b[38;5;2m-3 z\u001b[39m\n\u001b[38;5;3m+2 b\u001b[39m\n\u001b[38;5;3m+3 y\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-2 z\n-3 a\n-4 z"
+        },
+        "expected": "\u001b[38;5;2m-2 z\u001b[39m\n\u001b[38;5;2m-3 a\u001b[39m\n\u001b[38;5;2m-4 z\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+2 z\n+3 a\n+4 z"
+        },
+        "expected": "\u001b[38;5;3m+2 z\u001b[39m\n\u001b[38;5;3m+3 a\u001b[39m\n\u001b[38;5;3m+4 z\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "+1 a\n-1 b"
+        },
+        "expected": "\u001b[38;5;3m+1 a\u001b[39m\n\u001b[38;5;2m-1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\nraw\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;1mraw\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n 2 context\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;1m 2 context\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 b\n-2 c\n+2 d"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;2m-2 \u001b[7mc\u001b[27m\u001b[39m\n\u001b[38;5;3m+2 \u001b[7md\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 z\n-2 a\n+1 y\n+2 b"
+        },
+        "expected": "\u001b[38;5;2m-1 z\u001b[39m\n\u001b[38;5;2m-2 a\u001b[39m\n\u001b[38;5;3m+1 y\u001b[39m\n\u001b[38;5;3m+2 b\u001b[39m"
+      }
+    ],
+    "diff_changed_tokens_keep_context_and_indentation": [
+      {
+        "input": {
+          "diff": "-1 foo bar baz\n+1 foo qux baz"
+        },
+        "expected": "\u001b[38;5;2m-1 foo \u001b[7mbar\u001b[27m baz\u001b[39m\n\u001b[38;5;3m+1 foo \u001b[7mqux\u001b[27m baz\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 foo bar baz\n+1 foo baz"
+        },
+        "expected": "\u001b[38;5;2m-1 foo \u001b[7mbar \u001b[27mbaz\u001b[39m\n\u001b[38;5;3m+1 foo baz\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 foo baz\n+1 foo qux baz"
+        },
+        "expected": "\u001b[38;5;2m-1 foo baz\u001b[39m\n\u001b[38;5;3m+1 foo \u001b[7mqux \u001b[27mbaz\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 foo bar\n+1 foo baz"
+        },
+        "expected": "\u001b[38;5;2m-1 foo \u001b[7mbar\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 foo \u001b[7mbaz\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 bar baz\n+1 qux baz"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mbar\u001b[27m baz\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mqux\u001b[27m baz\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 old\n+1 new"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1    old\n+1 \tnew"
+        },
+        "expected": "\u001b[38;5;2m-1    \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1    \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 foo,bar()\n+1 foo.bar[]"
+        },
+        "expected": "\u001b[38;5;2m-1 foo\u001b[7m,\u001b[27mbar\u001b[7m()\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 foo\u001b[7m.\u001b[27mbar\u001b[7m[]\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x = 1; y = 2;\n+1 x = 3; y = 4;"
+        },
+        "expected": "\u001b[38;5;2m-1 x = \u001b[7m1\u001b[27m; y = \u001b[7m2\u001b[27m;\u001b[39m\n\u001b[38;5;3m+1 x = \u001b[7m3\u001b[27m; y = \u001b[7m4\u001b[27m;\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left right\n+1 left  right"
+        },
+        "expected": "\u001b[38;5;2m-1 left  right\u001b[39m\n\u001b[38;5;3m+1 left  right\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 new"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 old\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1    \n+1  "
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[39m\n\u001b[38;5;3m+1  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 áb\n+1 àb"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7ḿ\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m̀\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 👩‍💻 x\n+1 👩‍🔧 x"
+        },
+        "expected": "\u001b[38;5;2m-1 👩‍\u001b[7m💻\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 👩‍\u001b[7m🔧\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中文\n+1 中日"
+        },
+        "expected": "\u001b[38;5;2m-1 中\u001b[7m文\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 中\u001b[7m日\u001b[27m\u001b[39m"
+      }
+    ],
+    "diff_replacement_whitespace_keeps_common_boundaries": [
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartoldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart new \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\toldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\toldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold  end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold\tend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold﻿end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      }
+    ],
+    "diff_insertions_deduplicate_surrounding_whitespace": [
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart end\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew\u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew \u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew  \u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstart \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstartnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  new  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  new\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  new﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start  newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start  end\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnew  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnew\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnew﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start\tnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 start   end\u001b[39m\n\u001b[38;5;3m+1 start   \u001b[7mnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿new  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿new\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿new﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start﻿newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿end\u001b[39m\n\u001b[38;5;3m+1 start﻿\u001b[7mnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start new end"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 start newend"
+        },
+        "expected": "\u001b[38;5;2m-1 start end\u001b[39m\n\u001b[38;5;3m+1 start \u001b[7mnew\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnewend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew  end"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew\tend"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew   \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew﻿end"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew﻿\u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnew end"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start end\n+1 startnewend"
+        },
+        "expected": "\u001b[38;5;2m-1 startend\u001b[39m\n\u001b[38;5;3m+1 start\u001b[7mnew\u001b[27mend\u001b[39m"
+      }
+    ],
+    "diff_deletions_reconcile_both_context_sides": [
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartoldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart  end\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart \u001b[27m end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold\u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart\u001b[27m  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold \u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart\u001b[27m  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mstartold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mstart  \u001b[27mend\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold  \u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold  \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold   \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start  oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\toldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold  \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold   \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\told end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start\toldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start ﻿\u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold\u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start﻿\u001b[7mold \u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  ﻿\u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  ﻿\u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start﻿oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  ﻿\u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold \u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start old end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 start oldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start   \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7moldend\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 start  \u001b[7mend\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start \u001b[7mold\u001b[27m end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold  end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold\u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold\tend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start\u001b[7mold \u001b[27m  end\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold﻿end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold﻿\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startold end\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold \u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 startoldend\n+1 start  end"
+        },
+        "expected": "\u001b[38;5;2m-1 start  \u001b[7mold\u001b[27mend\u001b[39m\n\u001b[38;5;3m+1 start  end\u001b[39m"
+      }
+    ],
+    "diff_edge_deletions_use_whitespace_overlap": [
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿ \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep   \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone   \u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep     \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone\t keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep\t gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone   \u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep     \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone \tkeep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone    \u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep \tgone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep   \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep      \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep      \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone  keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone  \u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep  gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep ﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  ﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    ﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    ﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  ﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone﻿keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone﻿\u001b[27mkeep\u001b[39m\n\u001b[38;5;3m+1  \u001b[7m\u001b[27mkeep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep﻿gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿\u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[7m\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1 \t keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep\t "
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  \tkeep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m    keep\u001b[39m\n\u001b[38;5;3m+1     keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep \t"
+        },
+        "expected": "\u001b[38;5;2m-1 keep    \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep    \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1   keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m  keep\u001b[39m\n\u001b[38;5;3m+1   keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep  "
+        },
+        "expected": "\u001b[38;5;2m-1 keep  \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep  \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1 ﻿keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone \u001b[27m﻿keep\u001b[39m\n\u001b[38;5;3m+1 ﻿keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep﻿"
+        },
+        "expected": "\u001b[38;5;2m-1 keep﻿ \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep﻿\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 gone keep\n+1  keep"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mgone\u001b[27m keep\u001b[39m\n\u001b[38;5;3m+1  keep\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 keep gone\n+1 keep "
+        },
+        "expected": "\u001b[38;5;2m-1 keep \u001b[7mgone\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 keep \u001b[39m"
+      }
+    ],
+    "diff_word_boundaries_preserve_latin_ranges_and_punctuation": [
+      {
+        "input": {
+          "diff": "-1 left/right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m/\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left0right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft0right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left9right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft9right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left:right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m:\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left@right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m@\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftAright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftAright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftZright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftZright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left[right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m[\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left^right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m^\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left_right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft_right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left`right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m`\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftaright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftaright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftzright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftzright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left{right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m{\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left¬right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m¬\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left­right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft­right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left®right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m®\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left¿right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m¿\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftÀright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftÀright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftÖright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftÖright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left×right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m×\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftØright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftØright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftöright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftöright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left÷right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m÷\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftøright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftøright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftˆright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftˆright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftˇright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7mˇ\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftˈright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftˈright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left˗right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft˗right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left˘right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m˘\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left˝right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m˝\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left˞right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft˞right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left˿right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleft˿right\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left̀right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m̀\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left᷿right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m᷿\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftḀright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftḀright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftỿright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mleftỿright\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mleft!right\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 leftἀright\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7mἀ\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left一right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m一\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 left😀right\n+1 left!right"
+        },
+        "expected": "\u001b[38;5;2m-1 left\u001b[7m😀\u001b[27mright\u001b[39m\n\u001b[38;5;3m+1 left\u001b[7m!\u001b[27mright\u001b[39m"
+      }
+    ],
+    "diff_whitespace_uses_the_shared_scalar_set": [
+      {
+        "input": {
+          "diff": "-1 a\told\n+1 a\tnew"
+        },
+        "expected": "\u001b[38;5;2m-1 a   \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a   \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\u000bold\n+1 a\u000bnew"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u000b\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u000b\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\fold\n+1 a\fnew"
+        },
+        "expected": "\u001b[38;5;2m-1 a\f\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\f\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a old\n+1 a new"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a　old\n+1 a　new"
+        },
+        "expected": "\u001b[38;5;2m-1 a　\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a　\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a﻿old\n+1 a﻿new"
+        },
+        "expected": "\u001b[38;5;2m-1 a﻿\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a﻿\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 aold\n+1 anew"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a​old\n+1 a​new"
+        },
+        "expected": "\u001b[38;5;2m-1 a​\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a​\u001b[7mnew\u001b[27m\u001b[39m"
+      }
+    ],
+    "diff_ambiguous_word_runs_match_recorded_selection": [
+      {
+        "input": {
+          "diff": "-1 \n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma b \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[39m\n\u001b[38;5;3m+1 a  \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma \u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma \u001b[27mb \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  \u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27mb \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a a\u001b[39m\n\u001b[38;5;3m+1 a a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a a\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb \u001b[27ma\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a  \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a a\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a b \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  b\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a b \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b a\u001b[39m\n\u001b[38;5;3m+1 b a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b a\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma \u001b[27mb a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b a \u001b[39m\n\u001b[38;5;3m+1 b a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma  \u001b[39m\n\u001b[38;5;3m+1 a  \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb\u001b[7m a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb \u001b[27ma\u001b[39m\n\u001b[38;5;3m+1 a a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb a\u001b[39m\n\u001b[38;5;3m+1 b a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a b a\u001b[39m\n\u001b[38;5;3m+1 a b a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb a \u001b[39m\n\u001b[38;5;3m+1 b a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  b \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7mb a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma \u001b[27mb \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a b \u001b[7ma\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a b a\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma b a\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma\u001b[7m b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma b\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b a \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma b \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b a b\u001b[39m\n\u001b[38;5;3m+1 b a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27ma  b\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m a \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[7ma b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27mab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27mab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb\u001b[27m a b \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b a b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb a b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  \u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a b \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  b\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a  \u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a b \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a  b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma  b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 a \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[39m\n\u001b[38;5;3m+1 a  \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[39m\n\u001b[38;5;3m+1  a \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a \n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma \u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma \u001b[27mb \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  \u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 b \u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27mb \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 b \n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m,\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m,\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m,\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[7m,\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7m,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 a,b\u001b[39m\n\u001b[38;5;3m+1 a,b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m,\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7m,\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a,b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma,b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m.\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m.\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7m.\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  \u001b[7m.\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7m.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m.\u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 a.b\u001b[39m\n\u001b[38;5;3m+1 a.b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7m.\u001b[27mb \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a.b\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma.b\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma b \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27mb\u001b[39m\n\u001b[38;5;3m+1 b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 a \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 a b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 a b \u001b[39m\n\u001b[38;5;3m+1 a b \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 a b\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27ma b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 a  b\u001b[39m\n\u001b[38;5;3m+1 a  b\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1  a \u001b[7mb \u001b[27m\u001b[39m\n\u001b[38;5;3m+1  a \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma \u001b[27mb \u001b[39m\n\u001b[38;5;3m+1 b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m,\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 ab\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m.\u001b[27mb\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1  a b \u001b[39m\n\u001b[38;5;3m+1  a b \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma b \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma b \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma b \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 x\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1  a b \n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1  \u001b[7ma b \u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mx﻿y\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma b \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 é x\u001b[39m\n\u001b[38;5;3m+1 é x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 é x\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mé \u001b[27mx﻿\u001b[39m\n\u001b[38;5;3m+1 x﻿\u001b[7my\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma b \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 中 x\u001b[39m\n\u001b[38;5;3m+1 中 x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 中 x\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m中 \u001b[27mx﻿\u001b[39m\n\u001b[38;5;3m+1 x﻿\u001b[7my\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 x\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma b \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀\u001b[27m x\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中\u001b[27m x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 😀 x\u001b[39m\n\u001b[38;5;3m+1 😀 x\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 😀 x\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7m😀 \u001b[27mx﻿\u001b[39m\n\u001b[38;5;3m+1 x﻿\u001b[7my\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a b a"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma b a\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 b a b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb a b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a  b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma  b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1  a "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mb \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a,b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma,b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 a.b"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7ma.b\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1  a b "
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7mx﻿y\u001b[27m\u001b[39m\n\u001b[38;5;3m+1  \u001b[7ma b \u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 é x"
+        },
+        "expected": "\u001b[38;5;2m-1 x﻿\u001b[7my\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mé \u001b[27mx\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 中 x"
+        },
+        "expected": "\u001b[38;5;2m-1 x﻿\u001b[7my\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m中 \u001b[27mx\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 😀 x"
+        },
+        "expected": "\u001b[38;5;2m-1 x﻿\u001b[7my\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7m😀 \u001b[27mx\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 x﻿y\n+1 x﻿y"
+        },
+        "expected": "\u001b[38;5;2m-1 x﻿y\u001b[39m\n\u001b[38;5;3m+1 x﻿y\u001b[39m"
+      }
+    ],
+    "diff_options_do_not_select_syntax_highlighting": [
+      {
+        "input": {
+          "diff": "-1 let value = 1;\n+1 let value = 2;"
+        },
+        "expected": "\u001b[38;5;2m-1 let value = \u001b[7m1\u001b[27m;\u001b[39m\n\u001b[38;5;3m+1 let value = \u001b[7m2\u001b[27m;\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 let value = 1;\n+1 let value = 2;",
+          "options": {
+            "filePath": "file.rs"
+          }
+        },
+        "expected": "\u001b[38;5;2m-1 let value = \u001b[7m1\u001b[27m;\u001b[39m\n\u001b[38;5;3m+1 let value = \u001b[7m2\u001b[27m;\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 let value = 1;\n+1 let value = 2;",
+          "options": {
+            "filePath": "file.py"
+          }
+        },
+        "expected": "\u001b[38;5;2m-1 let value = \u001b[7m1\u001b[27m;\u001b[39m\n\u001b[38;5;3m+1 let value = \u001b[7m2\u001b[27m;\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 let value = 1;\n+1 let value = 2;",
+          "options": {
+            "filePath": ""
+          }
+        },
+        "expected": "\u001b[38;5;2m-1 let value = \u001b[7m1\u001b[27m;\u001b[39m\n\u001b[38;5;3m+1 let value = \u001b[7m2\u001b[27m;\u001b[39m"
+      }
+    ],
+    "diff_inverse_preserves_embedded_style_boundaries": [
+      {
+        "input": {
+          "diff": "-1 \u001b[31mold\u001b[39m\n+1 \u001b[32mnew\u001b[39m"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[31m\u001b[7mold\u001b[27m\u001b[39m\u001b[39m\n\u001b[38;5;3m+1 \u001b[32m\u001b[7mnew\u001b[27m\u001b[39m\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 a\u001b[27mb\n+1 c\u001b[27md"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b[27m\u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mc\u001b[27m\u001b[27m\u001b[7md\u001b[27m\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 a\u001b[7mb\n+1 a\u001b[7mc"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[7m\u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[7m\u001b[7mc\u001b[27m\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 \u001b]8;;https://old.test\u0007old\u001b]8;;\u0007\n+1 \u001b]8;;https://new.test\u0007new\u001b]8;;\u0007"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b]8;;https://old.test\u0007\u001b[7mold\u001b[27m\u001b]8;;\u0007\u001b[39m\n\u001b[38;5;3m+1 \u001b]8;;https://new.test\u0007\u001b[7mnew\u001b[27m\u001b]8;;\u0007\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 \u001b]8;;old\u001b\\old\n+1 \u001b]8;;new\u001b\\new"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b]8;;old\u001b\\\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b]8;;new\u001b\\\u001b[7mnew\u001b[27m\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 \u001b_old\u0007text\n+1 \u001b_new\u0007text"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b_old\u0007text\u001b[39m\n\u001b[38;5;3m+1 \u001b_new\u0007text\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 a\u001b_foo\u001b\\b\n+1 c\u001b_bar\u001b\\d"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[7ma\u001b[27m\u001b_foo\u001b\\\u001b[7mb\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[7mc\u001b[27m\u001b_bar\u001b\\\u001b[7md\u001b[27m\u001b[39m",
+        "corrected": true
+      },
+      {
+        "input": {
+          "diff": "-1 a\u001bzold\n+1 a\u001bznew"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b\u001b[7mzold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b\u001b[7mznew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 a\u001b[123\n+1 a\u001b[456"
+        },
+        "expected": "\u001b[38;5;2m-1 a\u001b[\u001b[7m123\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 a\u001b[\u001b[7m456\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 color=old\n+1 color=new"
+        },
+        "expected": "\u001b[38;5;2m-1 color=\u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 color=\u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "-1 \u001b[31mkeep\u001b[39m old\n+1 \u001b[31mkeep\u001b[39m new"
+        },
+        "expected": "\u001b[38;5;2m-1 \u001b[31mkeep\u001b[39m \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;3m+1 \u001b[31mkeep\u001b[39m \u001b[7mnew\u001b[27m\u001b[39m"
+      }
+    ],
+    "diff_theme_roles_follow_supplied_colors": [
+      {
+        "input": {
+          "diff": "raw\n-1 old\n+1 new\n 2 kept",
+          "colors": {
+            "toolDiffContext": "#010203",
+            "toolDiffRemoved": "#112233",
+            "toolDiffAdded": "#abcdef"
+          },
+          "mode": "truecolor"
+        },
+        "expected": "\u001b[38;2;1;2;3mraw\u001b[39m\n\u001b[38;2;17;34;51m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;2;171;205;239m+1 \u001b[7mnew\u001b[27m\u001b[39m\n\u001b[38;2;1;2;3m 2 kept\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "raw\n-1 old\n+1 new\n 2 kept",
+          "colors": {
+            "toolDiffContext": 11,
+            "toolDiffRemoved": 12,
+            "toolDiffAdded": 13
+          }
+        },
+        "expected": "\u001b[38;5;11mraw\u001b[39m\n\u001b[38;5;12m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;5;13m+1 \u001b[7mnew\u001b[27m\u001b[39m\n\u001b[38;5;11m 2 kept\u001b[39m"
+      }
+    ],
+    "diff_default_themes_keep_visible_signs_and_role_colors": [
+      {
+        "input": {
+          "diff": "context\n-1 old\n+1 new",
+          "colors": {
+            "toolDiffContext": "#D9A066",
+            "toolDiffRemoved": "#FF6A1A",
+            "toolDiffAdded": "#FF6A1A"
+          },
+          "mode": "truecolor"
+        },
+        "expected": "\u001b[38;2;217;160;102mcontext\u001b[39m\n\u001b[38;2;255;106;26m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;2;255;106;26m+1 \u001b[7mnew\u001b[27m\u001b[39m"
+      },
+      {
+        "input": {
+          "diff": "context\n-1 old\n+1 new",
+          "colors": {
+            "toolDiffContext": "#2A1F1A",
+            "toolDiffRemoved": "#2A1F1A",
+            "toolDiffAdded": "#2A1F1A"
+          },
+          "mode": "truecolor"
+        },
+        "expected": "\u001b[38;2;42;31;26mcontext\u001b[39m\n\u001b[38;2;42;31;26m-1 \u001b[7mold\u001b[27m\u001b[39m\n\u001b[38;2;42;31;26m+1 \u001b[7mnew\u001b[27m\u001b[39m"
+      }
+    ]
+  }
+}

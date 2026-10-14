@@ -2,8 +2,8 @@
 
 `maestro-tools` delivers the native `write` and `edit` tools, the file mutation queue,
 original-snapshot edit matching, numbered diffs and read-only edit previews.
-Edit rendering continues in
-[#692](https://github.com/Orchestration-Maestro/maestro/issues/692).
+The portable shared diff renderer is available separately; retained edit previews
+continue in [#897](https://github.com/Orchestration-Maestro/maestro/issues/897).
 
 The `write` and `edit` modules, the queue and `edit_diff` are native-only and
 excluded from browser builds, which still build the portable tool definitions.
@@ -165,6 +165,19 @@ failures retain their messages.
 
 Preview decodes bytes lossily, strips one leading BOM and normalizes newlines,
 then uses the [matching operation's](#original-snapshot-matching) comparison base.
+
+## Diff rendering
+
+[`render_diff`](../crates/maestro-tools/src/diff/mod.rs), also exported from the
+application root, colors numbered diff rows with the supplied
+[live theme](theme.md#live-theme-and-change-callback). Only a consecutive run of one removed row
+followed by one added row receives word-level inverse styling. Other rows keep
+context, removed or added foregrounds. Recognized content tabs become three spaces;
+unrecognized rows remain raw. Inverse boundaries stay outside escapes recognized
+by the [terminal text utilities](terminal/text.md).
+
+`RenderDiffOptions::file_path` is accepted without selecting highlighting or reading
+files. The renderer does not compute edits, wrap text or truncate rows.
 
 ## File mutation queue
 

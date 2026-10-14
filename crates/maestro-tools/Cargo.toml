@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-text = { path = "../maestro-text" }
 serde.workspace = true
 ryu-js.workspace = true
 num-traits.workspace = true
@@ -27,7 +28,6 @@ workspace = true
 indexmap = "=2.14.2"
 maestro-path = { path = "../maestro-path" }
 maestro-process = { path = "../maestro-process" }
-maestro-text = { path = "../maestro-text" }
 getrandom = "=0.4.3"
 zip = { version = "=6.0.0", default-features = false, features = ["deflate-flate2"] }
 owo-colors = "=4.2.1"

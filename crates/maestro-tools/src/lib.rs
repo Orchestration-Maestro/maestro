@@ -1,5 +1,5 @@
 //! Tool definitions, the `read`, `write` and `edit` tools, the file mutation queue, and output and
-//! inline-image helpers for Maestro tools.
+//! inline-image helpers and word-level edit diff rendering for Maestro tools.
 //!
 //! ```
 //! use maestro_tools::{TruncationOptions, truncate_head};
@@ -27,12 +27,14 @@
 //! assert!(!result.was_resized);
 //! ```
 
+pub mod diff;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod edit;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod edit_diff;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod file_mutation_queue;
+pub use diff::{RenderDiffOptions, render_diff};
 pub mod keybinding_hints;
 pub mod output;
 #[cfg(not(target_arch = "wasm32"))]
