@@ -1,27 +1,11 @@
 //! Stored executable tool declarations.
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool, UserBlock};
-use std::sync::{Arc, RwLock};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool};
 /// Tool scheduling preference.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ToolExecutionMode {
-    /// Execute without overlapping other tools.
-    Sequential,
-    /// Permit concurrent execution.
-    Parallel,
-}
-/// Tool output with caller-defined details.
-///
-/// `details` has three states: `None` is absent and is omitted from the tool
-/// result message, `Some` of a JSON null keeps an explicit null, and any other
-/// `Some` carries its value.
-pub struct AgentToolResult<TDetails = serde_json::Value> {
-    /// Text and image output.
-    pub content: Vec<UserBlock>,
-    /// Caller-defined result data; `None` when the tool returned none.
-    pub details: Option<TDetails>,
-    /// Whether this result requests termination.
-    pub terminate: Option<bool>,
-}
+pub use maestro_tool::types::ToolExecutionMode;
+use std::sync::{Arc, RwLock};
+/// Tool output with caller-defined optional details and termination.
+pub type AgentToolResult<TDetails = serde_json::Value> =
+    maestro_tool::types::AgentToolResult<Option<TDetails>, Option<bool>>;
 /// A progress observer for tool output.
 #[cfg(not(target_arch = "wasm32"))]
 pub type AgentToolUpdateCallback<TDetails = serde_json::Value> =

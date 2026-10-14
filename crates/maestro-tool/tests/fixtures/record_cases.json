@@ -1,0 +1,2875 @@
+[
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":{}}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[\"x\"]}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": []
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": null
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":\"opaque\"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": "opaque"
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":{}}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":false}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"terminate\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "terminate": null
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"terminate\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "terminate": false
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"terminate\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "terminate": true
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"terminate\":\"true\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"zExtra\":{\"keep\":[2,1,2]},\"aExtra\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "false",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "0",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "\"record\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"content\":[{\"type\": \"text\", \"text\": \"first\"}, {\"type\": \"image\", \"data\": \"AQ==\", \"mimeType\": \"image/png\"}, {\"type\": \"text\", \"text\": \"first\"}]}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "[[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}]]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":null,\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"bad\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "bad",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":null,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":\"bad\",\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": null,
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":null,\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": null,
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"bad\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":null,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":\"bad\",\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":0,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 0.0,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":-0.0,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": -0.0,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":-1.25,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": -1.25,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":null,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":\"bad\",\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":0,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 0.0,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":-0.0,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": -0.0,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":-1.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": -1.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":null,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":\"bad\",\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":0,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 0.0,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":-0.0,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": -0.0,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":-1.25,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": -1.25,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":null,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":\"bad\",\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":0,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 0.0,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":-0.0,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": -0.0,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":-1.25,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": -1.25,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":null,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":\"bad\",\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":null,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":\"bad\",\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":null,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":\"bad\",\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":0,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 0.0,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":-0.0,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": -0.0,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":-1.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": -1.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":\"bad\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 0.0
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":-0.0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": -0.0
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":-1.25}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": -1.25
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"zExtra\":{\"keep\":[2,1,2]},\"aExtra\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "false",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "0",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "\"record\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"content\":\"\\u96ea\\u0000text\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"truncatedBy\":\"lines\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"totalLines\":11.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"totalBytes\":12.25}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"outputLines\":13.75}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"outputBytes\":14.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"lastLinePartial\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"firstLineExceedsLimit\":false}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"maxLines\":15.25}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "[\"雪\\u0000text\",true,\"lines\",11.5,12.25,13.75,14.5,true,false,15.25,16.5]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{}",
+    "expected": {
+      "ok": true,
+      "value": {}
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"truncation\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "truncation": null
+      }
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"truncation\":{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "truncation": {
+          "content": "雪\u0000text",
+          "truncated": true,
+          "truncatedBy": "lines",
+          "totalLines": 11.5,
+          "totalBytes": 12.25,
+          "outputLines": 13.75,
+          "outputBytes": 14.5,
+          "lastLinePartial": true,
+          "firstLineExceedsLimit": false,
+          "maxLines": 15.25,
+          "maxBytes": 16.5
+        }
+      }
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"truncation\":false}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"zExtra\":{\"keep\":[2,1,2]},\"aExtra\":false}",
+    "expected": {
+      "ok": true,
+      "value": {}
+    }
+  },
+  {
+    "kind": "details",
+    "input": "[]",
+    "expected": {
+      "ok": true,
+      "value": {}
+    }
+  },
+  {
+    "kind": "details",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "details",
+    "input": "false",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "details",
+    "input": "0",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "details",
+    "input": "\"record\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"cancelled\":false,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":null,\"cancelled\":false,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":7,\"cancelled\":false,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"\",\"cancelled\":false,\"truncated\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":-9.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":\"7\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":null,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":\"false\",\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":0}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"fullOutputPath\":9}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"zExtra\":{\"keep\":[2,1,2]},\"aExtra\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "false",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "0",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "\"record\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"output\":\"x\\u0000\\u96ea\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"cancelled\":false}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"truncated\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "[\"x\\u0000雪\",false,true]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "\"sequential\"",
+    "expected": {
+      "ok": true,
+      "value": "sequential"
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "\"parallel\"",
+    "expected": {
+      "ok": true,
+      "value": "parallel"
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "\"Parallel\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "{\"parallel\":null}",
+    "expected": {
+      "ok": true,
+      "value": "parallel"
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "{\"parallel\":true}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "mode",
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "\"lines\"",
+    "expected": {
+      "ok": true,
+      "value": "lines"
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "\"bytes\"",
+    "expected": {
+      "ok": true,
+      "value": "bytes"
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "\"Bytes\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "{\"lines\":null}",
+    "expected": {
+      "ok": true,
+      "value": "lines"
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "{\"bytes\":0}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "limit",
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":null,\"terminate\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": null,
+        "terminate": null
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":null,\"terminate\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": null,
+        "terminate": false
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":null,\"terminate\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": null,
+        "terminate": true
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":\"opaque\",\"terminate\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": "opaque",
+        "terminate": null
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":\"opaque\",\"terminate\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": "opaque",
+        "terminate": false
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":\"opaque\",\"terminate\":true}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": "opaque",
+        "terminate": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":null,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":null,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":0,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":0,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":-9.5,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":true,\"exitCode\":-9.5,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "[\"out\",null,true,false,null]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "out",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "[\"out\",2.5,false,true,\"raw/../p\"]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "out",
+        "exitCode": 2.5,
+        "cancelled": false,
+        "truncated": true,
+        "fullOutputPath": "raw/../p"
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "[[{\"type\":\"text\",\"text\":\"value\"}],null,false]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "value"
+          }
+        ],
+        "details": null,
+        "terminate": false
+      }
+    }
+  },
+  {
+    "kind": "details",
+    "input": "[null]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "truncation": null
+      }
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"details\":\"value\",\"details\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"terminate\":false,\"terminate\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"exitCode\":2.5,\"exitCode\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"fullOutputPath\":\"p\",\"fullOutputPath\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"truncation\":null,\"truncation\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "kind": "agent",
+    "input": "{\"content\":[{\"type\":\"text\",\"text\":\"first\"},{\"type\":\"image\",\"data\":\"AQ==\",\"mimeType\":\"image/png\"},{\"type\":\"text\",\"text\":\"first\"}],\"ignored\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "image",
+            "data": "AQ==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000\\u96ea\",\"cancelled\":false,\"truncated\":true,\"ignored\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "details",
+    "input": "{\"ignored\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "expected": {
+      "ok": true,
+      "value": {}
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"\\u96ea\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5,\"ignored\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":0.30000000000000004,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 0.30000000000000004,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":9007199254740992.0,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 9007199254740992.0,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":1.7976931348623157e+308,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 1.7976931348623157e+308,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":0.30000000000000004,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 0.30000000000000004,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":9007199254740992.0,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 9007199254740992.0,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":1.7976931348623157e+308,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 1.7976931348623157e+308,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":0.30000000000000004,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 0.30000000000000004,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":9007199254740992.0,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 9007199254740992.0,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":1.7976931348623157e+308,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 1.7976931348623157e+308,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":0.30000000000000004,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 0.30000000000000004,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":9007199254740992.0,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 9007199254740992.0,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":1.7976931348623157e+308,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 1.7976931348623157e+308,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":0.30000000000000004,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 0.30000000000000004,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":9007199254740992.0,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 9007199254740992.0,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":1.7976931348623157e+308,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 1.7976931348623157e+308,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":0.30000000000000004}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 0.30000000000000004
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":9007199254740992.0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 9007199254740992.0
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":1.7976931348623157e+308}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 1.7976931348623157e+308
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":null,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":null,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":0,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":0,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":-9.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":-9.5,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":false,\"truncated\":false,\"exitCode\":-9.5,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": false,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":null,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":null,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":0,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":0,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":-9.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": false
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":-9.5,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":false,\"exitCode\":-9.5,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": false,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":null,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":null,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": null,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":0,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":0,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": 0.0,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":-9.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": true
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":-9.5,\"fullOutputPath\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": null
+      }
+    }
+  },
+  {
+    "kind": "bash",
+    "input": "{\"output\":\"x\\u0000雪\",\"cancelled\":true,\"truncated\":true,\"exitCode\":-9.5,\"fullOutputPath\":\" x/../out \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "output": "x\u0000雪",
+        "exitCode": -9.5,
+        "cancelled": true,
+        "truncated": true,
+        "fullOutputPath": " x/../out "
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"bytes\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "bytes",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":{\"lines\":null},\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":false,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": false,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":false,\"firstLineExceedsLimit\":false,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": false,
+        "firstLineExceedsLimit": false,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  },
+  {
+    "kind": "truncation",
+    "input": "{\"content\":\"雪\\u0000text\",\"truncated\":true,\"truncatedBy\":\"lines\",\"totalLines\":11.5,\"totalBytes\":12.25,\"outputLines\":13.75,\"outputBytes\":14.5,\"lastLinePartial\":true,\"firstLineExceedsLimit\":true,\"maxLines\":15.25,\"maxBytes\":16.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "content": "雪\u0000text",
+        "truncated": true,
+        "truncatedBy": "lines",
+        "totalLines": 11.5,
+        "totalBytes": 12.25,
+        "outputLines": 13.75,
+        "outputBytes": 14.5,
+        "lastLinePartial": true,
+        "firstLineExceedsLimit": true,
+        "maxLines": 15.25,
+        "maxBytes": 16.5
+      }
+    }
+  }
+]

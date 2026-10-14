@@ -5,21 +5,5 @@
     clippy::excessive_nesting
 )]
 use crate::Presence;
-use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// `BashResult` data.
-pub struct BashResult {
-    /// Output.
-    pub output: String,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Exit code.
-    pub exit_code: Presence<f64>,
-    /// Cancelled.
-    pub cancelled: bool,
-    /// Truncated.
-    pub truncated: bool,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Full output path.
-    pub full_output_path: Presence<String>,
-}
+/// Shell output with guest field presence.
+pub type BashResult = maestro_tool::bash_executor::BashResult<Presence<f64>, Presence<String>>;

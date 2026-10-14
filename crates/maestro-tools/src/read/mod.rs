@@ -16,7 +16,7 @@ use execution::Reader;
 use maestro_agent::AgentTool;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, Model, Tool};
 pub(crate) use native::{NativeReadOperations, access_file};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use std::{rc::Rc, sync::Arc};
 
@@ -31,13 +31,8 @@ pub struct ReadToolInput {
     pub limit: Option<f64>,
 }
 
-/// What a read reports beyond its content.
-#[derive(Serialize)]
-pub struct ReadToolDetails {
-    /// The automatic truncation applied to text, when there was one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub truncation: Option<TruncationResult>,
-}
+/// Read observations with optional native truncation.
+pub type ReadToolDetails = maestro_tool::tools::read::ReadToolDetails<Option<TruncationResult>>;
 
 /// The file access a read performs; replace it to read through another system.
 pub trait ReadOperations: Send + Sync {

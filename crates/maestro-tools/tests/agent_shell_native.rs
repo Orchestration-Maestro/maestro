@@ -428,8 +428,7 @@ fn bash_artifact_creation_failure_is_reported() {
         release.notify_one();
         let error = execution
             .await
-            .err()
-            .expect("artifact I/O failure must not become success");
+            .expect_err("artifact I/O failure must not become success");
         assert!(settled.load(std::sync::atomic::Ordering::SeqCst));
         assert!(error.code.is_some(), "original native I/O code survives");
     });

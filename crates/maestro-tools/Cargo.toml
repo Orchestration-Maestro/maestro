@@ -6,6 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-tool = { path = "../maestro-tool" }
 maestro-text = { path = "../maestro-text" }
 serde.workspace = true
 ryu-js.workspace = true

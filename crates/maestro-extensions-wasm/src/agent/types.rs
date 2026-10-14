@@ -70,30 +70,12 @@ impl<'de> Deserialize<'de> for AgentMessage {
     }
 }
 
+use crate::ExtensionResult;
 use crate::Presence;
-use crate::{ExtensionResult, UserBlock};
-use std::rc::Rc;
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 /// Authored execution ordering choice.
-pub enum ToolExecutionMode {
-    /// Sequential execution choice.
-    Sequential,
-    /// Parallel execution choice.
-    Parallel,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// Supplied partial or final tool output.
-pub struct AgentToolResult {
-    /// Content.
-    pub content: Vec<UserBlock>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Details.
-    pub details: Presence<String>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Terminate.
-    pub terminate: Presence<bool>,
-}
+pub use maestro_tool::types::ToolExecutionMode;
+use std::rc::Rc;
+/// Supplied tool output with guest field presence.
+pub type AgentToolResult = maestro_tool::types::AgentToolResult<Presence<String>, Presence<bool>>;
 /// Synchronous delivery of a partial result.
 pub type AgentToolUpdateCallback = Rc<dyn Fn(AgentToolResult) -> ExtensionResult<()>>;

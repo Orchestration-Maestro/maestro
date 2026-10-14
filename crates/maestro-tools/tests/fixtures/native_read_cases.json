@@ -1,0 +1,340 @@
+[
+  {
+    "input": "{\"path\":\" a/../雪 \"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":3}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\"\"}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": "",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": 0.0,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":-0.0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": -0.0,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":-1.25}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": -1.25,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":\"2\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": 0.0
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":-0.0}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": -0.0
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":2.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": 2.5
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":\"2\"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"zExtra\":{\"keep\":[2,1,2]},\"aExtra\":false}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "[]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "null",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "false",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "0",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "\"record\"",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../\\u96ea \",\"path\":\" a/../\\u96ea \"}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "[\" a/../雪 \"]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "[\"p\",null,null]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": "p",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "[\"p\",-0.0,2.5]",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": "p",
+        "offset": -0.0,
+        "limit": 2.5
+      }
+    }
+  },
+  {
+    "input": "[\"p\",null]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "[\"p\",null,null,\"extra\"]",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../\\u96ea \",\"offset\":0,\"offset\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../\\u96ea \",\"limit\":2.5,\"limit\":null}",
+    "expected": {
+      "ok": false
+    }
+  },
+  {
+    "input": "{\"path\":\"p\",\"zExtra\":1,\"aExtra\":2,\"zExtra\":3}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": "p",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\"p\",\"extra\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": "p",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"limit\":7.25}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": 7.25
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":null,\"limit\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":null,\"limit\":7.25}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": null,
+        "limit": 7.25
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":2.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": 2.5,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":2.5,\"limit\":null}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": 2.5,
+        "limit": null
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":2.5,\"limit\":7.25}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": 2.5,
+        "limit": 7.25
+      }
+    }
+  },
+  {
+    "input": "{\"path\":\" a/../雪 \",\"offset\":7.25,\"limit\":2.5}",
+    "expected": {
+      "ok": true,
+      "value": {
+        "path": " a/../雪 ",
+        "offset": 7.25,
+        "limit": 2.5
+      }
+    }
+  }
+]

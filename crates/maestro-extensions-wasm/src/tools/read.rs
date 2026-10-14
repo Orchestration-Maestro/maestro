@@ -18,11 +18,5 @@ pub struct ReadToolInput {
     /// Extra.
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// Observations supplied by the read tool.
-pub struct ReadToolDetails {
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Truncation.
-    pub truncation: Presence<TruncationResult>,
-}
+/// Observations supplied by the read tool with guest field presence.
+pub type ReadToolDetails = maestro_tool::tools::read::ReadToolDetails<Presence<TruncationResult>>;
