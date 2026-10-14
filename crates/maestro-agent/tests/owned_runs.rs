@@ -1,8 +1,7 @@
 //! Owned prompt admission and completion through the public Agent.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled model and execution fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{Agent, PromptInput};
 use std::sync::Arc;
 

@@ -1,8 +1,7 @@
 //! Public proxy request and stream observations.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled public-operation fixtures.
-pub mod support;
+use crate::support;
 use maestro_models::FetchError;
 use serde_json::{Value, json};
 use support::proxy::{
@@ -1240,7 +1239,7 @@ async fn proxy_borrowed_result_and_final_usage_keep_identity_case() {
     reason = "This binary uses part of the shared child-process helper."
 )]
 #[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
+pub(crate) mod child_process;
 #[allow(
     dead_code,
     reason = "This binary uses part of the shared loopback server."

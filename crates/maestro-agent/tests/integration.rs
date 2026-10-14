@@ -1,0 +1,26 @@
+//! Shared integration-test executable.
+
+mod browser_loop;
+mod browser_owned;
+mod continuations;
+mod hook_boundaries;
+mod live_subscriptions;
+mod loop_turns;
+mod maestro_agent_guide;
+mod maestro_agent_integration;
+mod maestro_proxy_stream;
+mod message_projection;
+mod owned_runs;
+mod parallel_tools;
+mod queued_turns;
+mod raw_loop_cases;
+mod raw_stream_contract;
+mod run_binding;
+mod run_configuration;
+mod state_ownership;
+#[cfg(not(target_arch = "wasm32"))]
+mod support;
+mod tool_callbacks;
+mod tool_detail_presence;
+mod tool_turns;
+mod turn_controls;

@@ -1,8 +1,7 @@
 //! Configuration capture and request binding through the public owner.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Controlled operation fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{Agent, AgentOptions};
 use maestro_models::ThinkingBudgets;
 use std::sync::{Arc, Mutex, RwLock};

@@ -1,4 +1,5 @@
 //! Controlled model responses for public-operation tests.
+#![cfg(test)]
 use maestro_agent::{AgentContext, AgentLoopConfig, AgentLoopOptions, AgentMessage};
 use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, Context, JsonObject, Message,

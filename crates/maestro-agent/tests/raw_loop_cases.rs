@@ -1,8 +1,7 @@
 //! Observable raw conversation scenarios.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Shared controlled model and task fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{
     AgentContext, AgentEvent, AgentLoopConfig, AgentMessage, CustomAgentMessages,
     ToolExecutionMode, agent_loop_continue,

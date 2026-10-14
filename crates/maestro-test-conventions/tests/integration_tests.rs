@@ -6,7 +6,12 @@ mod support;
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
-const OWNERS: [&str; 3] = ["maestro-models", "maestro-tui", "maestro-tools"];
+const OWNERS: [&str; 4] = [
+    "maestro-models",
+    "maestro-tui",
+    "maestro-tools",
+    "maestro-agent",
+];
 
 fn workspace(owner: &str) -> Workspace {
     let workspace = Workspace::new();

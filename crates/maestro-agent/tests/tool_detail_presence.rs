@@ -1,8 +1,7 @@
 //! Absent, null and valued tool details through typed, erased and loop paths.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-/// Shared controlled conversation fixtures.
-pub mod support;
+use crate::support;
 use maestro_agent::{
     AfterToolCall, AfterToolCallResult, AgentEvent, AgentMessage, AgentTool, AgentToolResult,
     ExecuteTool, ToolExecutionMode, run_agent_loop, run_agent_loop_continue,
