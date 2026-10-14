@@ -75,6 +75,31 @@ struct Corpus {
     cases: Vec<Case>,
 }
 
+/// Select a nonempty search group after validating the corpus and query identities.
+pub fn search_cases(source: &str, test: &str) -> Vec<Case> {
+    let corpus: Corpus = serde_json::from_str(source).unwrap();
+    let mut seen = HashSet::new();
+    for case in &corpus.cases {
+        assert!(
+            seen.insert((&case.test, &case.op, case.input.to_string())),
+            "duplicate query"
+        );
+    }
+    assert_eq!(corpus.theme_keys.len(), 7);
+    let selected: Vec<_> = corpus
+        .cases
+        .into_iter()
+        .filter(|case| case.test == test)
+        .collect();
+    assert!(!selected.is_empty(), "missing group {test}");
+    selected
+}
+
+/// Return the recorded search palette values in their supplied order.
+pub fn search_keys(source: &str) -> Vec<String> {
+    serde_json::from_str::<Corpus>(source).unwrap().theme_keys
+}
+
 /// Every (test, operation) group the corpus may hold; a case outside them is never run.
 const GROUPS: [(&str, &str); 31] = [
     (

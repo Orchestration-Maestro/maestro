@@ -20262,9 +20262,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "read"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20348,9 +20346,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "bash"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20434,9 +20430,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "grep"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20521,9 +20515,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "read"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20607,9 +20599,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "bash"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20694,9 +20684,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "find"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20782,9 +20770,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "write"
+              "toolCallId": "tc"
             }
           },
           "children": []
@@ -20871,9 +20857,7 @@
             "parentId": "a",
             "message": {
               "role": "toolResult",
-              "content": "",
-              "toolCallId": "tc",
-              "toolName": "find"
+              "toolCallId": "tc"
             }
           },
           "children": []

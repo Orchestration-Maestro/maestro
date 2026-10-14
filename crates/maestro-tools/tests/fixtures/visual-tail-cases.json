@@ -1,12 +1,4 @@
 {
-  "colors": {
-    "toolTitle": 1,
-    "toolOutput": 2,
-    "error": 3,
-    "muted": 4,
-    "warning": 5,
-    "dim": 6
-  },
   "cases": [
     {
       "test": "visual_tail_wraps_before_selecting_rows",

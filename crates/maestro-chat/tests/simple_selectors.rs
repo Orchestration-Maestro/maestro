@@ -269,17 +269,7 @@ fn message_initial_identity_defaults_to_newest() {
         let (_, theme) = published::published(&colors(0));
         let events = Events::default();
         let runtime = manual_runtime::ManualRuntime::new();
-        let messages = query
-            .messages
-            .into_iter()
-            .map(
-                |record| maestro_chat::components::user_message_selector::UserMessageItem {
-                    id: record.id,
-                    text: record.text,
-                    timestamp: record.timestamp,
-                },
-            )
-            .collect();
+        let messages = messages(query.messages);
         let selector = maestro_chat::UserMessageSelectorComponent::new(
             messages,
             events.select(),
