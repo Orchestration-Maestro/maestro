@@ -167,3 +167,39 @@ and reopening reads the latest state. Callback invocation holds no warning-state
 borrow. List and border colors read the live palette; settings cursors and
 submenu heading/help styling are captured when constructed. All input follows
 live configurable keybindings.
+
+## Sign-in dialog
+
+`LoginDialogComponent::new` takes a render request, literal provider id,
+completion callback and `LoginDialogOptions`. Pass the toolkit writer's
+[`weak_render_request`](../terminal/rendering.md) to avoid retaining the writer.
+Options supply the [live theme](../theme.md), platform observation and optional
+provider-name/browser effects. Default names come from
+`maestro_app::presentation_data::get_oauth_providers`. A nonempty name override
+wins; a present title override wins even when empty.
+
+`show_auth` replaces content with linked URL, click hint and optional nonempty
+instructions. Native launch uses `open`, `explorer.exe` or `xdg-open`, passing
+one literal URL argument through the [shared process owner](../tools-process.md).
+Startup and exit failures are silent; the dialog never waits for browser exit.
+Browser embeddings provide their own launcher.
+
+`show_manual_input` appends and retains entered text. `show_prompt` appends,
+optionally shows an example and resets text. Both install an owned
+`LoginInputFuture` eagerly, before requesting rendering. Submission returns the
+exact text once. Dropping an observer does not cancel the dialog; replacing or
+dropping its sender settles the old observer as `LoginDialogError::Cancelled`.
+Information replaces visible rows, while waiting and progress append. None of
+these updates discards a pending input or its retained text.
+
+Live cancel bindings win before child input dispatch. Cancellation aborts the
+shared signal, rejects pending input with `Login cancelled`, then reports
+completion once. Further cancellation can reject a newly installed input without
+reporting completion again. Callback reentry is allowed. Theme errors propagate
+unchanged; each successful update requests one render.
+
+The dialog retains one input and forwards every focus setter to it, including
+unchanged values and while hidden. Inherited child-array edits preserve retained
+content/input aliases. New text captures its current styling; borders read the
+live theme. Editing, wrapping and cursor geometry remain with the
+[terminal components](../terminal/components.md).

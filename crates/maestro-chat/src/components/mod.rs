@@ -231,3 +231,5 @@ fn bounded_select_list(
 }
 
 pub mod settings_selector;
+
+pub mod login_dialog;
