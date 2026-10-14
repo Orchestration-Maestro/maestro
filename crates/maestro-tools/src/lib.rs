@@ -1,5 +1,5 @@
-//! Tool definitions, the `read`, `write` and `edit` tools, the file mutation queue, and output and
-//! inline-image helpers and word-level edit diff rendering for Maestro tools.
+//! Tool definitions, the `read`, `write`, `edit` and native `bash` tools, the file mutation queue,
+//! output and inline-image helpers and word-level edit diff rendering for Maestro tools.
 //!
 //! ```
 //! use maestro_tools::{TruncationOptions, truncate_head};
@@ -68,7 +68,9 @@ pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::{
     bash::{
-        BashError, BashExecOptions, BashExecResult, BashOperations, create_local_bash_operations,
+        BashError, BashExecOptions, BashExecResult, BashOperations, BashSpawnContext,
+        BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions, create_bash_tool,
+        create_bash_tool_definition, create_local_bash_operations,
     },
     exec::{ExecOptions, ExecResult, exec_command},
     sleep::{SleepError, sleep},

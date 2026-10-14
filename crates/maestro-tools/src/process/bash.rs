@@ -1,4 +1,12 @@
 //! Replaceable raw-byte shell execution with native local operations.
+mod execute;
+mod result;
+mod tool;
+pub use tool::{
+    BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
+    create_bash_tool, create_bash_tool_definition,
+};
+
 use crate::utils::shell::{
     ShellEnv, get_shell_config, get_shell_env, kill_process_tree, track_detached_child_pid,
     untrack_detached_child_pid,

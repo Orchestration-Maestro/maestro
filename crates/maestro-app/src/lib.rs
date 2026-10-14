@@ -9,7 +9,9 @@ pub use maestro_models::{ModelCost, Usage, UsageCost};
 pub use maestro_text::markup;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
-    BashOperations, create_local_bash_operations, utils::shell::get_shell_config,
+    BashOperations, BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput,
+    BashToolOptions, create_bash_tool, create_bash_tool_definition, create_local_bash_operations,
+    utils::shell::get_shell_config,
 };
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;

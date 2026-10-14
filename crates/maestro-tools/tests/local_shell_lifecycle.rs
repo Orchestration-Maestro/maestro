@@ -18,6 +18,8 @@ use tokio::io::AsyncWriteExt;
     reason = "Shared polling helpers serve multiple integration targets."
 )]
 mod process_support;
+#[cfg(target_os = "linux")]
+use process_support::pipe_holder;
 mod read_support;
 use read_support::TempDir;
 
@@ -248,9 +250,6 @@ type Operation<'a> = std::pin::Pin<
             + 'a,
     >,
 >;
-
-#[cfg(target_os = "linux")]
-use read_support::pipe_holder;
 
 /// Drives the same operation until its sink delivers another chunk.
 async fn next_chunk(
