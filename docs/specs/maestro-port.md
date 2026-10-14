@@ -222,7 +222,8 @@ lexical comparison, markup escaping, locale construction and optional locale-num
 formatting shared by transcript components. JSON owns JSON boundary
 semantics: object acceptance, canonical keys, truth, and compact and pretty text.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
-only on `maestro-request`: entry defines session interchange records and tool defines
+only on `maestro-request`: entry defines session interchange records, including the
+generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
 tool interchange records. `maestro-brand` is a core domain library below layer 0 that
 depends on text and JSON and projects a brand pack. These five owners are declared by
 policy and exist. `maestro-tool` owns `ToolExecutionMode`, `AgentToolResult`,

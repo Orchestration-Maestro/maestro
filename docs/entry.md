@@ -2,7 +2,7 @@
 
 `maestro-entry` declares session headers, entry identity, the nine concrete entry
 records, new-session options, built-context records and compaction preparation,
-settings and file-operation records. It depends only on `maestro-request` within
+results, settings and file-operation records. It depends only on `maestro-request` within
 the workspace. [Approved libraries](libraries/entry.md) supply serialization and
 ordered sets.
 
@@ -17,6 +17,7 @@ Both consumers retain their existing public names through re-exports or aliases.
 | Context setting | `Presence<Value>` | `String` |
 | New-session parent | `Presence<String>` | `Option<String>` |
 | Preparation message | Caller-selected type | Typed agent message |
+| Compaction result details | Caller-selected type, JSON value by default | Opaque JSON text |
 
 Native context views are built by projection. See [session context](sessions/session_manager.md)
 for history, file reading and selection, and [guest records](extensions/guest.md#session-entries)
@@ -31,7 +32,10 @@ write those identity members before their own fields. Preparation writes
 `firstKeptEntryId`, `messagesToSummarize`, `turnPrefixMessages`, `isSplitTurn`,
 `tokensBefore`, optional `previousSummary`, `fileOps`, `settings` in that order.
 
-Optional entry/header fields and `previousSummary` use the request owner's
+`CompactionResult<T>` writes `summary`, `firstKeptEntryId`, `tokensBefore`, then
+optional `details`. It carries no generation or persistence behavior.
+
+Optional entry/header fields, result details and `previousSummary` use the request owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
 for decoding. [`Omittable`](../crates/maestro-request/src/presence.rs) in the request
 owner controls serialization of context settings and the

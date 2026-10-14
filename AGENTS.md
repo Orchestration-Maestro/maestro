@@ -116,7 +116,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, locale construction, streaming UTF-8, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (object acceptance, canonical keys, truth, compact and
-  pretty text). `maestro-entry` and `maestro-tool` define session and tool
+  pretty text). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
