@@ -1,6 +1,10 @@
 //! Navigable views over a borrowed session tree.
 
+mod entry_text;
 mod navigation;
+mod render;
+mod structure;
+mod tool_call;
 mod tree_list;
 
 pub use tree_list::TreeList;

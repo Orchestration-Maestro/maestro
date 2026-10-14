@@ -40,3 +40,9 @@ pub use maestro_text::number_format::LocaleNumberFormat;
 
 /// Agent reasoning levels, including disabled reasoning.
 pub use maestro_agent::ThinkingLevel;
+/// Shared with the terminal frontend.
+pub use maestro_json::compact_json;
+/// Shared with the terminal frontend.
+pub use maestro_text::truncate_utf16;
+/// Shared with the terminal frontend.
+pub use maestro_tools::output::render_utils::format_read_line_range;

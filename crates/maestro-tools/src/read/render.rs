@@ -4,10 +4,10 @@ use super::ReadToolDetails;
 use crate::{
     keybinding_hints::{EXPAND, key_text},
     output::{
-        render_parts::{expand_hint, float, into_text, num, paint},
+        render_parts::{expand_hint, float, into_text, paint},
         render_utils::{
-            PREVIEW_LINES, get_text_output, path_display, replace_tabs, selected_path, str,
-            without_trailing_empty,
+            PREVIEW_LINES, format_read_line_range, get_text_output, path_display, replace_tabs,
+            selected_path, str, without_trailing_empty,
         },
         truncate::{TruncationBy, format_size},
     },
@@ -46,23 +46,13 @@ struct Classification {
     label: String,
 }
 
-/// `:start-end` for the offset and limit arguments, empty when neither is present; a
-/// non-numeric offset counts as 1 and a non-numeric limit as 0, and an end of 0 is omitted.
+/// The shared range suffix in the read warning color.
 fn line_range(args: &Value, theme: &Theme) -> Rendered<String> {
-    let (offset, limit) = (args.get("offset"), args.get("limit"));
-    if offset.is_none() && limit.is_none() {
-        return Ok(String::new());
+    let range = format_read_line_range(args);
+    if range.is_empty() {
+        return Ok(range);
     }
-    let start = offset.and_then(Value::as_f64).unwrap_or(1.0);
-    let end = limit
-        .map(|limit| (start + limit.as_f64().unwrap_or(0.0)) - 1.0)
-        .filter(|end| *end != 0.0 && !end.is_nan());
-    let tail = end.map_or_else(String::new, |end| format!("-{}", num(end)));
-    paint(
-        theme,
-        &ThemeColor::Warning,
-        &format!(":{}{tail}", num(start)),
-    )
+    paint(theme, &ThemeColor::Warning, &range)
 }
 
 /// The call line of an unclassified read.

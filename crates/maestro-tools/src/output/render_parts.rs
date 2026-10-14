@@ -9,10 +9,7 @@ use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
 use maestro_tui::{Component, Text, tui::ComponentHandle};
 use std::{any::Any, rc::Rc};
 
-/// Format a line number or count the way the model has always seen it.
-pub(crate) fn num(value: f64) -> String {
-    ryu_js::Buffer::new().format(value).to_owned()
-}
+pub(crate) use super::render_utils::num;
 
 /// Convert a length to a float, which holds every realistic length exactly.
 pub(crate) fn float(len: usize) -> f64 {

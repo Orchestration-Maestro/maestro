@@ -1,8 +1,11 @@
 //! Borrowed tree ordering, entry filtering and selection.
-use super::FilterMode;
+use super::{
+    FilterMode,
+    structure::{FlatNode, Structure},
+};
 use maestro_app::{SessionTreeNode, is_truthy, is_whitespace_scalar};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io;
 
 /// A selection callback accepting the retained entry identity.
@@ -15,9 +18,9 @@ pub struct TreeList<'tree, 'entry: 'tree> {
     /// Callback for ordinary cancellation.
     pub on_cancel: Option<Box<dyn FnMut() + 'tree>>,
     /// Nodes in navigation order.
-    nodes: Vec<&'tree SessionTreeNode<'entry>>,
+    pub(super) nodes: Vec<&'tree SessionTreeNode<'entry>>,
     /// Last occurrence of each entry identity.
-    parents: HashMap<&'tree str, &'tree SessionTreeNode<'entry>>,
+    pub(super) parents: HashMap<&'tree str, &'tree SessionTreeNode<'entry>>,
     /// Nodes admitted by the current filter.
     pub(super) visible: Vec<&'tree SessionTreeNode<'entry>>,
     /// Selected position in the visible view.
@@ -27,7 +30,15 @@ pub struct TreeList<'tree, 'entry: 'tree> {
     /// Page movement distance.
     pub(super) max_visible_lines: usize,
     /// Current history leaf identity.
-    leaf: Option<&'tree str>,
+    pub(super) leaf: Option<&'tree str>,
+    /// Physical occurrence geometry, retained across filtered projections.
+    pub(super) physical: Vec<FlatNode>,
+    /// Current visible geometry and ancestry.
+    pub(super) structure: Structure<'tree>,
+    /// Stored ancestry of the current history leaf.
+    pub(super) active_path: HashSet<&'tree str>,
+    /// Last assistant call for each tool identity.
+    pub(super) tool_calls: HashMap<&'tree str, &'tree Value>,
     /// Last selection retained through empty views.
     bookmark: Option<&'tree str>,
 }
@@ -51,6 +62,10 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
         let mut list = Self {
             on_select: None,
             on_cancel: None,
+            active_path: HashSet::new(),
+            physical: super::structure::physical(&nodes),
+            tool_calls: super::tool_call::collect(&nodes),
+            structure: Structure::default(),
             nodes,
             parents,
             visible: Vec::new(),
@@ -60,6 +75,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
             leaf: current_leaf_id,
             bookmark: None,
         };
+        list.active_path = list.ancestors(current_leaf_id).collect();
         list.apply_filter()?;
         list.selected = list.nearest_visible(initial_selected_id.or(current_leaf_id));
         list.remember_selection();
@@ -83,15 +99,23 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
             .enumerate()
             .filter_map(|(i, node)| node.entry.get("id")?.as_str().map(|id| (id, i)))
             .collect();
-        let ancestors = std::iter::successors(target, |id| {
-            self.parents.get(id)?.entry["parentId"].as_str()
-        });
-        for id in ancestors.take(self.parents.len()) {
+        for id in self.ancestors(target) {
             if let Some(index) = indices.get(id) {
                 return *index;
             }
         }
         self.visible.len().saturating_sub(1)
+    }
+
+    /// Stored parent traversal is bounded by the retained identity count.
+    pub(super) fn ancestors<'a>(&self, target: Option<&'a str>) -> impl Iterator<Item = &'a str>
+    where
+        'tree: 'a,
+    {
+        std::iter::successors(target, |id| {
+            self.parents.get(id)?.entry["parentId"].as_str()
+        })
+        .take(self.parents.len())
     }
 
     /// Rebuilds the view and keeps the last valid selection through empty views.
@@ -103,6 +127,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
             }
         }
         self.visible = visible;
+        self.structure = self.project();
         self.selected = self.nearest_visible(self.bookmark);
         self.remember_selection();
         Ok(())

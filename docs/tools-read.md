@@ -258,8 +258,14 @@ The read definition draws its call and its result into the row's previous `Text`
 component, or a new one, returning the same handle. Both read the call's raw arguments to
 select the path: `file_path` unless it is absent or null, then `path`. The call renderer
 also draws the range from the optional `offset` and `limit` (`:start-end` with end
-`start + limit - 1`, omitted when zero), shows `[invalid arg]` for a non-string path and
+`(start + limit) - 1`, omitted when zero), shows `[invalid arg]` for a non-string path and
 `...` for an empty, absent or null one.
+
+[`format_read_line_range`](../crates/maestro-tools/src/output/render_utils.rs) owns
+the plain suffix shared with tree summaries, also re-exported from `maestro_app`.
+Both arguments absent yields empty text; a missing or nonnumeric offset defaults
+to 1, and a nonnumeric limit contributes zero. Read rendering applies warning color
+only when the suffix is nonempty.
 
 A read of a `SKILL.md`, of a file inside the README's directory whose relative path is
 `README.md` or below `docs/` or `examples/`, or of an `AGENTS.md`/`CLAUDE.md` file (either
