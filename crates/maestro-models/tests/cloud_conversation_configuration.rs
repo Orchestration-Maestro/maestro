@@ -1,54 +1,10 @@
 //! Direct Bedrock request construction and configuration through the SDK with a controlled sender.
 
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock_cases.rs"]
-mod cases;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/child_process.rs"]
-mod child_process;
-use bedrock::json;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock_routes.rs"]
-mod routes;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock_rows.rs"]
-mod rows;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::bedrock_cases as cases;
+use crate::bedrock_routes as routes;
+use crate::bedrock_rows as rows;
+use crate::chat;
+use crate::child_process;
 
 use cases::{Case, Expect, run_cases};
 use chat::TestResult;

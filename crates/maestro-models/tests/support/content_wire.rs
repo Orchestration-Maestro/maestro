@@ -71,7 +71,8 @@ const FIXTURE: &str = include_str!("../fixtures/content_wire.json");
 #[serde(deny_unknown_fields)]
 pub struct Row {
     /// Test that owns the case.
-    test: String,
+    #[serde(rename = "test")]
+    _test: String,
     /// JSON source text of the value handed to the projector.
     pub input: String,
     /// Recorded result.

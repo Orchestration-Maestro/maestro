@@ -1,13 +1,16 @@
 use maestro_tui::KeybindingKeys;
+use serde_json::json;
 
 #[test]
 fn default_definitions_keep_every_key_and_description() {
+    let _globals = crate::input_support::globals();
     binding_support::run("default_definitions_keep_every_key_and_description");
 }
 
-mod binding_support;
+use crate::binding_support;
 #[test]
 fn maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound() {
+    let _globals = crate::input_support::globals();
     binding_support::run(
         "maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound",
     );
@@ -15,6 +18,7 @@ fn maestro_keys_does_not_evict_selector_confirm_when_input_submit_is_rebound() {
 
 #[test]
 fn maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key() {
+    let _globals = crate::input_support::globals();
     binding_support::run(
         "maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_same_key",
     );
@@ -22,6 +26,7 @@ fn maestro_keys_does_not_evict_cursor_bindings_when_another_action_reuses_the_sa
 
 #[test]
 fn maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults() {
+    let _globals = crate::input_support::globals();
     binding_support::run(
         "maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_defaults",
     );
@@ -29,76 +34,91 @@ fn maestro_keys_still_reports_direct_user_binding_conflicts_without_evicting_def
 
 #[test]
 fn key_lists_deduplicate_without_changing_definition_shapes() {
+    let _globals = crate::input_support::globals();
     binding_support::run("key_lists_deduplicate_without_changing_definition_shapes");
 }
 
 #[test]
 fn overrides_distinguish_absent_undefined_empty_and_single() {
+    let _globals = crate::input_support::globals();
     binding_support::run("overrides_distinguish_absent_undefined_empty_and_single");
 }
 
 #[test]
 fn unknown_actions_remain_in_user_data_but_not_resolution() {
+    let _globals = crate::input_support::globals();
     binding_support::run("unknown_actions_remain_in_user_data_but_not_resolution");
 }
 
 #[test]
 fn unsupported_key_identifiers_are_retained_but_never_match() {
+    let _globals = crate::input_support::globals();
     binding_support::run("unsupported_key_identifiers_are_retained_but_never_match");
 }
 
 #[test]
 fn conflicts_compare_literal_keys_not_decoder_equivalence() {
+    let _globals = crate::input_support::globals();
     binding_support::run("conflicts_compare_literal_keys_not_decoder_equivalence");
 }
 
 #[test]
 fn conflicts_keep_first_key_claim_and_claimant_order() {
+    let _globals = crate::input_support::globals();
     binding_support::run("conflicts_keep_first_key_claim_and_claimant_order");
 }
 
 #[test]
 fn defaults_and_single_user_claims_do_not_report_conflicts() {
+    let _globals = crate::input_support::globals();
     binding_support::run("defaults_and_single_user_claims_do_not_report_conflicts");
 }
 
 #[test]
 fn empty_and_undefined_overrides_do_not_claim_keys() {
+    let _globals = crate::input_support::globals();
     binding_support::run("empty_and_undefined_overrides_do_not_claim_keys");
 }
 
 #[test]
 fn empty_definitions_leave_only_the_user_snapshot() {
+    let _globals = crate::input_support::globals();
     binding_support::run("empty_definitions_leave_only_the_user_snapshot");
 }
 
 #[test]
 fn custom_actions_and_empty_action_ids_are_open_data() {
+    let _globals = crate::input_support::globals();
     binding_support::run("custom_actions_and_empty_action_ids_are_open_data");
 }
 
 #[test]
 fn repeated_record_entries_replace_value_without_moving_slot() {
+    let _globals = crate::input_support::globals();
     binding_support::run("repeated_record_entries_replace_value_without_moving_slot");
 }
 
 #[test]
 fn numeric_action_ids_keep_insertion_order() {
+    let _globals = crate::input_support::globals();
     binding_support::run("numeric_action_ids_keep_insertion_order");
 }
 
 #[test]
 fn prototype_named_actions_are_ordinary_record_entries() {
+    let _globals = crate::input_support::globals();
     binding_support::run("prototype_named_actions_are_ordinary_record_entries");
 }
 
 #[test]
 fn replacing_user_bindings_rebuilds_keys_and_conflicts() {
+    let _globals = crate::input_support::globals();
     binding_support::run("replacing_user_bindings_rebuilds_keys_and_conflicts");
 }
 
 #[test]
 fn replacing_with_empty_configuration_restores_defaults() {
+    let _globals = crate::input_support::globals();
     binding_support::run("replacing_with_empty_configuration_restores_defaults");
 }
 
@@ -111,6 +131,7 @@ impl Drop for ProtocolRestore {
 }
 #[test]
 fn matching_reads_current_protocol_and_does_not_filter_releases() {
+    let _globals = crate::input_support::globals();
     let _restore = ProtocolRestore(maestro_tui::is_kitty_protocol_active());
     let corpus = binding_support::corpus();
     let cases = corpus["cases"].as_array().unwrap();
@@ -128,7 +149,7 @@ fn matching_reads_current_protocol_and_does_not_filter_releases() {
 
 #[test]
 fn returned_snapshots_cannot_change_manager_state() {
-    use serde_json::json;
+    let _globals = crate::input_support::globals();
     for (id, input) in [
         (
             "copies",

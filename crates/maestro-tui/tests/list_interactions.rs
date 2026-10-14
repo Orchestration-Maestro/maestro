@@ -1,6 +1,6 @@
 #![cfg(test)]
 #[cfg(test)]
-pub mod list_support;
+use crate::list_support;
 use maestro_tui::{
     Component, KeybindingKeys, KeybindingsManager, SelectItem, SelectList, SelectListLayoutOptions,
     SettingItem, SettingsList, TUI_KEYBINDINGS, set_keybindings,
@@ -11,7 +11,7 @@ use std::{cell::RefCell, rc::Rc};
 
 #[test]
 fn list_visible_limits_keep_scroll_counters() {
-    let _keys = list_support::KEYS.lock().unwrap();
+    let _keys = crate::input_support::globals();
     for case in list_support::cases("list_visible_limits_keep_scroll_counters") {
         if case.case.starts_with("sl-") {
             list_support::select_case(case);
@@ -22,7 +22,7 @@ fn list_visible_limits_keep_scroll_counters() {
 }
 #[test]
 fn lists_clip_empty_messages_and_prefixes() {
-    let _keys = list_support::KEYS.lock().unwrap();
+    let _keys = crate::input_support::globals();
     for case in list_support::cases("lists_clip_empty_messages_and_prefixes") {
         if case.case.starts_with("sl-") {
             list_support::select_case(case);
@@ -33,7 +33,7 @@ fn lists_clip_empty_messages_and_prefixes() {
 }
 #[test]
 fn lists_respect_rebound_key_precedence() {
-    let _keys = list_support::KEYS.lock().unwrap();
+    let _keys = crate::input_support::globals();
     for case in list_support::cases("lists_respect_rebound_key_precedence") {
         let actual = match case.case.as_str() {
             "keys-rebound" => rebound_keys(),
@@ -62,7 +62,7 @@ fn lists_respect_rebound_key_precedence() {
 }
 #[test]
 fn lists_theme_closures_read_live_captured_state() {
-    let _keys = list_support::KEYS.lock().unwrap();
+    let _keys = crate::input_support::globals();
     let prefix = Rc::new(RefCell::new("a:"));
     let calls = Rc::default();
     let mut select_theme = list_support::select_theme(false, &calls);
@@ -185,7 +185,7 @@ fn rebound_keys() -> serde_json::Value {
 
 #[test]
 fn lists_preserve_fitting_theme_bytes() {
-    let _keys = list_support::KEYS.lock().unwrap();
+    let _keys = crate::input_support::globals();
     for output in ["\x1b[31m", "\x1b]8;;https://example.test\x07row"] {
         let mut theme = list_support::select_theme(false, &Rc::default());
         theme.selected_text = Rc::new(move |_| output.into());

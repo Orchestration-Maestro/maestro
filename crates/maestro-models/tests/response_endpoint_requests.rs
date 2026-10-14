@@ -1,14 +1,6 @@
 //! Request behavior of the standard response endpoint.
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/response_endpoint.rs"]
-mod endpoint;
-#[path = "support/json.rs"]
-mod json;
-#[path = "support/response_cases.rs"]
-mod response_cases;
+use crate::chat;
+use crate::response_endpoint as endpoint;
 
 #[test]
 fn responses_build_default_payload() -> chat::TestResult {
@@ -208,9 +200,6 @@ fn responses_preserve_payload_insertion_order_at_hook_and_wire() -> chat::TestRe
         Ok(())
     })
 }
-
-#[path = "support/response_output.rs"]
-mod response_output;
 
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]

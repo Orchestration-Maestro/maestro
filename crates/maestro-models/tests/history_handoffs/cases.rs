@@ -1,6 +1,6 @@
 //! Public history qualification witnesses.
 
-use crate::{chat::TestResult, qualification};
+use crate::history_handoffs::{chat::TestResult, qualification};
 
 /// Recorded public observations for handoff table keeps distinct routes.
 #[test]

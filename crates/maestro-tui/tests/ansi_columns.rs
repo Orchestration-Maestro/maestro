@@ -5,10 +5,7 @@ use maestro_tui::{
     visible_width, wrap_text_with_ansi,
 };
 
-mod fixtures {
-    pub mod cluster_cases;
-    pub mod slice_cases;
-}
+use crate::fixtures;
 use fixtures::cluster_cases::{CLUSTER_CASES, ClusterCase};
 use fixtures::slice_cases::SLICE_CASES;
 

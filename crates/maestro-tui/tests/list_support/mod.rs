@@ -2,9 +2,9 @@ use maestro_tui::tui::InputHandler;
 use maestro_tui::{Component, SelectItem, SelectList, SelectListLayoutOptions, SelectListTheme};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc, sync::Mutex};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
-pub static KEYS: Mutex<()> = Mutex::new(());
+pub(crate) use crate::input_support::GLOBALS as KEYS;
 pub type Observations = Rc<RefCell<Vec<Value>>>;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -503,8 +503,7 @@ fn maestro_bounds_materialized_arguments() {
     }
 }
 
-#[path = "support/child_process.rs"]
-mod child_process;
+use crate::child_process;
 
 #[test]
 fn maestro_drops_extreme_argument_depth_safely() -> child_process::TestResult {

@@ -2,9 +2,7 @@
 
 use maestro_tui::{TruncateOptions, truncate_to_width, visible_width};
 
-mod fixtures {
-    pub mod truncation_cases;
-}
+use crate::fixtures;
 use fixtures::truncation_cases::PREFIX_CASES;
 
 const RESET: &str = "\x1b[0m";

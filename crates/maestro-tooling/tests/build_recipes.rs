@@ -1042,7 +1042,7 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
     );
 }
 
-fn assert_terminal_test_selection(workspace: &Workspace) {
+fn terminal_test_fixture(workspace: &Workspace) {
     let real_tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-tui/tests");
     let tests = workspace.0.join("crates/maestro-tui/tests");
     fs::create_dir_all(&tests).unwrap();
@@ -1064,6 +1064,25 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
         );
         fs::write(tests.join(format!("{target}.rs")), source).unwrap();
     }
+    let manifest = workspace.0.join("crates/maestro-tui/Cargo.toml");
+    let text = fs::read_to_string(&manifest).unwrap();
+    fs::write(
+        &manifest,
+        format!(
+            "{}\n[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\"\n",
+            text.replace("[package]", "[package]\nautotests = false")
+        ),
+    )
+    .unwrap();
+    fs::write(
+        tests.join("integration.rs"),
+        "mod ansi_wrapping;\nmod ansi_columns;\n",
+    )
+    .unwrap();
+}
+
+fn assert_terminal_test_selection(workspace: &Workspace) {
+    terminal_test_fixture(workspace);
     let output = workspace
         .command("tui-test")
         .args(["--", "--nocapture"])
@@ -1086,8 +1105,13 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
     assert!(stdout.contains("wrapped_lines ... ok"));
     assert!(stdout.contains("1 passed; 0 failed; 1 ignored"));
     let output = workspace
-        .command("tui-test-ansi")
-        .args(["--", "--ignored", "--exact", "wrapped_ignored"])
+        .command("tui-test")
+        .args([
+            "--",
+            "--ignored",
+            "--exact",
+            "ansi_wrapping::wrapped_ignored",
+        ])
         .output()
         .unwrap();
     assert!(output.status.success());

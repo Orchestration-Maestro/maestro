@@ -1,6 +1,6 @@
 //! Overflow classification of recorded provider outcomes.
 
-use crate::{cache_overflow_images::assert_rows, chat::TestResult};
+use crate::provider_overflow::{cache_overflow_images::assert_rows, chat::TestResult};
 
 /// Returned provider errors classify as context overflow on every delivered route.
 #[test]

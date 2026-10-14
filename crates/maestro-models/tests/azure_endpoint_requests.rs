@@ -1,12 +1,6 @@
 //! Cloud endpoint request policy through controlled public invocations.
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/azure_endpoint.rs"]
-mod endpoint;
-#[path = "support/json.rs"]
-mod json;
+use crate::azure_endpoint as endpoint;
+use crate::chat;
 #[test]
 fn azure_route_configured_endpoints() -> chat::TestResult {
     chat::block_on(
@@ -174,8 +168,3 @@ fn azure_ignore_unadmitted_transport_and_body_fields() -> chat::TestResult {
         endpoint::assert_rows("azure_ignore_unadmitted_transport_and_body_fields"),
     )
 }
-
-#[path = "support/azure_cases.rs"]
-mod azure_cases;
-#[path = "support/response_output.rs"]
-mod response_output;

@@ -3,7 +3,7 @@
 
 use std::io;
 use std::process::Command;
-use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::sync::{MutexGuard, PoisonError};
 
 use maestro_tui::keys::decode_printable_key;
 use maestro_tui::{
@@ -11,9 +11,7 @@ use maestro_tui::{
     is_kitty_protocol_active, matches_key, parse_key, set_kitty_protocol_active,
 };
 
-mod support {
-    pub mod key_cases;
-}
+use crate::support;
 use support::key_cases::{
     CAND, ESCAPE, ESCAPE_CAND, EVENTS, EVENTS_CAND, KEYPAD, KEYPAD_CAND, LAYOUT, LAYOUT_CAND,
     LEGACY, LEGACY_CAND, MALFORMED, MALFORMED_CAND, MODIFIERS, MODIFIERS_CAND, MODIFY_OTHER_KEYS,
@@ -21,7 +19,7 @@ use support::key_cases::{
 };
 
 /// Serializes the tests that observe or change the process-wide protocol flag.
-static PROTOCOL: Mutex<()> = Mutex::new(());
+use crate::input_support::GLOBALS as PROTOCOL;
 
 /// Variable that selects the scenario a probe child process runs.
 const PROBE: &str = "MAESTRO_KEY_PROBE";
@@ -165,7 +163,11 @@ fn check_row(row: &Row, data: &str, candidates: &[&str], active: bool) {
 /// exactly `variables`, and asserts that the child passes.
 fn run_probe(scenario: &str, variables: &[(&str, &str)]) -> io::Result<()> {
     let mut child = Command::new(std::env::current_exe()?);
-    child.args(["--exact", "environment_probe", "--test-threads=1"]);
+    child.args([
+        "--exact",
+        "key_decoding::environment_probe",
+        "--test-threads=1",
+    ]);
     for name in TERMINAL_VARIABLES {
         child.env_remove(name);
     }
@@ -178,6 +180,10 @@ fn run_probe(scenario: &str, variables: &[(&str, &str)]) -> io::Result<()> {
         "probe {scenario} failed:\n{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stdout)
+            .contains("test key_decoding::environment_probe ... ok")
     );
     Ok(())
 }

@@ -23,6 +23,15 @@ pub enum Endpoint {
     /// Cloud response endpoint.
     Azure,
 }
+impl Endpoint {
+    /// Completion frame for this endpoint's controlled fixture.
+    fn complete(self) -> &'static str {
+        match self {
+            Self::Standard => crate::response_endpoint::COMPLETE,
+            Self::Azure => crate::azure_endpoint::COMPLETE,
+        }
+    }
+}
 /// One endpoint and entry-point selection.
 #[derive(Clone, Copy)]
 struct Invocation {
@@ -91,7 +100,7 @@ pub async fn native(endpoint: Endpoint) -> TestResult {
     let success = format!(
         "{}{}",
         "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[]}}\n\ndata: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"message\",\"id\":\"m\",\"content\":[{\"type\":\"output_text\",\"text\":\"answer\"}]}}\n\n",
-        crate::endpoint::COMPLETE
+        endpoint.complete()
     );
     for simple in [false, true] {
         let call = Invocation { endpoint, simple };
@@ -415,11 +424,7 @@ pub async fn transport_options(endpoint: Endpoint) -> TestResult {
                     "disconnected",
                 )),
             )),
-            crate::transport::Attempt::body(
-                200,
-                &[],
-                crate::endpoint::COMPLETE.as_bytes().to_vec(),
-            ),
+            crate::transport::Attempt::body(200, &[], endpoint.complete().as_bytes().to_vec()),
         ]);
         let (target, history) = inputs(call.endpoint)?;
         let common = StreamOptions {
@@ -534,11 +539,7 @@ async fn retry_statuses(call: Invocation) -> TestResult {
     for retries in [Some(0_u8), Some(1), None] {
         let setup = crate::transport::transport(vec![
             crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
-            crate::transport::Attempt::body(
-                200,
-                &[],
-                crate::endpoint::COMPLETE.as_bytes().to_vec(),
-            ),
+            crate::transport::Attempt::body(200, &[], call.endpoint.complete().as_bytes().to_vec()),
         ]);
         let count = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let observed = Arc::clone(&count);
@@ -570,7 +571,7 @@ async fn retry_statuses(call: Invocation) -> TestResult {
     let setup = crate::transport::transport(vec![
         crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
         crate::transport::Attempt::status(503, &[("retry-after-ms", "2")]),
-        crate::transport::Attempt::body(200, &[], crate::endpoint::COMPLETE.as_bytes().to_vec()),
+        crate::transport::Attempt::body(200, &[], call.endpoint.complete().as_bytes().to_vec()),
     ]);
     let (target, history) = inputs(call.endpoint)?;
     let common = StreamOptions {

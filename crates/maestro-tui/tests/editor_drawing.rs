@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Exact multiline editor rows through the component boundary.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 #[test]
 fn editor_render_wraps_and_pads() {
     support::run("editor_render_wraps_and_pads");

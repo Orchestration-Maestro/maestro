@@ -2,12 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 /// Shared native filesystem fixtures.
-pub mod fixtures {
-    pub mod attachments;
-    pub mod completion_native;
-    pub mod futures;
-    pub mod native_attachments;
-}
+use crate::fixtures;
 use fixtures::completion_native::Tree;
 #[cfg(unix)]
 use fixtures::native_attachments::{child_script, native_cases};

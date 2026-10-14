@@ -1,10 +1,7 @@
 //! Native completion operations through the provider.
 
 /// Shared controlled completion fixtures.
-pub mod fixtures {
-    pub mod completion_native;
-    pub mod futures;
-}
+use crate::fixtures;
 use fixtures::futures::block_on;
 use maestro_tui::autocomplete::{CompletionOptions, CursorPosition, NativeAutocompleteOperations};
 use maestro_tui::{AutocompleteProvider, CombinedAutocompleteProvider};
@@ -66,7 +63,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
+            "native_completion::native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
         ])
         .env("MAESTRO_COMPLETION_HOME_CHILD", "1")
         .env("HOME", &tree.0)
@@ -78,6 +75,7 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("test native_completion::native_filesystem_errors_and_home_expansion_follow_the_same_provider_path ... ok"));
 }
 
 #[cfg(unix)]

@@ -1,7 +1,7 @@
 //! Empty assistants retain their selected protocol behavior.
 
 use super::cases::assert_rows;
-use crate::chat::TestResult;
+use crate::empty_content::chat::TestResult;
 
 #[test]
 fn maestro_empty_assistant_retains_protocol_behavior() -> TestResult {

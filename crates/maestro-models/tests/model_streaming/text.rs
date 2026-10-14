@@ -1,7 +1,7 @@
 //! Completion histories use actual returned assistants.
 
 use super::cases::assert_rows;
-use crate::chat::TestResult;
+use crate::model_streaming::chat::TestResult;
 
 #[test]
 fn maestro_completions_continue_with_actual_assistants() -> TestResult {

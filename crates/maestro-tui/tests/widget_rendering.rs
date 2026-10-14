@@ -7,9 +7,7 @@ use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Box, Component, Spacer, Text};
 use serde::Deserialize;
 
-mod fixtures {
-    pub mod widget_probes;
-}
+use crate::fixtures;
 use fixtures::widget_probes::{Calls, background, live_background, tinted};
 
 /// One recorded text rendering: the widget it builds, the width it renders at and the rows and

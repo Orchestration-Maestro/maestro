@@ -2,9 +2,7 @@
 
 use maestro_tui::{visible_width, wrap_text_with_ansi};
 
-mod fixtures {
-    pub mod terminal;
-}
+use crate::fixtures;
 use fixtures::terminal::{replay, replay_lines};
 
 const UNDERLINE_ON: &str = "\x1b[4m";

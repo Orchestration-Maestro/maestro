@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Prompt history through the editor interface.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 #[test]
 fn history_admission_trims_only_endpoints() {
     support::run("history_admission_trims_only_endpoints");

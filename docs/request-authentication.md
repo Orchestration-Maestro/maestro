@@ -66,5 +66,5 @@ Run the integration case, which creates that environment in a fresh child
 without copying user credentials or changing the parent environment:
 
 ```sh
-cargo test --locked -p maestro-models --test environment_model_keys maestro_fireworks_catalog_and_keys_remain_complete -- --exact
+cargo test --locked -p maestro-models --test integration environment_model_keys::maestro_fireworks_catalog_and_keys_remain_complete -- --exact
 ```

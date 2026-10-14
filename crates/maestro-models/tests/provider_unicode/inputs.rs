@@ -1,6 +1,6 @@
 //! Authored text and raw-unit observations.
 
-use crate::{chat::TestResult, qualification};
+use crate::provider_unicode::{chat::TestResult, qualification};
 
 /// Compare the complete recorded public observations.
 #[test]

@@ -331,14 +331,12 @@ mod tests {
         assert!(Arc::ptr_eq(&result, &message));
     }
 
-    static CLEANUPS: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
     #[test]
     fn maestro_cleanup_uses_live_registrations() {
         use maestro_models::records::session_resources::{
             SessionResourceCleanup, cleanup_session_resources, register_session_resource_cleanup,
         };
-        let _serial = CLEANUPS.lock().unwrap();
+        let _serial = crate::bundled::registry();
         let visits = Arc::new(std::sync::Mutex::new(Vec::new()));
         let log = Arc::clone(&visits);
         let first: SessionResourceCleanup = Arc::new(move |_| {
@@ -382,7 +380,7 @@ mod tests {
             SessionResourceCleanup, SessionResourceRemoval, cleanup_session_resources,
             register_session_resource_cleanup,
         };
-        let _serial = CLEANUPS.lock().unwrap();
+        let _serial = crate::bundled::registry();
         let visits = Arc::new(std::sync::Mutex::new(Vec::new()));
         let unvisited = Arc::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));
         let added = Arc::new(std::sync::Mutex::new(None::<SessionResourceRemoval>));

@@ -7,9 +7,7 @@ use std::rc::{Rc, Weak};
 use maestro_tui::tui::ComponentHandle;
 use maestro_tui::{Box, Component, Spacer, Text};
 
-mod fixtures {
-    pub mod widget_probes;
-}
+use crate::fixtures;
 use fixtures::widget_probes::{Calls, background, live_background, tinted};
 
 #[test]

@@ -1,8 +1,7 @@
 //! Single-line input editing through its public component capability.
+use crate::input_support;
 use maestro_tui::{Input, tui::InputHandler};
 use std::{cell::RefCell, rc::Rc};
-#[path = "fixtures/input_support/mod.rs"]
-mod input_support;
 
 #[test]
 fn enter_submits_a_literal_backslash() {

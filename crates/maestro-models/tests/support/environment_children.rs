@@ -65,6 +65,7 @@ pub fn run(
     provider: &str,
     expected: (Option<Vec<&str>>, Option<&str>),
 ) -> TestResult {
+    let test = crate::child_process::selector(test)?;
     let mut command = Command::new(std::env::current_exe()?);
     command.env_clear().current_dir(&directory.0);
     command
@@ -74,7 +75,7 @@ pub fn run(
         command.env("LLVM_PROFILE_FILE", profile);
     }
     let output = command
-        .args(["--exact", test, "--nocapture"])
+        .args(["--exact", &test, "--nocapture"])
         .envs(variables.iter().cloned())
         .env(
             "MAESTRO_ENV_EXPECTATION",
@@ -87,6 +88,7 @@ pub fn run(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    crate::child_process::assert_executed(&output, &test);
     Ok(())
 }
 

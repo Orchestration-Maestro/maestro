@@ -72,6 +72,33 @@ impl Workspace {
         fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
+    #[allow(
+        dead_code,
+        reason = "Only packaging fixtures need explicit test targets."
+    )]
+    /// Package a fixture's top-level test files in the canonical executable.
+    pub fn integration(&self, directory: &str) {
+        let root = self.root.join("crates").join(directory);
+        let tests = root.join("tests");
+        let modules: Vec<_> = std::fs::read_dir(&tests)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .filter(|path| path.extension().is_some_and(|extension| extension == "rs"))
+            .map(|path| format!("mod {};\n", path.file_stem().unwrap().to_str().unwrap()))
+            .collect();
+        let manifest = root.join("Cargo.toml");
+        let text = std::fs::read_to_string(&manifest).unwrap();
+        std::fs::write(
+            manifest,
+            format!(
+                "{}\n[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\"\n",
+                text.replace("[package]", "[package]\nautotests = false")
+            ),
+        )
+        .unwrap();
+        std::fs::write(tests.join("integration.rs"), modules.concat()).unwrap();
+    }
+
     pub fn list(&self, entries: &[(&str, &str)]) {
         let entries: serde_json::Map<String, serde_json::Value> = entries
             .iter()

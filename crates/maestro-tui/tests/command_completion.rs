@@ -1,9 +1,6 @@
 //! Command routing through the public provider.
 /// Shared controlled completion fixtures.
-pub mod fixtures {
-    pub mod completion;
-    pub mod futures;
-}
+use crate::fixtures;
 use fixtures::completion::{
     ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
     run_applications, run_suggestions,

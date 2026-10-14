@@ -1,11 +1,7 @@
 //! Recursive attachment completion through controlled host operations.
 #![cfg(test)]
 /// Shared host observations.
-pub mod fixtures {
-    pub mod attachments;
-    pub mod futures;
-    pub mod pending_attachments;
-}
+use crate::fixtures;
 use fixtures::attachments::run_cases;
 use fixtures::pending_attachments::{exported_provider, observe_pending};
 

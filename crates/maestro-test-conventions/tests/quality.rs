@@ -89,6 +89,7 @@ fn test_files_and_trailing_test_modules_do_not_count() {
     let tests = "// Technical.\n".repeat(501);
     std::fs::create_dir(root.join("tests")).unwrap();
     std::fs::write(root.join("tests/behavior.rs"), &tests).unwrap();
+    workspace.integration("tui");
     std::fs::write(root.join("src/tests.rs"), &tests).unwrap();
     std::fs::write(
         root.join("src/lib.rs"),

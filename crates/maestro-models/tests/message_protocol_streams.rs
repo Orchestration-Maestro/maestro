@@ -1,18 +1,8 @@
 //! Event framing, repair and reduction for direct message-protocol invocations.
 
-#[allow(dead_code, reason = "Each test binary uses part of the chat fixtures.")]
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/json.rs"]
-mod json;
-#[allow(
-    dead_code,
-    reason = "Each test binary uses part of the message fixtures."
-)]
-#[path = "support/messages.rs"]
-mod messages;
+use crate::chat;
+use crate::child_process;
+use crate::messages;
 
 use std::sync::Arc;
 

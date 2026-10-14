@@ -1,10 +1,6 @@
 //! Direct path completion through controlled operations.
 /// Shared controlled completion fixtures.
-pub mod fixtures {
-    pub mod completion;
-    pub mod completion_native;
-    pub mod futures;
-}
+use crate::fixtures;
 use fixtures::completion::{
     ApplicationCase, CommandInput, Expected, FileInput, Files, SuggestionCase, item,
     run_applications, run_suggestions,

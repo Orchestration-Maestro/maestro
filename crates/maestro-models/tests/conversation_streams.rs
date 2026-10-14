@@ -1,6 +1,5 @@
 //! Direct reasoning conversation stream behavior.
-#[path = "support/chat.rs"]
-mod chat;
+use crate::chat;
 
 use chat::{TestResult, block_on};
 use maestro_models::providers::reasoning::mistral::stream_simple_mistral;

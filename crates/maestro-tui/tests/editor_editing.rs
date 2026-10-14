@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Basic multiline edits through the retained editor.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 #[test]
 fn editor_lines_and_cursor_are_independent_snapshots() {
     support::run("editor_lines_and_cursor_are_independent_snapshots");

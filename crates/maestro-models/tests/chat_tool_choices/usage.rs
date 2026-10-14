@@ -1,6 +1,6 @@
 //! Controlled public dispatch observations.
 
-use crate::{chat::TestResult, qualification};
+use crate::chat_tool_choices::{chat::TestResult, qualification};
 
 /// Completion usage already includes reasoning tokens.
 #[test]

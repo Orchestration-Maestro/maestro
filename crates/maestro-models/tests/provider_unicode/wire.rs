@@ -1,6 +1,6 @@
 //! Native byte decoding observations.
 
-use crate::{chat::TestResult, qualification};
+use crate::provider_unicode::{chat::TestResult, qualification};
 
 /// Compare the complete recorded public observations.
 #[test]

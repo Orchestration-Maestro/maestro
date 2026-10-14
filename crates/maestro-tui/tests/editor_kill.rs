@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Editor kill through public operations.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 
 #[test]
 fn kill_boundaries_keep_noop_undo_and_chain_semantics() {

@@ -8,15 +8,13 @@ mod tests {
     };
     use std::sync::{Arc, Mutex};
 
-    static GLOBAL: Mutex<()> = Mutex::new(());
-
     fn error(text: &str) -> DiagnosticErrorInfo {
         extract_diagnostic_error(DiagnosticInput::Text(text))
     }
 
     #[test]
     fn maestro_cleanup_collects_failures_in_order() {
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         let visits = Arc::new(Mutex::new(Vec::new()));
         let removals: Vec<_> = ["first", "success", "last"]
             .into_iter()
@@ -120,7 +118,7 @@ mod tests {
     fn maestro_dispatch_preserves_registration_order() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::stream::{stream, stream_simple};
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         for (api, stamp) in [("10", 10.0), ("2", 20.0), ("01", 30.0)] {
             register_api_provider(provider(api, stamp), Some("old".into()));
@@ -172,7 +170,7 @@ mod tests {
     #[test]
     fn maestro_api_wrappers_reject_wrong_models() {
         use maestro_models::records::api_registry::*;
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let raw = Arc::clone(&calls);
@@ -208,7 +206,7 @@ mod tests {
     fn maestro_dispatch_reports_missing_api() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::stream::*;
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         for failure in [
             stream(model("missing"), context(), None).err().unwrap(),
@@ -384,7 +382,7 @@ mod tests {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::stream::{complete, complete_simple};
         use maestro_models::records::types::*;
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         let output = final_stream(71.0);
         let retained = output.clone();
@@ -510,7 +508,7 @@ mod tests {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::stream::stream;
         use maestro_models::records::types::*;
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let (on_payload, on_response) = hook_callbacks(&calls);
@@ -580,7 +578,7 @@ mod tests {
     fn maestro_callback_destruction_can_reenter() {
         use maestro_models::records::api_registry::*;
         use maestro_models::records::stream::stream;
-        let _serial = GLOBAL.lock().unwrap();
+        let _serial = crate::bundled::registry();
         clear_api_providers();
         let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         register_api_provider(reentrant_provider("reentrant", &drops), None);

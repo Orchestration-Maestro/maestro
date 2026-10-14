@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Callback reentry and ownership through the retained editor.
-#[path = "fixtures/editor_support/host.rs"]
-mod support;
+use crate::editor_host as support;
 use maestro_tui::{Editor, EditorOptions, tui::InputHandler};
 use std::{cell::RefCell, rc::Rc};
 #[test]

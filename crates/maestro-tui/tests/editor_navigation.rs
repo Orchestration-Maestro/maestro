@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Editor navigation through public operations.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 use maestro_tui::{
     Component, Editor, EditorOptions, autocomplete::CursorPosition, tui::InputHandler,
 };

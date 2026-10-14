@@ -1,6 +1,6 @@
 //! Tool image placement per protocol.
 
-use crate::{cache_overflow_images::assert_rows, chat::TestResult};
+use crate::tool_images::{cache_overflow_images::assert_rows, chat::TestResult};
 
 /// Each protocol emits its own fallback text around tool images.
 #[test]

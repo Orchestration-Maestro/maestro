@@ -15,6 +15,13 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, contents).unwrap();
     }
+    if member == "maestro-tui"
+        && files.iter().any(|(file, _)| {
+            std::path::Path::new(file).parent() == Some(std::path::Path::new("tests"))
+        })
+    {
+        workspace.integration(member);
+    }
     let result = if expected.is_empty() {
         Ok(())
     } else {

@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Public editor observations with controlled terminal effects.
-mod host;
-pub use host::*;
+pub use crate::editor_host::*;
 use maestro_tui::{Component, Editor, EditorOptions, Focusable, tui::InputHandler};
 use serde::Deserialize;
 use std::{cell::RefCell, rc::Rc};

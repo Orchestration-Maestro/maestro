@@ -4,10 +4,8 @@
     reason = "each test binary uses a subset of the shared support"
 )]
 
-#[path = "support/bundled.rs"]
-mod bundled;
-#[path = "support/chat.rs"]
-mod chat;
+use crate::bundled;
+use crate::chat;
 
 use chat::{TestResult, block_on};
 use maestro_models::{

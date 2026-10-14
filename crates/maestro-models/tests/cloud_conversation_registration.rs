@@ -1,36 +1,10 @@
 //! Cloud conversation registration through generic dispatch and replaceable callbacks.
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bundled.rs"]
-mod bundled;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock_cases.rs"]
-mod cases;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::bedrock;
+use crate::bedrock_cases as cases;
+use crate::bundled;
+use crate::chat;
+use crate::child_process;
+use crate::transport;
 use bedrock::diagnostic as error;
 use chat::{TestResult, block_on};
 use maestro_models::{

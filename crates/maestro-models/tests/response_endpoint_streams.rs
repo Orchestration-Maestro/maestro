@@ -1,28 +1,8 @@
 //! Streaming behavior of the standard response endpoint.
-#[path = "support/chat.rs"]
-mod chat;
-#[path = "support/child_process.rs"]
-mod child_process;
-#[path = "support/response_endpoint.rs"]
-mod endpoint;
-#[path = "support/json.rs"]
-mod json;
-#[allow(
-    dead_code,
-    reason = "Endpoint tests use the finite loopback exchange only."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[path = "support/response_cases.rs"]
-mod response_cases;
-#[path = "support/response_runtime.rs"]
-mod runtime;
-#[allow(
-    dead_code,
-    reason = "Endpoint tests use the scripted attempt queue only."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::chat;
+use crate::response_cases;
+use crate::response_endpoint as endpoint;
+use crate::response_runtime as runtime;
 
 #[test]
 fn responses_price_echoed_tier_before_requested_tier() -> chat::TestResult {
@@ -352,9 +332,6 @@ fn responses_send_false_payload_as_json() -> chat::TestResult {
         Ok(())
     })
 }
-
-#[path = "support/response_output.rs"]
-mod response_output;
 
 #[test]
 fn maestro_responses_emit_carriage_delimited_events() -> chat::TestResult {
