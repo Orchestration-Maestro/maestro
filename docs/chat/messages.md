@@ -71,6 +71,7 @@ and output may still be appended without restarting animation.
 
 Borders read the live theme at render time. Header, output and completion hints
 capture theme values when rebuilt; cancel keys are captured at construction and
-expansion keys at completion-display rebuild. Missing themes leave text unstyled.
+expansion keys at completion-display rebuild. Missing themes omit theme colours
+while preserving existing decorations, including the bold command header.
 `invalidate` first invalidates existing children and then rebuilds the content.
 The inherited editable `Container` child array remains available through `Deref`.

@@ -201,3 +201,46 @@ fn shell_unpublished_theme_preserves_plain_text_hints() {
         format!(" ... 2 more lines (ctrl+o to expand){}", " ".repeat(24))
     );
 }
+
+#[test]
+fn shell_try_render_preserves_child_rows_and_errors() {
+    struct FallibleChild(std::cell::Cell<bool>);
+    impl Component for FallibleChild {
+        fn render(&self, _: usize) -> Vec<String> {
+            vec!["infallible fallback".into()]
+        }
+
+        fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+            if self.0.get() {
+                Err(Box::new(std::io::Error::other("child render failed")))
+            } else {
+                Ok(vec![format!("fallible child at width {width}")])
+            }
+        }
+    }
+    let _guard = shell_rows_support::registry_guard();
+    let runtime = manual_runtime::ManualRuntime::default();
+    let terminal = recording_terminal::RecordingTerminal::new(60, 24);
+    let ui = TUI::new(
+        terminal.handle(),
+        runtime.handle(),
+        TerminalImage::default(),
+        None,
+    );
+    let state = published::unpublished();
+    let component = BashExecutionComponent::new("child".into(), ui, state.theme(), false);
+    component.clear();
+    let child = Rc::new(FallibleChild(std::cell::Cell::new(false)));
+    component.add_child(child.clone());
+    assert_eq!(
+        component.try_render(37).unwrap(),
+        ["fallible child at width 37"]
+    );
+    child.0.set(true);
+    let error = component.try_render(37).unwrap_err();
+    assert_eq!(error.to_string(), "child render failed");
+    assert_eq!(
+        error.downcast_ref::<std::io::Error>().unwrap().kind(),
+        std::io::ErrorKind::Other
+    );
+}

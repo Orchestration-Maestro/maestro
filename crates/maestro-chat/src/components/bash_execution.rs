@@ -227,7 +227,7 @@ impl BashExecutionComponent {
     pub fn get_command(&self) -> &str {
         &self.command
     }
-    /// Paints with the live slot, leaving unavailable themes unstyled.
+    /// Omits unavailable theme colours while preserving existing decorations.
     fn paint(&self, key: &ThemeColor, text: &str) -> String {
         paint(self.theme.get().ok().as_deref(), key, text)
     }
@@ -236,6 +236,9 @@ component_children!(BashExecutionComponent, Container, container);
 impl Component for BashExecutionComponent {
     fn render(&self, width: usize) -> Vec<String> {
         self.container.render(width)
+    }
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.container.try_render(width)
     }
     fn invalidate(&self) {
         self.container.invalidate();
