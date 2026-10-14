@@ -325,6 +325,25 @@ fn general_tokens_resolve_after_preceding_numeric_joins() {
 }
 
 #[test]
+fn negative_sections_use_magnitude_for_every_exponent_field() {
+    let outputs: Vec<_> = [
+        "(0.00E+00)",
+        "(##0.0E+0)",
+        "\"Mass=\"0.00E+00",
+        "\\(0.00E+00\\)",
+    ]
+    .into_iter()
+    .map(|format| {
+        super::eval_fmt::eval_fmt(format, super::GeneralValue::Number(-1.0), false, 2).unwrap()
+    })
+    .collect();
+    assert_eq!(
+        outputs,
+        ["(1.00E+00)", "(1.0E+0)", "Mass=1.00E+00", "(1.00E+00)"]
+    );
+}
+
+#[test]
 fn literal_prefixed_exponents_emit_each_sign_once() {
     for (format, positive, negative) in [
         ("\"Mass=\"0.00E+00", "Mass=1.00E+00", "-Mass=1.00E+00"),

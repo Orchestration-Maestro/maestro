@@ -13,21 +13,17 @@ pub(super) fn render_numbers(
     if pattern.is_empty() {
         return Ok(());
     }
-    let value = context.number();
-    let mut rendered = write_num(
-        NumberToken::Number,
-        &pattern,
-        if value < 0.0 && context.sections > 1 {
-            -value
-        } else {
-            value
-        },
-    )?;
-    let sign_moved = value < 0.0
+    let mut shown_value = context.number();
+    if shown_value < 0.0 && context.sections > 1 {
+        shown_value = -shown_value;
+    }
+    let mut rendered = write_num(NumberToken::Number, &pattern, shown_value)?;
+    let sign_moved = shown_value < 0.0
         && context.sections == 1
         && pieces.first().is_some_and(|p| p.kind == Kind::Text)
         && rendered.starts_with('-');
     if sign_moved {
+        shown_value = -shown_value;
         rendered.remove(0);
         pieces[0].text.insert(0, '-');
     }
@@ -41,20 +37,10 @@ pub(super) fn render_numbers(
             distribute_integer(pieces, &rendered);
         }
     }
-    for index in 0..pieces.len() {
-        if numeric(pieces[index].kind) {
-            let magnitude =
-                context.sections > 1 && value < 0.0 && index > 0 && pieces[index - 1].text == "-";
-            pieces[index].text = write_num(
-                NumberToken::Number,
-                &pieces[index].text,
-                if sign_moved || magnitude {
-                    -value
-                } else {
-                    value
-                },
-            )?;
-            pieces[index].kind = Kind::Text;
+    for piece in pieces {
+        if numeric(piece.kind) {
+            piece.text = write_num(NumberToken::Number, &piece.text, shown_value)?;
+            piece.kind = Kind::Text;
         }
     }
     Ok(())
