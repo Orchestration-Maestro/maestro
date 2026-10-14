@@ -40,10 +40,12 @@ change made during that render counts. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 
-`FocusFlag::forwarding` retains a child focus target. Setting the parent flag first
-updates its own state, then immediately forwards the same value to that child.
-Reading either flag remains independent, including after the child is removed
-from a container.
+`FocusFlag::default()` has no forwarding target. `FocusFlag::forwarding(target)`
+starts with its own false flag; each `set` first records that flag, then
+synchronously sets the target's flag, even when the value is unchanged. Changing
+only the target does not change the parent getter. A composed input can therefore
+retain independent parent focus while forwarding cursor placement to its editor.
+The retained target still receives focus after removal from a container.
 
 `Component` has `std::any::Any` as a supertrait, so whoever holds a component handle can
 downcast the borrowed component to its concrete type, as a tool renderer does to update

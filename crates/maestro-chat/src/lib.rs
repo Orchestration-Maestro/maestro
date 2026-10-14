@@ -29,3 +29,6 @@ pub use components::user_message_selector::UserMessageSelectorComponent;
 pub use components::oauth_selector::{
     AuthSelectorProvider, AuthType, OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions,
 };
+
+pub use components::extension_input::{ExtensionInputComponent, ExtensionInputOptions};
+pub use components::extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions};
