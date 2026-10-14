@@ -356,11 +356,7 @@ fn ollama_context(info: &Members) -> Result<f64, serde_json::Error> {
             .format(serde_json::from_str::<f64>(raw.get())?)
             .to_owned()
     };
-    let text = text.trim_start_matches(maestro_text::is_whitespace_scalar);
-    let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
-    let length = digits.bytes().take_while(u8::is_ascii_digit).count();
-    let prefix = &text[..text.len() - digits.len() + length];
-    prefix.parse::<f64>().map_err(serde::de::Error::custom)
+    super::parse_decimal_prefix(&text).map_err(serde::de::Error::custom)
 }
 /// Convert a single detail only after tool admission.
 async fn ollama_detail(
