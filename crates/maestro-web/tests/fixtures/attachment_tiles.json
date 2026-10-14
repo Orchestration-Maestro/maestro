@@ -1,0 +1,347 @@
+[
+  {
+    "name": "image_preview",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/svg+xml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2",
+      "preview": "PHN2Zz4="
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": "data:image/svg+xml;base64,PHN2Zz4=",
+      "icon": null,
+      "label": null,
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "document_preview",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2",
+      "preview": "PNG"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": "data:image/png;base64,PNG",
+      "icon": null,
+      "label": null,
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "pdf_preview",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2",
+      "preview": "PNG"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": "data:image/png;base64,PNG",
+      "icon": null,
+      "label": null,
+      "pdfBadge": true,
+      "remove": false
+    }
+  },
+  {
+    "name": "empty_preview",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2",
+      "preview": ""
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "note.txt",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "missing_preview",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "note.txt",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "mime_sheet",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml-y",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileSpreadsheet",
+      "label": "note.txt",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "extension_xlsx",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "Book.XLSX",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileSpreadsheet",
+      "label": "Book.XLSX",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "extension_xls",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "Book.XLS",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileSpreadsheet",
+      "label": "Book.XLS",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "legacy_mime_tile_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/vnd.ms-excel",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "note.txt",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "near_extension",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "Book.xlsx.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "Book.xls...",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "ten_units",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "1234567890",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "1234567890",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "eleven_units",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "12345678901",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "12345678...",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "supplementary_count",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "😀abcdefghX",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "😀abcdef...",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "surrogate_boundary",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "abcdefg😀XY",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "abcdefg...",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "literal_filename",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "<α>&\"",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "<α>&\"",
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "preview_over_icon",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "Book.xls",
+      "mimeType": "application/vnd.ms-excel",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2",
+      "preview": "PNG"
+    },
+    "showDelete": false,
+    "expected": {
+      "preview": "data:image/png;base64,PNG",
+      "icon": null,
+      "label": null,
+      "pdfBadge": false,
+      "remove": false
+    }
+  },
+  {
+    "name": "remove_enabled",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "showDelete": true,
+    "expected": {
+      "preview": null,
+      "icon": "FileText",
+      "label": "note.txt",
+      "pdfBadge": false,
+      "remove": true
+    }
+  }
+]

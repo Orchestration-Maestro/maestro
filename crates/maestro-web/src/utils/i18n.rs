@@ -140,6 +140,14 @@ pub struct I18n<F: ?Sized = TranslationFunction> {
     current: Translations<F>,
 }
 impl<F: ?Sized> I18n<F> {
+    /// Resolve a textual consumer without flattening categories or callables.
+    pub(crate) fn text(&self, key: &str) -> Result<String, I18nError> {
+        match self.i18n(key, None)? {
+            TranslationValue::Text(text) => Ok(text),
+            _ => Err(I18nError::NotText(key.into())),
+        }
+    }
+
     /// Decode shipped tables for this context.
     /// # Errors
     /// Returns an embedded asset decoding failure.

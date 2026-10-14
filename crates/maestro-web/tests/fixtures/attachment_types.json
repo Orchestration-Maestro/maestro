@@ -1,0 +1,242 @@
+[
+  {
+    "name": "text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "image_beats_pdf",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "x.xlsx",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "image"
+    }
+  },
+  {
+    "name": "pdf_exact",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.xlsx",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "pdf"
+    }
+  },
+  {
+    "name": "pdf_mime_parameter",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf;version=1",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "pdf_uppercase_mime",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "APPLICATION/PDF",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "docx_mime",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.pptx",
+      "mimeType": "x-wordprocessingml-y",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "docx"
+    }
+  },
+  {
+    "name": "docx_extension_only",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.DOCX",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "pptx_mime",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.xls",
+      "mimeType": "x-presentationml-y",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "pptx"
+    }
+  },
+  {
+    "name": "pptx_extension",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.PPTX",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "pptx"
+    }
+  },
+  {
+    "name": "excel_mime",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml-y",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "excel"
+    }
+  },
+  {
+    "name": "excel_legacy_mime",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/vnd.ms-excel",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "excel"
+    }
+  },
+  {
+    "name": "excel_xlsx",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.XLSX",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "excel"
+    }
+  },
+  {
+    "name": "excel_xls",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.XLS",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "excel"
+    }
+  },
+  {
+    "name": "no_extension_pdf",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.pdf",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "near_extensions",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "x.pptx.backup",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "mime_case_sensitive",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "APPLICATION/WORDPROCESSINGML",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "line 1\n\t<literal>&\nline 2"
+    },
+    "expected": {
+      "type": "text"
+    }
+  }
+]

@@ -1,0 +1,842 @@
+[
+  {
+    "name": "en_image_missing",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_image_empty",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_image_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_image_text",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pdf_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pdf_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pdf_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "PDF",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_pdf_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "PDF",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_docx_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_docx_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_docx_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "Document",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_docx_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "Document",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_pptx_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pptx_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pptx_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_pptx_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_excel_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_excel_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_excel_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "Spreadsheet",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_excel_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [
+        "Spreadsheet",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "en_text_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_text_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_text_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "en_text_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "en",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_image_missing",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_image_empty",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_image_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_image_text",
+    "input": {
+      "id": "kept",
+      "type": "image",
+      "fileName": "note.txt",
+      "mimeType": "image/png",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pdf_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pdf_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pdf_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "PDF",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_pdf_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "application/pdf",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "PDF",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_docx_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_docx_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_docx_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "Dokument",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_docx_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-wordprocessingml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "Dokument",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_pptx_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pptx_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pptx_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_pptx_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-presentationml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_excel_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_excel_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_excel_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "Tabelle",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_excel_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "x-spreadsheetml",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [
+        "Tabelle",
+        "Text"
+      ],
+      "selected": 0
+    }
+  },
+  {
+    "name": "de_text_missing",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8="
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_text_empty",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": ""
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_text_whitespace",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": " \n"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  },
+  {
+    "name": "de_text_text",
+    "input": {
+      "id": "kept",
+      "type": "document",
+      "fileName": "note.txt",
+      "mimeType": "text/plain",
+      "size": 5,
+      "content": "AAEC/v8=",
+      "extractedText": "<page>words</page>"
+    },
+    "language": "de",
+    "expected": {
+      "modes": [],
+      "selected": null
+    }
+  }
+]

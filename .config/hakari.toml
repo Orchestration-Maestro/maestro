@@ -16,4 +16,5 @@ platforms = [
 # unifier lists no wasmtime packages; the test host may build its own copies
 # of shared dependencies.
 [traversal-excludes]
-third-party = [{ name = "wasmtime" }, { name = "wasmtime-wasi" }]
+# Keep test-only default fonts out of production feature unification.
+third-party = [{ name = "egui" }, { name = "wasmtime" }, { name = "wasmtime-wasi" }]

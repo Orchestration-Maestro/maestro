@@ -2,12 +2,12 @@
 
 The `maestro-web` utility library has exactly two internal dependencies:
 `maestro-app` supplies existing numeric records, markup escaping and attachment policy;
-`maestro-theme` supplies caller-resolved presentation. It introduces no runtime,
-font bundle or application launcher.
+`maestro-theme` supplies caller-resolved presentation. It introduces no runtime or application launcher. Production installs no default
+font bundle; native tests enable the dev-only egui default fonts.
 
 | Library | Pin | Features used | License choice |
 |---|---|---|---|
-| egui | 0.36.2 | defaults off; color/image types | MIT |
+| egui | 0.36.2 | production defaults off; drawing, controls and color/image types; dev-only default_fonts | MIT |
 | usvg | 0.48.1 | defaults off; SVG parsing; roxmltree re-export | MIT |
 | resvg | 0.48.1 | defaults off; native rendering; tiny-skia re-export | MIT |
 | indexmap | 2.14.2 | serde, default/std | MIT |
@@ -20,7 +20,8 @@ font bundle or application launcher.
 | web-sys | 0.3.106 | wasm-only browser platform operations | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
-Document, Node, Element and SvgElement. Storage and reload errors remain fallible. Legacy locale access uses the platform property
+Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
+BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement and DomRect. Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
 
@@ -54,3 +55,11 @@ Application attachment loading reuses already-landed native libraries: serde
 (defaults off/std/sink, MIT). The existing model Fetch port owns HTTP transport;
 there is no second client or document parser dependency. The application uses
 the already-allowed agent dependency for standard-message projection.
+
+Native tests enable `egui/default_fonts` through a dev-dependency, resolving
+`epaint_default_fonts =0.36.2` (MIT, OFL-1.1 and Ubuntu-font-1.0). The exact-version
+licence exception is in `.github/ci.toml`. The egui traversal exclusion in
+`.config/hakari.toml` keeps this feature out of production feature unification.
+Normal/build dependency trees remain font-free on the five configured native
+targets and WebAssembly; the development tree still enables real fallback fonts.
+These fonts do not establish brand-face or real-browser glyph qualification.
