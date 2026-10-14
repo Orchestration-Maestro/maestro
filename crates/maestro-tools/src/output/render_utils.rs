@@ -112,10 +112,7 @@ pub fn normalize_display_text(text: &str) -> String {
 /// # Errors
 /// Returns the failure to compile the escape expression.
 pub fn strip_ansi(text: &str) -> Result<String, DiagnosticErrorInfo> {
-    let ansi = ANSI
-        .as_ref()
-        .map_err(|error| extract_diagnostic_error(DiagnosticInput::Text(&error.to_string())))?;
-    Ok(ansi.replace_all(text, "").into_owned())
+    Ok(ansi()?.replace_all(text, "").into_owned())
 }
 
 /// The text blocks of `result` cleaned for display and joined by LF, then, when the
@@ -174,4 +171,40 @@ pub fn get_text_output<D>(
 /// Returns the theme's failure when it lacks the error color.
 pub fn invalid_arg_text(theme: &Theme) -> Result<String, ThemeError> {
     theme.fg(&ThemeColor::Error, "[invalid arg]")
+}
+
+/// Borrow the single compiled escape grammar.
+fn ansi() -> Result<&'static Regex, DiagnosticErrorInfo> {
+    ANSI.as_ref()
+        .map_err(|error| extract_diagnostic_error(DiagnosticInput::Text(&error.to_string())))
+}
+
+/// Retains only an unfinished escape between decoded chunks.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+pub(crate) struct AnsiStream {
+    /// Unemitted suffix that may complete an escape.
+    pending: String,
+}
+#[cfg(not(target_arch = "wasm32"))]
+impl AnsiStream {
+    /// Strip completed sequences, holding a suffix that accepts an escape completion.
+    pub(crate) fn push(&mut self, text: &str) -> Result<String, DiagnosticErrorInfo> {
+        self.pending.push_str(text);
+        let end = self.pending.len();
+        // shortcut: rescans the held unfinished escape on each chunk, quadratic only for one escape split across many tiny chunks; upgrade to an incremental recognizer if a real producer shows it
+        self.pending.push_str("m\u{7}");
+        let split = ansi()?
+            .find_iter(&self.pending)
+            .find(|found| found.start() < end && found.end() > end)
+            .map_or(end, |found| found.start());
+        self.pending.truncate(end);
+        let rest = self.pending.split_off(split);
+        let emitted = std::mem::replace(&mut self.pending, rest);
+        strip_ansi(&emitted)
+    }
+    /// Apply whole-text stripping to an unfinished suffix at settlement.
+    pub(crate) fn finish(&mut self) -> Result<String, DiagnosticErrorInfo> {
+        strip_ansi(&std::mem::take(&mut self.pending))
+    }
 }

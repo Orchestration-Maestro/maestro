@@ -56,7 +56,8 @@ serialization and number-formatting dependencies.
 [`output::output_accumulator`](../crates/maestro-tools/src/output/output_accumulator.rs)
 provides `OutputAccumulator`, `OutputAccumulatorOptions` and `OutputSnapshot` on
 native targets. Construction does not create a file. Append accepts raw bytes;
-finish flushes pending UTF-8 once without closing the artifact. Snapshots observe
+finish flushes pending UTF-8 once without closing the artifact. Raw decoding uses
+the shared [streaming text primitive](text.md). Snapshots observe
 selected decoded text without finishing decoding; selection is owned by
 [`output::truncate`](../crates/maestro-tools/src/output/truncate.rs).
 

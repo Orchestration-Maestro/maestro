@@ -5,7 +5,6 @@ mod dimensions;
 mod input;
 mod lifecycle;
 mod output;
-mod string_decoder;
 
 use std::cell::{Cell, RefCell};
 use std::future::Future;

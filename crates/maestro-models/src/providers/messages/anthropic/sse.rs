@@ -6,6 +6,7 @@
 //! dropped from the start of the stream; and a stream is complete only at its stop event.
 
 use futures_util::StreamExt;
+use maestro_text::Utf8Stream;
 use serde_json::value::RawValue;
 
 use super::ABORTED_TEXT;
@@ -41,8 +42,8 @@ struct Frame {
 /// collect until a blank line dispatches them.
 #[derive(Default)]
 struct Decoder {
-    /// Bytes of a character cut by the end of a chunk.
-    pending: Vec<u8>,
+    /// Raw scalar decoding before protocol framing.
+    utf8: Utf8Stream,
     /// Whether the first text of the stream, which may start with a byte-order mark, is still
     /// to come.
     at_start: bool,
@@ -91,10 +92,7 @@ impl Decoder {
     /// End the stream: a character cut at the end becomes U+FFFD, a last line without its
     /// ending is read and the event being collected is dispatched.
     fn finish(&mut self) -> Vec<Frame> {
-        if !self.pending.is_empty() {
-            self.line.push(char::REPLACEMENT_CHARACTER);
-            self.pending.clear();
-        }
+        self.line.push_str(&self.utf8.finish());
         let mut frames = Vec::new();
         if !self.line.is_empty() {
             let line = std::mem::take(&mut self.line);
@@ -108,22 +106,7 @@ impl Decoder {
     /// the chunk is completed by the next one, and one byte-order mark is dropped from the
     /// start of the stream.
     fn text(&mut self, chunk: &[u8]) -> String {
-        self.pending.extend_from_slice(chunk);
-        let bytes = std::mem::take(&mut self.pending);
-        let mut rest = bytes.as_slice();
-        let mut text = String::new();
-        while let Err(error) = std::str::from_utf8(rest) {
-            let (valid, invalid) = rest.split_at(error.valid_up_to());
-            text.push_str(&String::from_utf8_lossy(valid));
-            if let Some(length) = error.error_len() {
-                text.push(char::REPLACEMENT_CHARACTER);
-                rest = &invalid[length..];
-            } else {
-                self.pending = invalid.to_vec();
-                rest = &[];
-            }
-        }
-        text.push_str(&String::from_utf8_lossy(rest));
+        let mut text = self.utf8.push(chunk);
         if self.at_start && !text.is_empty() {
             self.at_start = false;
             if text.starts_with('\u{feff}') {

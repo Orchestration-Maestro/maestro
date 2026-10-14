@@ -146,7 +146,8 @@ endpoint's host plays no part.
 
 The body is read as server-sent events with this protocol's own framing; no event-stream library is
 involved. Lines end at `\r\n`, `\r` or `\n`: a carriage return ends its line at once and a line feed
-right after it, even in the next chunk, belongs to the same ending. Bytes that are not valid UTF-8
+right after it, even in the next chunk, belongs to the same ending. Raw decoding uses
+the shared [streaming text decoder](../text.md). Bytes that are not valid UTF-8
 become U+FFFD, a character cut by the end of a chunk is completed by the next one (or becomes U+FFFD
 when the body ends there), and one byte-order mark is dropped from the start of the stream (a second
 one stays). A blank line dispatches the event collected so far when it has a nonempty `event` name

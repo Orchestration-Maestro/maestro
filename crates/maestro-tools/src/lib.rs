@@ -98,3 +98,6 @@ pub use write::{
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use search::tools_manager::{SearchTool, ToolsManager, ToolsManagerOutput};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use process::bash_executor::{BashExecutorOptions, BashResult, execute_bash_with_operations};

@@ -1,4 +1,4 @@
-# Command execution and delays
+# Command execution and direct shells
 
 `maestro-tools` runs an explicit program with `exec_command` and waits with `sleep`.
 These operations and local shell operations are native-only, like the
@@ -103,3 +103,40 @@ The application exposes native `spawn_sync`, `spawn`, `SpawnSyncOptions`,
 supplied input and independent stdout/stderr capture or discard, inherited options
 for a caller-prepared terminal command, or the background launch for startup
 acknowledgment without waiting for exit.
+
+## Direct shell execution
+
+`execute_bash_with_operations(command, cwd, operations, options)` invokes the supplied
+`BashOperations` with the literal command and directory, the same optional signal,
+and no timeout or replacement environment. Even a pre-aborted signal reaches the operation.
+
+```rust,no_run
+use maestro_tools::{BashExecutorOptions, create_local_bash_operations, execute_bash_with_operations};
+
+# async fn run() -> Result<(), maestro_tools::BashError> {
+let operations = create_local_bash_operations("/tool-bin".into(), None);
+let result = execute_bash_with_operations("printf hello", "/repo", operations.as_ref(),
+    BashExecutorOptions::default()).await?;
+assert_eq!(result.output, "hello");
+# Ok(())
+# }
+```
+
+The optional synchronous `on_chunk` callback receives cleaned chunks in arrival order,
+including empty raw chunks. Decoding uses the shared [streaming text primitive](text.md).
+This caller drops the initial BOM, holds unfinished escapes between chunks, strips ANSI
+sequences and binary controls, and removes carriage returns. Successful or cancelled
+settlement flushes pending text; only nonempty final text adds a callback.
+
+Raw output above 51200 bytes creates a sanitized `maestro-bash-{id}.log` artifact
+in the native temporary directory. Retained output is a deque of whole cleaned chunks:
+oldest chunks are removed above 102400 UTF-16 code units while more than one remains.
+Final selection uses the shared default tail limits; final truncation can also create
+an artifact. `BashResult` returns the selected text, cancellation and truncation flags,
+the optional supplied numeric status and the optional artifact path, without tool notices.
+The signal is sampled after final output callbacks: an aborted signal selects cancellation
+and no status; nonzero status alone is not an error.
+
+An ordinary operation error returns unchanged without finalizing pending text or creating
+a line-only artifact. The first processing failure stops output updates and returns after
+the operation settles. Owned writers are flushed and closed; no durability is promised.

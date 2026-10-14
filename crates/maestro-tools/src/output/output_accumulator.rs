@@ -4,6 +4,7 @@ use super::truncate::{
     DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, TruncationBy, TruncationOptions, TruncationResult,
     truncate_tail,
 };
+use maestro_text::Utf8Stream;
 use serde::Serialize;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Write};
@@ -38,8 +39,8 @@ pub struct OutputAccumulator {
     finished: bool,
     /// Whether any decoded scalar has been observed.
     started: bool,
-    /// Incomplete scalar suffix, at most three bytes.
-    pending: Vec<u8>,
+    /// Raw scalar decoding, without BOM policy.
+    decoder: Utf8Stream,
     /// Artifact filename prefix.
     prefix: String,
     /// Unspilled original bytes.
@@ -83,7 +84,7 @@ impl OutputAccumulator {
                 .unwrap_or_else(|| "maestro-output".into()),
             finished: false,
             started: false,
-            pending: Vec::new(),
+            decoder: Utf8Stream::default(),
             raw: Vec::new(),
             raw_bytes: 0,
             tail: String::new(),
@@ -131,10 +132,8 @@ impl OutputAccumulator {
             return Ok(());
         }
         self.finished = true;
-        if !self.pending.is_empty() {
-            self.pending.clear();
-            self.append_text("\u{fffd}");
-        }
+        let text = self.decoder.finish();
+        self.append_text(&text);
         if self.should_spill() {
             self.ensure_file()?;
         }
@@ -173,10 +172,7 @@ impl OutputAccumulator {
     /// # Errors
     /// Returns the writer's flush error; the artifact is not known complete.
     pub fn close_temp_file(&mut self) -> io::Result<()> {
-        if let Some(mut writer) = self.writer.take() {
-            writer.flush()?;
-        }
-        Ok(())
+        close_artifact(self.writer.take())
     }
     /// Return the current decoded line's byte count.
     #[must_use]
@@ -186,32 +182,8 @@ impl OutputAccumulator {
 
     /// Decode complete scalars, retaining only an incomplete suffix.
     fn decode(&mut self, data: &[u8]) {
-        let mut pending = std::mem::take(&mut self.pending);
-        let mut input = if pending.is_empty() {
-            data
-        } else {
-            pending.extend_from_slice(data);
-            &pending
-        };
-        let mut decoded = String::new();
-        while !input.is_empty() {
-            let error = match std::str::from_utf8(input) {
-                Ok(text) => {
-                    decoded.push_str(text);
-                    break;
-                }
-                Err(error) => error,
-            };
-            let (valid, rest) = input.split_at(error.valid_up_to());
-            decoded.push_str(&String::from_utf8_lossy(valid));
-            let Some(length) = error.error_len() else {
-                self.pending.extend_from_slice(rest);
-                break;
-            };
-            decoded.push('\u{fffd}');
-            input = &rest[length..];
-        }
-        self.append_text(&decoded);
+        let text = self.decoder.push(data);
+        self.append_text(&text);
     }
 
     /// Account for newly decoded text once.
@@ -268,14 +240,7 @@ impl OutputAccumulator {
         if self.path.is_some() || self.writer.is_some() {
             return Ok(());
         }
-        let id = random_id()?;
-        let root = std::env::temp_dir();
-        let root = root.to_string_lossy();
-        let path = maestro_path::join(&[&root, &format!("{}-{id}.log", self.prefix)]);
-        let file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)?;
+        let (path, file) = open_artifact(&self.prefix)?;
         let mut writer = BufWriter::new(file);
         writer.write_all(&self.raw)?;
         self.raw = Vec::new();
@@ -283,6 +248,24 @@ impl OutputAccumulator {
         self.writer = Some(writer);
         Ok(())
     }
+}
+
+/// Flush and release an owned writer without requesting durability.
+pub(crate) fn close_artifact(writer: Option<impl Write>) -> io::Result<()> {
+    writer.map_or(Ok(()), |mut writer| writer.flush())
+}
+
+/// Open one exclusively created artifact using the shared random filename convention.
+pub(crate) fn open_artifact(prefix: &str) -> io::Result<(String, File)> {
+    let id = random_id()?;
+    let root = std::env::temp_dir();
+    let root = root.to_string_lossy();
+    let path = maestro_path::join(&[&root, &format!("{prefix}-{id}.log")]);
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)?;
+    Ok((path, file))
 }
 
 /// Generate eight random bytes as sixteen lowercase hexadecimal digits.

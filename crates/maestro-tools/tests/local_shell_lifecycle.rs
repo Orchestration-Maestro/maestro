@@ -12,7 +12,7 @@ use std::{
     task::{Context, Poll, Wake, Waker},
     time::Duration,
 };
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 #[allow(
     dead_code,
     reason = "Shared polling helpers serve multiple integration targets."
@@ -249,27 +249,8 @@ type Operation<'a> = std::pin::Pin<
     >,
 >;
 
-/// A separately reaped process holds the shell's stdout across root exit.
 #[cfg(target_os = "linux")]
-async fn pipe_holder(pid: u32) -> tokio::process::Child {
-    let mut command = tokio::process::Command::new("/bin/bash");
-    command.args(["-c", &format!("exec 3>/proc/{pid}/fd/1; printf held; read action; printf grace >&3; read finish; exit 0")]);
-    command
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped())
-        .kill_on_drop(true);
-    let mut child = command.spawn().unwrap();
-    let mut ready = [0; 4];
-    child
-        .stdout
-        .as_mut()
-        .unwrap()
-        .read_exact(&mut ready)
-        .await
-        .unwrap();
-    assert_eq!(&ready, b"held");
-    child
-}
+use read_support::pipe_holder;
 
 /// Drives the same operation until its sink delivers another chunk.
 async fn next_chunk(
