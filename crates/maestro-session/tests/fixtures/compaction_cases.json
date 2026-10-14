@@ -27,14 +27,7 @@
         "output": 3,
         "cacheRead": 2,
         "cacheWrite": 1,
-        "totalTokens": 100,
-        "cost": {
-          "input": 0,
-          "output": 0,
-          "cacheRead": 0,
-          "cacheWrite": 0,
-          "total": 0
-        }
+        "totalTokens": 100
       }
     ],
     "output": {
@@ -52,14 +45,7 @@
         "output": 3,
         "cacheRead": 2,
         "cacheWrite": 1,
-        "totalTokens": 0,
-        "cost": {
-          "input": 0,
-          "output": 0,
-          "cacheRead": 0,
-          "cacheWrite": 0,
-          "total": 0
-        }
+        "totalTokens": 0
       }
     ],
     "output": {
@@ -77,14 +63,7 @@
         "output": 0,
         "cacheRead": 0,
         "cacheWrite": 0,
-        "totalTokens": 0,
-        "cost": {
-          "input": 0,
-          "output": 0,
-          "cacheRead": 0,
-          "cacheWrite": 0,
-          "total": 0
-        }
+        "totalTokens": 0
       }
     ],
     "output": {
@@ -110,14 +89,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "user",
-            "content": "abc",
-            "timestamp": 0
+            "role": "user"
           }
         }
       ]
@@ -133,13 +107,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 10,
               "output": 3,
@@ -154,32 +124,19 @@
                 "total": 0
               }
             },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "user",
-            "content": "a",
-            "timestamp": 0
+            "role": "user"
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 20,
               "output": 3,
@@ -194,11 +151,7 @@
                 "total": 0
               }
             },
-            "stopReason": "length",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "length"
           }
         }
       ]
@@ -228,13 +181,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 10,
               "output": 3,
@@ -249,21 +198,13 @@
                 "total": 0
               }
             },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 30,
               "output": 3,
@@ -278,11 +219,7 @@
                 "total": 0
               }
             },
-            "stopReason": "error",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "error"
           }
         }
       ]
@@ -312,13 +249,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 10,
               "output": 3,
@@ -333,21 +266,13 @@
                 "total": 0
               }
             },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [],
             "usage": {
               "input": 30,
               "output": 3,
@@ -362,11 +287,7 @@
                 "total": 0
               }
             },
-            "stopReason": "aborted",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "aborted"
           }
         }
       ]
@@ -396,23 +317,10 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         }
       ]
@@ -428,24 +336,11 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
             "usage": null,
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         }
       ]
@@ -461,18 +356,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
             "usage": {
               "input": 7,
               "output": 3,
@@ -487,34 +373,11 @@
                 "total": 0
               }
             },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "stopReason": "stop"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "custom",
-          "data": {
-            "usage": {
-              "input": 100,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            }
-          }
+          "type": "custom"
         }
       ]
     ],
@@ -561,21 +424,16 @@
       [
         {
           "role": "user",
-          "content": "12345",
-          "timestamp": 0
+          "content": "12345"
         },
         {
           "role": "toolResult",
-          "toolCallId": "call",
-          "toolName": "read",
           "content": [
             {
               "type": "text",
               "text": "123456789"
             }
-          ],
-          "isError": false,
-          "timestamp": 0
+          ]
         }
       ]
     ],
@@ -603,20 +461,9 @@
             "output": 0,
             "cacheRead": 0,
             "cacheWrite": 0,
-            "totalTokens": 0,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
+            "totalTokens": 0
           },
-          "stopReason": "stop",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
+          "stopReason": "stop"
         }
       ]
     ],
@@ -644,25 +491,13 @@
             "output": 2,
             "cacheRead": 3,
             "cacheWrite": 4,
-            "totalTokens": 40,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
+            "totalTokens": 40
           },
-          "stopReason": "stop",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
+          "stopReason": "stop"
         },
         {
           "role": "user",
-          "content": "12345",
-          "timestamp": 0
+          "content": "12345"
         },
         {
           "role": "assistant",
@@ -677,33 +512,18 @@
             "output": 3,
             "cacheRead": 2,
             "cacheWrite": 1,
-            "totalTokens": 13,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
+            "totalTokens": 13
           },
-          "stopReason": "error",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
+          "stopReason": "error"
         },
         {
           "role": "toolResult",
-          "toolCallId": "call",
-          "toolName": "read",
           "content": [
             {
               "type": "text",
               "text": "x"
             }
-          ],
-          "isError": false,
-          "timestamp": 0
+          ]
         }
       ]
     ],
@@ -731,25 +551,13 @@
             "output": 2,
             "cacheRead": 3,
             "cacheWrite": 4,
-            "totalTokens": 40,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
+            "totalTokens": 40
           },
-          "stopReason": "stop",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
+          "stopReason": "stop"
         },
         {
           "role": "user",
-          "content": "12345",
-          "timestamp": 0
+          "content": "12345"
         },
         {
           "role": "assistant",
@@ -759,25 +567,13 @@
             "output": 2,
             "cacheRead": 3,
             "cacheWrite": 4,
-            "totalTokens": 70,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
+            "totalTokens": 70
           },
-          "stopReason": "toolUse",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
+          "stopReason": "toolUse"
         },
         {
           "role": "user",
-          "content": "abcde",
-          "timestamp": 0
+          "content": "abcde"
         }
       ]
     ],
@@ -924,8 +720,7 @@
     "args": [
       {
         "role": "user",
-        "content": "",
-        "timestamp": 0
+        "content": ""
       }
     ],
     "output": {
@@ -940,8 +735,7 @@
     "args": [
       {
         "role": "user",
-        "content": "x",
-        "timestamp": 0
+        "content": "x"
       }
     ],
     "output": {
@@ -956,8 +750,7 @@
     "args": [
       {
         "role": "user",
-        "content": "xxx",
-        "timestamp": 0
+        "content": "xxx"
       }
     ],
     "output": {
@@ -972,8 +765,7 @@
     "args": [
       {
         "role": "user",
-        "content": "xxxx",
-        "timestamp": 0
+        "content": "xxxx"
       }
     ],
     "output": {
@@ -988,8 +780,7 @@
     "args": [
       {
         "role": "user",
-        "content": "xxxxx",
-        "timestamp": 0
+        "content": "xxxxx"
       }
     ],
     "output": {
@@ -1010,16 +801,13 @@
             "text": "a"
           },
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           },
           {
             "type": "text",
             "text": "bcde"
           }
-        ],
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1036,12 +824,9 @@
         "role": "user",
         "content": [
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           }
-        ],
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1067,33 +852,13 @@
           },
           {
             "type": "toolCall",
-            "id": "c",
             "name": "read",
             "arguments": {
               "path": "a",
               "n": 1
             }
           }
-        ],
-        "usage": {
-          "input": 7,
-          "output": 3,
-          "cacheRead": 2,
-          "cacheWrite": 1,
-          "totalTokens": 13,
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "total": 0
-          }
-        },
-        "stopReason": "stop",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "model": "controlled",
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1108,10 +873,7 @@
     "args": [
       {
         "role": "custom",
-        "content": "abcde",
-        "customType": "x",
-        "display": false,
-        "timestamp": 0
+        "content": "abcde"
       }
     ],
     "output": {
@@ -1132,19 +894,12 @@
             "text": "a"
           },
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           },
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           }
-        ],
-        "customType": "x",
-        "display": false,
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1159,8 +914,6 @@
     "args": [
       {
         "role": "toolResult",
-        "toolCallId": "call",
-        "toolName": "read",
         "content": [
           {
             "type": "text",
@@ -1170,9 +923,7 @@
             "type": "text",
             "text": "cde"
           }
-        ],
-        "isError": false,
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1187,26 +938,18 @@
     "args": [
       {
         "role": "toolResult",
-        "toolCallId": "call",
-        "toolName": "read",
         "content": [
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           },
           {
-            "type": "image",
-            "data": "AA==",
-            "mimeType": "image/png"
+            "type": "image"
           },
           {
             "type": "text",
             "text": "a"
           }
-        ],
-        "isError": false,
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1221,11 +964,7 @@
     "args": [
       {
         "role": "toolResult",
-        "toolCallId": "call",
-        "toolName": "read",
-        "content": [],
-        "isError": false,
-        "timestamp": 0
+        "content": []
       }
     ],
     "output": {
@@ -1303,8 +1042,7 @@
     "operation": "estimateTokens",
     "args": [
       {
-        "role": "extensionRole",
-        "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        "role": "extensionRole"
       }
     ],
     "output": {
@@ -1319,8 +1057,7 @@
     "args": [
       {
         "role": "user",
-        "content": "😀😀a",
-        "timestamp": 0
+        "content": "😀😀a"
       }
     ],
     "output": {
@@ -1335,16 +1072,12 @@
     "args": [
       {
         "role": "toolResult",
-        "toolCallId": "call",
-        "toolName": "read",
         "content": [
           {
             "type": "text",
             "text": "😀😀a"
           }
-        ],
-        "isError": false,
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -1374,20 +1107,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1396,62 +1122,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1460,26 +1153,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -1503,20 +1177,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1525,62 +1192,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1589,26 +1223,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -1632,20 +1247,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1654,62 +1262,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1718,26 +1293,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -1761,20 +1317,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1783,62 +1332,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1847,26 +1363,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -1890,20 +1387,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1912,62 +1402,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -1976,26 +1433,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2019,20 +1457,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2041,62 +1472,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2105,26 +1503,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2148,20 +1527,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2170,62 +1542,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2234,26 +1573,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2277,20 +1597,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2299,62 +1612,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2363,26 +1643,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2406,20 +1667,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2428,62 +1682,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2492,26 +1713,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2535,20 +1737,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2557,62 +1752,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2621,26 +1783,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2664,20 +1807,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2686,62 +1822,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2750,26 +1853,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2793,20 +1877,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "aaaa",
-            "timestamp": 0
+            "content": "aaaa"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2815,62 +1892,29 @@
                 "type": "text",
                 "text": "bbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "dddd",
-            "timestamp": 0
+            "content": "dddd"
           }
         },
         {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -2879,26 +1923,7 @@
                 "type": "text",
                 "text": "eeeeeeeeeeeeeeee"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2922,41 +1947,27 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "a"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "b"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -2980,20 +1991,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "a",
-            "timestamp": 0
+            "content": "a"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3002,45 +2006,19 @@
                 "type": "text",
                 "text": "b"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
                 "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3064,36 +2042,19 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "a",
-            "timestamp": 0
+            "content": "a"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "model_change",
-          "provider": "p",
-          "modelId": "m"
+          "type": "model_change"
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "label",
-          "targetId": "e0",
-          "label": "label"
+          "type": "label"
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3102,26 +2063,7 @@
                 "type": "text",
                 "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3145,37 +2087,19 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "a",
-            "timestamp": 0
+            "content": "a"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "prior",
-          "firstKeptEntryId": "e0",
-          "tokensBefore": 2
+          "type": "compaction"
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "model_change",
-          "provider": "p",
-          "modelId": "m"
+          "type": "model_change"
         },
         {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3184,26 +2108,7 @@
                 "type": "text",
                 "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3227,48 +2132,15 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "user",
-            "content": "x",
-            "timestamp": 0
+            "role": "user"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3287,20 +2159,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "x",
-            "timestamp": 0
+            "content": "x"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3309,26 +2174,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3352,48 +2198,15 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "bashExecution",
-            "command": "a",
-            "output": "b"
+            "role": "bashExecution"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3412,9 +2225,6 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "bashExecution",
@@ -3423,9 +2233,6 @@
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3434,26 +2241,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3477,46 +2265,12 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "custom_message",
-          "customType": "x",
-          "content": "a",
-          "display": false
+          "type": "custom_message"
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3535,18 +2289,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "custom_message",
-          "customType": "x",
-          "content": "a",
-          "display": false
+          "type": "custom_message"
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3555,26 +2300,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3598,45 +2324,12 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "branch_summary",
-          "summary": "x",
-          "fromId": "origin"
+          "type": "branch_summary"
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3655,17 +2348,9 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "branch_summary",
-          "summary": "x",
-          "fromId": "origin"
+          "type": "branch_summary"
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3674,26 +2359,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3717,49 +2383,15 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "custom",
-            "customType": "x",
-            "content": "a",
-            "display": false
+            "role": "custom"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3778,21 +2410,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "custom",
-            "customType": "x",
-            "content": "a",
-            "display": false
+            "content": "a"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3801,26 +2425,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3844,48 +2449,15 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "branchSummary",
-            "summary": "x",
-            "fromId": "origin"
+            "role": "branchSummary"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "xxxxxxxxxxxxxxxxxxxx"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -3904,20 +2476,13 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "branchSummary",
-            "summary": "x",
-            "fromId": "origin"
+            "summary": "x"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "assistant",
@@ -3926,26 +2491,7 @@
                 "type": "text",
                 "text": "xxxxxxxxxxxxxxxxxxxx"
               }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            ]
           }
         }
       ],
@@ -3969,48 +2515,15 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "user",
-            "content": "a",
-            "timestamp": 0
+            "role": "user"
           }
         },
         {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
+            "role": "assistant"
           }
         }
       ],
@@ -6273,7 +4786,6 @@
         "content": [
           {
             "type": "toolCall",
-            "id": "write",
             "name": "write",
             "arguments": {
               "path": "z"
@@ -6281,7 +4793,6 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": "b"
@@ -6289,7 +4800,6 @@
           },
           {
             "type": "toolCall",
-            "id": "edit",
             "name": "edit",
             "arguments": {
               "path": "a"
@@ -6297,7 +4807,6 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": "b"
@@ -6305,32 +4814,12 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": "z"
             }
           }
-        ],
-        "usage": {
-          "input": 7,
-          "output": 3,
-          "cacheRead": 2,
-          "cacheWrite": 1,
-          "totalTokens": 13,
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "total": 0
-          }
-        },
-        "stopReason": "stop",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "model": "controlled",
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -6359,7 +4848,6 @@
         "content": [
           {
             "type": "toolCall",
-            "id": "Read",
             "name": "Read",
             "arguments": {
               "path": "x"
@@ -6367,32 +4855,12 @@
           },
           {
             "type": "toolCall",
-            "id": "bash",
             "name": "bash",
             "arguments": {
               "path": "x"
             }
           }
-        ],
-        "usage": {
-          "input": 7,
-          "output": 3,
-          "cacheRead": 2,
-          "cacheWrite": 1,
-          "totalTokens": 13,
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "total": 0
-          }
-        },
-        "stopReason": "stop",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "model": "controlled",
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -6414,7 +4882,6 @@
         "content": [
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": ""
@@ -6422,7 +4889,6 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": null
@@ -6430,7 +4896,6 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": 42
@@ -6438,32 +4903,12 @@
           },
           {
             "type": "toolCall",
-            "id": "read",
             "name": "read",
             "arguments": {
               "path": " "
             }
           }
-        ],
-        "usage": {
-          "input": 7,
-          "output": 3,
-          "cacheRead": 2,
-          "cacheWrite": 1,
-          "totalTokens": 13,
-          "cost": {
-            "input": 0,
-            "output": 0,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "total": 0
-          }
-        },
-        "stopReason": "stop",
-        "api": "anthropic-messages",
-        "provider": "anthropic",
-        "model": "controlled",
-        "timestamp": 0
+        ]
       }
     ],
     "output": {
@@ -6483,9 +4928,7 @@
     "operation": "extractFileOpsFromMessage",
     "args": [
       {
-        "role": "user",
-        "content": "a",
-        "timestamp": 0
+        "role": "user"
       }
     ],
     "output": {
@@ -6528,8 +4971,7 @@
           1,
           {},
           {
-            "type": "text",
-            "text": "x"
+            "type": "text"
           },
           {
             "type": "toolCall",
@@ -7148,47 +5590,9 @@
   {
     "group": "serialization_format",
     "id": "number-and-index-keys",
-    "operation": "serializeConversation",
+    "operation": "serialize-conversation-json-probe",
     "args": [
-      [
-        {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "toolCall",
-              "id": "a",
-              "name": "run",
-              "arguments": {
-                "2": "two",
-                "10": "ten",
-                "z": 1,
-                "small": 1e-07,
-                "large": 1e+21,
-                "negzero": 0
-              }
-            }
-          ],
-          "usage": {
-            "input": 7,
-            "output": 3,
-            "cacheRead": 2,
-            "cacheWrite": 1,
-            "totalTokens": 13,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "stopReason": "stop",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
-        }
-      ]
+      "[{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"a\",\"name\":\"run\",\"arguments\":{\"z\":1,\"10\":\"ten\",\"2\":\"two\",\"small\":1e-07,\"large\":1e+21,\"negzero\":-0.0}}],\"usage\":{\"input\":7,\"output\":3,\"cacheRead\":2,\"cacheWrite\":1,\"totalTokens\":13,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"controlled\",\"timestamp\":0}]"
     ],
     "output": {
       "kind": "value",
@@ -8059,25 +6463,40 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "user",
-            "content": "x",
-            "timestamp": 0
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
           }
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
+        "firstKeptEntryIndex": 2,
         "turnStartIndex": -1,
         "isSplitTurn": false
       }
@@ -8090,9 +6509,25 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
           "type": "message",
           "message": {
             "role": "bashExecution",
@@ -8102,14 +6537,14 @@
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 2,
         "isSplitTurn": true
       }
     }
@@ -8121,24 +6556,37 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "custom_message",
-          "customType": "x",
-          "content": "a",
-          "display": false
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
+          "type": "custom_message"
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 2,
         "isSplitTurn": true
       }
     }
@@ -8150,23 +6598,37 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "branch_summary",
-          "summary": "x",
-          "fromId": "origin"
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
+          "type": "branch_summary"
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": 0,
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 2,
         "isSplitTurn": true
       }
     }
@@ -8178,28 +6640,42 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
           "type": "message",
           "message": {
             "role": "custom",
-            "customType": "x",
-            "content": "a",
-            "display": false
+            "content": "x"
           }
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": -1,
-        "isSplitTurn": false
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 0,
+        "isSplitTurn": true
       }
     }
   },
@@ -8210,27 +6686,42 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
           "type": "message",
           "message": {
             "role": "branchSummary",
-            "summary": "x",
-            "fromId": "origin"
+            "summary": "x"
           }
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": -1,
-        "isSplitTurn": false
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 0,
+        "isSplitTurn": true
       }
     }
   },
@@ -8241,9 +6732,25 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
           "type": "message",
           "message": {
             "role": "compactionSummary",
@@ -8252,15 +6759,15 @@
         }
       ],
       0,
-      1,
-      100
+      3,
+      2
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 0,
-        "turnStartIndex": -1,
-        "isSplitTurn": false
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 0,
+        "isSplitTurn": true
       }
     }
   },
@@ -8271,91 +6778,39 @@
     "args": [
       [
         {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "model_change",
-          "provider": "p",
-          "modelId": "m"
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
-            "role": "extensionRole",
-            "content": "unused"
+            "role": "user",
+            "content": "x"
           }
         },
         {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "thinking_level_change",
-          "thinkingLevel": "off"
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "custom",
-          "data": {
-            "x": 1
-          }
-        },
-        {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "label",
-          "targetId": "e0",
-          "label": "a"
-        },
-        {
-          "id": "e5",
-          "parentId": "e4",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "session_info",
-          "name": "s"
-        },
-        {
-          "id": "e6",
-          "parentId": "e5",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "prior",
-          "firstKeptEntryId": "e0",
-          "tokensBefore": 1
-        },
-        {
-          "id": "e7",
-          "parentId": "e6",
-          "timestamp": "2026-01-01T00:00:00.000Z",
           "type": "message",
           "message": {
             "role": "toolResult",
-            "toolCallId": "call",
-            "toolName": "read",
             "content": [
               {
                 "type": "text",
-                "text": "a"
+                "text": "xxxxxxxxxxxxxxxx"
               }
-            ],
-            "isError": false,
-            "timestamp": 0
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "extensionRole"
           }
         }
       ],
-      1,
-      8,
-      0
+      0,
+      3,
+      1
     ],
     "output": {
       "kind": "value",
       "value": {
-        "firstKeptEntryIndex": 1,
+        "firstKeptEntryIndex": 0,
         "turnStartIndex": -1,
         "isSplitTurn": false
       }
@@ -8929,1017 +7384,6 @@
     }
   },
   {
-    "group": "existing_context",
-    "id": "context-all",
-    "operation": "buildSessionContext",
-    "args": [
-      [
-        {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "1",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "2",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        }
-      ]
-    ],
-    "output": {
-      "kind": "value",
-      "value": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "1",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          },
-          {
-            "role": "user",
-            "content": "2",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        ],
-        "thinkingLevel": "off",
-        "model": {
-          "provider": "anthropic",
-          "modelId": "controlled"
-        }
-      }
-    }
-  },
-  {
-    "group": "existing_context",
-    "id": "context-one",
-    "operation": "buildSessionContext",
-    "args": [
-      [
-        {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "old",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "kept",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "summary",
-          "firstKeptEntryId": "e2",
-          "tokensBefore": 10
-        },
-        {
-          "id": "e5",
-          "parentId": "e4",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e6",
-          "parentId": "e5",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        }
-      ]
-    ],
-    "output": {
-      "kind": "value",
-      "value": {
-        "messages": [
-          {
-            "role": "compactionSummary",
-            "summary": "summary",
-            "tokensBefore": 10,
-            "timestamp": 1767225600000
-          },
-          {
-            "role": "user",
-            "content": "kept",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          },
-          {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        ],
-        "thinkingLevel": "off",
-        "model": {
-          "provider": "anthropic",
-          "modelId": "controlled"
-        }
-      }
-    }
-  },
-  {
-    "group": "existing_context",
-    "id": "context-latest",
-    "operation": "buildSessionContext",
-    "args": [
-      [
-        {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "old",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "first",
-          "firstKeptEntryId": "e0",
-          "tokensBefore": 10
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "prior",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e5",
-          "parentId": "e4",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "kept",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e6",
-          "parentId": "e5",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e7",
-          "parentId": "e6",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "latest",
-          "firstKeptEntryId": "e5",
-          "tokensBefore": 20
-        },
-        {
-          "id": "e8",
-          "parentId": "e7",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e9",
-          "parentId": "e8",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        }
-      ]
-    ],
-    "output": {
-      "kind": "value",
-      "value": {
-        "messages": [
-          {
-            "role": "compactionSummary",
-            "summary": "latest",
-            "tokensBefore": 20,
-            "timestamp": 1767225600000
-          },
-          {
-            "role": "user",
-            "content": "kept",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          },
-          {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        ],
-        "thinkingLevel": "off",
-        "model": {
-          "provider": "anthropic",
-          "modelId": "controlled"
-        }
-      }
-    }
-  },
-  {
-    "group": "existing_context",
-    "id": "context-keeps-first",
-    "operation": "buildSessionContext",
-    "args": [
-      [
-        {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "first",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "compaction",
-          "summary": "summary",
-          "firstKeptEntryId": "e0",
-          "tokensBefore": 10
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e4",
-          "parentId": "e3",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        }
-      ]
-    ],
-    "output": {
-      "kind": "value",
-      "value": {
-        "messages": [
-          {
-            "role": "compactionSummary",
-            "summary": "summary",
-            "tokensBefore": 10,
-            "timestamp": 1767225600000
-          },
-          {
-            "role": "user",
-            "content": "first",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          },
-          {
-            "role": "user",
-            "content": "new",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        ],
-        "thinkingLevel": "off",
-        "model": {
-          "provider": "anthropic",
-          "modelId": "controlled"
-        }
-      }
-    }
-  },
-  {
-    "group": "existing_context",
-    "id": "context-model-thinking",
-    "operation": "buildSessionContext",
-    "args": [
-      [
-        {
-          "id": "e0",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "user",
-            "content": "a",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e1",
-          "parentId": "e0",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "model_change",
-          "provider": "other",
-          "modelId": "m"
-        },
-        {
-          "id": "e2",
-          "parentId": "e1",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "message",
-          "message": {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        },
-        {
-          "id": "e3",
-          "parentId": "e2",
-          "timestamp": "2026-01-01T00:00:00.000Z",
-          "type": "thinking_level_change",
-          "thinkingLevel": "high"
-        }
-      ]
-    ],
-    "output": {
-      "kind": "value",
-      "value": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "a",
-            "timestamp": 0
-          },
-          {
-            "role": "assistant",
-            "content": [
-              {
-                "type": "text",
-                "text": "abcd"
-              }
-            ],
-            "usage": {
-              "input": 7,
-              "output": 3,
-              "cacheRead": 2,
-              "cacheWrite": 1,
-              "totalTokens": 13,
-              "cost": {
-                "input": 0,
-                "output": 0,
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "total": 0
-              }
-            },
-            "stopReason": "stop",
-            "api": "anthropic-messages",
-            "provider": "anthropic",
-            "model": "controlled",
-            "timestamp": 0
-          }
-        ],
-        "thinkingLevel": "high",
-        "model": {
-          "provider": "anthropic",
-          "modelId": "controlled"
-        }
-      }
-    }
-  },
-  {
     "group": "serialization_boundaries",
     "id": "whitespace-text",
     "operation": "serializeConversation",
@@ -10005,59 +7449,13 @@
   {
     "group": "serialization_boundaries",
     "id": "canonical-key-boundaries",
-    "operation": "serializeConversation",
+    "operation": "serialize-conversation-json-probe",
     "args": [
-      [
-        {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "toolCall",
-              "id": "c",
-              "name": "run",
-              "arguments": {
-                "0": "zero",
-                "4294967294": "index",
-                "00": "double-zero",
-                "-1": "minus",
-                "4294967295": "not-index",
-                "01": "leading",
-                "nested": {
-                  "2": "two",
-                  "10": "ten",
-                  "z": 1
-                },
-                "small": 1e-06,
-                "large": 100000000000000000000,
-                "escaped": "\\\n\""
-              }
-            }
-          ],
-          "usage": {
-            "input": 7,
-            "output": 3,
-            "cacheRead": 2,
-            "cacheWrite": 1,
-            "totalTokens": 13,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "stopReason": "stop",
-          "api": "anthropic-messages",
-          "provider": "anthropic",
-          "model": "controlled",
-          "timestamp": 0
-        }
-      ]
+      "[{\"role\":\"assistant\",\"content\":[{\"type\":\"toolCall\",\"id\":\"c\",\"name\":\"run\",\"arguments\":{\"00\":\"double-zero\",\"4294967294\":\"index\",\"0\":\"zero\",\"-1\":\"minus\",\"4294967295\":\"not-index\",\"01\":\"leading\",\"nested\":{\"z\":1,\"10\":\"ten\",\"2\":\"two\"},\"small\":1e-06,\"large\":1e+20,\"escaped\":\"\\\\\\n\\\"\",\"negzero\":-0.0}}],\"usage\":{\"input\":7,\"output\":3,\"cacheRead\":2,\"cacheWrite\":1,\"totalTokens\":13,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"api\":\"anthropic-messages\",\"provider\":\"anthropic\",\"model\":\"controlled\",\"timestamp\":0}]"
     ],
     "output": {
       "kind": "value",
-      "value": "[Assistant tool calls]: run(0=\"zero\", 4294967294=\"index\", 00=\"double-zero\", -1=\"minus\", 4294967295=\"not-index\", 01=\"leading\", nested={\"2\":\"two\",\"10\":\"ten\",\"z\":1}, small=0.000001, large=100000000000000000000, escaped=\"\\\\\\n\\\"\")"
+      "value": "[Assistant tool calls]: run(0=\"zero\", 4294967294=\"index\", 00=\"double-zero\", -1=\"minus\", 4294967295=\"not-index\", 01=\"leading\", nested={\"2\":\"two\",\"10\":\"ten\",\"z\":1}, small=0.000001, large=100000000000000000000, escaped=\"\\\\\\n\\\"\", negzero=0)"
     }
   },
   {
@@ -10175,6 +7573,107 @@
         "preparedTokens": 177657,
         "preparedHistoryMessages": 730,
         "preparedPrefixMessages": 3
+      }
+    }
+  },
+  {
+    "group": "cut_roles",
+    "id": "candidate-assistant",
+    "operation": "findCutPoint",
+    "args": [
+      [
+        {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "x"
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "x"
+              }
+            ]
+          }
+        }
+      ],
+      0,
+      3,
+      2
+    ],
+    "output": {
+      "kind": "value",
+      "value": {
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": 0,
+        "isSplitTurn": true
+      }
+    }
+  },
+  {
+    "group": "cut_roles",
+    "id": "metadata-and-tools-not-candidates",
+    "operation": "findCutPoint",
+    "args": [
+      [
+        {
+          "type": "model_change"
+        },
+        {
+          "type": "thinking_level_change"
+        },
+        {
+          "type": "custom"
+        },
+        {
+          "type": "label"
+        },
+        {
+          "type": "session_info"
+        },
+        {
+          "type": "compaction"
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxx"
+              }
+            ]
+          }
+        }
+      ],
+      0,
+      7,
+      0
+    ],
+    "output": {
+      "kind": "value",
+      "value": {
+        "firstKeptEntryIndex": 0,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
       }
     }
   }

@@ -299,7 +299,7 @@ const OWNERS: [&str; 21] = [
 
 /// Replay all queries owned by this witness, asserting every boundary exactly.
 pub fn replay(name: &str) {
-    let _guard = super::simple_selector_support::bindings_guard();
+    let _guard = super::keybindings::bindings_guard();
     let source = include_str!("../fixtures/login_dialog.json");
     let raw: Vec<serde_json::Value> = serde_json::from_str(source).unwrap();
     let mut unique = std::collections::HashSet::new();

@@ -1,4 +1,8 @@
 //! Strict search, fold, query, callback and whole-frame corpus replay.
+#[path = "../support/recorded_keys/bindings.rs"]
+mod bindings;
+#[path = "../support/recorded_keys/filter_mode.rs"]
+mod filter_mode;
 #[allow(
     dead_code,
     reason = "Only controlled environment and effect observations are used."
@@ -12,15 +16,18 @@ mod palette;
 #[allow(dead_code, reason = "Only publication helpers are shared.")]
 #[path = "../../../maestro-theme/tests/published/mod.rs"]
 mod published;
+#[path = "../support/recorded_keys/registry.rs"]
+mod recorded_registry;
 #[path = "../support/registry.rs"]
 mod registry;
 #[path = "../support/tree.rs"]
 mod tree;
+use bindings::{Binding, bindings};
+use filter_mode::mode;
 use maestro_app::{compact_json, presentation_data::keybindings::KEYBINDINGS};
-use maestro_chat::{FilterMode, TreeList};
-use maestro_tui::{
-    KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
-};
+use maestro_chat::TreeList;
+use maestro_tui::{KeybindingKeys, KeybindingsManager, get_keybindings, set_keybindings};
+use recorded_registry::{Operation, apply_operation};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -56,27 +63,6 @@ struct Input {
     lines: usize,
     callbacks: bool,
 }
-/// Scalar and list key overrides.
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum Binding {
-    Single(String),
-    Multiple(Vec<String>),
-}
-/// Accepted operation shapes.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Operation {
-    Key(String),
-    Registry(Change),
-}
-/// Live registry operations, each containing exactly one change.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct Change {
-    replace_bindings: Option<BTreeMap<String, Binding>>,
-    set_bindings: Option<BTreeMap<String, Binding>>,
-}
 /// Ordered expected public observations.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,53 +86,6 @@ struct Rendered {
     palette: String,
     width: usize,
     lines: Vec<String>,
-}
-/// Decodes the admitted category vocabulary.
-fn mode(value: &str) -> FilterMode {
-    match value {
-        "default" => FilterMode::Default,
-        "no-tools" => FilterMode::NoTools,
-        "user-only" => FilterMode::UserOnly,
-        "labeled-only" => FilterMode::LabeledOnly,
-        "all" => FilterMode::All,
-        _ => panic!("unknown mode"),
-    }
-}
-/// Retains disabled lists and scalar override shapes.
-fn bindings(values: &BTreeMap<String, Binding>) -> KeybindingsConfig {
-    values
-        .iter()
-        .map(|(id, value)| {
-            (
-                id.clone(),
-                Some(match value {
-                    Binding::Single(key) => KeybindingKeys::Single(key.clone()),
-                    Binding::Multiple(keys) => KeybindingKeys::Multiple(keys.clone()),
-                }),
-            )
-        })
-        .collect()
-}
-/// Applies one recorded public input or registry operation.
-fn operation(list: &TreeList, operation: &Operation) {
-    match operation {
-        Operation::Key(key) => list.handle_input(key).unwrap(),
-        Operation::Registry(change) => {
-            assert_ne!(
-                change.replace_bindings.is_some(),
-                change.set_bindings.is_some()
-            );
-            if let Some(values) = &change.replace_bindings {
-                set_keybindings(KeybindingsManager::new(
-                    KEYBINDINGS.clone(),
-                    bindings(values),
-                ));
-            }
-            if let Some(values) = &change.set_bindings {
-                get_keybindings().set_user_bindings(bindings(values));
-            }
-        }
-    }
 }
 /// Observes all expected fields, including occurrence order rather than just IDs.
 fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<Vec<Value>>>) {
@@ -232,7 +171,7 @@ fn replay(case: &Case) {
     assert_eq!(case.expected.frames.len(), input.ops.len() + 1);
     frame(&list, input, &case.expected.frames[0], &events);
     for (op, expected) in input.ops.iter().zip(&case.expected.frames[1..]) {
-        operation(&list, op);
+        apply_operation(&list, op);
         frame(&list, input, expected, &events);
     }
 }

@@ -7122,8 +7122,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {}
+      ]
     }
   },
   {
@@ -7366,10 +7365,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": null
-      }
+      ]
     }
   },
   {
@@ -7612,10 +7608,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": true
-      }
+      ]
     }
   },
   {
@@ -7858,10 +7851,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": false
-      }
+      ]
     }
   },
   {
@@ -8186,14 +8176,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": false,
-        "unknown": {
-          "keep": 1
-        },
-        "tail": "z"
-      }
+      ]
     }
   },
   {
@@ -8533,16 +8516,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "unknown": {
-          "deep": [
-            "keep",
-            null
-          ]
-        },
-        "anthropicExtraUsage": false
-      }
+      ]
     }
   },
   {
@@ -8812,11 +8786,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": "false",
-        "unknown": 7
-      }
+      ]
     }
   },
   {
@@ -9086,11 +9056,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": 0,
-        "unknown": []
-      }
+      ]
     }
   },
   {
@@ -9360,11 +9326,7 @@
             ]
           ]
         }
-      ],
-      "input_unchanged": {
-        "anthropicExtraUsage": [],
-        "unknown": "keep"
-      }
+      ]
     }
   },
   {

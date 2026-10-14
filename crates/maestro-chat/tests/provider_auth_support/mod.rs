@@ -257,7 +257,7 @@ fn cases(name: &str) -> Vec<Case> {
 }
 /// Replay all rows owned by a named witness.
 pub fn replay(name: &str) {
-    let _admission = super::simple_selector_support::bindings_guard();
+    let _admission = super::keybindings::bindings_guard();
     for (index, case) in cases(name).into_iter().enumerate() {
         let mut query: Query = serde_json::from_value(case.input).unwrap();
         if let Ok(selected) = std::env::var("MAESTRO_AUTH_CASE") {
@@ -324,7 +324,7 @@ fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
 
 /// The corrected toolkit never overflows a one-cell viewport.
 pub fn narrow_rows_fit() {
-    let _admission = super::simple_selector_support::bindings_guard();
+    let _admission = super::keybindings::bindings_guard();
     bindings(BTreeMap::new());
     let panel = Replay::new(&mut Query::default(), false);
     let lines = panel.panel.render(1);
@@ -337,7 +337,7 @@ pub fn narrow_rows_fit() {
 }
 /// Actual writer focus forwards immediately, and retained children release captures on drop.
 pub fn writer_focus_and_teardown() {
-    let _admission = super::simple_selector_support::bindings_guard();
+    let _admission = super::keybindings::bindings_guard();
     bindings(BTreeMap::new());
     let replay = Replay::new(&mut Query::default(), false);
     let runtime = super::manual_runtime::ManualRuntime::new();
@@ -386,7 +386,7 @@ pub fn writer_focus_and_teardown() {
 }
 /// Shipped themes color the new surface through their semantic roles.
 pub fn brand_roles() {
-    let _admission = super::simple_selector_support::bindings_guard();
+    let _admission = super::keybindings::bindings_guard();
     bindings(BTreeMap::new());
     for name in ["dark", "light"] {
         let path = format!(

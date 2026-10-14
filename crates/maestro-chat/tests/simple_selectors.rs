@@ -11,6 +11,8 @@ mod manual_runtime;
 #[allow(dead_code, reason = "Only theme publication is reused.")]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
+#[path = "support/selector.rs"]
+mod selector;
 mod simple_selector_support;
 use keybindings::bindings;
 use maestro_app::ThinkingLevel;

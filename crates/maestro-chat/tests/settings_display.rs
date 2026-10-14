@@ -5,6 +5,9 @@ mod keybindings;
 #[allow(dead_code, reason = "Shared published theme support.")]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
+#[allow(dead_code, reason = "Display queries use no empty constructor record.")]
+#[path = "support/selector.rs"]
+mod selector;
 mod settings_display_support;
 #[allow(
     dead_code,

@@ -250,6 +250,11 @@ pub fn paired(factory: &str, name: &str, cwd: &str, state: &Value) {
         let mut args = arguments(name);
         if name != "bash" && state[name].get("operations").is_none() {
             root.file("f", b"a c\nhit\n");
+            if name == "find" {
+                // One match keeps factory equivalence independent of parallel traversal order.
+                root.file("match.txt", b"hit");
+                args["pattern"] = json!("*.txt");
+            }
             args["path"] = json!(if ["read", "edit"].contains(&name) {
                 root.0.join("f")
             } else if name == "write" {
@@ -259,6 +264,9 @@ pub fn paired(factory: &str, name: &str, cwd: &str, state: &Value) {
             });
         }
         let actual = execute(&tool, args.clone(), None);
+        if state[name].get("operations").is_none() {
+            assert_native_bytes(&root, name);
+        }
         if name == "edit" && state[name].get("operations").is_none() {
             root.file("f", b"a c\nhit\n");
         }
@@ -328,6 +336,7 @@ fn native_call(factory: &str, name: &str) {
     .find(|t| t.definition.name == name)
     .unwrap();
     let result = execute(&tool, arguments(name), None);
+    assert_native_bytes(&root, name);
     root.file("f", b"a c\nhit\n");
     if name == "write" {
         let _ = std::fs::remove_file(root.0.join("out"));
@@ -335,6 +344,11 @@ fn native_call(factory: &str, name: &str) {
     let original = individual(name, root.text(), ToolsOptions::default(), manager(&root));
     assert_eq!(result, execute(&original, arguments(name), None));
     assert!(result.is_ok(), "native {name} failed");
+    assert_native_bytes(&root, name);
+}
+
+/// Observe selected native file effects before a comparison can reset them.
+fn assert_native_bytes(root: &read_support::TempDir, name: &str) {
     if name == "edit" {
         assert_eq!(std::fs::read(root.0.join("f")).unwrap(), b"b c\nhit\n");
     }

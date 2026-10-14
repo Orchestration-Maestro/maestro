@@ -1,4 +1,6 @@
 //! Strict whole-frame corpus replay through the public list.
+#[path = "../support/recorded_keys/filter_mode.rs"]
+mod filter_mode;
 #[allow(
     dead_code,
     reason = "Only controlled environment and effect observations are used."
@@ -14,6 +16,7 @@ mod published;
 mod registry;
 #[path = "../support/tree.rs"]
 mod tree;
+use filter_mode::mode;
 use maestro_app::{
     compact_json, format_read_line_range, presentation_data::keybindings::KEYBINDINGS,
     truncate_utf16,
@@ -24,7 +27,7 @@ const _: fn(&serde_json::Value) -> Result<String, serde_json::Error> = compact_j
 const _: fn(&str, usize) -> String = truncate_utf16;
 /// The frontend facade retains the shared read-range signature.
 const _: fn(&serde_json::Value) -> String = format_read_line_range;
-use maestro_chat::components::tree_selector::{FilterMode, TreeList};
+use maestro_chat::components::tree_selector::TreeList;
 use maestro_tui::{KeybindingsManager, get_keybindings, set_keybindings, visible_width};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};
@@ -97,17 +100,6 @@ struct Rendered {
     width: usize,
     lines: Vec<String>,
     cell_widths: Vec<usize>,
-}
-/// Convert the recorded mode to its public variant.
-fn mode(value: &str) -> FilterMode {
-    match value {
-        "default" => FilterMode::Default,
-        "no-tools" => FilterMode::NoTools,
-        "user-only" => FilterMode::UserOnly,
-        "labeled-only" => FilterMode::LabeledOnly,
-        "all" => FilterMode::All,
-        _ => panic!("unknown mode"),
-    }
 }
 /// Observe one frame with the surviving list and theme slot.
 fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::ManualRuntime) {

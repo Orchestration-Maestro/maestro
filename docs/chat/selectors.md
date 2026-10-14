@@ -193,8 +193,10 @@ The warnings submenu commits each toggle before notifying with an owned
 missing or null extra-usage preferences display enabled. Closing keeps toggles,
 and reopening reads the latest state. Callback invocation holds no warning-state
 borrow. List and border colors read the live palette; settings cursors and
-submenu heading/help styling are captured when constructed. All input follows
-live configurable keybindings.
+submenu heading/help styling are captured when constructed. Navigation,
+confirmation and cancellation use live configurable keybindings.
+The main settings list also activates on literal Space after navigation takes
+precedence; searchable lists accept ordinary text.
 
 ## Sign-in dialog
 

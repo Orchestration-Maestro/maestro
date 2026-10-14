@@ -92,7 +92,7 @@ pub fn check_order() {
     assert_eq!(custom.definition.name, "caller-defined");
 }
 
-/// Execute supplied operands for every recorded routing state, not just constructor metadata.
+/// Execute the selected nondefault routing rows and fresh-construction observations.
 pub fn check_routes() {
     let corpus = corpus();
     let manager = Arc::new(ToolsManager::new("/unused/search".into(), None));
@@ -297,7 +297,7 @@ fn metadata<C, P, D, S>(tool: &ToolDefinition<C, P, D, S>) -> Value {
     json!({"metadata":data,"callbacks":{"prepareArguments":tool.prepare_arguments.is_some(),"executionMode":tool.execution_mode,"renderCall":tool.render_call.is_some(),"renderResult":tool.render_result.is_some()}})
 }
 
-/// The owning agent loop normalizes before validation, retaining prepared calls for replay.
+/// The owning agent loop prepares before validation and retains in-place argument mutations.
 pub fn check_preparation() {
     for row in corpus().cases.into_iter().filter(|r| r.op == "prepare") {
         for factory in factories("edit") {
@@ -366,23 +366,35 @@ fn compare_loop_results(actual: &[Value], expected: &[Value]) {
     }
 }
 
-/// Independently selected read image and bash prefix policies remain observable.
+/// Read-image policy remains observable while an unrelated bash prefix varies.
 fn image_options_and_context() {
     let image = read_support::blank_image(2200, 20, image::ImageOutputFormat::Png);
     for resize in [false, true] {
         for prefix in ["", "distinct-prefix"] {
+            for factory in factories("read") {
+                let root = read_support::TempDir::new();
+                let tool = select(
+                    factory,
+                    "read",
+                    root.text(),
+                    image_options(&image, resize, prefix),
+                    execution::manager(&root),
+                )
+                .unwrap()
+                .into_iter()
+                .find(|tool| tool.definition.name == "read")
+                .unwrap();
+                assert_image(&tool, &image, resize, &maestro_models::ModelInput::Image);
+            }
             image_context(&image, resize, prefix);
         }
     }
 }
 
-/// Resize-sensitive image output with fresh contexts from each execution.
-fn image_context(image: &[u8], resize: bool, prefix: &str) {
-    use maestro_models::ModelInput;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    let root = read_support::TempDir::new();
+/// Supplied image operations with independently selected resize and shell-prefix options.
+fn image_options(image: &[u8], resize: bool, prefix: &str) -> ToolsOptions {
     let ops = Arc::new(read_support::ScriptedOps::new(image).with_mime("image/png"));
-    let options = ToolsOptions {
+    ToolsOptions {
         read: ReadToolOptions {
             auto_resize_images: Some(resize),
             operations: Some(ops),
@@ -392,7 +404,15 @@ fn image_context(image: &[u8], resize: bool, prefix: &str) {
             ..BashToolOptions::default()
         },
         ..ToolsOptions::default()
-    };
+    }
+}
+
+/// Resize-sensitive image output with fresh contexts from each execution.
+fn image_context(image: &[u8], resize: bool, prefix: &str) {
+    use maestro_models::ModelInput;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let root = read_support::TempDir::new();
+    let options = image_options(image, resize, prefix);
     let definition = create_tool_definition::<read_support::SharedModel>(
         "read",
         "/work".into(),

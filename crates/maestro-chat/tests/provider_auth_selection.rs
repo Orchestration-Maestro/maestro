@@ -5,13 +5,7 @@
 mod keybindings;
 #[allow(
     dead_code,
-    reason = "Shared selector support requires theme file operations."
-)]
-#[path = "../../maestro-theme/tests/live/mod.rs"]
-mod live;
-#[allow(
-    dead_code,
-    reason = "Shared selector support requires the controlled runtime."
+    reason = "Shared provider witnesses use the controlled runtime."
 )]
 #[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
 mod manual_runtime;
@@ -27,11 +21,6 @@ mod recording_terminal;
     reason = "Each selector consumes its own recorded input subset."
 )]
 mod selector_failure_support;
-#[allow(
-    dead_code,
-    reason = "Shared keybinding admission and theme fixtures are reused."
-)]
-mod simple_selector_support;
 
 #[test]
 /// Provider panel preserves modes order and duplicates.
