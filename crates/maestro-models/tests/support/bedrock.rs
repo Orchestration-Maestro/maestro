@@ -362,12 +362,21 @@ fn observed_options(
         }
     }));
     options.common = common(&case.options, options.common)?;
-    options.common.on_payload = Some(Arc::new(move |payload, _| {
-        seen.lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(payload.clone());
-        Box::pin(std::future::ready(Ok(payload)))
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            seen.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(payload.clone());
+            Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                payload,
+                signal: hook_signal,
+            })))
+        },
+    ));
     let error = case.hook_error.clone();
     options.common.on_response = Some(Arc::new(move |_, _| {
         counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);

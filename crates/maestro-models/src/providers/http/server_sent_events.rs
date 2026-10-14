@@ -10,8 +10,10 @@ mod tests;
 pub(crate) struct ServerSentEvent {
     /// The last `event` field of the event, if it had one.
     pub(crate) event: Option<String>,
-    /// Joined `data` fields in field mode, or the whole payload in data-segment mode.
+    /// Joined data fields in field mode, or the payload/non-data text in segment mode.
     pub(crate) data: String,
+    /// Whether `data` is event data rather than a complete non-data segment.
+    pub(crate) is_data: bool,
 }
 
 /// Turns lines into events: `event` and `data` fields collect until a blank line dispatches
@@ -35,6 +37,7 @@ impl SseDecoder {
             return Some(ServerSentEvent {
                 event: self.event.take(),
                 data: std::mem::take(&mut self.data).join("\n"),
+                is_data: true,
             });
         }
         let (field, value) = line.split_once(':').unwrap_or((line, ""));
@@ -125,17 +128,16 @@ impl Segments {
                 continue;
             };
             let text = super::decode_utf8(&self.buffer[start..self.scan]);
-            if let Some(data) = text
-                .trim_matches(maestro_text::is_whitespace_scalar)
-                .strip_prefix("data:")
-            {
-                events.push(ServerSentEvent {
-                    event: None,
-                    data: data
-                        .trim_matches(maestro_text::is_whitespace_scalar)
-                        .to_owned(),
-                });
-            }
+            let text = text.trim_matches(maestro_text::is_whitespace_scalar);
+            let data = text.strip_prefix("data:");
+            events.push(ServerSentEvent {
+                event: None,
+                is_data: data.is_some(),
+                data: data
+                    .unwrap_or(text)
+                    .trim_matches(maestro_text::is_whitespace_scalar)
+                    .to_owned(),
+            });
             self.scan += length;
             start = self.scan;
         }
@@ -146,7 +148,7 @@ impl Segments {
 }
 
 impl SseMessages {
-    /// Read only initial data fields in LF-LF, CR-CR or CRLF-CRLF segments.
+    /// Preserve LF-LF, CR-CR or CRLF-CRLF segments with their data-field classification.
     pub(crate) fn data_segments() -> Self {
         Self {
             segments: Some(Segments::default()),

@@ -246,7 +246,7 @@ fn tagged_hooks(agent: &Agent, tag: &'static str, trace: &Arc<Mutex<Vec<String>>
     let t = trace.clone();
     *agent.on_payload.write().unwrap() = Some(Arc::new(move |mut p, _| {
         t.lock().unwrap().push(format!("payload:{tag}"));
-        p["tag"] = json!(tag);
+        p.payload["tag"] = json!(tag);
         ready(Ok(p))
     }));
     let t = trace.clone();
@@ -289,9 +289,14 @@ fn tagged_stream(
         let requests = requests.clone();
         Box::pin(async move {
             let model = Arc::new(model);
-            let payload =
-                options.common.on_payload.unwrap()(json!({"untouched":true}), model.clone())
-                    .await?;
+            let payload = options.common.on_payload.unwrap()(
+                maestro_models::PayloadHookInput {
+                    payload: json!({"untouched":true}),
+                    signal: None,
+                },
+                model.clone(),
+            )
+            .await?;
             options.common.on_response.unwrap()(
                 maestro_models::ProviderResponse {
                     status: 200.0,
@@ -300,7 +305,7 @@ fn tagged_stream(
                 model,
             )
             .await?;
-            requests.lock().unwrap().push(json!({"tag":tag,"messages":context.messages.iter().map(|v|match v {maestro_models::Message::User(v)=>{let maestro_models::UserContent::Text(v)=&v.content else {unreachable!()};v.clone()},maestro_models::Message::Assistant(_)=>"assistant".into(),maestro_models::Message::ToolResult(_)=>"toolResult".into()}).collect::<Vec<_>>(),"session":options.common.session_id,"budget":options.thinking_budgets.unwrap().high,"transport":options.common.transport,"retry":options.common.max_retry_delay_ms,"execution":open.extra["toolExecution"],"key":options.common.api_key,"payload":payload}));
+            requests.lock().unwrap().push(json!({"tag":tag,"messages":context.messages.iter().map(|v|match v {maestro_models::Message::User(v)=>{let maestro_models::UserContent::Text(v)=&v.content else {unreachable!()};v.clone()},maestro_models::Message::Assistant(_)=>"assistant".into(),maestro_models::Message::ToolResult(_)=>"toolResult".into()}).collect::<Vec<_>>(),"session":options.common.session_id,"budget":options.thinking_budgets.unwrap().high,"transport":options.common.transport,"retry":options.common.max_retry_delay_ms,"execution":open.extra["toolExecution"],"key":options.common.api_key,"payload":payload.payload}));
             let response = assistant("ok");
             response.write().unwrap().content = vec![maestro_models::AssistantContent::ToolCall(
                 maestro_models::ToolCall {

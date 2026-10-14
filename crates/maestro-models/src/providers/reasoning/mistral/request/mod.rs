@@ -213,7 +213,15 @@ pub(super) async fn prepare(
     let base = transport::base_url(&model.base_url)?;
     let mut payload = build_chat_payload(&model, context, options, mapped_effort)?;
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, std::sync::Arc::clone(&model)).await?;
+        payload = hook(
+            crate::PayloadHookInput {
+                payload,
+                signal: None,
+            },
+            std::sync::Arc::clone(&model),
+        )
+        .await?
+        .payload;
     }
     let wire = super::wire::encode_payload(&payload)?;
     let body = crate::providers::json_text::compact_json(&wire)

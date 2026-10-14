@@ -284,9 +284,16 @@ async fn invoke(
     let invocation = Invocation::new(model, context, call)?;
     let mut payload = invocation.payload()?;
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, Arc::clone(model))
-            .await
-            .map_err(callback_failure)?;
+        payload = hook(
+            crate::PayloadHookInput {
+                payload,
+                signal: None,
+            },
+            Arc::clone(model),
+        )
+        .await
+        .map_err(callback_failure)?
+        .payload;
     }
     match &mut payload {
         Value::Object(members) => {

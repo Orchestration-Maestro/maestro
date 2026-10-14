@@ -330,10 +330,10 @@ async fn maestro_response_sessions_simple_common_options_scenario() {
         "x-common".into(),
         "forwarded".into(),
     )]));
-    options.common.on_payload = Some(Arc::new(move |mut body, _| {
+    options.common.on_payload = Some(Arc::new(move |mut input, _| {
         payload_seen.send("payload").unwrap();
-        body["edited"] = json!([2, 1, 2]);
-        Box::pin(async { Ok(body) })
+        input.payload["edited"] = json!([2, 1, 2]);
+        Box::pin(async { Ok(input) })
     }));
     let response_seen = sender.clone();
     options.common.on_response = Some(Arc::new(move |response, _| {

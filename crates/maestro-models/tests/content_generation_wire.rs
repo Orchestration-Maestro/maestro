@@ -39,14 +39,33 @@ fn hook_replacement_changes_model_content_and_configuration() -> TestResult {
     let received = Arc::new(Mutex::new(None));
     let hook: OnPayload = {
         let received = Arc::clone(&received);
-        Arc::new(move |payload, _| {
-            if let Ok(mut slot) = received.lock() {
-                *slot = Some(payload);
-            }
-            Box::pin(std::future::ready(Ok(replacement.clone())))
-        })
+        Arc::new(
+            move |maestro_models::PayloadHookInput {
+                      payload,
+                      signal: hook_signal,
+                  },
+                  _| {
+                if let Ok(mut slot) = received.lock() {
+                    *slot = Some(payload);
+                }
+                Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                    payload: replacement.clone(),
+                    signal: hook_signal,
+                })))
+            },
+        )
     };
-    let returned = chat::block_on(false, async { Ok(hook(prepared.clone(), model).await?) })?;
+    let returned = chat::block_on(false, async {
+        Ok(hook(
+            maestro_models::PayloadHookInput {
+                payload: prepared.clone(),
+                signal: None,
+            },
+            model,
+        )
+        .await?
+        .payload)
+    })?;
     let seen = received.lock().map_err(|_| "hook payload lock")?.take();
     assert_eq!(seen, Some(prepared.clone()));
     assert_ne!(prepared["model"], returned["model"]);

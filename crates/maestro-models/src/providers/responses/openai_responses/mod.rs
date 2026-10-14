@@ -341,7 +341,15 @@ impl Request<'_> {
         let mut headers = self.headers(key);
         let mut payload = self.payload()?;
         if let Some(hook) = &self.options.common.on_payload {
-            payload = hook(payload, Arc::clone(self.model)).await?;
+            payload = hook(
+                crate::PayloadHookInput {
+                    payload,
+                    signal: None,
+                },
+                Arc::clone(self.model),
+            )
+            .await?
+            .payload;
         }
         if payload.is_null() {
             return Err(RequestFailure::new("Response payload must not be null"));

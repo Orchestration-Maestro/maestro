@@ -153,21 +153,31 @@ fn install_hooks(
 ) {
     let selected = input.clone();
     let seen = hooks;
-    options.common.on_payload = Some(Arc::new(move |payload, _| {
-        seen.fetch_add(1, Ordering::SeqCst);
-        let selected = selected.clone();
-        Box::pin(async move {
-            if let Some(error) = selected["hookError"].as_str() {
-                return Err(error_info(error));
-            }
-            if selected["repairNonfinite"].as_bool().unwrap_or(false) {
-                return Ok(
-                    serde_json::json!({"model":"m","messages":[],"temperature":0,"maxTokens":1}),
-                );
-            }
-            Ok(selected.get("replace").cloned().unwrap_or(payload))
-        })
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            seen.fetch_add(1, Ordering::SeqCst);
+            let selected = selected.clone();
+            Box::pin(async move {
+                if let Some(error) = selected["hookError"].as_str() {
+                    return Err(error_info(error));
+                }
+                if selected["repairNonfinite"].as_bool().unwrap_or(false) {
+                    return Ok(crate::PayloadHookInput {
+                        payload: serde_json::json!({"model":"m","messages":[],"temperature":0,"maxTokens":1}),
+                        signal: hook_signal,
+                    });
+                }
+                Ok(crate::PayloadHookInput {
+                    payload: selected.get("replace").cloned().unwrap_or(payload),
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     let seen = responses;
     options.common.on_response = Some(Arc::new(move |_, _| {
         seen.fetch_add(1, Ordering::SeqCst);

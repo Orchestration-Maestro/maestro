@@ -228,14 +228,23 @@ fn native_options(hooks: &Arc<Mutex<Vec<&'static str>>>) -> StreamOptions {
     StreamOptions {
         api_key: Some("fixture-key".into()),
         max_retries: Some(0.0),
-        on_payload: Some(Arc::new(move |mut body, _| {
-            payload
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push("payload");
-            body["marker"] = json!("sent");
-            Box::pin(std::future::ready(Ok(body)))
-        })),
+        on_payload: Some(Arc::new(
+            move |maestro_models::PayloadHookInput {
+                      payload: mut body,
+                      signal: hook_signal,
+                  },
+                  _| {
+                payload
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .push("payload");
+                body["marker"] = json!("sent");
+                Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                    payload: body,
+                    signal: hook_signal,
+                })))
+            },
+        )),
         on_response: Some(Arc::new(move |headers, _| {
             assert!((headers.status - 200.0).abs() < f64::EPSILON);
             response
@@ -333,7 +342,17 @@ async fn gated_call(call: Invocation) -> TestResult {
         on_payload: Some(payload_hook),
         on_response: Some(Arc::new(move |_, model| {
             let gate = Arc::clone(&response_gate);
-            Box::pin(async move { gate(Value::Null, model).await.map(|_| ()) })
+            Box::pin(async move {
+                gate(
+                    maestro_models::PayloadHookInput {
+                        payload: Value::Null,
+                        signal: None,
+                    },
+                    model,
+                )
+                .await
+                .map(|_| ())
+            })
         })),
         ..Default::default()
     };

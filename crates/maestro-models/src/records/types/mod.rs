@@ -12,26 +12,34 @@ pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 
 /// Owned browser-local callback future.
 #[cfg(target_arch = "wasm32")]
 pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'static>>;
-/// Retained callback that receives the adapter payload and returns the payload to send.
+/// Provider payload with its selectable request cancellation handle.
+pub struct PayloadHookInput {
+    /// JSON parameters selected for projection and dispatch.
+    pub payload: serde_json::Value,
+    /// Request cancellation; only the content-generation adapter consumes this handle.
+    pub signal: Option<Cancellation>,
+}
+/// Retained callback selecting JSON parameters and a provider-specific request signal.
 ///
-/// The hook owns the payload it receives: returning it, edited or not, sends it; returning
-/// another value sends that value instead. The model is shared and read-only.
+/// The hook owns its input and returns the selected record. Content generation consumes
+/// its signal; other bundled adapters supply `None` and ignore the returned signal.
+/// The model is shared and read-only.
 #[cfg(not(target_arch = "wasm32"))]
 pub type OnPayload = std::sync::Arc<
     dyn Fn(
-            serde_json::Value,
+            PayloadHookInput,
             std::sync::Arc<Model>,
-        ) -> BoxFuture<Result<serde_json::Value, DiagnosticErrorInfo>>
+        ) -> BoxFuture<Result<PayloadHookInput, DiagnosticErrorInfo>>
         + Send
         + Sync,
 >;
-/// Browser-local callback that receives the adapter payload and returns the payload to send.
+/// Browser-local counterpart of the payload-selection callback.
 #[cfg(target_arch = "wasm32")]
 pub type OnPayload = std::sync::Arc<
     dyn Fn(
-        serde_json::Value,
+        PayloadHookInput,
         std::sync::Arc<Model>,
-    ) -> BoxFuture<Result<serde_json::Value, DiagnosticErrorInfo>>,
+    ) -> BoxFuture<Result<PayloadHookInput, DiagnosticErrorInfo>>,
 >;
 /// Retained callback observing response metadata before body consumption.
 ///

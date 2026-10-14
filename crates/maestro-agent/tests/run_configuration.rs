@@ -103,7 +103,7 @@ fn constructor_hooks(calls: &Arc<Mutex<Vec<&'static str>>>) -> AgentOptions {
     AgentOptions {
         on_payload: Some(Arc::new(move |mut payload, _| {
             payload_calls.lock().unwrap().push("payload");
-            payload["constructor"] = serde_json::json!(true);
+            payload.payload["constructor"] = serde_json::json!(true);
             support::ready(Ok(payload))
         })),
         on_response: Some(Arc::new(move |response, _| {
@@ -149,11 +149,16 @@ fn constructor_dispatch(
         );
         assert_eq!(options.common.api_key.as_deref(), Some("constructor-key"));
         let model = Arc::new(model);
-        let payload =
-            options.common.on_payload.unwrap()(serde_json::json!({"original":true}), model.clone())
-                .await?;
+        let payload = options.common.on_payload.unwrap()(
+            maestro_models::PayloadHookInput {
+                payload: serde_json::json!({"original":true}),
+                signal: None,
+            },
+            model.clone(),
+        )
+        .await?;
         assert_eq!(
-            payload,
+            payload.payload,
             serde_json::json!({"original":true,"constructor":true})
         );
         options.common.on_response.unwrap()(

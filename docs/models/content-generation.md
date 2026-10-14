@@ -320,8 +320,9 @@ once and its selected payload passes through [projection](#request-projection) a
 `StreamOptions::fetch` or the default transport. Common timeout/retry settings, transport
 selection and the response hook are not consumed. Only a positive selected
 `config.httpOptions.timeout` sets a deadline, spanning dispatch, error-body admission and
-reduction. Selected cancellation is checked before dispatch; removing the hook payload's
-`abortSignal` detaches request cancellation, not the caller's final abort classification.
+reduction. The hook's `PayloadHookInput::signal` starts as the caller's signal and may be
+replaced or set to `None`. The returned handle controls request cancellation and is checked
+before dispatch; the caller's original signal still determines final abort classification.
 Timeout cancellation belongs to the request and does not abort the caller's signal.
 
 A successful status publishes `start` before body reduction; bodyless 204/205 fail afterward,
@@ -333,7 +334,9 @@ The [shared HTTP framing owner](../../crates/maestro-models/src/providers/http/s
 selects whole data segments for this protocol; other callers retain field framing. Ordered
 items feed the existing [response reducer](#response-reduction); a JSON null root becomes
 an empty response before reduction. A non-whitespace EOF tail
-fails; a residual bare error with numeric or decimal numeric-string code in `[400, 600)`
-is classified consistently across chunk boundaries. Source and framing failures preserve
+fails. Complete non-data segments and the residual tail share bare-error classification:
+a numeric or decimal numeric-string code in `[400, 600)` produces a provider error across
+chunk and delimiter boundaries; other complete non-data segments are ignored.
+Source and framing failures preserve
 prior content without closing its active block; [reducer failures](#response-reduction)
 retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.

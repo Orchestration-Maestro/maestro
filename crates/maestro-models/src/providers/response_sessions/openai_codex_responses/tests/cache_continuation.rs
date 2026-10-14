@@ -324,11 +324,22 @@ async fn two_requests(session: &str, edit: fn(&mut Value)) -> (Value, Value) {
     let mut chat = Conversation::new(&url, Some(session), Some(Transport::WebsocketCached)).await;
     let hooks = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let counted = Arc::clone(&hooks);
-    chat.setup.options.common.on_payload = Some(Arc::new(move |mut payload, _| {
-        counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        edit(&mut payload);
-        Box::pin(async move { Ok(payload) })
-    }));
+    chat.setup.options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              _| {
+            counted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            edit(&mut payload);
+            Box::pin(async move {
+                Ok(crate::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     let server = async {
         let mut socket = accept(&listener).await;
         let first = answer(&mut socket, "r1", "answer").await;
@@ -379,10 +390,21 @@ fn maestro_response_sessions_send_delta_with_deeply_nested_open_member() {
         let (listener, url) = listen().await;
         let mut chat =
             Conversation::new(&url, Some("deep-open"), Some(Transport::WebsocketCached)).await;
-        chat.setup.options.common.on_payload = Some(Arc::new(|mut payload, _| {
-            payload["extra"] = nested(131);
-            Box::pin(async move { Ok(payload) })
-        }));
+        chat.setup.options.common.on_payload = Some(Arc::new(
+            |crate::PayloadHookInput {
+                 mut payload,
+                 signal: hook_signal,
+             },
+             _| {
+                payload["extra"] = nested(131);
+                Box::pin(async move {
+                    Ok(crate::PayloadHookInput {
+                        payload,
+                        signal: hook_signal,
+                    })
+                })
+            },
+        ));
         let server = async {
             let mut socket = accept(&listener).await;
             let first = raw_request(&mut socket).await;

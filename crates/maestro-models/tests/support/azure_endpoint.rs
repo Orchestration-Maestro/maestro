@@ -139,29 +139,40 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         Arc::clone(&log.hooks),
         case["hook"].as_str().unwrap_or_default().to_owned(),
     );
-    Arc::new(move |mut payload, model| {
-        let label = json!({"kind":"payload","model":model.id,"keys":payload.as_object().map(|v|v.keys().collect::<Vec<_>>()),"payload":payload});
-        recorded
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(label);
-        let result = match hook.as_str() {
-            "payload_failure" => Err(failure("payload failed")),
-            "nonstream" => {
-                payload["stream"] = json!(false);
-                Ok(payload)
-            }
-            "replace" => {
-                Ok(json!({"model":"hook-model","input":[],"stream":true,"marker":"replacement"}))
-            }
-            "mutate" => {
-                payload["model"] = json!("mutated-model");
-                Ok(payload)
-            }
-            _ => Ok(payload),
-        };
-        Box::pin(std::future::ready(result))
-    })
+    Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              model| {
+            let label = json!({"kind":"payload","model":model.id,"keys":payload.as_object().map(|v|v.keys().collect::<Vec<_>>()),"payload":payload});
+            recorded
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push(label);
+            let result = match hook.as_str() {
+                "payload_failure" => Err(failure("payload failed")),
+                "nonstream" => {
+                    payload["stream"] = json!(false);
+                    Ok(payload)
+                }
+                "replace" => Ok(
+                    json!({"model":"hook-model","input":[],"stream":true,"marker":"replacement"}),
+                ),
+                "mutate" => {
+                    payload["model"] = json!("mutated-model");
+                    Ok(payload)
+                }
+                _ => Ok(payload),
+            };
+            Box::pin(std::future::ready(result.map(|payload| {
+                maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                }
+            })))
+        },
+    )
 }
 /// Response hook records the response after endpoint preparation.
 fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {

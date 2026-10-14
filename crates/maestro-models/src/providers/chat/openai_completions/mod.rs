@@ -154,7 +154,15 @@ async fn invoke(
     let headers = invocation.headers(&api_key);
     let mut payload = invocation.payload()?;
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, Arc::clone(model)).await?;
+        payload = hook(
+            crate::PayloadHookInput {
+                payload,
+                signal: None,
+            },
+            Arc::clone(model),
+        )
+        .await?
+        .payload;
     }
     let body = compact_json(&payload).map_err(|error| RequestFailure::new(error.to_string()))?;
     let request = HttpRequest {

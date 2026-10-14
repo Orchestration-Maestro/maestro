@@ -303,19 +303,19 @@ async fn invoke(
     use crate::providers::assistant_output::conclude;
     use crate::providers::http::{Raced, RequestFailure, race};
     let model = invocation.model;
-    let context = invocation.context;
     let client = invocation.client;
-    let params = build_params(&model, &context, Some(options))?;
-    let mut payload =
+    let params = build_params(&model, &invocation.context, Some(options))?;
+    let payload =
         serde_json::to_value(params).map_err(|error| RequestFailure::new(error.to_string()))?;
+    let mut selected = crate::PayloadHookInput {
+        payload,
+        signal: options.common.signal.clone(),
+    };
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, std::sync::Arc::clone(&model)).await?;
+        selected = hook(selected, std::sync::Arc::clone(&model)).await?;
     }
-    let signal = payload
-        .get("config")
-        .and_then(|config| config.get("abortSignal"))
-        .filter(|value| !value.is_null())
-        .and(options.common.signal.as_ref());
+    let signal = selected.signal.as_ref();
+    let mut payload = selected.payload;
     let controls = payload
         .get_mut("config")
         .and_then(serde_json::Value::as_object_mut)

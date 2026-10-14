@@ -69,6 +69,7 @@ fn every_recorded_body_gives_the_events_the_client_library_gave() {
             .events
             .into_iter()
             .map(|event| ServerSentEvent {
+                is_data: true,
                 event: event.event,
                 data: event.data,
             })
@@ -89,6 +90,7 @@ fn maestro_http_dispatches_carriage_terminated_events() {
                 assert_eq!(
                     reader.push(b"\n"),
                     vec![ServerSentEvent {
+                        is_data: true,
                         event: None,
                         data: "first".to_owned(),
                     }]
@@ -98,6 +100,7 @@ fn maestro_http_dispatches_carriage_terminated_events() {
             assert_eq!(
                 reader.push(frame.as_bytes()),
                 vec![ServerSentEvent {
+                    is_data: true,
                     event: None,
                     data: "first".to_owned(),
                 }],
@@ -110,6 +113,7 @@ fn maestro_http_dispatches_carriage_terminated_events() {
     assert_eq!(
         reader.push(b"data: first\r\r"),
         vec![ServerSentEvent {
+            is_data: true,
             event: None,
             data: "first".to_owned(),
         }]
@@ -118,6 +122,7 @@ fn maestro_http_dispatches_carriage_terminated_events() {
     assert_eq!(
         reader.push(b"data: second\r\n\r"),
         vec![ServerSentEvent {
+            is_data: true,
             event: None,
             data: "second".to_owned(),
         }]
@@ -126,6 +131,7 @@ fn maestro_http_dispatches_carriage_terminated_events() {
     assert_eq!(
         reader.push(b"data: second\n\n"),
         vec![ServerSentEvent {
+            is_data: true,
             event: None,
             data: "second".to_owned(),
         }]

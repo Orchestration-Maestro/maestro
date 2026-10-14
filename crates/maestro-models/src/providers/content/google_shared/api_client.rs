@@ -277,7 +277,7 @@ impl ContentSource {
                     self.decoder
                         .push(&bytes)
                         .into_iter()
-                        .map(|event| Ok(response_data(event.data))),
+                        .filter_map(response_data),
                 ),
                 Some(Err(error)) => {
                     self.ended = true;
@@ -287,11 +287,14 @@ impl ContentSource {
                 None => {
                     self.ended = true;
                     let tail = self.decoder.segment_tail();
+                    let error = bare_error(&tail).unwrap_or(DiagnosticErrorInfo::error(
+                        "Incomplete JSON segment at the end",
+                    ));
                     self.pending.extend(
                         (!tail
                             .trim_matches(maestro_text::is_whitespace_scalar)
                             .is_empty())
-                        .then(|| Err(tail_failure(&tail))),
+                        .then_some(Err(error)),
                     );
                 }
             }
@@ -299,17 +302,25 @@ impl ContentSource {
     }
 }
 
-/// Normalize a null root to the empty response selected by the transport adapter.
-fn response_data(data: String) -> String {
-    if crate::providers::json_text::raw_json(&data).is_ok_and(|raw| raw.get() == "null") {
-        "{}".to_owned()
-    } else {
-        data
+/// Select data or bare errors, normalizing null data roots to an empty response.
+fn response_data(
+    event: crate::providers::http::ServerSentEvent,
+) -> Option<Result<String, DiagnosticErrorInfo>> {
+    if !event.is_data {
+        return bare_error(&event.data).map(Err);
     }
+    let data = event.data;
+    Some(Ok(
+        if crate::providers::json_text::raw_json(&data).is_ok_and(|raw| raw.get() == "null") {
+            "{}".to_owned()
+        } else {
+            data
+        },
+    ))
 }
 
-/// Classify a residual bare provider error after the entire source is consumed.
-fn tail_failure(text: &str) -> DiagnosticErrorInfo {
+/// Classify a complete non-data segment or the residual tail as a bare provider error.
+fn bare_error(text: &str) -> Option<DiagnosticErrorInfo> {
     let value = serde_json::from_str::<Value>(text).ok();
     let code = value
         .as_ref()
@@ -328,7 +339,9 @@ fn tail_failure(text: &str) -> DiagnosticErrorInfo {
         && let Ok(body) = maestro_json::compact_json(&value)
     {
         let status = value["error"]["status"].as_str().unwrap_or("undefined");
-        return DiagnosticErrorInfo::error(format!("got status: {status}. {body}"));
+        return Some(DiagnosticErrorInfo::error(format!(
+            "got status: {status}. {body}"
+        )));
     }
-    DiagnosticErrorInfo::error("Incomplete JSON segment at the end")
+    None
 }

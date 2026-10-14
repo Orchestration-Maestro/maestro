@@ -279,28 +279,39 @@ fn payload_hook(
     let replacement = change.replacement.clone();
     let patch = change.patch.clone().unwrap_or_default();
     let remove = change.remove.clone();
-    Arc::new(move |mut input, _| {
-        if let Ok(mut phases) = phases.lock() {
-            phases.push(Phase::Hook);
-        }
-        if let Ok(mut seen) = seen.lock() {
-            *seen = Some(input.clone());
-        }
-        let outcome = match (&hook_error, &replacement) {
-            (Some(message), _) => Err(DiagnosticErrorInfo {
-                name: None,
-                message: message.clone(),
-                stack: None,
-                code: None,
-            }),
-            (None, Some(replacement)) => Ok(replacement.clone()),
-            (None, None) => {
-                edit(&mut input, &remove, &patch);
-                Ok(input)
+    Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload: mut input,
+                  signal: hook_signal,
+              },
+              _| {
+            if let Ok(mut phases) = phases.lock() {
+                phases.push(Phase::Hook);
             }
-        };
-        Box::pin(std::future::ready(outcome))
-    })
+            if let Ok(mut seen) = seen.lock() {
+                *seen = Some(input.clone());
+            }
+            let outcome = match (&hook_error, &replacement) {
+                (Some(message), _) => Err(DiagnosticErrorInfo {
+                    name: None,
+                    message: message.clone(),
+                    stack: None,
+                    code: None,
+                }),
+                (None, Some(replacement)) => Ok(replacement.clone()),
+                (None, None) => {
+                    edit(&mut input, &remove, &patch);
+                    Ok(input)
+                }
+            };
+            Box::pin(std::future::ready(outcome.map(|payload| {
+                maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                }
+            })))
+        },
+    )
 }
 
 /// Remove the named members from a hook input, then write the patch over it.

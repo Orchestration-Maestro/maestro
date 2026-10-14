@@ -57,14 +57,23 @@ fn common(
     payloads: Arc<Mutex<Vec<Value>>>,
     signal: Cancellation,
 ) -> StreamOptions {
-    let callback: OnPayload = Arc::new(move |payload, _| {
-        let observed = payload.clone();
-        payloads
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(observed);
-        Box::pin(std::future::ready(Ok(payload)))
-    });
+    let callback: OnPayload = Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            let observed = payload.clone();
+            payloads
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push(observed);
+            Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                payload,
+                signal: hook_signal,
+            })))
+        },
+    );
     StreamOptions {
         api_key: Some(key(wire)),
         max_tokens: wire.options.max_tokens,

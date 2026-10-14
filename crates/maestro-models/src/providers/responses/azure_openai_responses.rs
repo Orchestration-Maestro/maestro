@@ -306,7 +306,15 @@ async fn send(
         layer(&mut headers, copied(authored));
     }
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, Arc::clone(model)).await?;
+        payload = hook(
+            crate::PayloadHookInput {
+                payload,
+                signal: None,
+            },
+            Arc::clone(model),
+        )
+        .await?
+        .payload;
     }
     let streaming = payload.get("stream").is_some_and(source::streaming);
     headers.insert("content-type".to_owned(), "application/json".to_owned());

@@ -49,6 +49,35 @@ fn bare_error_objects_are_independent_of_chunk_boundaries() -> TestResult {
 }
 
 #[test]
+fn delimited_bare_errors_preserve_prior_deltas() -> TestResult {
+    chat::block_on(false, async {
+        let error = r#"{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","message":"busy"}}"#;
+        let delta =
+            "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"retained\"}]}}]}\n\n";
+        for delimiter in ["\n\n", "\r\r", "\r\n\r\n"] {
+            for prefix in ["", delta] {
+                let body = format!("{prefix}{error}{delimiter}");
+                native::assert_error_splits(&body, !prefix.is_empty()).await?;
+            }
+        }
+        let stream = native_stream(StreamOptions {
+            fetch: Some(body_fetch(
+                format!(": heartbeat\n\nnot JSON\r\r{delta}").into_bytes(),
+            )),
+            api_key: Some("fixture-key".into()),
+            ..Default::default()
+        })?;
+        let output = stream.result().await;
+        assert_eq!(output.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(
+            serde_json::to_value(&output.read().unwrap().content)?[0]["text"],
+            "retained"
+        );
+        Ok(())
+    })
+}
+
+#[test]
 fn payload_edits_and_replacements_reach_the_transport() -> TestResult {
     content_invocation::assert_rows("payload_edits_and_replacements_reach_the_transport")
 }
@@ -266,6 +295,21 @@ use serde_json::json;
 use std::sync::{Arc, Mutex};
 
 #[test]
+fn hook_selected_signal_controls_transport_not_terminal_classification() -> TestResult {
+    chat::block_on(false, async {
+        for mode in [
+            "replace-abort-B",
+            "replace-abort-A",
+            "remove-abort-A",
+            "retain-abort-A",
+        ] {
+            native::assert_selected_signal(mode).await?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn cancellation_during_setup_releases_the_request() -> TestResult {
     chat::block_on(false, async {
         let (fetch, admission, release) = native::held_fetch(empty_response());
@@ -310,10 +354,21 @@ fn timeout_does_not_cancel_the_callers_signal() -> TestResult {
             fetch: Some(fetch),
             signal: Some(caller.clone()),
             api_key: Some("fixture-key".into()),
-            on_payload: Some(Arc::new(|mut payload, _| {
-                payload["config"]["httpOptions"] = json!({"timeout":1});
-                Box::pin(async { Ok(payload) })
-            })),
+            on_payload: Some(Arc::new(
+                |maestro_models::PayloadHookInput {
+                     mut payload,
+                     signal: hook_signal,
+                 },
+                 _| {
+                    payload["config"]["httpOptions"] = json!({"timeout":1});
+                    Box::pin(async {
+                        Ok(maestro_models::PayloadHookInput {
+                            payload,
+                            signal: hook_signal,
+                        })
+                    })
+                },
+            )),
             ..Default::default()
         })?;
         let request_signal = admission.await?.expect("owned signal");
@@ -521,6 +576,122 @@ fn registered_options_reject_wrong_native_shapes() -> TestResult {
 
 #[cfg(test)]
 mod native {
+    /// Select request cancellation independently of the caller's terminal signal.
+    fn selected_signal_hook(
+        mode: &'static str,
+        selected: Cancellation,
+    ) -> maestro_models::OnPayload {
+        Arc::new(move |mut input, _| {
+            assert!(input.signal.is_some());
+            if mode.starts_with("replace") {
+                input.signal = Some(selected.clone());
+            } else if mode.starts_with("remove") {
+                input.signal = None;
+            }
+            Box::pin(async { Ok(input) })
+        })
+    }
+
+    /// Observe the admitted transport's disposal or completion before terminal assertions.
+    pub(super) async fn assert_selected_signal(mode: &'static str) -> TestResult {
+        let caller = Cancellation::new();
+        let replacement = Cancellation::new();
+        let selected = replacement.clone();
+        let response = HttpResponse {
+            body: Box::pin(futures_util::stream::iter([Ok(b"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"released\"}]},\"finishReason\":\"STOP\"}]}\n\n".to_vec())])),
+            ..empty_response()
+        };
+        let (fetch, admission, mut release) = native::held_fetch(response);
+        let stream = native_stream(StreamOptions {
+            fetch: Some(fetch),
+            signal: Some(caller.clone()),
+            api_key: Some("fixture-key".into()),
+            on_payload: Some(selected_signal_hook(mode, selected)),
+            ..Default::default()
+        })?;
+        let request_signal = admission.await?;
+        if mode == "replace-abort-B" {
+            replacement.abort();
+        } else {
+            caller.abort();
+        }
+        let cancels_transport = matches!(mode, "replace-abort-B" | "retain-abort-A");
+        if cancels_transport {
+            release.closed().await;
+        } else {
+            release.send(()).unwrap();
+        }
+        let output = stream.result().await;
+        let message = output.read().unwrap();
+        let reason = if mode == "replace-abort-B" {
+            StopReason::Error
+        } else {
+            StopReason::Aborted
+        };
+        assert_eq!(message.stop_reason, reason, "{mode}");
+        assert_eq!(
+            request_signal
+                .as_ref()
+                .is_some_and(Cancellation::is_aborted),
+            cancels_transport,
+            "{mode}"
+        );
+        if cancels_transport {
+            assert!(message.content.is_empty(), "{mode}");
+        } else {
+            assert_eq!(
+                serde_json::to_value(&message.content)?[0]["text"],
+                "released",
+                "{mode}"
+            );
+        }
+        assert_eq!(
+            message.error_message.as_deref(),
+            Some("Request was aborted"),
+            "{mode}"
+        );
+        Ok(())
+    }
+
+    /// Compare every byte split and the unsplit body through public invocation.
+    pub(super) async fn assert_error_splits(body: &str, has_prefix: bool) -> TestResult {
+        for split in 0..body.len() {
+            let chunks = if split == 0 {
+                vec![body.as_bytes().to_vec()]
+            } else {
+                vec![
+                    body.as_bytes()[..split].to_vec(),
+                    body.as_bytes()[split..].to_vec(),
+                ]
+            };
+            let stream = native_stream(StreamOptions {
+                fetch: Some(body_chunks_fetch(chunks)),
+                api_key: Some("fixture-key".into()),
+                ..Default::default()
+            })?;
+            let (events, _) = response_output::collect(&stream).await?;
+            let output = stream.result().await;
+            let message = output.read().unwrap();
+            assert_eq!(message.stop_reason, StopReason::Error, "split {split}");
+            assert_eq!(
+                message.error_message.as_deref(),
+                Some(
+                    "got status: RESOURCE_EXHAUSTED. {\"error\":{\"code\":429,\"status\":\"RESOURCE_EXHAUSTED\",\"message\":\"busy\"}}"
+                )
+            );
+            assert!(!events.iter().any(|event| event["type"] == "text_end"));
+            if has_prefix {
+                assert_eq!(
+                    serde_json::to_value(&message.content)?[0]["text"],
+                    "retained"
+                );
+            } else {
+                assert!(message.content.is_empty());
+            }
+        }
+        Ok(())
+    }
+
     use super::*;
     /// Baseline public model and changed conversation.
     pub(super) fn native_input() -> TestResult<(Model, Context)> {
@@ -569,10 +740,21 @@ mod native {
             fetch: Some(fetch),
             signal: Some(caller.clone()),
             api_key: Some("fixture-key".into()),
-            on_payload: Some(Arc::new(|mut payload, _| {
-                payload["config"]["httpOptions"] = json!({"timeout":10});
-                Box::pin(async { Ok(payload) })
-            })),
+            on_payload: Some(Arc::new(
+                |maestro_models::PayloadHookInput {
+                     mut payload,
+                     signal: hook_signal,
+                 },
+                 _| {
+                    payload["config"]["httpOptions"] = json!({"timeout":10});
+                    Box::pin(async {
+                        Ok(maestro_models::PayloadHookInput {
+                            payload,
+                            signal: hook_signal,
+                        })
+                    })
+                },
+            )),
             ..Default::default()
         })?;
         let request_signal = admission.await?.expect("owned signal");
@@ -599,11 +781,16 @@ mod native {
     }
     /// A controlled successful stream carrying the supplied response bytes.
     pub(super) fn body_fetch(body: Vec<u8>) -> Fetch {
+        body_chunks_fetch(vec![body])
+    }
+
+    /// A controlled successful stream preserving supplied chunk boundaries.
+    fn body_chunks_fetch(chunks: Vec<Vec<u8>>) -> Fetch {
         Arc::new(move |_| {
-            let body = body.clone();
+            let chunks = chunks.clone();
             Box::pin(async move {
                 Ok(HttpResponse {
-                    body: Box::pin(futures_util::stream::iter([Ok(body)])),
+                    body: Box::pin(futures_util::stream::iter(chunks.into_iter().map(Ok))),
                     ..empty_response()
                 })
             })

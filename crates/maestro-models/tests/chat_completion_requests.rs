@@ -253,12 +253,19 @@ async fn send_numbers(
     common.max_tokens = Some(max_tokens);
     let seen: Arc<Mutex<Vec<Value>>> = Arc::default();
     let kept = Arc::clone(&seen);
-    common.on_payload = Some(Arc::new(move |payload, _| {
-        kept.lock().map(|mut kept| kept.push(payload.clone())).ok();
-        Box::pin(std::future::ready(Ok(replacement
-            .clone()
-            .unwrap_or(payload))))
-    }));
+    common.on_payload = Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            kept.lock().map(|mut kept| kept.push(payload.clone())).ok();
+            Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                payload: replacement.clone().unwrap_or(payload),
+                signal: hook_signal,
+            })))
+        },
+    ));
     let outcome = transport::finish(model, history, common).await?;
     assert!(
         matches!(outcome.stop_reason, StopReason::Stop),
@@ -316,9 +323,18 @@ async fn send_through_hook(
     let target = transport::transport(vec![transport::Attempt::success()]);
     let (model, history, mut common) = transport::call_inputs(&target)?;
     common.temperature = Some(0.25);
-    common.on_payload = Some(Arc::new(move |payload, _| {
-        Box::pin(std::future::ready(Ok(hook(payload))))
-    }));
+    common.on_payload = Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                payload: hook(payload),
+                signal: hook_signal,
+            })))
+        },
+    ));
     let outcome = transport::finish(model, history, common).await?;
     assert!(
         matches!(outcome.stop_reason, StopReason::Stop),
@@ -656,11 +672,20 @@ fn record<T>(list: &Mutex<Vec<T>>, item: T) {
 fn record_hooks(common: &mut StreamOptions) -> Arc<HookRecord> {
     let seen = Arc::new(HookRecord::default());
     let on_payload = Arc::clone(&seen);
-    common.on_payload = Some(Arc::new(move |payload, model| {
-        record(&on_payload.calls, ("payload", model));
-        record(&on_payload.payloads, payload.clone());
-        Box::pin(std::future::ready(Ok(payload)))
-    }));
+    common.on_payload = Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              model| {
+            record(&on_payload.calls, ("payload", model));
+            record(&on_payload.payloads, payload.clone());
+            Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                payload,
+                signal: hook_signal,
+            })))
+        },
+    ));
     let on_response = Arc::clone(&seen);
     common.on_response = Some(Arc::new(move |response, model| {
         record(&on_response.calls, ("response", model));

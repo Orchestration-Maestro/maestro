@@ -444,17 +444,29 @@ mod tests {
         use maestro_models::records::types::*;
         let payload_calls = Arc::clone(calls);
         let response_calls = Arc::clone(calls);
-        let on_payload: OnPayload = Arc::new(move |payload, descriptor| {
-            payload_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            assert_eq!(*descriptor, model("hooks"));
-            Box::pin(async move {
-                match payload["mode"].as_str().unwrap() {
-                    "replace" => Ok(serde_json::json!({"stamp":2})),
-                    "payload_error" => Err(error("payload failure")),
-                    _ => Ok(payload),
-                }
-            })
-        });
+        let on_payload: OnPayload = Arc::new(
+            move |maestro_models::PayloadHookInput {
+                      payload,
+                      signal: hook_signal,
+                  },
+                  descriptor| {
+                payload_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                assert_eq!(*descriptor, model("hooks"));
+                Box::pin(async move {
+                    match payload["mode"].as_str().unwrap() {
+                        "replace" => Ok(maestro_models::PayloadHookInput {
+                            payload: serde_json::json!({"stamp":2}),
+                            signal: hook_signal,
+                        }),
+                        "payload_error" => Err(error("payload failure")),
+                        _ => Ok(maestro_models::PayloadHookInput {
+                            payload,
+                            signal: hook_signal,
+                        }),
+                    }
+                })
+            },
+        );
         let on_response: OnResponse = Arc::new(move |response, descriptor| {
             response_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             assert_eq!(*descriptor, model("hooks"));
@@ -483,7 +495,10 @@ mod tests {
                 let payload = serde_json::json!({"mode":mode,"stamp":1});
                 let descriptor = Arc::new(descriptor);
                 let submitted = ready(options.on_payload.unwrap()(
-                    payload,
+                    PayloadHookInput {
+                        payload,
+                        signal: None,
+                    },
                     Arc::clone(&descriptor),
                 ))?;
                 ready(options.on_response.unwrap()(
@@ -497,7 +512,7 @@ mod tests {
                     },
                     descriptor,
                 ))?;
-                Ok(final_stream(submitted["stamp"].as_f64().unwrap()))
+                Ok(final_stream(submitted.payload["stamp"].as_f64().unwrap()))
             }),
             stream_simple: Arc::new(|_, _, _| Ok(final_stream(0.0))),
         }

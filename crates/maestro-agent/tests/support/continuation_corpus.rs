@@ -573,7 +573,14 @@ fn install_stream(
         Box::pin(async move {
             let model = Arc::new(model);
             if input.fail.as_deref() == Some("payload") {
-                options.common.on_payload.unwrap()(json!({"original":true}), model.clone()).await?;
+                options.common.on_payload.unwrap()(
+                    maestro_models::PayloadHookInput {
+                        payload: json!({"original":true}),
+                        signal: None,
+                    },
+                    model.clone(),
+                )
+                .await?;
             }
             if input.fail.as_deref() == Some("response") {
                 options.common.on_response.unwrap()(

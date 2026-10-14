@@ -237,40 +237,57 @@ fn payload_hook(
     let action = input.hook.clone();
     let controls = input.http_options.clone();
     let abort = input.abort.as_deref() == Some("hook");
-    Some(Arc::new(move |mut payload, _| {
-        observed.hooks.fetch_add(1, Ordering::Relaxed);
-        if abort {
-            signal.abort();
-        }
-        if let Some(controls) = &controls {
-            payload["config"]["httpOptions"] = serde_json::to_value(controls).unwrap();
-        }
-        let result = match action.as_deref() {
-            Some("throw") => Err(DiagnosticErrorInfo::error("controlled payload failure")),
-            Some("replace") => Ok(
-                json!({"model":"replacement", "contents":"replacement prompt", "config":{"temperature":0.75}}),
-            ),
-            Some("bad-model") => Ok(json!({"model":"bad..model", "contents":"prompt"})),
-            Some("remove-signal") => {
-                payload["config"]
-                    .as_object_mut()
-                    .unwrap()
-                    .shift_remove("abortSignal");
-                Ok(payload)
+    Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  mut payload,
+                  signal: mut hook_signal,
+              },
+              _| {
+            observed.hooks.fetch_add(1, Ordering::Relaxed);
+            if abort {
+                signal.abort();
             }
-            Some("edit") => {
-                payload["config"]["temperature"] = json!(0.375);
-                Ok(payload)
+            if let Some(controls) = &controls {
+                payload["config"]["httpOptions"] = serde_json::to_value(controls).unwrap();
             }
-            Some("undefined") => {
-                payload["config"]["temperature"] = json!(0.625);
-                Ok(payload)
+            if matches!(
+                action.as_deref(),
+                Some("replace" | "bad-model" | "remove-signal")
+            ) {
+                hook_signal = None;
             }
-            None => Ok(payload),
-            _ => panic!("unknown hook action"),
-        };
-        Box::pin(async { result })
-    }))
+            let result = match action.as_deref() {
+                Some("throw") => Err(DiagnosticErrorInfo::error("controlled payload failure")),
+                Some("replace") => Ok(
+                    json!({"model":"replacement", "contents":"replacement prompt", "config":{"temperature":0.75}}),
+                ),
+                Some("bad-model") => Ok(json!({"model":"bad..model", "contents":"prompt"})),
+                Some("remove-signal") => {
+                    payload["config"]
+                        .as_object_mut()
+                        .unwrap()
+                        .shift_remove("abortSignal");
+                    Ok(payload)
+                }
+                Some("edit") => {
+                    payload["config"]["temperature"] = json!(0.375);
+                    Ok(payload)
+                }
+                Some("undefined") => {
+                    payload["config"]["temperature"] = json!(0.625);
+                    Ok(payload)
+                }
+                None => Ok(payload),
+                _ => panic!("unknown hook action"),
+            };
+            Box::pin(async move {
+                result.map(|payload| maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ))
 }
 
 /// Selected common settings and native handles.

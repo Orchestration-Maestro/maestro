@@ -241,19 +241,30 @@ fn hooks(options: &mut AnthropicOptions, row: &Row, seen: &Arc<Mutex<Seen>>) {
     let replacement = row.input.replacement.clone();
     let failure = (row.input.fail.as_deref() == Some("payload"))
         .then(|| row.input.error.clone().unwrap_or_default());
-    options.common.on_payload = Some(Arc::new(move |payload, _| {
-        let observed = payload.clone();
-        {
-            let mut seen = capture.lock().unwrap();
-            seen.trace.push("payload".into());
-            seen.payloads.push(observed);
-        }
-        let result = failure.as_ref().map_or_else(
-            || Ok(replacement.clone().unwrap_or(payload)),
-            |error| Err(messages::diagnostic(error)),
-        );
-        Box::pin(std::future::ready(result))
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            let observed = payload.clone();
+            {
+                let mut seen = capture.lock().unwrap();
+                seen.trace.push("payload".into());
+                seen.payloads.push(observed);
+            }
+            let result = failure.as_ref().map_or_else(
+                || Ok(replacement.clone().unwrap_or(payload)),
+                |error| Err(messages::diagnostic(error)),
+            );
+            Box::pin(std::future::ready(result.map(|payload| {
+                maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                }
+            })))
+        },
+    ));
     let capture = Arc::clone(seen);
     let failure = (row.input.fail.as_deref() == Some("response"))
         .then(|| row.input.error.clone().unwrap_or_default());

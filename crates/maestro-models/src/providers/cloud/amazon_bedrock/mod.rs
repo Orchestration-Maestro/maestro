@@ -253,9 +253,16 @@ mod native {
         let signal = options.common.signal.as_ref();
         let mut input = payload(model, context, &options, &env)?;
         if let Some(hook) = &options.common.on_payload {
-            input = hook(input, Arc::clone(model))
-                .await
-                .map_err(callback_failure)?;
+            input = hook(
+                crate::PayloadHookInput {
+                    payload: input,
+                    signal: None,
+                },
+                Arc::clone(model),
+            )
+            .await
+            .map_err(callback_failure)?
+            .payload;
         }
         let prepared = prepare(input)?;
         let settings = Settings::resolve(model, &options, &env)?;
