@@ -1,42 +1,7 @@
 //! Public cloud conversations over controlled SOCKS transports.
 #![cfg(not(target_arch = "wasm32"))]
 
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/bedrock.rs"]
-mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/chat.rs"]
-mod chat;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/child_process.rs"]
-mod child_process;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/loopback.rs"]
-mod loopback;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/socks.rs"]
-mod socks;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
-#[path = "support/transport.rs"]
-mod transport;
+use crate::{bedrock, chat, child_process, loopback, socks, transport};
 
 use chat::TestResult;
 use maestro_models::providers::cloud::amazon_bedrock::{
