@@ -200,3 +200,6 @@ pub(super) async fn search(
     }
     Ok((records.rows, records.count))
 }
+
+#[cfg(test)]
+mod tests;

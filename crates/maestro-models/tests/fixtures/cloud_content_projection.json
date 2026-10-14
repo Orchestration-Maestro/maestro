@@ -2827,7 +2827,7 @@
   },
   {
     "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
-    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}}",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"boolean\"},\"1\":{\"type\":\"integer\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}}",
     "scope": {
       "project": "fixture-project",
       "location": "us-central1"
@@ -2839,7 +2839,7 @@
   },
   {
     "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
-    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"boolean\"},\"1\":{\"type\":\"integer\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
     "scope": {
       "project": "fixture-project",
       "location": "us-central1"
@@ -2851,7 +2851,7 @@
   },
   {
     "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
-    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"object\",\"properties\":{\"2\":{\"type\":\"boolean\"},\"1\":{\"type\":\"integer\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
     "scope": {
       "project": "fixture-project",
       "location": "us-central1"
@@ -3151,7 +3151,7 @@
   },
   {
     "test": "cloud_json_bytes_use_shared_key_order_and_number_spelling",
-    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseJsonSchema\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":1e+21,\"zero\":0,\"unicode\":\"é😀\",\"nested\":{\"0\":\"zero\",\"1\":\"one\",\"01\":\"not index\"}}}}",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseJsonSchema\":{\"10\":\"ten\",\"2\":\"two\",\"z\":1e-7,\"a\":1e+21,\"zero\":-0.0,\"unicode\":\"é😀\",\"nested\":{\"1\":\"one\",\"0\":\"zero\",\"01\":\"not index\"}}}}",
     "scope": {
       "project": "fixture-project",
       "location": "us-central1"

@@ -3,7 +3,7 @@
 #[cfg(unix)]
 use crate::find_support::executable;
 use crate::{
-    display_support::Case,
+    display_support::{Case, search_cases, search_keys},
     find_support::manager,
     ls_support::{canon, result_json, with_home},
     read_support::{TempDir, run},
@@ -16,43 +16,19 @@ use maestro_tools::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     sync::{
         Arc, Mutex,
         atomic::{AtomicUsize, Ordering},
     },
 };
-/// Consumed fixture fields.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Corpus {
-    theme_keys: Vec<String>,
-    cases: Vec<Case>,
-}
-/// Parse and reject duplicate queries.
+/// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
-    let corpus: Corpus = serde_json::from_str(include_str!("../fixtures/grep_cases.json")).unwrap();
-    let mut seen = HashSet::new();
-    for c in &corpus.cases {
-        assert!(
-            seen.insert((&c.test, &c.op, c.input.to_string())),
-            "duplicate query"
-        );
-    }
-    assert_eq!(corpus.theme_keys.len(), 7);
-    let selected: Vec<_> = corpus
-        .cases
-        .into_iter()
-        .filter(|c| c.test == test)
-        .collect();
-    assert!(!selected.is_empty(), "missing group {test}");
-    selected
+    search_cases(include_str!("../fixtures/grep_cases.json"), test)
 }
-/// Palette keys from the recorded renderer.
+/// Use the recorded palette rather than a hard-coded color assignment.
 pub fn keys() -> Vec<String> {
-    serde_json::from_str::<Corpus>(include_str!("../fixtures/grep_cases.json"))
-        .unwrap()
-        .theme_keys
+    search_keys(include_str!("../fixtures/grep_cases.json"))
 }
 /// Strict controlled execution input.
 #[derive(Default, Deserialize)]

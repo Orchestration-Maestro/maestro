@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![allow(dead_code)]
 use crate::{
-    display_support::Case,
+    display_support::{Case, search_cases, search_keys},
     ls_support::{
         RecordedTruncation, assert_rows, canon, check_reuse_as, check_theme_error_as,
         render_case_as, result_json, with_home,
@@ -19,44 +19,17 @@ use maestro_tools::{
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{
-    collections::HashSet,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicUsize, Ordering},
 };
-/// Committed records and renderer palette.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Corpus {
-    theme_keys: Vec<String>,
-    cases: Vec<Case>,
-}
 /// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
-    let corpus: Corpus = serde_json::from_str(include_str!("../fixtures/find_cases.json")).unwrap();
-    let mut seen = HashSet::new();
-    for c in &corpus.cases {
-        assert!(
-            seen.insert((&c.test, &c.op, c.input.to_string())),
-            "duplicate query"
-        );
-    }
-    assert_eq!(corpus.theme_keys.len(), 7);
-    let cases: Vec<_> = corpus
-        .cases
-        .into_iter()
-        .filter(|c| c.test == test)
-        .collect();
-    assert!(!cases.is_empty(), "missing group {test}");
-    cases
+    search_cases(include_str!("../fixtures/find_cases.json"), test)
 }
 /// Use the recorded palette rather than a hard-coded color assignment.
 fn keys() -> Vec<String> {
-    serde_json::from_str::<Corpus>(include_str!("../fixtures/find_cases.json"))
-        .unwrap()
-        .theme_keys
+    search_keys(include_str!("../fixtures/find_cases.json"))
 }
 /// Manager whose transport refuses and counts release fetches.
 pub fn manager(bin: String, counter: &Arc<AtomicUsize>) -> Arc<ToolsManager> {

@@ -59,7 +59,7 @@ pub(super) fn select_listing(
     }
     (output, truncation)
 }
-/// The warning line for a listing cut by the entry limit or the byte limit, empty otherwise.
+/// Entry-limit, byte-limit or trailing notices, including clipping-only warnings.
 fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
     let entries = view.count.filter(|limit| *limit != 0.0 && !limit.is_nan());
     let bytes = view.truncation.filter(|cut| cut.truncated);

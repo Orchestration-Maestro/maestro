@@ -3,14 +3,11 @@
 use super::edit_render_support::Case;
 use maestro_tools::truncate_to_visual_lines;
 use serde::Deserialize;
-use serde_json::Value;
 
-/// Strict corpus envelope; palette belongs to renderer queries.
+/// Strict corpus of selector queries.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Corpus {
-    /// Recorded palette, unchanged when splitting the source corpus.
-    colors: Value,
     /// Independent queries.
     cases: Vec<Case>,
 }
@@ -31,7 +28,6 @@ struct Input {
 fn check(test: &str) {
     let corpus: Corpus =
         serde_json::from_str(include_str!("fixtures/visual-tail-cases.json")).unwrap();
-    assert_eq!(corpus.colors.as_object().unwrap().len(), 6);
     let mut seen = std::collections::HashSet::new();
     let mut count = 0;
     for case in corpus.cases {

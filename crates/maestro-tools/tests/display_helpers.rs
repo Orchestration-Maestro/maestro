@@ -198,3 +198,46 @@ fn borrowed_result_view_preserves_termination_hint() {
         assert_eq!(ToolRenderResultLike::from(&source).terminate, terminate);
     }
 }
+
+#[test]
+fn search_corpus_loading_preserves_validation_and_palette() {
+    use display_support::{search_cases, search_keys};
+    let keys = json!(["z", "a", "c", "d", "e", "f", "g"]);
+    let first =
+        json!({"test":"selected","id":"first","op":"call","input":{"n":2},"expected":"one"});
+    let second =
+        json!({"test":"selected","id":"second","op":"result","input":{"n":1},"expected":"two"});
+    let other = json!({"test":"other","id":"other","op":"call","input":{},"expected":null});
+    let corpus = json!({"theme_keys":keys,"cases":[first,other,second]});
+    let selected = search_cases(&corpus.to_string(), "selected");
+    assert_eq!(
+        selected.iter().map(|c| c.id.as_str()).collect::<Vec<_>>(),
+        ["first", "second"]
+    );
+    assert_eq!(selected[0].input, json!({"n":2}));
+    assert_eq!(selected[0].expected, "one");
+    assert_eq!(selected[1].op, "result");
+    assert_eq!(selected[1].input, json!({"n":1}));
+    assert_eq!(selected[1].expected, "two");
+    assert_eq!(json!(search_keys(&corpus.to_string())), keys);
+    let mut envelope = corpus.clone();
+    envelope["unknown"] = json!(true);
+    let mut case = corpus.clone();
+    case["cases"][0]["unknown"] = json!(true);
+    let mut duplicate = corpus.clone();
+    let mut renamed = first;
+    renamed["id"] = json!("renamed");
+    duplicate["cases"].as_array_mut().unwrap().push(renamed);
+    let mut palette = corpus.clone();
+    palette["theme_keys"] = json!(["a"]);
+    for source in [
+        "{".into(),
+        envelope.to_string(),
+        case.to_string(),
+        duplicate.to_string(),
+        palette.to_string(),
+    ] {
+        assert!(std::panic::catch_unwind(|| search_cases(&source, "selected")).is_err());
+    }
+    assert!(std::panic::catch_unwind(|| search_cases(&corpus.to_string(), "absent")).is_err());
+}
