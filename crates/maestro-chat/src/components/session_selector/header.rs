@@ -174,11 +174,11 @@ impl SessionSelectorHeader {
             );
         }
         let status = self.status.borrow().as_ref().map(|s| match s {
-            StatusMessage::Info(s) => (ThemeColor::Accent, s.clone()),
-            StatusMessage::Error(s) => (ThemeColor::Error, s.clone()),
+            StatusMessage::Info(s) => (ThemeColor::Accent, clip(s, width, "…")),
+            StatusMessage::Error(s) => (ThemeColor::Error, clip(s, width, "…")),
         });
         if let Some((color, text)) = status {
-            return (self.paint(&color, &clip(&text, width, "…")), String::new());
+            return (self.paint(&color, &text), String::new());
         }
         let sep = self.paint(&ThemeColor::Muted, " · ");
         let hint1 = self.hint("tui.input.tab", "scope")

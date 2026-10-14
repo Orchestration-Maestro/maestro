@@ -275,7 +275,7 @@ struct HeaderScenario {
 impl HeaderScenario {
     /// Retains the isolated theme and operation inputs.
     fn new(name: &str, i: HeaderInput, e: HeaderExpected) -> Self {
-        set_keybindings(manager(overrides(i.overrides.as_ref())));
+        set_keybindings(manager(Vec::default()));
         let (state, theme) = published::published(&palette(0));
         let runtime = manual_runtime::ManualRuntime::new();
         let events = Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
@@ -362,7 +362,8 @@ impl HeaderScenario {
     }
     /// Replays the recorded bindings operation.
     fn bindings(&self) {
-        let Self { h, e, .. } = self;
+        let Self { h, i, e, .. } = self;
+        set_keybindings(manager(overrides(i.overrides.as_ref())));
         h.set_show_rename_hint(true);
         assert_eq!(h.render(120), *e.normal.as_ref().unwrap());
         h.set_confirming_delete_path(Some(String::new()));
@@ -890,7 +891,7 @@ impl ListScenario {
             world.now.set(obs.now);
             world.home.replace(obs.home.clone());
         }
-        list_registry(name, &i);
+        set_keybindings(manager(Vec::default()));
         let filesystem = i.root.as_ref().map(|root| {
             assert_eq!(root, "$FS");
             Filesystem::new()
@@ -948,6 +949,13 @@ impl ListScenario {
         for _ in 0..i.index.unwrap_or(0) {
             list.handle_input("\x1b[B");
         }
+        if name == "session_navigation_binding_collision_prefers_up" {
+            assert_eq!(
+                list.get_selected_session_path().as_deref(),
+                Some("/missing/b.jsonl")
+            );
+        }
+        list_registry(name, i);
     }
     /// Dispatches and compares the actual ordered operation output.
     fn run(&self, name: &str, configure: Option<Configure>) {
@@ -957,7 +965,7 @@ impl ListScenario {
             "session_navigation_clamps_and_routes_confirm_cancel_search"
             | "session_list_routes_live_bindings_and_wrong_modifiers" => self.navigation(),
             "session_navigation_binding_collision_prefers_up"
-            | "session_input_submit_uses_live_selected_path" => self.confirm(),
+            | "session_input_submit_uses_live_selected_path" => self.confirm(name),
             "session_callbacks_can_replace_clear_and_reenter" => self.slots(),
             "session_list_focus_emits_search_cursor_on_focus_changes" => focus(
                 &self.list,
@@ -1019,11 +1027,7 @@ impl ListScenario {
         } = self;
 
         callbacks(list, events);
-        let ops = i.ops.clone().unwrap_or_else(|| {
-            ["\x1b[106;2u", "j", "x", "k", "x", "v", "x", "u", "x", "q"]
-                .map(str::to_owned)
-                .to_vec()
-        });
+        let ops = i.ops.as_ref().unwrap();
         let frames = e.frames.as_ref().unwrap();
         assert_eq!(frames.len(), ops.len());
         for (op, f) in ops.iter().zip(frames) {
@@ -1032,10 +1036,13 @@ impl ListScenario {
         }
     }
     /// Replays the attributed confirm operation.
-    fn confirm(&self) {
+    fn confirm(&self, name: &str) {
         let Self { list, events, .. } = self;
 
         callbacks(list, events);
+        if name == "session_input_submit_uses_live_selected_path" {
+            list.set_sessions(vec![session("b")], false);
+        }
         list.handle_input("x");
     }
     /// Replays the attributed slots operation.

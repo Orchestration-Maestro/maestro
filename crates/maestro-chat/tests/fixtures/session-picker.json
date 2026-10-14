@@ -2250,7 +2250,7 @@
           "cwd": "",
           "modified": 1767225599000,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "old",
           "allMessagesText": "hello"
         },
         {
@@ -2259,7 +2259,7 @@
           "cwd": "",
           "modified": 1767225600000,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "root",
           "allMessagesText": "hello"
         },
         {
@@ -2268,7 +2268,7 @@
           "cwd": "",
           "modified": 1767225599998,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "child-old",
           "allMessagesText": "hello",
           "parentSessionPath": "/missing/root.jsonl"
         },
@@ -2278,7 +2278,7 @@
           "cwd": "",
           "modified": 1767225599999,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "child-new",
           "allMessagesText": "hello",
           "parentSessionPath": "/missing/root.jsonl"
         },
@@ -2288,7 +2288,7 @@
           "cwd": "",
           "modified": 1767225600000,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "grand",
           "allMessagesText": "hello",
           "parentSessionPath": "/missing/child-new.jsonl"
         },
@@ -2298,7 +2298,7 @@
           "cwd": "",
           "modified": 1767225599000,
           "messageCount": 1,
-          "firstMessage": "hello",
+          "firstMessage": "orphan",
           "allMessagesText": "hello",
           "parentSessionPath": "/missing/absent.jsonl"
         }
@@ -2308,12 +2308,12 @@
       "lines": [
         "> \u001b[7m \u001b[27m                                                                                                                     ",
         "",
-        "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                                                            \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
-        "  \u001b[38;5;34m   \u251c\u2500 \u001b[39mhello                                                                                                      \u001b[38;5;34m1 now\u001b[39m",
-        "  \u001b[38;5;34m   \u2502  \u2514\u2500 \u001b[39mhello                                                                                                   \u001b[38;5;34m1 now\u001b[39m",
-        "  \u001b[38;5;34m   \u2514\u2500 \u001b[39mhello                                                                                                      \u001b[38;5;34m1 now\u001b[39m",
-        "  \u001b[38;5;34m\u001b[39mhello                                                                                                            \u001b[38;5;34m1 now\u001b[39m",
-        "  \u001b[38;5;34m\u001b[39mhello                                                                                                            \u001b[38;5;34m1 now\u001b[39m"
+        "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mroot\u001b[22m                                                                                                             \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+        "  \u001b[38;5;34m   \u251c\u2500 \u001b[39mchild-new                                                                                                  \u001b[38;5;34m1 now\u001b[39m",
+        "  \u001b[38;5;34m   \u2502  \u2514\u2500 \u001b[39mgrand                                                                                                   \u001b[38;5;34m1 now\u001b[39m",
+        "  \u001b[38;5;34m   \u2514\u2500 \u001b[39mchild-old                                                                                                  \u001b[38;5;34m1 now\u001b[39m",
+        "  \u001b[38;5;34m\u001b[39mold                                                                                                              \u001b[38;5;34m1 now\u001b[39m",
+        "  \u001b[38;5;34m\u001b[39morphan                                                                                                           \u001b[38;5;34m1 now\u001b[39m"
       ],
       "selected": "/missing/root.jsonl"
     }
@@ -6941,89 +6941,202 @@
   },
   {
     "test": "session_list_routes_live_bindings_and_wrong_modifiers",
-    "input": {},
+    "input": {
+      "ops": [
+        "j",
+        "x",
+        "k",
+        "x",
+        "v",
+        "x",
+        "u",
+        "x",
+        "q",
+        "\u001b[106;2u"
+      ]
+    },
     "expected": {
       "frames": [
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m",
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m"
           ],
-          "selected": null,
+          "selected": "/missing/b.jsonl",
           "events": []
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m",
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/b.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/a.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/a.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m",
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/b.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m",
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/b.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "select",
+              "/missing/b.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/a.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "select",
+              "/missing/b.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/a.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ]
+          ]
         },
         {
           "lines": [
-            "> j\u001b[7m \u001b[27m                                                                            ",
+            "> \u001b[7m \u001b[27m                                                                             ",
             "",
-            "\u001b[38;5;33m  No sessions in current folder. Press Tab to view all.\u001b[39m"
+            "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m",
+            "  \u001b[38;5;34m\u001b[39mhello                                                                    \u001b[38;5;34m1 now\u001b[39m"
           ],
-          "selected": null,
-          "events": []
+          "selected": "/missing/a.jsonl",
+          "events": [
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "cancel"
+            ]
+          ]
         },
         {
           "lines": [
@@ -7034,6 +7147,22 @@
           "selected": null,
           "events": [
             [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
+              "select",
+              "/missing/b.jsonl"
+            ],
+            [
+              "select",
+              "/missing/a.jsonl"
+            ],
+            [
               "cancel"
             ]
           ]
@@ -7043,7 +7172,9 @@
   },
   {
     "test": "session_navigation_binding_collision_prefers_up",
-    "input": {},
+    "input": {
+      "index": 1
+    },
     "expected": {
       "lines": [
         "> \u001b[7m \u001b[27m                                                                             ",
@@ -7524,11 +7655,11 @@
         "",
         "\u001b[48;5;237m\u001b[38;5;32m\u203a \u001b[39m\u001b[38;5;34m\u001b[39m\u001b[1mhello\u001b[22m                                                                    \u001b[38;5;34m1 now\u001b[39m\u001b[49m"
       ],
-      "selected": "/missing/a.jsonl",
+      "selected": "/missing/b.jsonl",
       "events": [
         [
           "select",
-          "/missing/a.jsonl"
+          "/missing/b.jsonl"
         ]
       ]
     }
