@@ -268,6 +268,29 @@ fn pdf_text_modes_keep_one_run_and_repeated_show_operations() {
 }
 
 #[test]
+fn pdf_translated_fill_and_stroke_shows_keep_both_texts() {
+    let bytes = support::pdf::synthetic(
+        "BT /F1 12 Tf 0 Tr 5 30 Td (Page A) Tj ET\n\
+         1 0 0 1 0 100 cm\n\
+         BT /F1 12 Tf 1 Tr 5 30 Td (Page A) Tj ET",
+        false,
+    );
+    let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+    let attachment = support::pdf::run(load_attachment(
+        AttachmentSource::Buffer(&bytes),
+        Some("translated.pdf"),
+        &fetch,
+    ))
+    .unwrap();
+    assert_eq!(
+        attachment.extracted_text.as_deref(),
+        Some(
+            "<pdf filename=\"translated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+        )
+    );
+}
+
+#[test]
 fn pdf_preview_preserves_full_precision_direct_and_inherited_boxes() {
     for inherited in [false, true] {
         let bytes = support::pdf::synthetic("", inherited);

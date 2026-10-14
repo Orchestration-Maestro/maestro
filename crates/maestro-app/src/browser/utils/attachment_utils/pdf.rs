@@ -100,14 +100,17 @@ fn pdf_page_text(runs: Vec<String>) -> String {
         .join(" ")
 }
 
+/// Unicode and text-space placement identifying a filled glyph run.
+type FillGlyphs = Vec<(Option<BfString>, Affine)>;
+
 /// Accumulate Unicode text at native glyph-run boundaries.
 #[derive(Default)]
 struct TextDevice {
     /// Interpreted runs in page order.
     runs: Vec<String>,
-    /// Previous fill glyphs for the engine's adjacent stroke dispatch.
+    /// Previous fill placement and glyphs for the engine's adjacent stroke dispatch.
     /// shortcut: separate identical fill/stroke shows collapse until a text-show hook exists.
-    fill: Option<Vec<(Option<BfString>, Affine)>>,
+    fill: Option<(Affine, FillGlyphs)>,
 }
 impl<'a> Device<'a> for TextDevice {
     fn draw_path(&mut self, _: &BezPath, _: DrawProps<'a>, _: &DrawMode) {
@@ -128,12 +131,14 @@ impl<'a> Device<'a> for TextDevice {
     fn pop_transparency_group(&mut self) {
         self.fill = None;
     }
-    fn draw_glyph_run(&mut self, run: &GlyphRun<'_, 'a>, _: DrawProps<'a>, mode: &DrawMode) {
-        let glyphs = run
-            .glyphs()
-            .iter()
-            .map(|glyph| (glyph.as_unicode(), glyph.transform()))
-            .collect::<Vec<_>>();
+    fn draw_glyph_run(&mut self, run: &GlyphRun<'_, 'a>, props: DrawProps<'a>, mode: &DrawMode) {
+        let glyphs = (
+            props.transform,
+            run.glyphs()
+                .iter()
+                .map(|glyph| (glyph.as_unicode(), glyph.transform()))
+                .collect::<Vec<_>>(),
+        );
         let fill = self.fill.take();
         if matches!(mode, DrawMode::Stroke(_)) && fill.as_ref() == Some(&glyphs) {
             return;

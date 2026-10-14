@@ -33,8 +33,9 @@ selecting canonical `application/pdf`. PDF documents retain original bytes/name/
 Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
 `<pdf filename="NAME">` and final `\n</pdf>` wrapper. Native Unicode runs are
 filtered by the shared whitespace policy without trimming retained text, then
-joined with one space. Outlined text emits one run rather than separate fill/stroke
-copies; invisible OCR text is retained. Page order and empty page wrappers remain.
+joined with one space. Adjacent fill/stroke callbacks with identical Unicode,
+glyph transforms and graphics placement emit one run; differently placed shows
+remain separate. Invisible OCR text is retained. Page order and empty page wrappers remain.
 Clip-only text and separate identical fill/stroke text-show operations await
 [an interpreter text-show hook](https://github.com/Orchestration-Maestro/maestro/issues/1014).
 
