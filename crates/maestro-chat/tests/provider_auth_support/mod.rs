@@ -1,4 +1,5 @@
 //! Complete recorded provider-picker replay through public interfaces.
+pub mod failures;
 mod records;
 use maestro_app::{AuthSource, AuthStatus, AuthStorage};
 use maestro_chat::{OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions};
@@ -61,10 +62,10 @@ impl Caller {
         if reenter && !self.reentered.replace(true) {
             let panel = self.panel.borrow().upgrade().unwrap();
             if id.is_some() {
-                panel.handle_input("\x1b[B");
+                panel.handle_input("\x1b[B").unwrap();
                 panel.render(20);
             }
-            panel.handle_input("\r");
+            panel.handle_input("\r").unwrap();
         }
     }
     /// Resolve only when the picker asks for a visible row.
@@ -79,6 +80,18 @@ impl Caller {
             Into::into,
         )
     }
+}
+/// Take caller choices or use the existing default provider order.
+fn take_providers(query: &mut Query) -> Vec<Provider> {
+    query.providers.take().unwrap_or_else(|| {
+        [("zeta", "Zed"), ("alpha", "Alpha"), ("beta", "Beta")]
+            .map(|(id, name)| Provider {
+                id: id.into(),
+                name: name.into(),
+                auth_type: Kind::ApiKey,
+            })
+            .into()
+    })
 }
 /// One complete transaction, including retained input and child-array aliases.
 struct Replay {
@@ -104,43 +117,40 @@ impl Replay {
             storage.set_runtime_api_key(id, key);
         }
         if let Some(key) = query.fallback.take() {
-            storage.set_fallback_resolver(move |_| Some(key.clone()));
+            storage.set_fallback_resolver(move |_| Ok(Some(key.clone())));
         }
         let (theme, live) = super::published::published(&colors(0));
         let caller = Rc::new(Caller::default());
         let resolver = query.statuses.take().map(|statuses| {
             caller.statuses.replace(statuses);
             let caller = caller.clone();
-            Rc::new(move |id: &str| caller.status(id)) as Rc<dyn Fn(&str) -> AuthStatus>
+            Rc::new(move |id: &str| Ok(caller.status(id)))
+                as Rc<dyn Fn(&str) -> Result<AuthStatus, Box<dyn std::error::Error>>>
         });
         let selected = caller.clone();
         let cancelled = caller.clone();
         let reenter = query.reenter;
         let reenter_cancel = query.reenter_cancel;
-        let providers = query.providers.take().unwrap_or_else(|| {
-            [("zeta", "Zed"), ("alpha", "Alpha"), ("beta", "Beta")]
-                .map(|(id, name)| Provider {
-                    id: id.into(),
-                    name: name.into(),
-                    auth_type: Kind::ApiKey,
-                })
-                .into()
-        });
-        let panel = Rc::new(OAuthSelectorComponent::new(
-            storage.clone(),
-            providers.into_iter().map(Into::into).collect(),
-            Rc::new(move |id| selected.notify(Some(id), reenter)),
-            Rc::new(move || cancelled.notify(None, reenter_cancel)),
-            OAuthSelectorOptions {
-                mode: match query.mode.as_deref() {
-                    None | Some("login") => OAuthSelectorMode::Login,
-                    Some("logout") => OAuthSelectorMode::Logout,
-                    _ => unreachable!(),
+        let providers = take_providers(query);
+        let panel = Rc::new(
+            OAuthSelectorComponent::new(
+                storage.clone(),
+                providers.into_iter().map(Into::into).collect(),
+                Rc::new(move |id| selected.notify(Some(id), reenter)),
+                Rc::new(move || cancelled.notify(None, reenter_cancel)),
+                OAuthSelectorOptions {
+                    mode: match query.mode.as_deref() {
+                        None | Some("login") => OAuthSelectorMode::Login,
+                        Some("logout") => OAuthSelectorMode::Logout,
+                        _ => unreachable!(),
+                    },
+                    theme: live,
+                    get_auth_status: resolver,
+                    runtime: super::manual_runtime::ManualRuntime::new().handle(),
                 },
-                theme: live,
-                get_auth_status: resolver,
-            },
-        ));
+            )
+            .unwrap(),
+        );
         caller.panel.replace(Rc::downgrade(&panel));
         let children = panel.children();
         let input = children.borrow()[4].clone();
@@ -176,10 +186,10 @@ impl Replay {
     /// Apply one ordered operation and keep caller effects outside mutable borrows.
     fn apply(&self, operation: Operation) {
         match operation {
-            Operation::Key(key) => self.panel.handle_input(&key),
+            Operation::Key(key) => self.panel.handle_input(&key).unwrap(),
             Operation::Query { query } => {
                 self.search().set_value(query);
-                self.panel.handle_input("");
+                self.panel.handle_input("").unwrap();
             }
             Operation::Bindings {
                 bindings: overrides,
@@ -283,7 +293,7 @@ fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
                 "runtime constructor input differs"
             );
             assert_eq!(
-                replay.storage.get_auth_status(&id).source,
+                replay.storage.get_auth_status(&id).unwrap().source,
                 Some(AuthSource::Runtime)
             );
         }
@@ -452,6 +462,8 @@ fn brand_panel(live: maestro_theme::LiveTheme) -> OAuthSelectorComponent {
             mode: OAuthSelectorMode::Login,
             theme: live,
             get_auth_status: None,
+            runtime: super::manual_runtime::ManualRuntime::new().handle(),
         },
     )
+    .unwrap()
 }

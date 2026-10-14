@@ -109,7 +109,7 @@ fn cli_selection_includes_unconfigured_models() {
     use std::sync::Arc;
     let handle = selection::descriptor("unconfigured", "unconfigured-provider");
     let registry = selection::registry(&[Arc::clone(&handle)]);
-    assert!(registry.get_available().is_empty());
+    assert!(registry.get_available().unwrap().is_empty());
     let result = resolve_cli_model(
         ResolveCliModelOptions {
             cli_provider: None,

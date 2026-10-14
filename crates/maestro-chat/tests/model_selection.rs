@@ -13,6 +13,13 @@ mod published;
 #[allow(dead_code, reason = "Only controlled terminal construction is reused.")]
 #[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
 mod recording_terminal;
+#[path = "support/runtime_spy.rs"]
+mod runtime_spy;
+#[allow(
+    dead_code,
+    reason = "Each selector consumes its own recorded input subset."
+)]
+mod selector_failure_support;
 #[path = "../../maestro-catalog/tests/support/subprocess.rs"]
 mod subprocess;
 use maestro_app::{Model, ScopedModel, SettingsManager};
@@ -29,7 +36,7 @@ use std::{
 };
 
 /// Execute each test group in a separate process, which owns global registry/binding state.
-fn replay(name: &str) {
+fn isolate(name: &str) -> bool {
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
         let credentials = std::env::current_exe()
             .unwrap()
@@ -43,6 +50,12 @@ fn replay(name: &str) {
             ("GOOGLE_APPLICATION_CREDENTIALS", Some(&credentials)),
         ]);
         subprocess::run_child(name, &environment);
+        return true;
+    }
+    false
+}
+fn replay(name: &str) {
+    if isolate(name) {
         return;
     }
     for case in cases(name) {
@@ -548,5 +561,216 @@ fn extra_observations(test: &str, selector: &ModelSelectorComponent) {
     }
     if test == "container_clear_does_not_destroy_retained_input_submission" {
         inherited_children(selector);
+    }
+}
+
+/// Real registry whose file notice is superseded by the consumed fallback failure.
+fn failing_registry(input: &mut selector_failure_support::Input) -> maestro_app::ModelRegistry {
+    let query: Query = serde_json::from_value(serde_json::json!({"available":[], "readFailure":{"message":input.notice.take().unwrap(), "path":"<models-file>"}})).unwrap();
+    let (registry, _) = registry(&query);
+    assert!(registry.get_error().is_some());
+    let message = input.message.take().unwrap();
+    registry.auth_storage().set_fallback_resolver(move |_| {
+        let mut error = selector_failure_support::errors::failure();
+        error.diagnostic.message.clone_from(&message);
+        Err(error)
+    });
+    registry
+}
+/// Original scope and initial query, independently of whether loading succeeds.
+fn failed_picker_options(input: &mut selector_failure_support::Input) -> ModelSelectorOptions {
+    let scoped = if input.scoped.unwrap() {
+        vec![ScopedModel {
+            model: Descriptor {
+                provider: "maestro-scoped".into(),
+                id: "s".into(),
+                name: "Model s".into(),
+            }
+            .handle(),
+            thinking_level: None,
+        }]
+    } else {
+        Vec::new()
+    };
+    let (_, theme) = published::published(&colors(0));
+    ModelSelectorOptions {
+        current_model: None,
+        scoped_models: scoped,
+        initial_search_input: input.initial.take(),
+        theme,
+    }
+}
+#[test]
+fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
+    let name = "failed_picker_clears_all_and_scoped_views_but_keeps_original_help";
+    if isolate(name) {
+        return;
+    }
+    for case in selector_failure_support::cases(name) {
+        bindings(std::collections::BTreeMap::default());
+        let mut input = case.input;
+        let mut registry = failing_registry(&mut input);
+        let runtime = runtime_spy::Spy::default();
+        let tui = TUI::new(
+            recording_terminal::RecordingTerminal::new(100, 24).handle(),
+            Rc::new(runtime.clone()),
+            TerminalImage::default(),
+            None,
+        );
+        let events = runtime.events.clone();
+        let cancelled = events.clone();
+        let settings = Rc::new(RefCell::new(SettingsManager::in_memory(
+            serde_json::from_str("{}").unwrap(),
+        )));
+        let options = failed_picker_options(&mut input);
+        let selector = ModelSelectorComponent::new(
+            &tui,
+            settings.clone(),
+            &mut registry,
+            ModelSelectorCallbacks {
+                on_select: Rc::new(|_| panic!("failed load cannot select")),
+                on_cancel: Rc::new(move || {
+                    cancelled.borrow_mut().push(serde_json::json!(["cancel"]));
+                }),
+            },
+            options,
+        )
+        .unwrap();
+        let width = input.width.unwrap();
+        let mut frames =
+            vec![serde_json::json!({"lines":selector.render(width),"events":*events.borrow()})];
+        for key in input.ops.unwrap() {
+            selector.handle_input(&key);
+            frames.push(
+                serde_json::json!({"lines":selector.render(width),"events":*events.borrow()}),
+            );
+        }
+        assert_eq!(
+            serde_json::json!({"branch":"ok","frames":frames}),
+            case.expected,
+            "recorded failed model frames"
+        );
+        assert!(settings.borrow().get_default_model().is_none());
+        assert!(settings.borrow().get_default_provider().is_none());
+    }
+}
+
+/// Provider whose stored credentials reject a catalog transformation.
+struct RejectingModels;
+impl maestro_app::OAuthProviderInterface for RejectingModels {
+    fn id(&self) -> &'static str {
+        "maestro-refresh-failure"
+    }
+    fn name(&self) -> &'static str {
+        "Controlled refresh"
+    }
+    fn login(
+        &self,
+        _: maestro_app::OAuthCallbacks,
+        _: Option<maestro_app::Fetch>,
+    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
+    {
+        Box::pin(async { Err(selector_failure_support::errors::failure()) })
+    }
+    fn refresh_token(
+        &self,
+        _: maestro_app::OAuthCredentials,
+        _: Option<maestro_app::Fetch>,
+    ) -> maestro_app::BoxFuture<Result<maestro_app::OAuthCredentials, maestro_app::OAuthError>>
+    {
+        Box::pin(async { Err(selector_failure_support::errors::failure()) })
+    }
+    fn get_api_key<'a>(
+        &self,
+        credentials: &'a maestro_app::OAuthCredentials,
+    ) -> Result<&'a str, maestro_app::OAuthError> {
+        Ok(&credentials.access)
+    }
+    fn modify_models<'m>(
+        &self,
+        _: &'m [Model],
+        _: &maestro_app::OAuthCredentials,
+    ) -> Option<Result<Vec<std::borrow::Cow<'m, Model>>, maestro_app::OAuthError>> {
+        Some(Err(selector_failure_support::errors::failure()))
+    }
+}
+/// Real retained provider whose transformation is first consumed by the next refresh.
+fn rejecting_registry() -> maestro_app::ModelRegistry {
+    let mut registry = maestro_app::ModelRegistry::in_memory(Arc::new(
+        maestro_app::AuthStorage::in_memory(std::iter::empty().collect()),
+    ))
+    .unwrap();
+    registry
+        .register_provider(
+            "maestro-refresh-failure",
+            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
+                oauth: Some(Arc::new(RejectingModels)),
+                models: Some(vec![
+                    Descriptor {
+                        provider: "maestro-refresh-failure".into(),
+                        id: "m".into(),
+                        name: "Model m".into(),
+                    }
+                    .definition(),
+                ]),
+                base_url: Some("https://example.invalid".into()),
+                api: Some("openai-completions".into()),
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    registry.auth_storage().set(
+        "maestro-refresh-failure",
+        maestro_app::AuthCredential::OAuth(maestro_app::OAuthCredentials {
+            access: "access".into(),
+            refresh: "refresh".into(),
+            expires: 0.0,
+            extra: serde_json::Map::default(),
+        }),
+    );
+    registry
+        .auth_storage()
+        .set_fallback_resolver(|_| panic!("availability must not run"));
+    registry
+}
+#[test]
+fn picker_refresh_failure_is_not_availability_notice() {
+    let name = "picker_refresh_failure_is_not_availability_notice";
+    if isolate(name) {
+        return;
+    }
+    for case in selector_failure_support::cases(name) {
+        assert_eq!(case.input.phase.as_deref(), Some("refresh"));
+        let mut registry = rejecting_registry();
+        let runtime = runtime_spy::Spy::default();
+        let tui = TUI::new(
+            recording_terminal::RecordingTerminal::new(100, 24).handle(),
+            Rc::new(runtime.clone()),
+            TerminalImage::default(),
+            None,
+        );
+        let (_, theme) = published::published(&colors(0));
+        let result = ModelSelectorComponent::new(
+            &tui,
+            Observations::new().settings,
+            &mut registry,
+            ModelSelectorCallbacks {
+                on_select: Rc::new(|_| panic!("no picker")),
+                on_cancel: Rc::new(|| panic!("no picker")),
+            },
+            ModelSelectorOptions {
+                current_model: None,
+                scoped_models: vec![],
+                initial_search_input: None,
+                theme,
+            },
+        );
+        let error = result.err().unwrap();
+        let error = error.downcast_ref::<maestro_app::CatalogError>().unwrap();
+        let maestro_app::CatalogError::OAuth(error) = error else {
+            panic!("original error")
+        };
+        let actual = serde_json::json!({"branch":"error", "error":selector_failure_support::errors::error_value(error), "events":*runtime.events.borrow(), "calls":[]});
+        assert!(actual == case.expected, "recorded refresh error boundary");
     }
 }

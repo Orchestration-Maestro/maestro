@@ -1,11 +1,26 @@
 #![cfg(test)]
 //! Initial model choice precedence.
+#[allow(
+    dead_code,
+    reason = "Recorded callback diagnostics are shared across operation witnesses."
+)]
+#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
+mod credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
+#[allow(
+    dead_code,
+    reason = "Each public operation uses its own recorded inputs."
+)]
+#[path = "support/fallback.rs"]
+mod fallback;
 #[path = "support/isolation.rs"]
 mod isolation;
 #[path = "selection/scopes.rs"]
 mod scopes;
+#[allow(dead_code, reason = "Only controlled registry construction is reused.")]
+#[path = "support/common.rs"]
+mod support;
 use maestro_catalog::{
     DEFAULT_MODEL_PER_PROVIDER, FindInitialModelOptions, ModelResolverOutput,
     RestoreModelFromSessionOptions, ScopedModel, find_initial_model, model_id_comparator,
@@ -127,7 +142,8 @@ fn selection_handles_survive_catalog_removal() {
             model_registry: &registry,
         },
         &mut output,
-    );
+    )
+    .unwrap();
     let results: [Handle; 3] = [
         Arc::clone(&scoped[0].model),
         initial.model.unwrap(),
@@ -184,7 +200,7 @@ fn selection_early_returns_avoid_auth_reads() {
     let counter = Arc::clone(&reads);
     registry.auth_storage().set_fallback_resolver(move |_| {
         counter.fetch_add(1, Ordering::SeqCst);
-        None
+        Ok(None)
     });
     let scoped = [ScopedModel {
         model: Arc::clone(&handles[1]),
@@ -226,12 +242,13 @@ fn selection_early_returns_avoid_auth_reads() {
                 model_registry: &registry,
             },
             &mut output,
-        );
+        )
+        .unwrap();
         reads.load(Ordering::SeqCst)
     };
     assert_eq!(restore(Some(&handles[0])), 0);
     assert_eq!(restore(None), 2);
-    registry.auth_storage().set_fallback_resolver(|_| None);
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
 
 #[test]
@@ -258,7 +275,7 @@ fn initial_availability_callbacks_affect_default_choice() {
                 table.clear();
                 table.insert("r".into(), "new".into());
             }
-            Some("present".into())
+            Ok(Some("present".into()))
         });
     let chosen = find_initial_model(initial(&registry, &[]), &compare)
         .unwrap()
@@ -266,5 +283,43 @@ fn initial_availability_callbacks_affect_default_choice() {
         .unwrap();
     assert!(Arc::ptr_eq(&chosen, &replacement));
     assert_eq!(*visits.lock().unwrap(), ["p", "r"]);
-    registry.auth_storage().set_fallback_resolver(|_| None);
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
+}
+
+#[test]
+fn initial_choice_short_circuits_or_returns_availability_error() {
+    for case in fallback::cases("initial_choice_short_circuits_or_returns_availability_error") {
+        let registry = fallback::registry(false);
+        let calls = fallback::failing(&registry);
+        let chosen = case.input.chosen.unwrap();
+        let model = registry.find("maestro-custom-fallback", "m").unwrap();
+        let scoped = [ScopedModel {
+            model: model.clone(),
+            thinking_level: Some(maestro_models::ModelThinkingLevel::High),
+        }];
+        let mut options = initial(&registry, &[]);
+        match chosen.as_str() {
+            "cli" => {
+                options.cli_provider = Some("maestro-custom-fallback");
+                options.cli_model = Some("m");
+            }
+            "scope" => options.scoped_models = &scoped,
+            "default" => {
+                options.default_provider = Some("maestro-custom-fallback");
+                options.default_model_id = Some("m");
+            }
+            "none" => {}
+            _ => panic!("unknown recorded initial choice"),
+        }
+        let result = find_initial_model(options, &str::cmp);
+        let actual = match result {
+            Ok(result) => {
+                serde_json::json!({"branch":"ok", "value": {"model": fallback::model_value(result.model.as_ref().unwrap()), "thinkingLevel":result.thinking_level}, "calls":*calls.lock().unwrap()})
+            }
+            Err(error) => {
+                serde_json::json!({"branch":"error", "error":fallback::error_value(&error), "calls":*calls.lock().unwrap()})
+            }
+        };
+        assert!(actual == case.expected, "recorded initial-choice route");
+    }
 }

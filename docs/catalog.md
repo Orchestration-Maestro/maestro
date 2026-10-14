@@ -140,6 +140,10 @@ slot order and duplicates. `get_provider_auth_status` prefers credential metadat
 otherwise describes a nonempty configured command, environment variable or literal key.
 These metadata operations do not execute stored/configured helpers or refresh
 tokens; a credential fallback callback supplied by the caller runs as given.
+All three return `Result` and propagate the original credential failure before
+consulting a later configured key. Availability stops at its first error without
+returning a partial list; it captures the original length but reads each live slot
+after the preceding callback. See [credential resolution](credentials.md#stored-credentials).
 `is_using_oauth` inspects the accepted stored credential kind, not the selected key.
 
 `get_provider_display_name` uses the retained name, retained OAuth name, current

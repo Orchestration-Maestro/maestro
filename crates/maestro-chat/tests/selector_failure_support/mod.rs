@@ -1,0 +1,46 @@
+//! Strict recorded selector failures and shared original diagnostics.
+use maestro_app::{DiagnosticErrorInfo, OAuthError};
+use serde::Deserialize;
+use serde_json::Value;
+#[path = "../../../maestro-credentials/tests/fallback_support/errors.rs"]
+pub mod errors;
+/// One recorded transaction.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Case {
+    pub test: String,
+    pub input: Input,
+    pub expected: Value,
+}
+/// Complete caller input domains for the two selectors.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Input {
+    pub scoped: Option<bool>,
+    pub message: Option<String>,
+    pub initial: Option<String>,
+    pub width: Option<usize>,
+    pub notice: Option<String>,
+    pub ops: Option<Vec<String>>,
+    pub phase: Option<String>,
+    pub supplied: Option<bool>,
+    pub action: Option<String>,
+    pub failure_index: Option<usize>,
+    pub branch: Option<String>,
+}
+/// All recorded transactions owned by a named public witness.
+pub fn cases(test: &str) -> Vec<Case> {
+    let rows: Vec<Case> =
+        serde_json::from_str(include_str!("../fixtures/fallback_failures.json")).unwrap();
+    let rows: Vec<_> = rows.into_iter().filter(|row| row.test == test).collect();
+    assert!(!rows.is_empty());
+    rows
+}
+/// Observe a boxed native callback failure without rebuilding it.
+pub fn error_value(error: &(dyn std::error::Error + 'static)) -> Value {
+    errors::error_value(
+        error
+            .downcast_ref::<OAuthError>()
+            .expect("original account error"),
+    )
+}

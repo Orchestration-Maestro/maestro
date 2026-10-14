@@ -32,6 +32,12 @@ Everything else is an optional capability that defaults to absent:
 | Receive key-release events | `wants_key_release` | `false` |
 | Hold focus and show a cursor | `focusable` | `None` |
 
+`InputHandler::try_handle_input` returns ordinary input failures; its default calls
+legacy `handle_input` once and returns `Ok(())`. Focused dispatch uses the fallible
+method. `SettingsList` forwards it to its retained submenu without interpreting the
+input itself; its main-list behavior is unchanged. Host reporting belongs to the
+[frame writer](rendering.md), not to the default handler.
+
 Absence is explicit: a component without input returns `None` from `input_handler`
 rather than a handler that ignores its input. `is_focusable` tests for the
 capability, not for the current focus. A focusable component owns a `FocusFlag`, which

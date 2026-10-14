@@ -1,8 +1,8 @@
 //! Searchable available-model selection with supplied scoped ordering.
 use super::dynamic_border::DynamicBorder;
 use maestro_app::{
-    Model, ModelRegistry, ScopedModel, SettingsManager, key_hint, model_id_comparator,
-    models_are_equal,
+    CatalogError, Model, ModelRegistry, ScopedModel, SettingsManager, key_hint,
+    model_id_comparator, models_are_equal,
 };
 use maestro_theme::{LiveTheme, ThemeColor, paint};
 use maestro_tui::{
@@ -89,6 +89,36 @@ struct SelectionState {
     list: Rc<Container>,
 }
 impl SelectionState {
+    /// Loads available and supplied scoped records, retaining shared descriptors.
+    fn load_models(
+        &mut self,
+        registry: &ModelRegistry,
+        scoped_models: Vec<ScopedModel>,
+        compare: &dyn Fn(&str, &str) -> std::cmp::Ordering,
+    ) -> Result<(), CatalogError> {
+        self.all = registry
+            .get_available()?
+            .into_iter()
+            .map(ModelItem::new)
+            .collect();
+        let current = self.current.as_ref();
+        self.all.sort_by(|a, b| {
+            b.is_current(current)
+                .cmp(&a.is_current(current))
+                .then_with(|| compare(&a.provider, &b.provider))
+        });
+        self.scoped = scoped_models
+            .into_iter()
+            .map(|scoped| {
+                let refreshed = {
+                    let m = scoped.model.read().unwrap_or_else(PoisonError::into_inner);
+                    registry.find(&m.provider, &m.id)
+                };
+                ModelItem::new(refreshed.unwrap_or(scoped.model))
+            })
+            .collect();
+        Ok(())
+    }
     /// Samples an existing foreground role.
     fn paint(&self, key: &ThemeColor, text: &str) -> String {
         paint(self.theme.get().ok().as_deref(), key, text)
@@ -249,7 +279,7 @@ impl ModelSelectorComponent {
     /// Refreshes the registry and builds the initial model view.
     ///
     /// # Errors
-    /// Propagates registry, locale and initial key-hint construction failures.
+    /// Propagates refresh, locale and initial key-hint failures; availability errors become notices.
     pub fn new(
         tui: &TUI,
         settings_manager: Rc<RefCell<SettingsManager>>,
@@ -261,11 +291,7 @@ impl ModelSelectorComponent {
         let compare = model_id_comparator(&|key| std::env::var(key).ok())?;
         let mut state = SelectionState {
             current: options.current_model,
-            all: model_registry
-                .get_available()
-                .into_iter()
-                .map(ModelItem::new)
-                .collect(),
+            all: Vec::new(),
             scoped: Vec::new(),
             scoped_active: Cell::new(!options.scoped_models.is_empty()),
             filtered: RefCell::default(),
@@ -276,23 +302,11 @@ impl ModelSelectorComponent {
             error: model_registry.get_error().map(str::to_owned),
             list: Rc::new(Container::new()),
         };
-        let current = state.current.as_ref();
-        state.all.sort_by(|a, b| {
-            b.is_current(current)
-                .cmp(&a.is_current(current))
-                .then_with(|| compare(&a.provider, &b.provider))
-        });
-        state.scoped = options
-            .scoped_models
-            .into_iter()
-            .map(|scoped| {
-                let refreshed = {
-                    let m = scoped.model.read().unwrap_or_else(PoisonError::into_inner);
-                    model_registry.find(&m.provider, &m.id)
-                };
-                ModelItem::new(refreshed.unwrap_or(scoped.model))
-            })
-            .collect();
+        if let Err(error) = state.load_models(model_registry, options.scoped_models, &compare) {
+            state.error = Some(error.to_string());
+            state.all.clear();
+            state.scoped.clear();
+        }
         state.position_current();
         let state = Rc::new(state);
         let search = Rc::new(Input::new());
@@ -311,7 +325,13 @@ impl ModelSelectorComponent {
         let container = Container::new();
         container.add_child(Rc::new(DynamicBorder::new(state.theme.clone(), None)));
         container.add_child(Rc::new(Spacer::new(1)));
-        let (scope_text, scope_hint) = if state.scoped.is_empty() {
+        let (scope_text, scope_hint) = if state.scoped_active.get() {
+            let text = Rc::new(Text::new(state.scope_text(), 0, 0, None));
+            let hint = Rc::new(Text::new(state.hint()?, 0, 0, None));
+            container.add_child(text.clone());
+            container.add_child(hint.clone());
+            (Some(text), Some(hint))
+        } else {
             container.add_child(Rc::new(Text::new(
                 state.paint(
                     &ThemeColor::Warning,
@@ -322,12 +342,6 @@ impl ModelSelectorComponent {
                 None,
             )));
             (None, None)
-        } else {
-            let text = Rc::new(Text::new(state.scope_text(), 0, 0, None));
-            let hint = Rc::new(Text::new(state.hint()?, 0, 0, None));
-            container.add_child(text.clone());
-            container.add_child(hint.clone());
-            (Some(text), Some(hint))
         };
         container.add_child(Rc::new(Spacer::new(1)));
         container.add_child(search.clone());

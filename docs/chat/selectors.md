@@ -73,8 +73,8 @@ schedules no cancellation.
 
 `OAuthSelectorComponent::new` takes an `Arc<maestro_app::AuthStorage>`, ordered
 `AuthSelectorProvider` records, select/cancel callbacks and `OAuthSelectorOptions`.
-Options supply `OAuthSelectorMode::Login` or `Logout`, a `LiveTheme` and an optional
-`get_auth_status` callback. `AuthType::OAuth` offers subscription authentication;
+Options supply `OAuthSelectorMode::Login` or `Logout`, a `LiveTheme`, an optional
+fallible `get_auth_status` callback and an owned `TuiRuntime`. `AuthType::OAuth` offers subscription authentication;
 `AuthType::ApiKey` offers key configuration. The caller supplies and classifies
 providers; order and duplicate choices are retained.
 
@@ -83,6 +83,12 @@ when the stored kind differs. Unstored subscription choices are unconfigured.
 Unstored key choices show environment, runtime, fallback, model-file key or
 model-file command status from the supplied resolver, or the store's default.
 Status labels follow the source even when its `configured` flag is false.
+Construction returns `Result` and propagates an initial metadata failure without
+returning a picker. Inherent `handle_input` and the trait's `try_handle_input`
+return metadata errors at the failing rebuild, retaining selection/search changes
+and rows already built. Legacy trait `handle_input` reports errors through the
+options runtime; focused writer dispatch instead uses the writer's host, exactly
+once, with no post-error redraw. See [fallible input](../terminal/components.md#components).
 The picker only reads credentials; callbacks own authentication and logout.
 The application root exposes the existing credential records, status, store and
 interchangeable memory/backend contracts.
@@ -107,7 +113,8 @@ confirmation alone do not rebuild the list. Text and cursor layout belong to the
 `ModelSelectorComponent::new` takes a `TUI`, shared mutable
 `maestro_app::SettingsManager`, mutable `maestro_app::ModelRegistry`,
 `ModelSelectorCallbacks` and `ModelSelectorOptions`. Construction refreshes the
-registry, propagates refresh failures and requests one render. Options supply the
+registry, propagates refresh failures and requests one render after a completed
+load or caught availability failure. Options supply the
 current shared `Model`, ordered `ScopedModel` records, initial search and
 `LiveTheme`; the application re-exports their existing catalog/settings owners.
 
@@ -122,7 +129,10 @@ Input reads live configurable bindings: Tab, up, down, confirm and cancel take
 precedence in that order. Tab without scoped models is consumed. Navigation wraps;
 empty confirmation does nothing. Confirmation updates both default provider and
 model before reporting the original shared handle, using its current metadata.
-Registry file diagnostics appear alongside usable rows. The window shows at most
+Registry file diagnostics appear alongside usable rows. An availability failure
+replaces that diagnostic with its exact message and empties both model views,
+while preserving the original scoped or all-provider help. Refresh and locale
+failures remain outside this catch. The window shows at most
 ten rows, a current-model checkmark and the selected model name unless a diagnostic
 is present.
 

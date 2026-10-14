@@ -42,7 +42,7 @@ pub struct InitialModelResult {
 /// A saved default is used without checking authentication; availability decides only after it.
 ///
 /// # Errors
-/// Returns the command-line resolution failure instead of terminating the process.
+/// Returns a command-line resolution failure or a consumed availability failure.
 pub fn find_initial_model(
     options: FindInitialModelOptions<'_>,
     compare_model_ids: &dyn Fn(&str, &str) -> Ordering,
@@ -99,7 +99,7 @@ pub fn find_initial_model(
         );
     }
     chosen(
-        default_or_first(&registry.get_available()),
+        default_or_first(&registry.get_available()?),
         DEFAULT_THINKING_LEVEL,
     )
 }

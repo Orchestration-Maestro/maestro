@@ -366,7 +366,8 @@ fn restore(
             model_registry: registry,
         },
         output,
-    );
+    )
+    .unwrap();
     observed.model = result.model;
     observed.fallback = result.fallback_message;
 }

@@ -1,8 +1,20 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Authentication metadata and shared descriptor observations.
+#[allow(
+    dead_code,
+    reason = "Recorded callback diagnostics are shared across operation witnesses."
+)]
+#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
+mod credential_fallback;
 #[path = "support/dynamic.rs"]
 pub mod dynamic;
+#[allow(
+    dead_code,
+    reason = "Each public operation uses its own recorded inputs."
+)]
+#[path = "support/fallback.rs"]
+mod fallback;
 #[path = "support/request.rs"]
 pub mod request_support;
 #[path = "support/common.rs"]
@@ -17,10 +29,10 @@ fn configured_auth_rereads_identity_after_fallback() {
     let changed = model.clone();
     registry.auth_storage().set_fallback_resolver(move |_| {
         changed.write().unwrap().provider = "p".into();
-        None
+        Ok(None)
     });
-    assert!(registry.has_configured_auth(&model));
-    registry.auth_storage().set_fallback_resolver(|_| None);
+    assert!(registry.has_configured_auth(&model).unwrap());
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
 use maestro_catalog::{BUILT_IN_PROVIDER_DISPLAY_NAMES, ModelRegistry};
 use std::sync::Arc;
@@ -53,9 +65,9 @@ fn availability_walk_reloads_slots_after_callbacks() {
                 list.remove(1);
                 list.extend(appended.iter().cloned());
             }
-            Some("present".into())
+            Ok(Some("present".into()))
         });
-    let selected = registry.get_available();
+    let selected = registry.get_available().unwrap();
     assert_eq!(*visits.lock().unwrap(), ["a", "c", "d"]);
     assert_eq!(
         selected
@@ -64,7 +76,7 @@ fn availability_walk_reloads_slots_after_callbacks() {
             .collect::<Vec<_>>(),
         ["a", "c", "d"]
     );
-    registry.auth_storage().set_fallback_resolver(|_| None);
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
 #[test]
 fn metadata_preserves_sources_without_helper_or_refresh_effects() {
@@ -86,17 +98,22 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
             .unwrap()
             .insert("ENV".into(), "value".into());
         assert_eq!(
-            registry.get_provider_auth_status("p", &operations),
+            registry.get_provider_auth_status("p", &operations).unwrap(),
             AuthStatus {
                 configured: true,
                 source: Some(source),
                 label: label.map(str::to_owned)
             }
         );
-        assert!(registry.has_configured_auth(&registry.find("p", "m").unwrap()));
+        assert!(
+            registry
+                .has_configured_auth(&registry.find("p", "m").unwrap())
+                .unwrap()
+        );
         assert_eq!(
             registry
                 .get_available()
+                .unwrap()
                 .iter()
                 .filter(|m| m.read().unwrap().provider == "p")
                 .count(),
@@ -104,9 +121,18 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
         );
         lower_layer_status(&registry, &operations);
     }
+    metadata_fallback(&operations);
+    metadata_empty_environment_and_oauth(&operations);
+    assert!(operations.calls.lock().unwrap().is_empty());
+}
+/// Observe absent and fallback-only provider metadata through the public registry.
+fn metadata_fallback(operations: &request_support::Operations) {
+    use maestro_credentials::{AuthSource, AuthStatus};
     let registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
     assert_eq!(
-        registry.get_provider_auth_status("unknown-metadata", &operations),
+        registry
+            .get_provider_auth_status("unknown-metadata", operations)
+            .unwrap(),
         AuthStatus {
             configured: false,
             source: None,
@@ -115,18 +141,18 @@ fn metadata_preserves_sources_without_helper_or_refresh_effects() {
     );
     registry
         .auth_storage()
-        .set_fallback_resolver(|_| Some("fallback".into()));
+        .set_fallback_resolver(|_| Ok(Some("fallback".into())));
     assert_eq!(
-        registry.get_provider_auth_status("unknown-metadata", &operations),
+        registry
+            .get_provider_auth_status("unknown-metadata", operations)
+            .unwrap(),
         AuthStatus {
             configured: false,
             source: Some(AuthSource::Fallback),
             label: Some("custom provider config".into())
         }
     );
-    registry.auth_storage().set_fallback_resolver(|_| None);
-    metadata_empty_environment_and_oauth(&operations);
-    assert!(operations.calls.lock().unwrap().is_empty());
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
 #[test]
 fn display_names_cover_table_oauth_and_identifier_precedence() {
@@ -201,7 +227,7 @@ fn available_models_keep_order_duplicates_and_shared_descriptors() {
     distinct.id = "distinct".into();
     let distinct = Arc::new(std::sync::RwLock::new(distinct));
     list.write().unwrap().insert(2, distinct.clone());
-    let selected = registry.get_available();
+    let selected = registry.get_available().unwrap();
     assert_eq!(selected.len(), 3);
     assert!(Arc::ptr_eq(&selected[0], &model));
     assert!(Arc::ptr_eq(&selected[1], &distinct));
@@ -300,7 +326,7 @@ fn lower_layer_status(registry: &ModelRegistry, operations: &request_support::Op
     use maestro_credentials::{ApiKeyCredential, AuthCredential, AuthSource, AuthStatus};
     registry.auth_storage().set_runtime_api_key("p", "runtime");
     assert_eq!(
-        registry.get_provider_auth_status("p", operations),
+        registry.get_provider_auth_status("p", operations).unwrap(),
         AuthStatus {
             configured: false,
             source: Some(AuthSource::Runtime),
@@ -314,7 +340,7 @@ fn lower_layer_status(registry: &ModelRegistry, operations: &request_support::Op
         }),
     );
     assert_eq!(
-        registry.get_provider_auth_status("p", operations),
+        registry.get_provider_auth_status("p", operations).unwrap(),
         AuthStatus {
             configured: true,
             source: Some(AuthSource::Stored),
@@ -333,7 +359,7 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
         .unwrap()
         .insert("ENV".into(), String::new());
     assert_eq!(
-        registry.get_provider_auth_status("p", operations),
+        registry.get_provider_auth_status("p", operations).unwrap(),
         AuthStatus {
             configured: true,
             source: Some(AuthSource::ModelsJsonKey),
@@ -347,16 +373,19 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
         .set("catalog-metadata-oauth", request_support::tokens(0.0));
     let model = registry.find("p", "m").unwrap();
     model.write().unwrap().provider = "catalog-metadata-oauth".into();
-    assert!(registry.has_configured_auth(&model));
+    assert!(registry.has_configured_auth(&model).unwrap());
     assert!(registry.is_using_oauth(&model));
     assert!(
         registry
             .get_available()
+            .unwrap()
             .iter()
             .any(|m| Arc::ptr_eq(m, &model))
     );
     assert_eq!(
-        registry.get_provider_auth_status("catalog-metadata-oauth", operations),
+        registry
+            .get_provider_auth_status("catalog-metadata-oauth", operations)
+            .unwrap(),
         AuthStatus {
             configured: true,
             source: Some(AuthSource::Stored),
@@ -382,13 +411,133 @@ fn metadata_known_environment() {
         return;
     }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();
-    let status =
-        registry.get_provider_auth_status("openai", &request_support::Operations::default());
+    let status = registry
+        .get_provider_auth_status("openai", &request_support::Operations::default())
+        .unwrap();
     assert!(!status.configured);
     assert_eq!(
         status.source,
         Some(maestro_credentials::AuthSource::Environment)
     );
     assert_eq!(status.label.as_deref(), Some("OPENAI_API_KEY"));
-    assert!(registry.auth_storage().has_auth("openai"));
+    assert!(registry.auth_storage().has_auth("openai").unwrap());
+}
+
+#[test]
+fn configured_key_does_not_mask_fallback_error() {
+    for case in fallback::cases("configured_key_does_not_mask_fallback_error") {
+        assert_eq!(case.input.fallback.as_deref(), Some("error"));
+        let registry = fallback::registry(case.input.configured.unwrap());
+        let calls = fallback::failing(&registry);
+        let actual = if case.input.operation.as_deref() == Some("getAvailable") {
+            fallback::outcome(registry.get_available(), &calls)
+        } else {
+            assert_eq!(case.input.operation.as_deref(), Some("hasConfiguredAuth"));
+            fallback::outcome(
+                registry
+                    .has_configured_auth(&registry.find("maestro-custom-fallback", "m").unwrap()),
+                &calls,
+            )
+        };
+        assert!(actual == case.expected, "recorded presence failure");
+    }
+}
+#[test]
+fn provider_status_does_not_mask_fallback_failure() {
+    for case in fallback::cases("provider_status_does_not_mask_fallback_failure") {
+        assert_eq!(
+            case.input.operation.as_deref(),
+            Some("getProviderAuthStatus")
+        );
+        assert_eq!(case.input.fallback.as_deref(), Some("error"));
+        let registry = fallback::registry(case.input.configured.unwrap());
+        let calls = fallback::failing(&registry);
+        let actual = fallback::outcome(
+            registry.get_provider_auth_status(
+                "maestro-custom-fallback",
+                &request_support::Operations::default(),
+            ),
+            &calls,
+        );
+        assert!(
+            actual == case.expected,
+            "recorded provider metadata failure"
+        );
+    }
+}
+#[test]
+fn availability_stops_on_first_error_without_partial_result() {
+    for case in fallback::cases("availability_stops_on_first_error_without_partial_result") {
+        let registry = fallback::registry(false);
+        let models: Vec<_> = case
+            .input
+            .models
+            .unwrap()
+            .iter()
+            .map(|model| fallback::descriptor(&registry, model))
+            .collect();
+        *registry.get_all().write().unwrap() = models.clone();
+        let failing = models[case.input.failure_index.unwrap()]
+            .read()
+            .unwrap()
+            .provider
+            .clone();
+        let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = calls.clone();
+        registry
+            .auth_storage()
+            .set_fallback_resolver(move |provider| {
+                seen.lock().unwrap().push(provider.to_owned());
+                if provider == failing {
+                    Err(credential_fallback::failure())
+                } else {
+                    Ok(Some("present".into()))
+                }
+            });
+        assert!(
+            fallback::outcome(registry.get_available(), &calls) == case.expected,
+            "recorded first failure"
+        );
+    }
+}
+#[test]
+fn availability_uses_reentrant_slot_edits_before_failure() {
+    for case in fallback::cases("availability_uses_reentrant_slot_edits_before_failure") {
+        let registry = fallback::registry(false);
+        let models: Vec<_> = case
+            .input
+            .models
+            .unwrap()
+            .iter()
+            .map(|model| fallback::descriptor(&registry, model))
+            .collect();
+        let replacement = fallback::descriptor(
+            &registry,
+            &fallback::Descriptor {
+                provider: "maestro-later".into(),
+                id: "later".into(),
+                name: "Later".into(),
+            },
+        );
+        let live = registry.get_all();
+        *live.write().unwrap() = models;
+        let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = calls.clone();
+        registry
+            .auth_storage()
+            .set_fallback_resolver(move |provider| {
+                seen.lock().unwrap().push(provider.to_owned());
+                if provider == "maestro-first" {
+                    live.write().unwrap()[1] = replacement.clone();
+                    Ok(Some("present".into()))
+                } else {
+                    Err(credential_fallback::failure())
+                }
+            });
+        assert!(
+            fallback::outcome(registry.get_available(), &calls) == case.expected,
+            "recorded live-slot failure"
+        );
+        registry.auth_storage().set_fallback_resolver(|_| Ok(None));
+    }
 }

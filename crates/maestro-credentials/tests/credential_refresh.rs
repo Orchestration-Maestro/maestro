@@ -1,5 +1,11 @@
 //! Locked refresh, login and provider listing through the public interface.
 #[cfg(test)]
+#[allow(
+    dead_code,
+    reason = "Refresh witnesses share only callback and fixture helpers."
+)]
+mod fallback_support;
+#[cfg(test)]
 mod gate_support;
 #[cfg(test)]
 mod oauth_support;
@@ -188,7 +194,7 @@ mod tests {
 
     /// Replace the fallback resolver with one answering `fallback`.
     fn replace_fallback(storage: &AuthStorage) {
-        storage.set_fallback_resolver(|_| Some("fallback".into()));
+        storage.set_fallback_resolver(|_| Ok(Some("fallback".into())));
     }
 
     /// Request key for `provider` with the fallback enabled.
@@ -239,7 +245,7 @@ mod tests {
             ];
             for (document, expected) in cases {
                 let (probe, storage) = setup(&json!({"r2": record("old", 1000.0)}));
-                storage.set_fallback_resolver(|_| Some("old-fallback".into()));
+                storage.set_fallback_resolver(|_| Ok(Some("old-fallback".into())));
                 probe.sync_fails.store(true, Ordering::SeqCst);
                 storage.reload();
                 probe.sync_fails.store(false, Ordering::SeqCst);
@@ -364,7 +370,7 @@ mod tests {
         ];
         for (kind, message) in expected {
             let (probe, storage) = setup(&json!({"openai": record("old", 1000.0)}));
-            storage.set_fallback_resolver(|_| Some("fallback".into()));
+            storage.set_fallback_resolver(|_| Ok(Some("fallback".into())));
             let _provider = provider_failing_in(kind).register();
             let _cleanup = Unregister("openai".into());
             break_refresh(kind, &probe);
@@ -433,7 +439,7 @@ mod tests {
             for (name, recovery, expected) in cases {
                 let id = format!("r5-{name}");
                 let (probe, storage) = setup(&json!({id.clone(): record("old", 1000.0)}));
-                storage.set_fallback_resolver(|_| Some("fallback".into()));
+                storage.set_fallback_resolver(|_| Ok(Some("fallback".into())));
                 let provider = racing_provider(&id, &probe, json!({id.clone(): recovery}));
                 let _cleanup = Unregister(id.clone());
                 let outcome = request(&storage, &id).await;
@@ -501,7 +507,7 @@ mod tests {
             let dir = TempDir::new("refresh-lock-failure");
             let (sidecar, storage) =
                 storage_with_unopenable_lock(&dir, &json!({"r7": record("old", 1000.0)}));
-            storage.set_fallback_resolver(|_| Some("fallback".into()));
+            storage.set_fallback_resolver(|_| Ok(Some("fallback".into())));
             assert_eq!(request(&storage, "r7").await.unwrap(), None);
             let errors = storage.drain_errors();
             assert!(!errors.is_empty());
@@ -800,5 +806,53 @@ mod tests {
             Arc::as_ptr(&before[0]),
             Arc::as_ptr(&after[0])
         ));
+    }
+    /// Exercise one locked-refresh boundary before selecting the ambient fallback.
+    async fn refresh_fallback_case(case: super::fallback_support::Case) {
+        let input = case.input;
+        assert!(
+            input.operation.is_none()
+                && input.earlier.is_none()
+                && input.runtime.is_none()
+                && input.include_fallback.is_none()
+        );
+        let id = input.provider.unwrap();
+        let phase = input.phase.unwrap();
+        let _provider = (phase != "unregistered-oauth").then(|| {
+            ControlledProvider::refreshing(
+                &id,
+                Box::new(|_| Box::pin(std::future::ready(Err(error("refresh failed"))))),
+            )
+            .register()
+        });
+        let _cleanup = Unregister(id.clone());
+        let (probe, storage) = setup(&json!({id.clone(): input.stored.unwrap()}));
+        if phase == "reread-removed" {
+            replace_text(&probe, &json!({}));
+        }
+        let calls = super::fallback_support::install(&storage, &input.fallback);
+        let result = request(&storage, &id).await;
+        let calls = calls.lock().unwrap().clone();
+        let actual = match result {
+            Ok(value) => json!({"branch":"ok", "value":value, "calls":calls}),
+            Err(error) => {
+                json!({"branch":"error", "error":super::fallback_support::error_value(&error), "calls":calls})
+            }
+        };
+        assert!(actual == case.expected, "recorded refresh outcome");
+        assert_eq!(
+            storage.drain_errors().len(),
+            usize::from(phase == "refresh-failed")
+        );
+    }
+    #[test]
+    fn fallback_error_after_empty_refresh_is_not_recorded() {
+        block_on(async {
+            for case in
+                super::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
+            {
+                refresh_fallback_case(case).await;
+            }
+        });
     }
 }

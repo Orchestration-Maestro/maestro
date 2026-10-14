@@ -1,0 +1,546 @@
+[
+  {
+    "test": "configured_key_does_not_mask_fallback_error",
+    "input": {
+      "operation": "getAvailable",
+      "configured": false,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "configured_key_does_not_mask_fallback_error",
+    "input": {
+      "operation": "getAvailable",
+      "configured": true,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "configured_key_does_not_mask_fallback_error",
+    "input": {
+      "operation": "hasConfiguredAuth",
+      "configured": false,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "configured_key_does_not_mask_fallback_error",
+    "input": {
+      "operation": "hasConfiguredAuth",
+      "configured": true,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "provider_status_does_not_mask_fallback_failure",
+    "input": {
+      "operation": "getProviderAuthStatus",
+      "configured": false,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "provider_status_does_not_mask_fallback_failure",
+    "input": {
+      "operation": "getProviderAuthStatus",
+      "configured": true,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "availability_stops_on_first_error_without_partial_result",
+    "input": {
+      "failureIndex": 0,
+      "models": [
+        {
+          "provider": "maestro-first",
+          "id": "a",
+          "name": "Model a"
+        },
+        {
+          "provider": "maestro-second",
+          "id": "b",
+          "name": "Model b"
+        },
+        {
+          "provider": "maestro-third",
+          "id": "c",
+          "name": "Model c"
+        }
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-first"
+      ]
+    }
+  },
+  {
+    "test": "availability_stops_on_first_error_without_partial_result",
+    "input": {
+      "failureIndex": 1,
+      "models": [
+        {
+          "provider": "maestro-first",
+          "id": "a",
+          "name": "Model a"
+        },
+        {
+          "provider": "maestro-second",
+          "id": "b",
+          "name": "Model b"
+        },
+        {
+          "provider": "maestro-third",
+          "id": "c",
+          "name": "Model c"
+        }
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-first",
+        "maestro-second"
+      ]
+    }
+  },
+  {
+    "test": "availability_stops_on_first_error_without_partial_result",
+    "input": {
+      "failureIndex": 2,
+      "models": [
+        {
+          "provider": "maestro-first",
+          "id": "a",
+          "name": "Model a"
+        },
+        {
+          "provider": "maestro-second",
+          "id": "b",
+          "name": "Model b"
+        },
+        {
+          "provider": "maestro-third",
+          "id": "c",
+          "name": "Model c"
+        }
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-first",
+        "maestro-second",
+        "maestro-third"
+      ]
+    }
+  },
+  {
+    "test": "availability_uses_reentrant_slot_edits_before_failure",
+    "input": {
+      "models": [
+        {
+          "provider": "maestro-first",
+          "id": "a",
+          "name": "Model a"
+        },
+        {
+          "provider": "maestro-skipped",
+          "id": "x",
+          "name": "Model x"
+        }
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-first",
+        "maestro-later"
+      ]
+    }
+  },
+  {
+    "test": "provider_request_lookup_avoids_auth_fallback",
+    "input": {
+      "includeConfig": false
+    },
+    "expected": {
+      "branch": "ok",
+      "value": null,
+      "calls": []
+    }
+  },
+  {
+    "test": "provider_request_lookup_avoids_auth_fallback",
+    "input": {
+      "includeConfig": true
+    },
+    "expected": {
+      "branch": "ok",
+      "value": null,
+      "calls": []
+    }
+  },
+  {
+    "test": "scope_availability_error_precedes_pattern_diagnostics",
+    "input": {
+      "patterns": []
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      }
+    }
+  },
+  {
+    "test": "scope_availability_error_precedes_pattern_diagnostics",
+    "input": {
+      "patterns": [
+        "not-a-model"
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      }
+    }
+  },
+  {
+    "test": "initial_choice_short_circuits_or_returns_availability_error",
+    "input": {
+      "chosen": "cli"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "model": {
+          "provider": "maestro-custom-fallback",
+          "id": "m",
+          "name": "Model m"
+        },
+        "thinkingLevel": "medium"
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "initial_choice_short_circuits_or_returns_availability_error",
+    "input": {
+      "chosen": "scope"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "model": {
+          "provider": "maestro-custom-fallback",
+          "id": "m",
+          "name": "Model m"
+        },
+        "thinkingLevel": "high"
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "initial_choice_short_circuits_or_returns_availability_error",
+    "input": {
+      "chosen": "default"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "model": {
+          "provider": "maestro-custom-fallback",
+          "id": "m",
+          "name": "Model m"
+        },
+        "thinkingLevel": "medium"
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "initial_choice_short_circuits_or_returns_availability_error",
+    "input": {
+      "chosen": "none"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "restoration_keeps_error_and_notice_order",
+    "input": {
+      "branch": "saved-auth-error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "logs": []
+    }
+  },
+  {
+    "test": "restoration_keeps_error_and_notice_order",
+    "input": {
+      "branch": "missing-no-current"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "logs": [
+        [
+          "stderr",
+          "\u001b[33mWarning: Could not restore model maestro-missing/m (model no longer exists).\u001b[39m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "restoration_keeps_error_and_notice_order",
+    "input": {
+      "branch": "missing-current"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "model": {
+            "provider": "maestro-current",
+            "id": "old",
+            "name": "Model old"
+          },
+          "fallbackMessage": "Could not restore model maestro-missing/m (model no longer exists). Using maestro-current/old."
+        },
+        "logs": [
+          [
+            "stderr",
+            "\u001b[33mWarning: Could not restore model maestro-missing/m (model no longer exists).\u001b[39m"
+          ],
+          [
+            "stdout",
+            "\u001b[2mFalling back to: maestro-current/old\u001b[22m"
+          ]
+        ]
+      },
+      "logs": [
+        [
+          "stderr",
+          "\u001b[33mWarning: Could not restore model maestro-missing/m (model no longer exists).\u001b[39m"
+        ],
+        [
+          "stdout",
+          "\u001b[2mFalling back to: maestro-current/old\u001b[22m"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "restoration_keeps_error_and_notice_order",
+    "input": {
+      "branch": "saved-no-auth-current"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "model": {
+            "provider": "maestro-current",
+            "id": "old",
+            "name": "Model old"
+          },
+          "fallbackMessage": "Could not restore model maestro-custom-fallback/m (no auth configured). Using maestro-current/old."
+        },
+        "logs": [
+          [
+            "stderr",
+            "\u001b[33mWarning: Could not restore model maestro-custom-fallback/m (no auth configured).\u001b[39m"
+          ],
+          [
+            "stdout",
+            "\u001b[2mFalling back to: maestro-current/old\u001b[22m"
+          ]
+        ]
+      },
+      "logs": [
+        [
+          "stderr",
+          "\u001b[33mWarning: Could not restore model maestro-custom-fallback/m (no auth configured).\u001b[39m"
+        ],
+        [
+          "stdout",
+          "\u001b[2mFalling back to: maestro-current/old\u001b[22m"
+        ]
+      ]
+    }
+  }
+]

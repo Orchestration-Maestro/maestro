@@ -16,14 +16,14 @@ use std::{
 /// Models repeat only by provider and ID, keeping the first level.
 ///
 /// # Errors
-/// Returns the shared matcher's failure for a glob it rejects.
+/// Returns an availability failure before pattern processing, or a rejected glob failure.
 pub fn resolve_model_scope(
     patterns: &[String],
     model_registry: &ModelRegistry,
     compare_model_ids: &dyn Fn(&str, &str) -> Ordering,
     output: &mut ModelResolverOutput<'_>,
 ) -> Result<Vec<ScopedModel>, CatalogError> {
-    let available = model_registry.get_available();
+    let available = model_registry.get_available()?;
     let mut scoped: Vec<ScopedModel> = Vec::new();
     for pattern in patterns {
         let (matches, thinking_level) = if pattern.contains(['*', '?', '[']) {
