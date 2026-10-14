@@ -1,11 +1,26 @@
 #![cfg(test)]
 //! Saved model restoration and fallback notices.
+#[allow(
+    dead_code,
+    reason = "Recorded callback diagnostics are shared across operation witnesses."
+)]
+#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
+mod credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
+#[allow(
+    dead_code,
+    reason = "Each public operation uses its own recorded inputs."
+)]
+#[path = "support/fallback.rs"]
+mod fallback;
 #[path = "support/isolation.rs"]
 mod isolation;
 #[path = "selection/scopes.rs"]
 mod scopes;
+#[allow(dead_code, reason = "Only controlled registry construction is reused.")]
+#[path = "support/common.rs"]
+mod support;
 use maestro_catalog::{
     ModelResolverOutput, RestoreModelFromSessionOptions, restore_model_from_session,
 };
@@ -80,6 +95,7 @@ fn restore_diagnostics_are_best_effort() {
             },
             out,
         )
+        .unwrap()
     };
     let (mut stdout, mut stderr) = (scopes::Broken::default(), scopes::Broken::default());
     let mut output = ModelResolverOutput {
@@ -156,7 +172,8 @@ fn restore_message_reads_fallback_identity_after_the_notice() {
                 stderr: &mut stderr,
                 color: false,
             },
-        );
+        )
+        .unwrap();
         let noted = if use_current { "c/current" } else { "p/saved" };
         assert_eq!(
             String::from_utf8(stdout.text).unwrap(),
@@ -170,5 +187,121 @@ fn restore_message_reads_fallback_identity_after_the_notice() {
             )
         );
         target.write().unwrap().id = if use_current { "current" } else { "saved" }.into();
+    }
+}
+
+/// Ordered newline-completed output without losing stream identity.
+struct Lines {
+    name: &'static str,
+    pending: String,
+    logs: std::rc::Rc<std::cell::RefCell<Vec<serde_json::Value>>>,
+}
+impl Lines {
+    /// Collect complete lines for one stream in the shared ordered transcript.
+    fn new(
+        name: &'static str,
+        logs: &std::rc::Rc<std::cell::RefCell<Vec<serde_json::Value>>>,
+    ) -> Self {
+        Self {
+            name,
+            pending: String::new(),
+            logs: logs.clone(),
+        }
+    }
+}
+impl std::io::Write for Lines {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.pending.push_str(std::str::from_utf8(bytes).unwrap());
+        while let Some(end) = self.pending.find('\n') {
+            self.logs
+                .borrow_mut()
+                .push(serde_json::json!([self.name, &self.pending[..end]]));
+            self.pending.drain(..=end);
+        }
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+/// Install the branch's auth reader, rejecting accidental reads of the current model.
+fn restoration_auth(
+    registry: &maestro_catalog::ModelRegistry,
+    branch: &str,
+) -> Arc<std::sync::Mutex<Vec<String>>> {
+    if branch == "saved-no-auth-current" {
+        let calls = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = calls.clone();
+        registry
+            .auth_storage()
+            .set_fallback_resolver(move |provider| {
+                seen.lock().unwrap().push(provider.to_owned());
+                if provider == "maestro-current" {
+                    Err(credential_fallback::failure())
+                } else {
+                    Ok(None)
+                }
+            });
+        calls
+    } else {
+        fallback::failing(registry)
+    }
+}
+#[test]
+fn restoration_keeps_error_and_notice_order() {
+    for case in fallback::cases("restoration_keeps_error_and_notice_order") {
+        let registry = fallback::registry(false);
+        let branch = case.input.branch.unwrap();
+        let current = fallback::descriptor(
+            &registry,
+            &fallback::Descriptor {
+                provider: "maestro-current".into(),
+                id: "old".into(),
+                name: "Model old".into(),
+            },
+        );
+        let calls = restoration_auth(&registry, &branch);
+        let logs = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let mut stdout = Lines::new("stdout", &logs);
+        let mut stderr = Lines::new("stderr", &logs);
+        let result = restore_model_from_session(
+            RestoreModelFromSessionOptions {
+                saved_provider: if branch.starts_with("missing") {
+                    "maestro-missing"
+                } else {
+                    "maestro-custom-fallback"
+                },
+                saved_model_id: "m",
+                current_model: matches!(
+                    branch.as_str(),
+                    "missing-current" | "saved-no-auth-current"
+                )
+                .then_some(&current),
+                should_print_messages: true,
+                model_registry: &registry,
+            },
+            &mut ModelResolverOutput {
+                stdout: &mut stdout,
+                stderr: &mut stderr,
+                color: true,
+            },
+        );
+        let actual = match result {
+            Ok(result) => {
+                serde_json::json!({"branch":"ok", "value":{"result":{"model":fallback::model_value(result.model.as_ref().unwrap()), "fallbackMessage":result.fallback_message}, "logs":*logs.borrow()}, "logs":*logs.borrow()})
+            }
+            Err(error) => {
+                serde_json::json!({"branch":"error", "error":fallback::error_value(&error), "logs":*logs.borrow()})
+            }
+        };
+        assert!(actual == case.expected, "recorded restoration ordering");
+        assert!(
+            !calls
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|provider| provider == "maestro-current")
+        );
+        assert!(stdout.pending.is_empty() && stderr.pending.is_empty());
     }
 }

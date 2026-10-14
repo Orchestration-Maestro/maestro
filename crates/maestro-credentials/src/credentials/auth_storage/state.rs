@@ -3,13 +3,17 @@ use super::backend::{AuthStorageBackend, InMemoryAuthStorageBackend, ThreadBound
 use super::types::{
     AuthCredential, AuthStorageData, AuthStorageError, decode, parse_storage_data, stored_record,
 };
+use maestro_models::OAuthError;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 /// A key lookup consulted after stored and environment keys.
-pub(super) trait FallbackResolver: Fn(&str) -> Option<String> + ThreadBound {}
-impl<F: Fn(&str) -> Option<String> + ThreadBound> FallbackResolver for F {}
+pub(super) trait FallbackResolver:
+    Fn(&str) -> Result<Option<String>, OAuthError> + ThreadBound
+{
+}
+impl<F: Fn(&str) -> Result<Option<String>, OAuthError> + ThreadBound> FallbackResolver for F {}
 
 /// Accepted state; locked only for short steps, never across callbacks.
 #[derive(Default)]
@@ -96,7 +100,7 @@ impl AuthStorage {
     /// Set the key lookup consulted after stored and environment keys.
     pub fn set_fallback_resolver(
         &self,
-        resolver: impl Fn(&str) -> Option<String> + ThreadBound + 'static,
+        resolver: impl Fn(&str) -> Result<Option<String>, OAuthError> + ThreadBound + 'static,
     ) {
         self.state().fallback_resolver = Some(Arc::new(resolver));
     }

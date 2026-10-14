@@ -11,6 +11,15 @@ pub const CURSOR_MARKER: &str = "\x1b_maestro:c\x07";
 pub trait InputHandler {
     /// Handles one chunk of terminal input, which may hold escape sequences.
     fn handle_input(&self, data: &str);
+
+    /// Handles input that can return an ordinary failure.
+    ///
+    /// # Errors
+    /// Returns the handler's original input error.
+    fn try_handle_input(&self, data: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.handle_input(data);
+        Ok(())
+    }
 }
 
 /// Whether a component has keyboard focus: the component owns the flag, the writer

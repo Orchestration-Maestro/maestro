@@ -1,47 +1,59 @@
 //! Authentication presence and provider metadata without request resolution.
 use super::{ModelRegistry, read_provider};
+use crate::CatalogError;
 use maestro_credentials::{AuthSource, AuthStatus, ConfigValueOperations};
 use maestro_models::Model;
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Check credential presence, then freshly read the configured provider identity.
-    #[must_use]
-    pub fn has_configured_auth(&self, model: &Arc<RwLock<Model>>) -> bool {
+    ///
+    /// # Errors
+    /// Returns the original credential lookup failure.
+    pub fn has_configured_auth(&self, model: &Arc<RwLock<Model>>) -> Result<bool, CatalogError> {
         let provider = read_provider(model);
-        if self.auth_storage.has_auth(&provider) {
-            return true;
+        if self.auth_storage.has_auth(&provider)? {
+            return Ok(true);
         }
         let provider = read_provider(model);
-        self.provider_configs
+        Ok(self
+            .provider_configs
             .get(&provider)
-            .is_some_and(|c| c.api_key.is_some())
+            .is_some_and(|c| c.api_key.is_some()))
     }
     /// Filter current slots up to the captured list length, retaining shared descriptors.
-    #[must_use]
-    pub fn get_available(&self) -> Vec<Arc<RwLock<Model>>> {
+    ///
+    /// # Errors
+    /// Stops at the first credential lookup failure, returning no partial list.
+    pub fn get_available(&self) -> Result<Vec<Arc<RwLock<Model>>>, CatalogError> {
         let list = self.get_all();
         let length = list.read().unwrap_or_else(PoisonError::into_inner).len();
-        (0..length)
-            .filter_map(|index| {
-                let model = list
-                    .read()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .get(index)
-                    .cloned()?;
-                self.has_configured_auth(&model).then_some(model)
-            })
-            .collect()
+        let mut available = Vec::new();
+        for index in 0..length {
+            let model = list
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .get(index)
+                .cloned();
+            if let Some(model) = model
+                && self.has_configured_auth(&model)?
+            {
+                available.push(model);
+            }
+        }
+        Ok(available)
     }
     /// Prefer credential metadata, otherwise describe the configured key without executing it.
-    #[must_use]
+    ///
+    /// # Errors
+    /// Returns the original credential metadata failure.
     pub fn get_provider_auth_status(
         &self,
         provider: &str,
         operations: &dyn ConfigValueOperations,
-    ) -> AuthStatus {
-        let status = self.auth_storage.get_auth_status(provider);
+    ) -> Result<AuthStatus, CatalogError> {
+        let status = self.auth_storage.get_auth_status(provider)?;
         if status.source.is_some() {
-            return status;
+            return Ok(status);
         }
         let Some(key) = self
             .provider_configs
@@ -49,7 +61,7 @@ impl ModelRegistry {
             .and_then(|c| c.api_key.as_ref())
             .filter(|key| !key.is_empty())
         else {
-            return status;
+            return Ok(status);
         };
         let (source, label) = if key.starts_with('!') {
             (AuthSource::ModelsJsonCommand, None)
@@ -61,11 +73,11 @@ impl ModelRegistry {
         } else {
             (AuthSource::ModelsJsonKey, None)
         };
-        AuthStatus {
+        Ok(AuthStatus {
             configured: true,
             source: Some(source),
             label,
-        }
+        })
     }
     /// Prefer retained labels, then current OAuth, shipped labels and the identifier.
     #[must_use]

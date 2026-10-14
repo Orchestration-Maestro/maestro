@@ -74,3 +74,5 @@ mod text_boundaries;
 mod text_width;
 mod widget_rendering;
 mod widget_state;
+
+mod fallible_input;

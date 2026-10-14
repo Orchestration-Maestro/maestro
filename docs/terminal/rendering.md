@@ -18,6 +18,11 @@ completion request, to run on the current thread. The host never polls it before
 toolkit never prints that error. The native host that does so is
 [`ProcessTuiRuntime`](native-terminal.md#the-runtime-host); tests use a controlled host that polls the futures it was given when the test asks.
 
+Focused input uses [`InputHandler::try_handle_input`](components.md#components).
+A failure prevents the subsequent render request. The terminal callback submits
+the original boxed error to the writer's `TuiRuntime::spawn_local`; the host reports
+it using the same policy as other fallible work, without a deferred render error.
+
 ```rust
 # use std::cell::RefCell;
 # use std::future::Future;

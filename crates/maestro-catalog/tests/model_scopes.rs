@@ -1,9 +1,24 @@
 #![cfg(test)]
 //! Model scopes resolved against authenticated models.
+#[allow(
+    dead_code,
+    reason = "Recorded callback diagnostics are shared across operation witnesses."
+)]
+#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
+mod credential_fallback;
 #[path = "support/descriptors.rs"]
 mod descriptors;
+#[allow(
+    dead_code,
+    reason = "Each public operation uses its own recorded inputs."
+)]
+#[path = "support/fallback.rs"]
+mod fallback;
 #[path = "selection/scopes.rs"]
 mod scopes;
+#[allow(dead_code, reason = "Only controlled registry construction is reused.")]
+#[path = "support/common.rs"]
+mod support;
 use maestro_catalog::ModelRegistry;
 use maestro_catalog::{ModelResolverOutput, model_id_comparator, resolve_model_scope};
 use maestro_credentials::{AuthStorage, AuthStorageData};
@@ -148,7 +163,7 @@ fn scope_empty_patterns_still_consult_authentication() {
     let observer = Arc::clone(&asked);
     storage.set_fallback_resolver(move |provider| {
         observer.lock().unwrap().push(provider.to_owned());
-        None
+        Ok(None)
     });
     let registry = ModelRegistry::in_memory(storage).unwrap();
     *registry.get_all().write().unwrap() = handles.to_vec();
@@ -167,4 +182,27 @@ fn scope_empty_patterns_still_consult_authentication() {
     .unwrap();
     assert!(scoped.is_empty());
     assert_eq!(*asked.lock().unwrap(), ["p"]);
+}
+
+#[test]
+fn scope_availability_error_precedes_pattern_diagnostics() {
+    for case in fallback::cases("scope_availability_error_precedes_pattern_diagnostics") {
+        let registry = fallback::registry(false);
+        let calls = fallback::failing(&registry);
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        let result = resolve_model_scope(
+            &case.input.patterns.unwrap(),
+            &registry,
+            &|_, _| panic!("matcher must not run"),
+            &mut ModelResolverOutput {
+                stdout: &mut stdout,
+                stderr: &mut stderr,
+                color: false,
+            },
+        );
+        let actual = serde_json::json!({"branch":"error", "error":fallback::error_value(&result.err().unwrap())});
+        assert!(actual == case.expected, "recorded scope failure");
+        assert!(stdout.is_empty() && stderr.is_empty());
+        assert_eq!(*calls.lock().unwrap(), ["maestro-custom-fallback"]);
+    }
 }

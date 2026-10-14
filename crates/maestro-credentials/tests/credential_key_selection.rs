@@ -1,5 +1,7 @@
 //! Request key selection through the public interface.
 #[cfg(test)]
+mod fallback_support;
+#[cfg(test)]
 mod oauth_support;
 #[cfg(test)]
 mod support;
@@ -205,7 +207,7 @@ mod tests {
     /// Provider whose stored record is `record`, with a fallback that must not be reached.
     fn fallback_storage(provider: &str, record: &str) -> AuthStorage {
         let storage = storage_with(&format!(r#"{{"{provider}":{record}}}"#));
-        storage.set_fallback_resolver(|_| Some("fallback".into()));
+        storage.set_fallback_resolver(|_| Ok(Some("fallback".into())));
         storage
     }
 
@@ -282,7 +284,7 @@ mod tests {
 
     /// Storage with a fallback resolver returning `fallback`.
     fn with_fallback(storage: AuthStorage, fallback: &'static str) -> AuthStorage {
-        storage.set_fallback_resolver(move |_| Some(fallback.to_owned()));
+        storage.set_fallback_resolver(move |_| Ok(Some(fallback.to_owned())));
         storage
     }
 
@@ -298,7 +300,7 @@ mod tests {
             let counter = calls.clone();
             storage.set_fallback_resolver(move |_| {
                 counter.fetch_add(1, Ordering::SeqCst);
-                Some(fallback.to_owned())
+                Ok(Some(fallback.to_owned()))
             });
         }
         let operations = Operations::default();
@@ -398,5 +400,57 @@ mod tests {
             std::path::Path::new(&dir.path("")),
             &[("OPENAI_API_KEY", "ambient")],
         );
+    }
+
+    #[test]
+    fn fallback_keys_and_presence_keep_result_domains() {
+        if !is_child() {
+            let dir = TempDir::new("fallback_keys_and_presence_keep_result_domains");
+            return run_child(
+                "tests::fallback_keys_and_presence_keep_result_domains",
+                dir.root(),
+                &[],
+            );
+        }
+        block_on(super::fallback_support::replay(
+            "fallback_keys_and_presence_keep_result_domains",
+        ));
+    }
+
+    #[test]
+    fn earlier_sources_skip_failing_fallback() {
+        if !is_child() {
+            let dir = TempDir::new("earlier_sources_skip_failing_fallback");
+            for (scenario, key) in [
+                ("environment", "environment"),
+                ("environment-empty", ""),
+                ("environment-whitespace", " \t"),
+            ] {
+                run_child(
+                    "tests::earlier_sources_skip_failing_fallback",
+                    dir.root(),
+                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                );
+            }
+            return;
+        }
+        block_on(super::fallback_support::replay(
+            "earlier_sources_skip_failing_fallback",
+        ));
+    }
+
+    #[test]
+    fn fallback_option_false_avoids_callback() {
+        if !is_child() {
+            let dir = TempDir::new("fallback_option_false_avoids_callback");
+            return run_child(
+                "tests::fallback_option_false_avoids_callback",
+                dir.root(),
+                &[],
+            );
+        }
+        block_on(super::fallback_support::replay(
+            "fallback_option_false_avoids_callback",
+        ));
     }
 }

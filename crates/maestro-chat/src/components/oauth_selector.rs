@@ -3,10 +3,12 @@ use super::dynamic_border::DynamicBorder;
 use maestro_app::{AuthCredential, AuthSource, AuthStatus, AuthStorage};
 use maestro_theme::{LiveTheme, Theme, ThemeColor, paint};
 use maestro_tui::{
-    Component, Container, FocusFlag, Focusable, Input, Spacer, TruncatedText, tui::InputHandler,
+    Component, Container, FocusFlag, Focusable, Input, Spacer, TruncatedText,
+    tui::{InputHandler, TuiRuntime},
 };
 use std::{
     cell::{Cell, RefCell},
+    error::Error,
     rc::Rc,
     sync::Arc,
 };
@@ -37,7 +39,7 @@ pub enum OAuthSelectorMode {
     Logout,
 }
 /// Caller-supplied authentication metadata reader.
-type AuthStatusResolver = Rc<dyn Fn(&str) -> AuthStatus>;
+type AuthStatusResolver = Rc<dyn Fn(&str) -> Result<AuthStatus, Box<dyn Error>>>;
 
 /// Constructor inputs for presentation and authentication metadata.
 pub struct OAuthSelectorOptions {
@@ -45,8 +47,10 @@ pub struct OAuthSelectorOptions {
     pub mode: OAuthSelectorMode,
     /// Published theme used by the picker.
     pub theme: LiveTheme,
-    /// Optional metadata resolver replacing the credential store's default.
+    /// Optional fallible metadata resolver replacing the credential store's default.
     pub get_auth_status: Option<AuthStatusResolver>,
+    /// Host receiving failures from legacy infallible input dispatch.
+    pub runtime: Rc<dyn TuiRuntime>,
 }
 /// Selection state shared with a retained search-input callback.
 struct Selection {
@@ -93,14 +97,16 @@ pub struct OAuthSelectorComponent {
 }
 impl OAuthSelectorComponent {
     /// Creates the picker and immediately builds its initial visible rows.
-    #[must_use]
+    ///
+    /// # Errors
+    /// Returns the original metadata failure from initial row construction.
     pub fn new(
         storage: Arc<AuthStorage>,
         providers: Vec<AuthSelectorProvider>,
         on_select: Rc<dyn Fn(&str)>,
         on_cancel: Rc<dyn Fn()>,
         options: OAuthSelectorOptions,
-    ) -> Self {
+    ) -> Result<Self, Box<dyn Error>> {
         let selection = Rc::new(Selection {
             filtered: RefCell::new((0..providers.len()).collect()),
             providers,
@@ -143,11 +149,11 @@ impl OAuthSelectorComponent {
             options,
             cancel: on_cancel,
         };
-        panel.rebuild();
-        panel
+        panel.rebuild()?;
+        Ok(panel)
     }
     /// Filters through the shared fuzzy owner and clamps the existing position.
-    fn filter(&self) {
+    fn filter(&self) -> Result<(), Box<dyn Error>> {
         let all: Vec<_> = (0..self.selection.providers.len()).collect();
         let filtered = maestro_tui::fuzzy_filter(&all, &self.input.get_value(), |index| {
             let provider = &self.selection.providers[*index];
@@ -171,7 +177,7 @@ impl OAuthSelectorComponent {
                 .min(filtered.len().saturating_sub(1)),
         );
         self.selection.filtered.replace(filtered);
-        self.rebuild();
+        self.rebuild()
     }
     /// Colors one captured list string with the current role.
     fn paint(&self, role: &ThemeColor, text: &str) -> String {
@@ -182,13 +188,13 @@ impl OAuthSelectorComponent {
         self.list.add_child(Rc::new(TruncatedText::new(text, 1, 0)));
     }
     /// Formats decoded stored authentication without resolving key values.
-    fn status(&self, provider: &AuthSelectorProvider) -> String {
+    fn status(&self, provider: &AuthSelectorProvider) -> Result<String, Box<dyn Error>> {
         if let Some(credential) = self.storage.get(&provider.id) {
             let oauth = matches!(credential, AuthCredential::OAuth(_));
             if oauth == (provider.auth_type == AuthType::OAuth) {
-                return self.paint(&ThemeColor::Success, " ✓ configured");
+                return Ok(self.paint(&ThemeColor::Success, " ✓ configured"));
             }
-            return self.paint(&ThemeColor::Muted, " • ")
+            return Ok(self.paint(&ThemeColor::Muted, " • ")
                 + &self.paint(
                     &ThemeColor::Warning,
                     if oauth {
@@ -196,15 +202,19 @@ impl OAuthSelectorComponent {
                     } else {
                         "API key configured"
                     },
-                );
+                ));
         }
         if provider.auth_type == AuthType::OAuth {
-            return self.paint(&ThemeColor::Muted, " • unconfigured");
+            return Ok(self.paint(&ThemeColor::Muted, " • unconfigured"));
         }
         let status = self.options.get_auth_status.as_ref().map_or_else(
-            || self.storage.get_auth_status(&provider.id),
+            || {
+                self.storage
+                    .get_auth_status(&provider.id)
+                    .map_err(Into::into)
+            },
             |resolve| resolve(&provider.id),
-        );
+        )?;
         let label = match status.source {
             Some(AuthSource::Environment) => {
                 format!(" ✓ env: {}", status.label.as_deref().unwrap_or("API key"))
@@ -213,12 +223,12 @@ impl OAuthSelectorComponent {
             Some(AuthSource::Fallback) => " ✓ custom API key".into(),
             Some(AuthSource::ModelsJsonKey) => " ✓ key in models.json".into(),
             Some(AuthSource::ModelsJsonCommand) => " ✓ command in models.json".into(),
-            _ => return self.paint(&ThemeColor::Muted, " • unconfigured"),
+            _ => return Ok(self.paint(&ThemeColor::Muted, " • unconfigured")),
         };
-        self.paint(&ThemeColor::Success, &label)
+        Ok(self.paint(&ThemeColor::Success, &label))
     }
     /// Rebuilds the bounded list without refreshing on ordinary rendering.
-    fn rebuild(&self) {
+    fn rebuild(&self) -> Result<(), Box<dyn Error>> {
         self.list.clear();
         let count = self.selection.filtered.borrow().len();
         let selected = self.selection.index.get();
@@ -229,7 +239,7 @@ impl OAuthSelectorComponent {
                 continue;
             };
             let selected = index == self.selection.index.get();
-            let status = self.status(provider);
+            let status = self.status(provider)?;
             let name = if selected {
                 self.paint(&ThemeColor::Accent, "→ ")
                     + &self.paint(&ThemeColor::Accent, &provider.name)
@@ -256,36 +266,52 @@ impl OAuthSelectorComponent {
             };
             self.row(self.paint(&ThemeColor::Muted, &format!("  {message}")));
         }
+        Ok(())
     }
-}
-impl InputHandler for OAuthSelectorComponent {
-    fn handle_input(&self, data: &str) {
+    /// Handles one input, retaining effects completed before a metadata failure.
+    ///
+    /// # Errors
+    /// Returns the original row metadata failure without reporting it to the host.
+    pub fn handle_input(&self, data: &str) -> Result<(), Box<dyn Error>> {
         let bindings = maestro_tui::get_keybindings();
         let count = self.selection.filtered.borrow().len();
         if bindings.matches(data, "tui.select.up") {
             if count == 0 {
-                return;
+                return Ok(());
             }
             self.selection
                 .index
                 .set(self.selection.index.get().saturating_sub(1));
-            self.rebuild();
+            self.rebuild()?;
         } else if bindings.matches(data, "tui.select.down") {
             if count == 0 {
-                return;
+                return Ok(());
             }
             self.selection
                 .index
                 .set((self.selection.index.get() + 1).min(count - 1));
-            self.rebuild();
+            self.rebuild()?;
         } else if bindings.matches(data, "tui.select.confirm") {
             self.selection.submit();
         } else if bindings.matches(data, "tui.select.cancel") {
             (self.cancel)();
         } else {
             self.input.handle_input(data);
-            self.filter();
+            self.filter()?;
         }
+        Ok(())
+    }
+}
+impl InputHandler for OAuthSelectorComponent {
+    fn handle_input(&self, data: &str) {
+        if let Err(error) = OAuthSelectorComponent::handle_input(self, data) {
+            self.options
+                .runtime
+                .spawn_local(Box::pin(std::future::ready(Err(error))));
+        }
+    }
+    fn try_handle_input(&self, data: &str) -> Result<(), Box<dyn Error>> {
+        OAuthSelectorComponent::handle_input(self, data)
     }
 }
 impl Component for OAuthSelectorComponent {

@@ -1,5 +1,5 @@
 //! Saved model restoration with current and available fallbacks.
-use super::{ModelResolverOutput, label, selection::default_or_first};
+use super::{CatalogError, ModelResolverOutput, label, selection::default_or_first};
 use crate::ModelRegistry;
 use maestro_models::Model;
 use std::sync::{Arc, RwLock};
@@ -28,10 +28,13 @@ pub struct RestoreModelFromSessionResult {
 ///
 /// Otherwise fall back to the current model without checking it, then to the first
 /// available provider default or available model.
+///
+/// # Errors
+/// Returns the first consumed authentication or availability failure.
 pub fn restore_model_from_session(
     options: RestoreModelFromSessionOptions<'_>,
     output: &mut ModelResolverOutput<'_>,
-) -> RestoreModelFromSessionResult {
+) -> Result<RestoreModelFromSessionResult, CatalogError> {
     let RestoreModelFromSessionOptions {
         saved_provider,
         saved_model_id,
@@ -41,17 +44,16 @@ pub fn restore_model_from_session(
     } = options;
     let saved = model_registry.find(saved_provider, saved_model_id);
     let saved_label = format!("{saved_provider}/{saved_model_id}");
-    if let Some(model) = saved
-        .as_ref()
-        .filter(|model| model_registry.has_configured_auth(model))
+    if let Some(model) = saved.as_ref()
+        && model_registry.has_configured_auth(model)?
     {
         if print {
             output.note(&format!("Restored model: {saved_label}"));
         }
-        return RestoreModelFromSessionResult {
+        return Ok(RestoreModelFromSessionResult {
             model: Some(Arc::clone(model)),
             fallback_message: None,
-        };
+        });
     }
     let reason = if saved.is_some() {
         "no auth configured"
@@ -63,14 +65,15 @@ pub fn restore_model_from_session(
             "Could not restore model {saved_label} ({reason})."
         ));
     }
-    let Some(fallback) = current_model
-        .cloned()
-        .or_else(|| default_or_first(&model_registry.get_available()))
-    else {
-        return RestoreModelFromSessionResult {
+    let fallback = match current_model {
+        Some(model) => Some(Arc::clone(model)),
+        None => default_or_first(&model_registry.get_available()?),
+    };
+    let Some(fallback) = fallback else {
+        return Ok(RestoreModelFromSessionResult {
             model: None,
             fallback_message: None,
-        };
+        });
     };
     if print {
         output.note(&format!("Falling back to: {}", label(&fallback)));
@@ -79,8 +82,8 @@ pub fn restore_model_from_session(
         "Could not restore model {saved_label} ({reason}). Using {}.",
         label(&fallback)
     );
-    RestoreModelFromSessionResult {
+    Ok(RestoreModelFromSessionResult {
         model: Some(fallback),
         fallback_message: Some(fallback_message),
-    }
+    })
 }

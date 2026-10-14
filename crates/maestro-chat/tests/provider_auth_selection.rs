@@ -24,6 +24,11 @@ mod published;
 mod recording_terminal;
 #[allow(
     dead_code,
+    reason = "Each selector consumes its own recorded input subset."
+)]
+mod selector_failure_support;
+#[allow(
+    dead_code,
     reason = "Shared keybinding admission and theme fixtures are reused."
 )]
 mod simple_selector_support;
@@ -191,7 +196,7 @@ fn application_auth_exports_use_existing_owners() {
     assert!(key_matches);
     let oauth_matches = storage.get("subscription") == Some(oauth);
     assert!(oauth_matches);
-    let status: AuthStatus = storage.get_auth_status("key");
+    let status: AuthStatus = storage.get_auth_status("key").unwrap();
     assert_eq!(
         status,
         AuthStatus {
@@ -206,4 +211,104 @@ fn application_auth_exports_use_existing_owners() {
 /// Provider panel uses current brand roles.
 fn provider_panel_uses_current_brand_roles() {
     provider_auth_support::brand_roles();
+}
+
+#[test]
+fn provider_metadata_errors_keep_their_consuming_phase() {
+    let _keys = keybindings::bindings_guard();
+    provider_auth_support::failures::phases();
+}
+#[test]
+fn provider_rebuild_failure_keeps_filter_and_navigation_effects() {
+    let _keys = keybindings::bindings_guard();
+    provider_auth_support::failures::rebuilding();
+}
+#[test]
+fn provider_stored_and_subscription_paths_skip_failing_metadata() {
+    let _keys = keybindings::bindings_guard();
+    provider_auth_support::failures::bypasses();
+}
+
+#[test]
+fn provider_trait_reports_input_failure_once_without_render() {
+    use maestro_tui::tui::InputHandler;
+    use provider_auth_support::failures::{Rig, providers};
+    use std::rc::Rc;
+    let _keys = keybindings::bindings_guard();
+    let rig = Rig::new(false, "maestro-custom-fallback");
+    let panel = Rc::new(
+        rig.build(
+            providers(&[
+                ("maestro-earlier", "Earlier"),
+                ("maestro-custom-fallback", "Custom"),
+            ]),
+            true,
+            maestro_chat::OAuthSelectorMode::Login,
+        )
+        .unwrap(),
+    );
+    rig.enable_failure();
+    for error in [
+        panel.handle_input("\x1b[B").unwrap_err(),
+        InputHandler::try_handle_input(panel.as_ref(), "\x1b[B").unwrap_err(),
+    ] {
+        assert_eq!(
+            selector_failure_support::error_value(error.as_ref()),
+            selector_failure_support::errors::error_value(
+                &selector_failure_support::errors::failure()
+            )
+        );
+        assert_eq!(rig.runtime.futures(), 0);
+        assert_eq!(rig.runtime.pending(), 0);
+    }
+    provider_host_routes(&panel, &rig);
+}
+
+/// Observe separate component and writer hosts across both dispatch routes.
+fn provider_host_routes(
+    panel: &std::rc::Rc<maestro_chat::OAuthSelectorComponent>,
+    rig: &provider_auth_support::failures::Rig,
+) {
+    use maestro_tui::{Component, TUI, TerminalImage, tui::InputHandler};
+    let terminal = recording_terminal::RecordingTerminal::new(100, 24);
+    let writer_runtime = manual_runtime::ManualRuntime::new();
+    let tui = TUI::new(
+        terminal.handle(),
+        writer_runtime.handle(),
+        TerminalImage::default(),
+        None,
+    );
+    tui.set_focus(Some(panel.clone()));
+    tui.add_child(panel.clone());
+    tui.start().unwrap();
+    writer_runtime.settle().unwrap();
+    terminal.clear_writes();
+    terminal.send_input("\x1b[B");
+    assert_eq!(writer_runtime.futures(), 1);
+    assert_eq!(rig.runtime.futures(), 0);
+    let errors = writer_runtime.drain_futures();
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .downcast_ref::<maestro_app::OAuthError>()
+            .is_some()
+    );
+    assert_eq!(writer_runtime.pending(), 0);
+    assert!(terminal.writes().is_empty());
+    InputHandler::handle_input(panel.as_ref(), "\x1b[B");
+    assert_eq!(rig.runtime.futures(), 1);
+    assert_eq!(writer_runtime.futures(), 0);
+    let errors = rig.runtime.drain_futures();
+    assert_eq!(errors.len(), 1);
+    assert!(
+        errors[0]
+            .downcast_ref::<maestro_app::OAuthError>()
+            .is_some()
+    );
+    assert_eq!(rig.runtime.pending(), 0);
+    let calls = rig.caller.calls.lock().unwrap().len();
+    panel.render(100);
+    panel.invalidate();
+    assert_eq!(rig.caller.calls.lock().unwrap().len(), calls);
+    tui.stop().unwrap();
 }

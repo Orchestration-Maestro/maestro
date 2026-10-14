@@ -410,3 +410,51 @@ fn settings_done_closes_after_reentrant_change() {
         &json!({"events":*events.borrow(),"lines":list.render(80)}),
     );
 }
+
+#[test]
+fn settings_submenu_returns_child_input_failure() {
+    use crate::fallible_input::{Receiver, cases, error_value};
+    let _keys = list_support::KEYS.lock().unwrap();
+    for case in cases("settings_submenu_returns_child_input_failure") {
+        assert!(case.input.gate.is_none() && case.input.data.is_none());
+        let child = case.input.child.unwrap();
+        let receiver = Rc::new(Receiver {
+            events: Rc::default(),
+            failing: child == "failure",
+            accepts: child != "absent-handler",
+            releases: false,
+            identity: Rc::new(()),
+        });
+        let mut setting = item();
+        let retained = receiver.clone();
+        setting.submenu = Some(Rc::new(move |_, _| retained.clone()));
+        let list = SettingsList::new(
+            vec![setting],
+            1,
+            theme(),
+            (
+                Rc::new(|_, _| panic!("parent must not activate")),
+                Rc::new(|| panic!("parent must not cancel")),
+            ),
+            SettingsListOptions::default(),
+        );
+        list.handle_input("\r");
+        let result = list.try_handle_input("x");
+        let calls: Vec<_> = receiver
+            .events
+            .borrow()
+            .iter()
+            .map(|event| {
+                assert_eq!(event[0], "input");
+                event[1].clone()
+            })
+            .collect();
+        let actual = match result {
+            Ok(()) => json!({"branch":"ok","value":calls,"calls":calls}),
+            Err(error) => {
+                json!({"branch":"error","error":error_value(error.as_ref(),&receiver.identity),"calls":calls})
+            }
+        };
+        assert!(actual == case.expected, "recorded submenu delegation");
+    }
+}

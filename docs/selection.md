@@ -44,7 +44,9 @@ present warnings/errors and how to apply explicit thinking choices.
 ## Scopes
 
 `resolve_model_scope` resolves ordered patterns against `get_available`; which
-models count as authenticated is decided by the [catalog](catalog.md). A pattern
+models count as authenticated is decided by the [catalog](catalog.md).
+Availability failure propagates before processing any pattern or writing warnings.
+A pattern
 containing `*`, `?` or `[` is a glob: a last-colon suffix is removed only when it is
 a valid thinking level, and `provider/id` is tried before the bare ID through the
 shared [file-pattern matcher](package-patterns.md); its failure is returned, stopping
@@ -66,14 +68,17 @@ first scoped model unless continuing, with its own scoped level, else the suppli
 default, else medium thinking; then the saved default if it exists, without checking authentication,
 with the supplied default thinking or medium; then the first available model matching `DEFAULT_MODEL_PER_PROVIDER` in table
 order, then the first available model, then none. Every successful result carries
-no fallback message. It neither restores sessions nor clamps thinking.
+no fallback message. It neither restores sessions nor clamps thinking. Only the
+final availability choice consumes that fallible lookup; earlier choices avoid it.
 
 `restore_model_from_session` returns the saved model when it exists and has
 configured authentication. Otherwise the supplied current model is used without
 checks, then the same default-or-first available choice, then none. A selected
 fallback model carries `Could not restore model <saved> (<reason>). Using <fallback>.`,
 where the reason is `model no longer exists` or `no auth configured`; when no model
-is selected there is no fallback message.
+is selected there is no fallback message. Restoration returns a `Result`: saved-model
+authentication failure precedes notices; fallback availability failure follows the
+missing/unauthenticated warning. A supplied current model avoids fallback availability.
 
 With printing requested, restoration writes success and fallback notices to stdout
 (dim with color) and the failure warning to stderr (yellow with color). `ModelResolverOutput` borrows

@@ -329,6 +329,54 @@ impl SettingsList {
             drop(old);
         }
     }
+    /// Routes to the retained child or the main list using the caller's error policy.
+    fn handle_input_with<E>(
+        &self,
+        data: &str,
+        input: impl FnOnce(&dyn InputHandler, &str) -> Result<(), E>,
+    ) -> Result<(), E> {
+        let child = self.state.child.borrow().clone();
+        if let Some(child) = child {
+            if let Some(handler) = child.input_handler() {
+                return input(handler, data);
+            }
+            return Ok(());
+        }
+        let bindings = get_keybindings();
+        let count = self.display_items().len();
+        let selected = self.state.selected.get();
+        if bindings.matches(data, "tui.select.up") {
+            if count == 0 {
+                return Ok(());
+            }
+            self.state.selected.set(if selected == 0 {
+                count - 1
+            } else {
+                selected - 1
+            });
+        } else if bindings.matches(data, "tui.select.down") {
+            if count == 0 {
+                return Ok(());
+            }
+            self.state.selected.set(if selected == count - 1 {
+                0
+            } else {
+                selected + 1
+            });
+        } else if bindings.matches(data, "tui.select.confirm") || data == " " {
+            self.activate();
+        } else if bindings.matches(data, "tui.select.cancel") {
+            (self.on_cancel)();
+        } else if let Some(search) = &self.search {
+            let sanitized = data.replace(' ', "");
+            if sanitized.is_empty() {
+                return Ok(());
+            }
+            search.handle_input(&sanitized);
+            self.apply_filter(&search.get_value());
+        }
+        Ok(())
+    }
     /// Renders the active submenu or main list using the caller's failure policy.
     fn render_children<E>(
         &self,
@@ -364,48 +412,17 @@ impl Component for SettingsList {
 }
 impl InputHandler for SettingsList {
     fn handle_input(&self, data: &str) {
-        let child = self.state.child.borrow().clone();
-        if let Some(child) = child {
-            if let Some(handler) = child.input_handler() {
-                handler.handle_input(data);
-            }
-            return;
-        }
-        let bindings = get_keybindings();
-        let count = self.display_items().len();
-        let selected = self.state.selected.get();
-        if bindings.matches(data, "tui.select.up") {
-            if count == 0 {
-                return;
-            }
-            self.state.selected.set(if selected == 0 {
-                count - 1
-            } else {
-                selected - 1
-            });
-        } else if bindings.matches(data, "tui.select.down") {
-            if count == 0 {
-                return;
-            }
-            self.state.selected.set(if selected == count - 1 {
-                0
-            } else {
-                selected + 1
-            });
-        } else if bindings.matches(data, "tui.select.confirm") || data == " " {
-            self.activate();
-        } else if bindings.matches(data, "tui.select.cancel") {
-            (self.on_cancel)();
-        } else if let Some(search) = &self.search {
-            let sanitized = data.replace(' ', "");
-            if sanitized.is_empty() {
-                return;
-            }
-            search.handle_input(&sanitized);
-            self.apply_filter(&search.get_value());
-        }
+        self.handle_input_with(data, |handler, data| {
+            handler.handle_input(data);
+            Ok::<_, std::convert::Infallible>(())
+        })
+        .unwrap_or_else(|never| match never {});
+    }
+    fn try_handle_input(&self, data: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.handle_input_with(data, |handler, data| handler.try_handle_input(data))
     }
 }
+
 /// Clips value and metadata without an ellipsis.
 fn clip(text: &str, width: usize) -> String {
     truncate_to_width(

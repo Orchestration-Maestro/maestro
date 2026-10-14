@@ -35,7 +35,8 @@ pub use maestro_agent::{AgentMessage, CustomAgentMessages, StreamFn};
 pub use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Context,
     DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, ImageContent,
-    Message, Model, ModelInput, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
+    Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials, OAuthError,
+    OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
     StopReason, TextContent, UserBlock, UserContent, default_fetch,
 };
 pub use maestro_session::messages::{BranchSummaryMessage, CompactionSummaryMessage};

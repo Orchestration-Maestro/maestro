@@ -1,0 +1,908 @@
+[
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "absent"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": false,
+        "calls": [],
+        "drained": 0
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "none"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": false,
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": ""
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": false,
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "fallback"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": " \t"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "absent"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false
+        },
+        "calls": [],
+        "drained": 0
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "none"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false
+        },
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": ""
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false
+        },
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "fallback"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "fallback",
+          "label": "custom provider config"
+        },
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": " \t"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "fallback",
+          "label": "custom provider config"
+        },
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_keeps_result_domain",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "absent"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": null,
+        "calls": [],
+        "drained": 0
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "none"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": null,
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": ""
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "",
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "fallback"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "fallback",
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": " \t"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": " \t",
+        "calls": [
+          "maestro-custom-fallback"
+        ],
+        "drained": 0
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_keys_and_presence_keep_result_domains",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "runtime",
+      "provider": "maestro-custom-fallback",
+      "runtime": "runtime"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "runtime-empty",
+      "provider": "maestro-custom-fallback",
+      "runtime": ""
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "stored",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": "stored"
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "stored-empty",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": ""
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "environment",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "environment-empty",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "openai"
+      ]
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "hasAuth",
+      "fallback": "error",
+      "earlier": "environment-whitespace",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": true,
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "runtime",
+      "provider": "maestro-custom-fallback",
+      "runtime": "runtime"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "runtime",
+          "label": "--api-key"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "runtime-empty",
+      "provider": "maestro-custom-fallback",
+      "runtime": ""
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "runtime",
+          "label": "--api-key"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "stored",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": "stored"
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": true,
+          "source": "stored"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "stored-empty",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": ""
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": true,
+          "source": "stored"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "environment",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "environment",
+          "label": "OPENAI_API_KEY"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "environment-empty",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "openai"
+      ]
+    }
+  },
+  {
+    "test": "fallback_status_short_circuits_earlier_sources",
+    "input": {
+      "operation": "getAuthStatus",
+      "fallback": "error",
+      "earlier": "environment-whitespace",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": {
+          "configured": false,
+          "source": "environment",
+          "label": "OPENAI_API_KEY"
+        },
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "runtime",
+      "provider": "maestro-custom-fallback",
+      "runtime": "runtime"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "runtime",
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "runtime-empty",
+      "provider": "maestro-custom-fallback",
+      "runtime": ""
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "stored",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": "stored"
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "stored",
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "stored-empty",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "api_key",
+        "key": ""
+      }
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "",
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "environment",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": "environment",
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "environment-empty",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "openai"
+      ]
+    }
+  },
+  {
+    "test": "earlier_sources_skip_failing_fallback",
+    "input": {
+      "operation": "getApiKey",
+      "fallback": "error",
+      "earlier": "environment-whitespace",
+      "provider": "openai"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": {
+        "result": " \t",
+        "calls": []
+      },
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_option_false_avoids_callback",
+    "input": {
+      "includeFallback": false,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": null,
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_option_false_avoids_callback",
+    "input": {
+      "includeFallback": true,
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_error_after_empty_refresh_is_not_recorded",
+    "input": {
+      "phase": "reread-removed",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "oauth",
+        "access": "old",
+        "refresh": "refresh",
+        "expires": 0
+      },
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "maestro-custom-fallback"
+      ]
+    }
+  },
+  {
+    "test": "fallback_error_after_empty_refresh_is_not_recorded",
+    "input": {
+      "phase": "refresh-failed",
+      "provider": "maestro-custom-fallback",
+      "stored": {
+        "type": "oauth",
+        "access": "old",
+        "refresh": "refresh",
+        "expires": 0
+      },
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": null,
+      "calls": []
+    }
+  },
+  {
+    "test": "fallback_error_after_empty_refresh_is_not_recorded",
+    "input": {
+      "phase": "unregistered-oauth",
+      "provider": "maestro-unregistered",
+      "stored": {
+        "type": "oauth",
+        "access": "old",
+        "refresh": "refresh",
+        "expires": 0
+      },
+      "fallback": "error"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": null,
+      "calls": []
+    }
+  }
+]

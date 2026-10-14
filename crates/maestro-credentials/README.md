@@ -12,7 +12,7 @@ use maestro_credentials::{
 let storage = AuthStorage::in_memory(AuthStorageData::new());
 storage.set("openai", AuthCredential::ApiKey(ApiKeyCredential { key: "OPENAI_KEY".into() }));
 assert_eq!(storage.list(), ["openai"]);
-assert_eq!(storage.get_auth_status("openai").source, Some(AuthSource::Stored));
+assert_eq!(storage.get_auth_status("openai").unwrap().source, Some(AuthSource::Stored));
 ```
 
 ```rust

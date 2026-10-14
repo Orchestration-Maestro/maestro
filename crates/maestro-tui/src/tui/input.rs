@@ -211,30 +211,36 @@ impl TUI {
     pub(super) fn input_callback(&self) -> Box<dyn FnMut(&str)> {
         let weak = Rc::downgrade(&self.shared);
         Box::new(move |data| {
-            if let Some(shared) = weak.upgrade() {
-                TUI { shared }.handle_input(data);
+            let Some(shared) = weak.upgrade() else {
+                return;
+            };
+            let tui = TUI { shared };
+            if let Err(error) = tui.handle_input(data) {
+                tui.shared
+                    .runtime
+                    .spawn_local(Box::pin(std::future::ready(Err(error))));
             }
         })
     }
 
     /// Routes one chunk of input: listeners first, then cell-size replies, the debug key
     /// and finally the focused component.
-    fn handle_input(&self, data: &str) {
+    fn handle_input(&self, data: &str) -> Result<(), Box<dyn std::error::Error>> {
         let Some(data) = self.run_listeners(data) else {
-            return;
+            return Ok(());
         };
         if self.consume_cell_size_reply(&data) {
-            return;
+            return Ok(());
         }
         if matches_key(&data, DEBUG_KEY) {
             let on_debug = self.shared.input.borrow().on_debug.clone();
             if let Some(on_debug) = on_debug {
                 on_debug();
-                return;
+                return Ok(());
             }
         }
         self.repair_overlay_focus();
-        self.forward_to_focus(&data);
+        self.forward_to_focus(&data)
     }
 
     /// Lets each listener, in insertion order, consume or rewrite `data`. The list is
@@ -292,18 +298,19 @@ impl TUI {
 
     /// Gives `data` to the focused component when it takes input, dropping key releases it
     /// did not ask for, then requests a frame.
-    fn forward_to_focus(&self, data: &str) {
+    fn forward_to_focus(&self, data: &str) -> Result<(), Box<dyn std::error::Error>> {
         let focused = self.shared.input.borrow().focused.component().cloned();
         let Some(focused) = focused else {
-            return;
+            return Ok(());
         };
         let Some(handler) = focused.input_handler() else {
-            return;
+            return Ok(());
         };
         if is_key_release(data) && !focused.wants_key_release() {
-            return;
+            return Ok(());
         }
-        handler.handle_input(data);
+        handler.try_handle_input(data)?;
         self.request_render(false);
+        Ok(())
     }
 }

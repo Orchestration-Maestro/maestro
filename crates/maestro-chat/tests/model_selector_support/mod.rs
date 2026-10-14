@@ -90,7 +90,7 @@ impl Descriptor {
         Arc::new(RwLock::new(self.model()))
     }
     /// Converts only the fields required by provider registration.
-    fn definition(&self) -> ProviderModelInput {
+    pub fn definition(&self) -> ProviderModelInput {
         let model = self.model();
         ProviderModelInput {
             id: self.id.clone(),

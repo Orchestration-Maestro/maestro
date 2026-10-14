@@ -1,6 +1,18 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Request authentication through the public registry.
+#[allow(
+    dead_code,
+    reason = "Recorded callback diagnostics are shared across operation witnesses."
+)]
+#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
+mod credential_fallback;
+#[allow(
+    dead_code,
+    reason = "Each public operation uses its own recorded inputs."
+)]
+#[path = "support/fallback.rs"]
+mod fallback;
 #[path = "support/request.rs"]
 pub mod request_support;
 #[path = "support/common.rs"]
@@ -123,7 +135,7 @@ fn configured_environment_is_read_on_each_call() {
             Some(expected),
             &[("X", expected), ("M", expected)],
         );
-        let status = registry.get_provider_auth_status("p", &operations);
+        let status = registry.get_provider_auth_status("p", &operations).unwrap();
         assert!(status.configured);
         assert_eq!(
             status.source,
@@ -158,7 +170,7 @@ fn request_keys_preserve_lower_layer_precedence() {
     let seen = calls.clone();
     registry.auth_storage().set_fallback_resolver(move |_| {
         seen.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        Some("fallback".into())
+        Ok(Some("fallback".into()))
     });
     for (stored, runtime, expected) in [
         (None, None, "configured"),
@@ -190,7 +202,7 @@ fn request_keys_preserve_lower_layer_precedence() {
             .is_none()
     );
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
-    registry.auth_storage().set_fallback_resolver(|_| None);
+    registry.auth_storage().set_fallback_resolver(|_| Ok(None));
 }
 
 #[test]
@@ -1293,3 +1305,24 @@ fn numeric_header_boundaries_and_merge() {
 
 #[path = "support/dynamic.rs"]
 pub mod dynamic;
+
+#[test]
+fn provider_request_lookup_avoids_auth_fallback() {
+    for case in fallback::cases("provider_request_lookup_avoids_auth_fallback") {
+        let registry = if case.input.include_config.unwrap() {
+            support::registry(
+                r#"{"providers":{"maestro-custom-fallback":{"api":"test","baseUrl":"url","apiKey":"","models":[{"id":"m"}]}}}"#,
+            )
+        } else {
+            fallback::registry(false)
+        };
+        let calls = fallback::failing(&registry);
+        let key = request_support::run(
+            registry.get_api_key_for_provider("maestro-custom-fallback", &Operations),
+        )
+        .unwrap();
+        let actual =
+            serde_json::json!({"branch":"ok", "value":key, "calls":*calls.lock().unwrap()});
+        assert!(actual == case.expected, "recorded request lookup");
+    }
+}

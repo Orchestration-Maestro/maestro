@@ -406,9 +406,11 @@ fn callback_failures_propagate_without_invocation_during_listing() {
     }));
     registry.register_provider("p", config).unwrap();
     let _ = registry.get_all();
-    let _ = registry.get_available();
+    let _ = registry.get_available().unwrap();
     let _ = registry.get_provider_display_name("p");
-    let _ = registry.get_provider_auth_status("p", &request_support::Operations::default());
+    let _ = registry
+        .get_provider_auth_status("p", &request_support::Operations::default())
+        .unwrap();
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
     for refreshed in [false, true] {
         if refreshed {
@@ -563,8 +565,8 @@ fn empty_configured_keys_keep_presence_but_skip_resolution() {
         .unwrap();
     let model = registry.find("p", "m").unwrap();
     let operations = request_support::Operations::default();
-    assert!(registry.has_configured_auth(&model));
-    let status = registry.get_provider_auth_status("p", &operations);
+    assert!(registry.has_configured_auth(&model).unwrap());
+    let status = registry.get_provider_auth_status("p", &operations).unwrap();
     assert!(!status.configured);
     assert!(status.source.is_none());
     assert!(

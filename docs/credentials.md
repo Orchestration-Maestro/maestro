@@ -29,11 +29,14 @@ every stored record, whatever its shape, and rewrites keep records that do not
 decode. Expiry times of typed credentials you supply are written without a fraction when
 whole; preserved stored records keep their numeric values, written in the JSON serializer's spelling (for example `1e3` becomes `1000.0`), not their original spelling.
 
-`has_auth` is true for a runtime override (even empty), a stored record, a usable
+`has_auth` returns `Ok(true)` for a runtime override (even empty), a stored record, a usable
 provider environment value or a nonempty fallback key. `get_auth_status` reports
 the first of stored, runtime (`--api-key`), environment (first populated variable
 name) and fallback (`custom provider config`), without key values, stored helper
-resolution or refresh. The fallback resolver you supply runs as given. See the [request authentication documentation](request-authentication.md) for
+resolution or refresh. Both operations return a `Result`: a consumed fallback
+resolver failure propagates unchanged. `set_fallback_resolver` accepts an owned
+callback returning `Result<Option<String>, OAuthError>`; it runs without a storage
+lock. See the [request authentication documentation](request-authentication.md) for
 environment discovery.
 
 ## Request keys
@@ -54,7 +57,10 @@ applies. The stored record decides as follows:
 - Otherwise the token is refreshed, as described next.
 
 The future is `Send` on native targets and does not borrow `operations`, because the
-runtime override and stored key are resolved before it is built.
+runtime override and stored key are resolved before it is built. A fallback
+failure returns to the caller, including after an empty refresh, without entering
+`drain_errors`; disabling fallback avoids invoking that callback. Presence ignores
+an empty fallback key, while request lookup preserves `Some("")`.
 
 ### Refresh and login
 

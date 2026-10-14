@@ -18,27 +18,35 @@ enum Selection {
 }
 
 impl AuthStorage {
-    /// Whether the fallback resolver supplies a nonempty key, called without the state lock.
-    fn fallback_supplies(&self, provider: &str) -> bool {
+    /// Invoke the retained fallback without holding the state lock.
+    fn fallback_api_key(&self, provider: &str) -> Result<Option<String>, OAuthError> {
         let resolver = self.state().fallback_resolver.clone();
-        resolver.is_some_and(|resolve| resolve(provider).is_some_and(|key| !key.is_empty()))
+        resolver.map_or(Ok(None), |resolve| resolve(provider))
     }
 
     /// Whether any authentication is configured, without resolving stored helpers or refreshing tokens;
     /// the supplied fallback resolver is the caller's and runs as given.
-    #[must_use]
-    pub fn has_auth(&self, provider: &str) -> bool {
+    ///
+    /// # Errors
+    /// Returns the original fallback resolver failure.
+    pub fn has_auth(&self, provider: &str) -> Result<bool, OAuthError> {
         let configured = {
             let state = self.state();
             state.runtime_overrides.contains_key(provider) || state.data.contains_key(provider)
         };
-        configured || get_env_api_key(provider).is_some() || self.fallback_supplies(provider)
+        Ok(configured
+            || get_env_api_key(provider).is_some()
+            || self
+                .fallback_api_key(provider)?
+                .is_some_and(|key| !key.is_empty()))
     }
 
     /// Configured-authentication metadata without key values, stored helper resolution or refresh;
     /// the supplied fallback resolver is the caller's and runs as given.
-    #[must_use]
-    pub fn get_auth_status(&self, provider: &str) -> AuthStatus {
+    ///
+    /// # Errors
+    /// Returns the original fallback resolver failure.
+    pub fn get_auth_status(&self, provider: &str) -> Result<AuthStatus, OAuthError> {
         let (stored, runtime) = {
             let state = self.state();
             (
@@ -57,7 +65,10 @@ impl AuthStorage {
         } else if let Some(name) = find_env_keys(provider).and_then(|keys| keys.into_iter().next())
         {
             (false, Some(AuthSource::Environment), Some(name))
-        } else if self.fallback_supplies(provider) {
+        } else if self
+            .fallback_api_key(provider)?
+            .is_some_and(|key| !key.is_empty())
+        {
             (
                 false,
                 Some(AuthSource::Fallback),
@@ -66,11 +77,11 @@ impl AuthStorage {
         } else {
             (false, None, None)
         };
-        AuthStatus {
+        Ok(AuthStatus {
             configured,
             source,
             label,
-        }
+        })
     }
 
     /// Select the runtime override or stored record without awaiting.
@@ -122,14 +133,19 @@ impl AuthStorage {
     }
 
     /// Environment key, then the fallback resolver unless `include_fallback` is false.
-    fn ambient_key(&self, provider_id: &str, include_fallback: bool) -> Option<String> {
+    fn ambient_key(
+        &self,
+        provider_id: &str,
+        include_fallback: bool,
+    ) -> Result<Option<String>, OAuthError> {
         if let Some(key) = get_env_api_key(provider_id).filter(|key| !key.is_empty()) {
-            return Some(key);
+            return Ok(Some(key));
         }
-        let resolver = self.state().fallback_resolver.clone();
-        resolver
-            .filter(|_| include_fallback)
-            .and_then(|resolve| resolve(provider_id))
+        if include_fallback {
+            self.fallback_api_key(provider_id)
+        } else {
+            Ok(None)
+        }
     }
 
     /// Refresh an expired token under the lock; a failure is recorded and only a newly valid
@@ -145,7 +161,7 @@ impl AuthStorage {
             .await
         {
             Ok(Some(key)) => Ok(Some(key)),
-            Ok(None) => Ok(self.ambient_key(provider_id, include_fallback)),
+            Ok(None) => self.ambient_key(provider_id, include_fallback),
             Err(error) => {
                 self.state().errors.push(error);
                 self.reload();
@@ -176,7 +192,7 @@ impl AuthStorage {
     ///   continues to the environment and fallback.
     ///
     /// # Errors
-    /// Returns the provider's key extraction failure.
+    /// Returns the original provider key extraction or fallback resolver failure.
     pub fn get_api_key<'a>(
         &'a self,
         provider_id: &'a str,
@@ -185,9 +201,9 @@ impl AuthStorage {
     ) -> AuthStorageFuture<'a, Result<Option<String>, OAuthError>> {
         match self.select_stored(provider_id, operations) {
             Selection::Done(result) => Box::pin(std::future::ready(result)),
-            Selection::Ambient => Box::pin(std::future::ready(Ok(
-                self.ambient_key(provider_id, include_fallback)
-            ))),
+            Selection::Ambient => Box::pin(std::future::ready(
+                self.ambient_key(provider_id, include_fallback),
+            )),
             Selection::Refresh(provider) => {
                 Box::pin(self.refreshed_key(provider_id, provider, include_fallback))
             }

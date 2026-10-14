@@ -1,0 +1,207 @@
+[
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "no-focus",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "events": []
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "no-handler",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "events": []
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "release-filtered",
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "events": []
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "listener-consumed",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "events": []
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "listener-empty",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "events": []
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "debug",
+      "data": "\u001b[100;6u"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [
+        [
+          "debug"
+        ]
+      ],
+      "events": [
+        [
+          "debug"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "success",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [
+        [
+          "input",
+          "x"
+        ],
+        [
+          "render"
+        ]
+      ],
+      "events": [
+        [
+          "input",
+          "x"
+        ],
+        [
+          "render"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "failure",
+      "data": "x"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "events": [
+        [
+          "input",
+          "x"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "focused_input_returns_failure_before_render",
+    "input": {
+      "gate": "release-delivered",
+      "data": "\u001b[97;1:3u"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "events": [
+        [
+          "input",
+          "\u001b[97;1:3u"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "settings_submenu_returns_child_input_failure",
+    "input": {
+      "child": "absent-handler"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [],
+      "calls": []
+    }
+  },
+  {
+    "test": "settings_submenu_returns_child_input_failure",
+    "input": {
+      "child": "success"
+    },
+    "expected": {
+      "branch": "ok",
+      "value": [
+        "x"
+      ],
+      "calls": [
+        "x"
+      ]
+    }
+  },
+  {
+    "test": "settings_submenu_returns_child_input_failure",
+    "input": {
+      "child": "failure"
+    },
+    "expected": {
+      "branch": "error",
+      "error": {
+        "message": "Custom credential resolver failed",
+        "name": "CustomCredentialFailure",
+        "code": "CUSTOM_FALLBACK",
+        "cause": {
+          "message": "resolver cause",
+          "code": "CAUSE"
+        }
+      },
+      "calls": [
+        "x"
+      ]
+    }
+  }
+]

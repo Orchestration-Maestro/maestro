@@ -1,5 +1,7 @@
 //! Accepted credential storage through the public interface.
 #[cfg(test)]
+mod fallback_support;
+#[cfg(test)]
 mod support;
 #[cfg(test)]
 mod tests {
@@ -346,11 +348,11 @@ mod tests {
     fn counting_resolver(
         count: &Arc<AtomicUsize>,
         key: &'static str,
-    ) -> impl Fn(&str) -> Option<String> + use<> {
+    ) -> impl Fn(&str) -> Result<Option<String>, maestro_models::OAuthError> + use<> {
         let count = Arc::clone(count);
         move |_| {
             count.fetch_add(1, Ordering::SeqCst);
-            Some(key.to_owned())
+            Ok(Some(key.to_owned()))
         }
     }
 
@@ -372,12 +374,12 @@ mod tests {
             label: None,
         };
         for provider in ["secret", "command", "tokens"] {
-            assert_eq!(storage.get_auth_status(provider), stored);
+            assert_eq!(storage.get_auth_status(provider).unwrap(), stored);
         }
         assert_eq!(calls.load(Ordering::SeqCst), 0);
         storage.set_runtime_api_key("unknown", "");
         assert_eq!(
-            storage.get_auth_status("unknown"),
+            storage.get_auth_status("unknown").unwrap(),
             AuthStatus {
                 configured: false,
                 source: Some(AuthSource::Runtime),
@@ -386,7 +388,7 @@ mod tests {
         );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
         assert_eq!(
-            storage.get_auth_status("custom-provider"),
+            storage.get_auth_status("custom-provider").unwrap(),
             AuthStatus {
                 configured: false,
                 source: Some(AuthSource::Fallback),
@@ -400,7 +402,7 @@ mod tests {
             source: None,
             label: None,
         };
-        assert_eq!(storage.get_auth_status("custom-provider"), none);
+        assert_eq!(storage.get_auth_status("custom-provider").unwrap(), none);
         assert_eq!(calls.load(Ordering::SeqCst), 2);
         assert!(!std::path::Path::new(&marker).exists());
     }
@@ -412,16 +414,16 @@ mod tests {
         let storage = AuthStorage::in_memory(data);
         let key = Arc::new(Mutex::new(String::new()));
         let shared = Arc::clone(&key);
-        storage.set_fallback_resolver(move |_| Some(shared.lock().unwrap().clone()));
-        assert!(storage.has_auth("stored"));
-        assert!(!storage.has_auth("custom-provider"));
+        storage.set_fallback_resolver(move |_| Ok(Some(shared.lock().unwrap().clone())));
+        assert!(storage.has_auth("stored").unwrap());
+        assert!(!storage.has_auth("custom-provider").unwrap());
         key.lock().unwrap().push_str("fallback");
-        assert!(storage.has_auth("custom-provider"));
+        assert!(storage.has_auth("custom-provider").unwrap());
         key.lock().unwrap().clear();
         storage.set_runtime_api_key("custom-provider", "");
-        assert!(storage.has_auth("custom-provider"));
+        assert!(storage.has_auth("custom-provider").unwrap());
         storage.remove_runtime_api_key("custom-provider");
-        assert!(!storage.has_auth("custom-provider"));
+        assert!(!storage.has_auth("custom-provider").unwrap());
     }
 
     #[test]
@@ -432,7 +434,7 @@ mod tests {
             .unwrap();
         let storage = AuthStorage::from_storage(backend);
         assert!(storage.has("nulled"));
-        assert!(storage.has_auth("nulled"));
+        assert!(storage.has_auth("nulled").unwrap());
         assert_eq!(storage.get("nulled"), None);
     }
 
@@ -443,23 +445,23 @@ mod tests {
         storage.set_fallback_resolver(counting_resolver(&calls, ""));
         match scenario {
             "single" => {
-                assert!(storage.has_auth("anthropic"));
-                let status = storage.get_auth_status("anthropic");
+                assert!(storage.has_auth("anthropic").unwrap());
+                let status = storage.get_auth_status("anthropic").unwrap();
                 assert_eq!(status.source, Some(AuthSource::Environment));
                 assert_eq!(status.label.as_deref(), Some("ANTHROPIC_API_KEY"));
             }
             "both" => {
-                let status = storage.get_auth_status("anthropic");
+                let status = storage.get_auth_status("anthropic").unwrap();
                 assert_eq!(status.label.as_deref(), Some("ANTHROPIC_OAUTH_TOKEN"));
             }
             _ => {
-                assert!(storage.has_auth("amazon-bedrock"));
+                assert!(storage.has_auth("amazon-bedrock").unwrap());
                 let none = AuthStatus {
                     configured: false,
                     source: None,
                     label: None,
                 };
-                assert_eq!(storage.get_auth_status("amazon-bedrock"), none);
+                assert_eq!(storage.get_auth_status("amazon-bedrock").unwrap(), none);
                 assert_eq!(calls.load(Ordering::SeqCst), 1);
                 return;
             }
@@ -570,5 +572,48 @@ mod tests {
             .unwrap_err();
         assert_eq!(error.to_string(), "callback failed");
         assert_eq!(memory_text(&backend).as_deref(), Some("outer"));
+    }
+    #[test]
+    fn fallback_status_keeps_result_domain() {
+        if !is_child() {
+            let dir = TempDir::new("fallback_status_keeps_result_domain");
+            for (scenario, key) in [
+                ("environment", "environment"),
+                ("environment-empty", ""),
+                ("environment-whitespace", " \t"),
+            ] {
+                run_child(
+                    "tests::fallback_status_keeps_result_domain",
+                    dir.root(),
+                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                );
+            }
+            return;
+        }
+        super::support::block_on(super::fallback_support::replay(
+            "fallback_status_keeps_result_domain",
+        ));
+    }
+
+    #[test]
+    fn fallback_status_short_circuits_earlier_sources() {
+        if !is_child() {
+            let dir = TempDir::new("fallback_status_short_circuits_earlier_sources");
+            for (scenario, key) in [
+                ("environment", "environment"),
+                ("environment-empty", ""),
+                ("environment-whitespace", " \t"),
+            ] {
+                run_child(
+                    "tests::fallback_status_short_circuits_earlier_sources",
+                    dir.root(),
+                    &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
+                );
+            }
+            return;
+        }
+        super::support::block_on(super::fallback_support::replay(
+            "fallback_status_short_circuits_earlier_sources",
+        ));
     }
 }
