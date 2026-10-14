@@ -1,9 +1,9 @@
-# Directory listing
+# File listing and finding
 
 `maestro-tools` lists a directory with the `ls` tool, built by `create_ls_tool` or
 `create_ls_tool_definition`. Both are native-only, like the [read tool](tools-read.md#read-tool),
-and the crate still builds for browser targets without them. Searching file names
-and contents is not delivered here.
+and the crate still builds for browser targets without them. The native `find` tool
+searches file names; content search is not delivered here.
 
 ## Arguments
 
@@ -98,4 +98,53 @@ Cleanup is attempted when staging is dropped, without replacing the primary resu
 An acquisition failure returns `None` and writes `Failed to download <name>: <detail>`
 when an output is supplied. Optional output uses the caller's writer and colour flag:
 dim progress, yellow advice/failure, or plain lines. No output means silence; writer
-errors do not change availability. Find and grep execution are separate operations.
+errors do not change availability. Find uses silent acquisition; content search
+execution is a separate operation.
+
+## Find
+
+[`create_find_tool` and `create_find_tool_definition`](../crates/maestro-tools/src/search/find/mod.rs)
+take a working directory, `FindToolOptions` and an `Arc<ToolsManager>`. Construction
+neither resolves paths nor acquires a program. Both factories are native-only.
+
+`pattern` is a required glob string, for example `*.ts` or `src/**/*.spec.ts`.
+`path` defaults to `.` when absent or empty; execution delegates authored path
+resolution to [`resolve_to_cwd`](../crates/maestro-tools/src/path_utils.rs).
+`limit` defaults to 1000 and is forwarded as a number without rounding.
+
+With supplied `FindOperations`, execution checks `exists` before calling `glob`
+with the resolved root, pattern, original limit and the ordered ignore patterns
+`**/node_modules/**` and `**/.git/**`. These operations replace native work,
+including acquisition. Their returned vector is not sliced or sorted. A nonempty
+vector whose length reaches the limit reports that limit, including zero or a
+negative supplied limit. A missing root fails with `Path not found: <path>`;
+operation failures retain their messages.
+
+Otherwise execution acquires fd silently through the [search program owner](#search-programs).
+The program handles glob syntax and scoped ignore files. It includes hidden user
+files and unignored dependencies, excludes `.git`, and receives zero as unlimited.
+Negative and fractional limits are left for fd to reject. Patterns containing `/`
+use full-path mode, with `**/` prefixed unless already rooted or prefixed; `--`
+separates patterns from options. NUL-delimited output keeps filename whitespace,
+embedded newlines and directory markers. Native nonzero exits with records return
+those records; without records they fail with trimmed stderr or an exit-code message.
+
+Relative returned paths are anchored at the search root; absolute results are
+projected against it through [lexical paths](../crates/maestro-path/src/lib.rs),
+including Windows drive context. Returned directory separators are retained as `/`;
+a backslash remains literal on POSIX. The result keeps producer order and duplicates. No matches returns `No files found matching pattern` without
+details. Nonempty bodies join with LF and use the shared
+[head selection](tools-read.md#limits-and-selection), with no separate line cap.
+Count and byte notices follow after a blank line, count first. Native positive
+limits add doubled-limit/refine advice; native zero reports no count limit.
+Details are absent unless count or byte truncation is reported.
+
+A pre-aborted signal avoids path resolution. Abort during supplied effects or
+acquisition settles `Operation aborted`. Abort during native waiting requests
+ordinary child termination and returns without waiting for exit; no escalation
+or tool-owned deadline is added.
+
+The call renderer shows `find`, the pattern, ` in <path>` and a present limit.
+Result rendering shares the [listing preview](#rendering), using `results` for its
+count unit. Result options alone select expansion; successful rendering reuses the
+row's previous `Text`, and a rendering failure leaves its text unchanged.

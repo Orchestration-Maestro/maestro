@@ -398,6 +398,16 @@ pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsSt
     if let Ok(current) = std::env::var("MAESTRO_READ_CHILD") {
         return current == mode;
     }
+    isolated_os_output(test, mode, envs);
+    false
+}
+
+/// Run a passing isolated child and retain its stdout and stderr for assertions.
+pub fn isolated_os_output(
+    test: &str,
+    mode: &str,
+    envs: &[(&str, Option<&std::ffi::OsStr>)],
+) -> std::process::Output {
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
     command.args(["--exact", test, "--nocapture"]);
     command.env("MAESTRO_READ_CHILD", mode);
@@ -414,7 +424,7 @@ pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsSt
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    false
+    output
 }
 
 /// A separately reaped process holds the shell's stdout across root exit.
