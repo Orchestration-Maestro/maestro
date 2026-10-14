@@ -1,0 +1,3364 @@
+[
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"gemini-2.5-flash\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-2.5-flash",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"publishers/acme/models/model-a\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/acme/models/model-a",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"projects/p/locations/l/models/m\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "projects/p/locations/l/models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"models/m\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"acme/model-a\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/acme/models/model-a",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"acme/model-a/ignored\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/acme/models/model-a",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"tunedModels/m\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/tunedModels/models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"/m\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers//models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"a/\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/a/models/",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"a//b\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/a/models/",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":null,\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"a..b\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"a?b\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"a&b\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\" a \",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/ a ",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"﻿a\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/﻿a",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"model\":\"x%2Fy\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/x%2Fy",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"\",\"contents\":[],\"config\":{\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":null,\"contents\":[],\"config\":{\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "contents are required"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"a?b\",\"contents\":[],\"config\":{\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "invalid model parameter"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":null}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{}"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":null}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{}"
+    }
+  },
+  {
+    "test": "cloud_presence_and_client_controls_do_not_invent_wire_fields",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"httpOptions\":{\"baseUrl\":\"https://ignored.invalid\",\"extraBody\":{\"ignored\":7}},\"abortSignal\":{},\"automaticFunctionCalling\":{\"disable\":true},\"unknown\":{\"deep\":[1,2]}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"text\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"text\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"text\":\"first\"},{\"text\":\"second\"},{\"text\":\"first\"}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"first\"},{\"text\":\"second\"},{\"text\":\"first\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"first\"}]},{\"role\":\"model\",\"parts\":[]},{\"role\":\"user\",\"parts\":[{\"text\":\"first\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"first\"}],\"role\":\"user\"},{\"parts\":[],\"role\":\"model\"},{\"parts\":[{\"text\":\"first\"}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "contents are required"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"parts\":[]},{\"text\":\"mixed\"}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Mixing Content and Parts is not supported, please group the parts into a the appropriate Content objects and specify the roles for them"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"text\":\"mixed\"},{\"parts\":[]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Mixing Content and Parts is not supported, please group the parts into a the appropriate Content objects and specify the roles for them"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":{\"functionCall\":{\"name\":\"f\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them in a Content object, specifying the role for them"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"functionResponse\":{\"name\":\"f\",\"response\":{\"ok\":1}}}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "To specify functionCall or functionResponse parts, please wrap them, and any other parts, in Content objects as appropriate, specifying the role for them"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[null]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "PartUnion is required"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":123}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Unsupported part type: number"
+    }
+  },
+  {
+    "test": "cloud_content_unions_share_grouping_and_rejections",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":true}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Unsupported part type: boolean"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":\"system\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"system\"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":[{\"text\":\"one\"},{\"text\":\"two\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"one\"},{\"text\":\"two\"}],\"role\":\"user\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":{\"role\":\"system\",\"parts\":[{\"text\":\"first\"},{\"text\":\"first\"}]}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"first\"},{\"text\":\"first\"}],\"role\":\"system\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":[]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "PartListUnion is required"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_system_instruction_uses_shared_content_rules",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":7}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Unsupported part type: number"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\",\"custom\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\",\"custom\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"42\",\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"42\",\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"codeExecutionResult\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(42)\",\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(42)\",\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"executableCode\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":{\"displayName\":\"document\",\"fileUri\":\"gs://bucket/file\",\"mimeType\":\"text/plain\",\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"fileData\":{\"displayName\":\"document\",\"fileUri\":\"gs://bucket/file\",\"mimeType\":\"text/plain\",\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"fileData\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"lookup\",\"args\":{\"key\":\"changed\"},\"partialArgs\":[{\"jsonPath\":\"$.key\",\"stringValue\":\"changed\"}],\"willContinue\":true,\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"functionCall\":{\"id\":\"call\",\"name\":\"lookup\",\"args\":{\"key\":\"changed\"},\"partialArgs\":[{\"jsonPath\":\"$.key\",\"stringValue\":\"changed\"}],\"willContinue\":true,\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionCall\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionResponse\":{\"id\":\"call\",\"name\":\"lookup\",\"response\":{\"answer\":\"changed\"},\"scheduling\":\"WHEN_IDLE\",\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"functionResponse\":{\"id\":\"call\",\"name\":\"lookup\",\"response\":{\"answer\":\"changed\"},\"scheduling\":\"WHEN_IDLE\",\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"functionResponse\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":{\"data\":\"AQI=\",\"mimeType\":\"image/png\",\"displayName\":\"image\",\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"inlineData\":{\"data\":\"AQI=\",\"mimeType\":\"image/png\",\"displayName\":\"image\",\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"inlineData\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"text\":\"answer\",\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"answer\"}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"text\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thought\":false,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"thought\":false}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thought\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":\"signature\",\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"thoughtSignature\":\"signature\"}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"thoughtSignature\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"fps\":3,\"extra\":8},\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"fps\":3,\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"videoMetadata\":null,\"unknown\":\"discard\"}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_keep_open_nested_records_and_omit_null",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\",\"custom\":8},\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"42\",\"extra\":8},\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(42)\",\"extra\":8},\"fileData\":{\"displayName\":\"document\",\"fileUri\":\"gs://bucket/file\",\"mimeType\":\"text/plain\",\"extra\":8},\"functionCall\":{\"id\":\"call\",\"name\":\"lookup\",\"args\":{\"key\":\"changed\"},\"partialArgs\":[{\"jsonPath\":\"$.key\",\"stringValue\":\"changed\"}],\"willContinue\":true,\"extra\":8},\"functionResponse\":{\"id\":\"call\",\"name\":\"lookup\",\"response\":{\"answer\":\"changed\"},\"scheduling\":\"WHEN_IDLE\",\"extra\":8},\"inlineData\":{\"data\":\"AQI=\",\"mimeType\":\"image/png\",\"displayName\":\"image\",\"extra\":8},\"text\":\"answer\",\"thought\":false,\"thoughtSignature\":\"signature\",\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"fps\":3,\"extra\":8}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"mediaResolution\":{\"level\":\"MEDIA_RESOLUTION_HIGH\",\"custom\":8},\"codeExecutionResult\":{\"outcome\":\"OUTCOME_OK\",\"output\":\"42\",\"extra\":8},\"executableCode\":{\"language\":\"PYTHON\",\"code\":\"print(42)\",\"extra\":8},\"fileData\":{\"displayName\":\"document\",\"fileUri\":\"gs://bucket/file\",\"mimeType\":\"text/plain\",\"extra\":8},\"functionCall\":{\"id\":\"call\",\"name\":\"lookup\",\"args\":{\"key\":\"changed\"},\"partialArgs\":[{\"jsonPath\":\"$.key\",\"stringValue\":\"changed\"}],\"willContinue\":true,\"extra\":8},\"functionResponse\":{\"id\":\"call\",\"name\":\"lookup\",\"response\":{\"answer\":\"changed\"},\"scheduling\":\"WHEN_IDLE\",\"extra\":8},\"inlineData\":{\"data\":\"AQI=\",\"mimeType\":\"image/png\",\"displayName\":\"image\",\"extra\":8},\"text\":\"answer\",\"thought\":false,\"thoughtSignature\":\"signature\",\"videoMetadata\":{\"startOffset\":\"1s\",\"endOffset\":\"2s\",\"fps\":3,\"extra\":8}}],\"role\":\"model\"}]}"
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":null}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":false}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":{}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolCall\":[]}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":null}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolResponse parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":false}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolResponse parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":{}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolResponse parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":[]}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolResponse parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":null}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "partMetadata parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":false}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "partMetadata parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":{}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "partMetadata parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_parts_reject_unsupported_members_on_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"partMetadata\":[]}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "partMetadata parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":[{\"role\":\"model\",\"parts\":[{\"toolResponse\":null,\"toolCall\":null}]}],\"config\":{\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"temperature\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"temperature\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"topP\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"topP\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"topP\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"topK\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"topK\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"topK\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"candidateCount\":2}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"candidateCount\":2}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"candidateCount\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"maxOutputTokens\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"maxOutputTokens\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"maxOutputTokens\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"stopSequences\":[\"b\",\"a\",\"b\"]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"stopSequences\":[\"b\",\"a\",\"b\"]}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"stopSequences\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseLogprobs\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseLogprobs\":false}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseLogprobs\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"logprobs\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"logprobs\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"logprobs\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"presencePenalty\":-1}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"presencePenalty\":-1}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"presencePenalty\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"frequencyPenalty\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"frequencyPenalty\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"frequencyPenalty\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"seed\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"seed\":0}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"seed\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseMimeType\":\"application/json\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseMimeType\":\"application/json\"}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseMimeType\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseJsonSchema\":{\"type\":\"object\",\"extra\":{\"a\":1}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"type\":\"object\",\"extra\":{\"a\":1}}}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseJsonSchema\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"different\"},\"extra\":1}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"different\"},\"extra\":1}}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"routingConfig\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"modelSelectionConfig\":{\"featureSelectionPreference\":\"PRIORITIZE_COST\",\"extra\":2}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"modelConfig\":{\"featureSelectionPreference\":\"PRIORITIZE_COST\",\"extra\":2}}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"modelSelectionConfig\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"]}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseModalities\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\"}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"mediaResolution\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"audioTimestamp\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"audioTimestamp\":false}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"audioTimestamp\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"thinkingConfig\":{\"thinkingBudget\":0,\"includeThoughts\":false,\"extra\":3}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"thinkingConfig\":{\"thinkingBudget\":0,\"includeThoughts\":false,\"extra\":3}}}"
+    }
+  },
+  {
+    "test": "cloud_generation_fields_keep_destinations_and_false_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"thinkingConfig\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_generation_order_is_not_input_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"thinkingConfig\":{\"thinkingBudget\":0,\"includeThoughts\":false,\"extra\":3},\"audioTimestamp\":false,\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\",\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"],\"modelSelectionConfig\":{\"featureSelectionPreference\":\"PRIORITIZE_COST\",\"extra\":2},\"routingConfig\":{\"manualMode\":{\"modelName\":\"different\"},\"extra\":1},\"responseJsonSchema\":{\"type\":\"object\",\"extra\":{\"a\":1}},\"responseMimeType\":\"application/json\",\"seed\":0,\"frequencyPenalty\":0,\"presencePenalty\":-1,\"logprobs\":0,\"responseLogprobs\":false,\"stopSequences\":[\"b\",\"a\",\"b\"],\"maxOutputTokens\":0,\"candidateCount\":2,\"topK\":0,\"topP\":0,\"temperature\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"temperature\":0,\"topP\":0,\"topK\":0,\"candidateCount\":2,\"maxOutputTokens\":0,\"stopSequences\":[\"b\",\"a\",\"b\"],\"responseLogprobs\":false,\"logprobs\":0,\"presencePenalty\":-1,\"frequencyPenalty\":0,\"seed\":0,\"responseMimeType\":\"application/json\",\"responseJsonSchema\":{\"type\":\"object\",\"extra\":{\"a\":1}},\"routingConfig\":{\"manualMode\":{\"modelName\":\"different\"},\"extra\":1},\"modelConfig\":{\"featureSelectionPreference\":\"PRIORITIZE_COST\",\"extra\":2},\"responseModalities\":[\"TEXT\",\"IMAGE\",\"TEXT\"],\"mediaResolution\":\"MEDIA_RESOLUTION_HIGH\",\"audioTimestamp\":false,\"thinkingConfig\":{\"thinkingBudget\":0,\"includeThoughts\":false,\"extra\":3}}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"safetySettings\":[{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"method\":\"SEVERITY\",\"threshold\":\"BLOCK_NONE\",\"extra\":8},{\"category\":\"other\",\"threshold\":\"other\"},{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"method\":\"SEVERITY\",\"threshold\":\"BLOCK_NONE\",\"extra\":8}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"safetySettings\":[{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"method\":\"SEVERITY\",\"threshold\":\"BLOCK_NONE\",\"extra\":8},{\"category\":\"other\",\"threshold\":\"other\"},{\"category\":\"HARM_CATEGORY_HATE_SPEECH\",\"method\":\"SEVERITY\",\"threshold\":\"BLOCK_NONE\",\"extra\":8}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"safetySettings\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"labels\":{\"z\":\"last\",\"a\":\"first\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"labels\":{\"z\":\"last\",\"a\":\"first\"},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"labels\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"modelArmorConfig\":{\"promptTemplateName\":\"projects/p/locations/l/templates/t\",\"extra\":4}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"modelArmorConfig\":{\"promptTemplateName\":\"projects/p/locations/l/templates/t\",\"extra\":4},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"modelArmorConfig\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"serviceTier\":\"FLEX\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"serviceTier\":\"FLEX\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_body_fields_and_safety_are_not_public_endpoint_filtered",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"serviceTier\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_config_rejects_enhanced_civic_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"enableEnhancedCivicAnswers\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_config_rejects_enhanced_civic_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"enableEnhancedCivicAnswers\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_config_rejects_enhanced_civic_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_config_rejects_enhanced_civic_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"enableEnhancedCivicAnswers\":{}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":\"Kore\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Kore\"}}}}}"
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Aoede\"}},\"extra\":8}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":{\"voiceConfig\":{\"prebuiltVoiceConfig\":{\"voiceName\":\"Aoede\"}},\"extra\":8}}}"
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":[]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"speechConfig\":[]}}"
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":0}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Unsupported speechConfig type: number"
+    }
+  },
+  {
+    "test": "cloud_speech_uses_existing_voice_conversion",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"speechConfig\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "Unsupported speechConfig type: boolean"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"id\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/fixture-project/locations/us-central1/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"id\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/undefined/locations/undefined/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"cachedContents/id\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/fixture-project/locations/us-central1/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"cachedContents/id\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/undefined/locations/undefined/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"locations/eu/cachedContents/id\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/fixture-project/locations/eu/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"locations/eu/cachedContents/id\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/undefined/locations/eu/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"projects/other/locations/other/cachedContents/id\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/other/locations/other/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"projects/other/locations/other/cachedContents/id\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/other/locations/other/cachedContents/id\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"other/path\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"other/path\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"other/path\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"other/path\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/fixture-project/locations/us-central1/cachedContents/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/undefined/locations/undefined/cachedContents/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"/\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"/\"}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"/\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":null}}",
+    "scope": {},
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":42}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "name must be a string"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":42}}",
+    "scope": {},
+    "expected": {
+      "error": "name must be a string"
+    }
+  },
+  {
+    "test": "cloud_cached_names_use_supplied_project_and_location",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":\"entry\"}}",
+    "scope": {
+      "project": " p ",
+      "location": "﻿region"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"cachedContent\":\"projects/ p /locations/﻿region/cachedContents/entry\",\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"aspectRatio\":\"16:9\",\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"aspectRatio\":\"16:9\"}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"aspectRatio\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"imageSize\":\"2K\",\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageSize\":\"2K\"}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"imageSize\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"personGeneration\":\"ALLOW_ADULT\",\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"personGeneration\":\"ALLOW_ADULT\"}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"personGeneration\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"prominentPeople\":\"ALLOW\",\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"prominentPeople\":\"ALLOW\"}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"prominentPeople\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/png\"}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputCompressionQuality\":0,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"compressionQuality\":0}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputCompressionQuality\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/jpeg\",\"compressionQuality\":87,\"extra\":9},\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/jpeg\",\"compressionQuality\":87,\"extra\":9}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_fields_map_output_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":null,\"unknown\":\"discard\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":{\"mimeType\":\"image/webp\"}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/webp\",\"compressionQuality\":77}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":{\"compressionQuality\":90}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/png\",\"compressionQuality\":90}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":{}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/png\",\"compressionQuality\":77}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":{\"mimeType\":null,\"compressionQuality\":0}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":null,\"compressionQuality\":0}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":{\"extra\":[1,2]}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/png\",\"compressionQuality\":77,\"extra\":[1,2]}}}}"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"outputMimeType\":\"image/png\",\"outputCompressionQuality\":77,\"imageOutputOptions\":null}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/png\",\"compressionQuality\":77}}}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"retrieval\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"computerUse\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleSearch\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleMaps\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"codeExecution\":{\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"codeExecution\":{\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"codeExecution\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"enterpriseWebSearch\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"googleSearchRetrieval\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"parallelAiSearch\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"urlContext\":{\"extra\":8},\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"urlContext\":{\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"urlContext\":null,\"unknown\":\"discard\"}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_keep_cloud_records_and_open_nested_values",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8},\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8},\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8},\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8},\"codeExecution\":{\"extra\":8},\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8},\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8},\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8},\"urlContext\":{\"extra\":8}},{\"codeExecution\":{}},{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8},\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8},\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8},\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8},\"codeExecution\":{\"extra\":8},\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8},\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8},\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8},\"urlContext\":{\"extra\":8}}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8},\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8},\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8},\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8},\"codeExecution\":{\"extra\":8},\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8},\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8},\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8},\"urlContext\":{\"extra\":8}},{\"codeExecution\":{}},{\"retrieval\":{\"vertexAiSearch\":{\"datastore\":\"projects/p/locations/l/collections/c/dataStores/d\"},\"extra\":8},\"computerUse\":{\"environment\":\"ENVIRONMENT_BROWSER\",\"extra\":8},\"googleSearch\":{\"blockingConfidence\":\"HIGH\",\"excludeDomains\":[\"b\",\"a\",\"b\"],\"searchTypes\":{\"webSearch\":{}},\"extra\":8},\"googleMaps\":{\"authConfig\":{\"apiKey\":\"key\",\"authType\":\"API_KEY_AUTH\",\"apiKeyConfig\":{\"apiKeyString\":\"other\"},\"extra\":8},\"enableWidget\":false,\"extra\":8},\"codeExecution\":{\"extra\":8},\"enterpriseWebSearch\":{\"excludeDomains\":[\"one\"],\"extra\":8},\"googleSearchRetrieval\":{\"dynamicRetrievalConfig\":{\"mode\":\"MODE_DYNAMIC\"},\"extra\":8},\"parallelAiSearch\":{\"apiKey\":\"key\",\"extra\":8},\"urlContext\":{\"extra\":8}}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":null}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "fileSearch parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":{}}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "fileSearch parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":[]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "fileSearch parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"mcpServers\":null}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "mcpServers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"mcpServers\":{}}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "mcpServers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tools_reject_file_search_and_server_records",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"mcpServers\":[]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "mcpServers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tool_lists_keep_empty_and_reject_nonlists",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_lists_keep_empty_and_reject_nonlists",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_lists_keep_empty_and_reject_nonlists",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":{}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "tools is required and must be an array of Tools"
+    }
+  },
+  {
+    "test": "cloud_tool_lists_keep_empty_and_reject_nonlists",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":\"bad\"}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "tools is required and must be an array of Tools"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"description\":\"changed description\",\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}},\"additionalProperties\":false},\"parametersJsonSchema\":{\"type\":\"number\",\"extra\":1},\"response\":{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"integer\"}}},\"responseJsonSchema\":{\"type\":\"string\",\"extra\":2},\"unknown\":\"discard\"},{\"name\":\"second\"},{\"description\":\"changed description\",\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"properties\":{\"q\":{\"type\":\"string\"}},\"additionalProperties\":false},\"parametersJsonSchema\":{\"type\":\"number\",\"extra\":1},\"response\":{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"integer\"}}},\"responseJsonSchema\":{\"type\":\"string\",\"extra\":2},\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"description\":\"changed description\",\"name\":\"lookup\",\"parameters\":{\"type\":\"OBJECT\",\"properties\":{\"q\":{\"type\":\"STRING\"}}},\"parametersJsonSchema\":{\"type\":\"number\",\"extra\":1},\"response\":{\"type\":\"OBJECT\",\"properties\":{\"answer\":{\"type\":\"INTEGER\"}}},\"responseJsonSchema\":{\"type\":\"string\",\"extra\":2}},{\"name\":\"second\"},{\"description\":\"changed description\",\"name\":\"lookup\",\"parameters\":{\"type\":\"OBJECT\",\"properties\":{\"q\":{\"type\":\"STRING\"}}},\"parametersJsonSchema\":{\"type\":\"number\",\"extra\":1},\"response\":{\"type\":\"OBJECT\",\"properties\":{\"answer\":{\"type\":\"INTEGER\"}}},\"responseJsonSchema\":{\"type\":\"string\",\"extra\":2}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"description\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parametersJsonSchema\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_select_six_fields_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"responseJsonSchema\":null,\"unknown\":\"discard\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_declarations_reject_behavior_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"behavior\":null}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "behavior parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_declarations_reject_behavior_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"behavior\":\"NON_BLOCKING\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "behavior parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_declarations_reject_behavior_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"behavior\":\"BLOCKING\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "behavior parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_declarations_reject_behavior_after_schema_preparation",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"behavior\":\"BLOCKING\",\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"first\",\"behavior\":\"BLOCKING\"},{\"name\":\"second\",\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":null,\"functionDeclarations\":[{\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":null},{\"functionDeclarations\":[{\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "fileSearch parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"retrievalConfig\":{\"latLng\":{\"latitude\":1,\"longitude\":2},\"extra\":8}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{\"retrievalConfig\":{\"latLng\":{\"latitude\":1,\"longitude\":2},\"extra\":8}},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\",\"allowedFunctionNames\":[\"z\",\"a\",\"z\"],\"streamFunctionCallArguments\":true,\"extra\":8}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{\"functionCallingConfig\":{\"mode\":\"ANY\",\"allowedFunctionNames\":[\"z\",\"a\",\"z\"],\"streamFunctionCallArguments\":true,\"extra\":8}},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":{\"streamFunctionCallArguments\":false}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{\"functionCallingConfig\":{\"streamFunctionCallArguments\":false}},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"functionCallingConfig\":null}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"retrievalConfig\":null}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_keeps_streamed_arguments_and_retrieval",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"toolConfig\":{},\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_tool_config_rejects_server_invocation_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"includeServerSideToolInvocations\":null}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "includeServerSideToolInvocations parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tool_config_rejects_server_invocation_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"includeServerSideToolInvocations\":false}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "includeServerSideToolInvocations parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_tool_config_rejects_server_invocation_presence",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"toolConfig\":{\"includeServerSideToolInvocations\":true}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "includeServerSideToolInvocations parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"string\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"string\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"STRING\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"string\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"STRING\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"ſtring\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"STRING\"}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"ſtring\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"STRING\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"ſtring\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"STRING\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":[\"null\",\"integer\",\"string\",\"integer\"],\"title\":\"types\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"INTEGER\"},{\"type\":\"STRING\"},{\"type\":\"INTEGER\"}],\"title\":\"types\"}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":[\"null\",\"integer\",\"string\",\"integer\"],\"title\":\"types\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"nullable\":true,\"anyOf\":[{\"type\":\"INTEGER\"},{\"type\":\"STRING\"},{\"type\":\"INTEGER\"}],\"title\":\"types\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":[\"null\",\"integer\",\"string\",\"integer\"],\"title\":\"types\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"nullable\":true,\"anyOf\":[{\"type\":\"INTEGER\"},{\"type\":\"STRING\"},{\"type\":\"INTEGER\"}],\"title\":\"types\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"null\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"null\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"string\"}]}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"string\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"object\",\"anyOf\":[{\"type\":\"string\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type and anyOf cannot be both populated."
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"type\":\"OBJECT\",\"properties\":{\"1\":{\"type\":\"INTEGER\"},\"2\":{\"type\":\"BOOLEAN\"},\"nested\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"STRING\"}}}}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"type\":\"OBJECT\",\"properties\":{\"1\":{\"type\":\"INTEGER\"},\"2\":{\"type\":\"BOOLEAN\"},\"nested\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"STRING\"}}}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"object\",\"properties\":{\"1\":{\"type\":\"integer\"},\"2\":{\"type\":\"boolean\"},\"nested\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"additionalProperties\":false}}},\"additionalProperties\":true}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"type\":\"OBJECT\",\"properties\":{\"1\":{\"type\":\"INTEGER\"},\"2\":{\"type\":\"BOOLEAN\"},\"nested\":{\"type\":\"ARRAY\",\"items\":{\"type\":\"STRING\"}}}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"number\"}]}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"type\":\"NUMBER\"}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"number\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"nullable\":true,\"type\":\"NUMBER\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"anyOf\":[{\"type\":\"null\"},{\"type\":\"number\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"nullable\":true,\"type\":\"NUMBER\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"null\"}]}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"null\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_schemas_reuse_conversion_across_all_three_positions",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"null\"}]}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"},{\"type\":\"NUMBER\"}]}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_nullable_siblings_reuse_the_established_schema_fix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}}"
+    }
+  },
+  {
+    "test": "cloud_nullable_siblings_reuse_the_established_schema_fix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_nullable_siblings_reuse_the_established_schema_fix",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"anyOf\":[{\"type\":\"string\"},{\"type\":\"null\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"nullable\":true,\"anyOf\":[{\"type\":\"STRING\"}],\"description\":\"keep sibling\",\"title\":\"keep title\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":null}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"OBJECT\",\"extra\":{\"z\":1}},\"responseJsonSchema\":{}}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{\"distinct\":\"existing\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"OBJECT\",\"extra\":{\"z\":1}},\"responseJsonSchema\":{\"distinct\":\"existing\"}}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":null}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":false}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parametersJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":{}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":{}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":{\"distinct\":\"existing\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"parameters\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"parametersJsonSchema\":{\"distinct\":\"existing\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":null}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":false}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"responseJsonSchema\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_schema_routing_respects_existing_destinations",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{\"distinct\":\"existing\"}}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"lookup\",\"response\":{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"type\":\"object\",\"additionalProperties\":{\"type\":\"string\"},\"extra\":{\"z\":1}},\"responseJsonSchema\":{\"distinct\":\"existing\"}}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_json_bytes_use_shared_key_order_and_number_spelling",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseJsonSchema\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":1e+21,\"zero\":0,\"unicode\":\"é😀\",\"nested\":{\"0\":\"zero\",\"1\":\"one\",\"01\":\"not index\"}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"responseJsonSchema\":{\"2\":\"two\",\"10\":\"ten\",\"z\":1e-7,\"a\":1e+21,\"zero\":0,\"unicode\":\"é😀\",\"nested\":{\"0\":\"zero\",\"1\":\"one\",\"01\":\"not index\"}}}}"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"systemInstruction\":[],\"responseSchema\":{\"type\":\"null\"},\"tools\":[{\"fileSearch\":null}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "PartListUnion is required"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"responseSchema\":{\"type\":\"null\"},\"tools\":[{\"fileSearch\":null}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "type: null can not be the only possible type for the field."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"tools\":[{\"fileSearch\":null}],\"toolConfig\":{\"includeServerSideToolInvocations\":true},\"cachedContent\":42}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "fileSearch parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"cachedContent\":42,\"enableEnhancedCivicAnswers\":true}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "name must be a string"
+    }
+  },
+  {
+    "test": "cloud_projection_failures_keep_model_content_config_order",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"enableEnhancedCivicAnswers\":null,\"modelArmorConfig\":{\"a\":1}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_projection_consumes_the_selected_hook_value",
+    "input": "{\"model\":\"publishers/acme/models/changed\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"changed\"}]}],\"config\":{\"labels\":{\"selected\":\"replacement\"},\"routingConfig\":{\"manualMode\":{\"modelName\":\"selected\"}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/acme/models/changed",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed\"}],\"role\":\"user\"}],\"labels\":{\"selected\":\"replacement\"},\"generationConfig\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"selected\"}}}}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"fileData\":{\"fileUri\":\"gs://b/f\",\"mimeType\":\"text/plain\",\"displayName\":\"name\"}}]}]}",
+    "scope": {
+      "endpoint": "public"
+    },
+    "expected": {
+      "error": "displayName parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"fileData\":{\"fileUri\":\"gs://b/f\",\"mimeType\":\"text/plain\",\"displayName\":\"name\"}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"fileData\":{\"fileUri\":\"gs://b/f\",\"mimeType\":\"text/plain\",\"displayName\":\"name\"}}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"toolCall\":{\"id\":\"one\",\"toolType\":\"CODE_EXECUTION\",\"args\":{\"code\":\"1\"}}}]}]}",
+    "scope": {
+      "endpoint": "public"
+    },
+    "expected": {
+      "model": "models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"toolCall\":{\"id\":\"one\",\"toolType\":\"CODE_EXECUTION\",\"args\":{\"code\":\"1\"}}}],\"role\":\"user\"}]}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"toolCall\":{\"id\":\"one\",\"toolType\":\"CODE_EXECUTION\",\"args\":{\"code\":\"1\"}}}]}]}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "toolCall parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"m2\"}}}}",
+    "scope": {
+      "endpoint": "public"
+    },
+    "expected": {
+      "error": "routingConfig parameter is not supported in Gemini API."
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"m2\"}}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"text\"}],\"role\":\"user\"}],\"generationConfig\":{\"routingConfig\":{\"manualMode\":{\"modelName\":\"m2\"}}}}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"enableEnhancedCivicAnswers\":false}}",
+    "scope": {
+      "endpoint": "public"
+    },
+    "expected": {
+      "model": "models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"text\"}],\"role\":\"user\"}],\"generationConfig\":{\"enableEnhancedCivicAnswers\":false}}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"enableEnhancedCivicAnswers\":false}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "enableEnhancedCivicAnswers parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"behavior\":\"NON_BLOCKING\"}]}]}}",
+    "scope": {
+      "endpoint": "public"
+    },
+    "expected": {
+      "model": "models/m",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"text\"}],\"role\":\"user\"}],\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"behavior\":\"NON_BLOCKING\"}]}],\"generationConfig\":{}}"
+    }
+  },
+  {
+    "test": "cloud_and_public_endpoint_policies_remain_independent",
+    "input": "{\"model\":\"m\",\"contents\":\"text\",\"config\":{\"tools\":[{\"functionDeclarations\":[{\"name\":\"f\",\"behavior\":\"NON_BLOCKING\"}]}]}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "behavior parameter is not supported in Gemini Enterprise Agent Platform (previously known as Vertex AI)."
+    }
+  },
+  {
+    "test": "cloud_model_resources_keep_qualified_and_publisher_paths",
+    "input": "{\"contents\":\"model omitted\"}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "error": "model is required and must be a string"
+    }
+  },
+  {
+    "test": "cloud_image_output_options_merge_after_aliases",
+    "input": "{\"model\":\"gemini-fixture\",\"contents\":\"changed request\",\"config\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/webp\"},\"outputCompressionQuality\":77,\"outputMimeType\":\"image/png\"}}}",
+    "scope": {
+      "project": "fixture-project",
+      "location": "us-central1"
+    },
+    "expected": {
+      "model": "publishers/google/models/gemini-fixture",
+      "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed request\"}],\"role\":\"user\"}],\"generationConfig\":{\"imageConfig\":{\"imageOutputOptions\":{\"mimeType\":\"image/webp\",\"compressionQuality\":77}}}}"
+    }
+  }
+]

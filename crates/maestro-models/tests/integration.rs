@@ -74,6 +74,7 @@ mod chat_tool_choices;
 mod checked_tool_arguments;
 #[path = "support/child_process.rs"]
 mod child_process;
+mod cloud_content_projection;
 mod cloud_conversation_configuration;
 mod cloud_conversation_conversion;
 mod cloud_conversation_hook_content;

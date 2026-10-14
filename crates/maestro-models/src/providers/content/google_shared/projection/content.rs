@@ -2,11 +2,13 @@
 
 use serde_json::{Map, Value, json};
 
-use super::{Failure, Projection, Step, malformed, record, record_list, type_name};
+use super::{Endpoint, Failure, Projection, Step, malformed, record, record_list, type_name};
 
 /// Selection of a content: its parts, then its role.
 const CONTENT: &[Step] = &[
-    Step::Convert("parts", |parts| record_list(parts, PART)),
+    Step::Convert("parts", |parts, endpoint| {
+        record_list(parts, part_selection(endpoint), endpoint)
+    }),
     Step::Keep("role"),
 ];
 
@@ -15,10 +17,14 @@ const PART: &[Step] = &[
     Step::Keep("mediaResolution"),
     Step::Keep("codeExecutionResult"),
     Step::Keep("executableCode"),
-    Step::Convert("fileData", |data| record(data, FILE_DATA)),
-    Step::Convert("functionCall", |call| record(call, FUNCTION_CALL)),
+    Step::Convert("fileData", |data, endpoint| {
+        record(data, FILE_DATA, endpoint)
+    }),
+    Step::Convert("functionCall", |call, endpoint| {
+        record(call, FUNCTION_CALL, endpoint)
+    }),
     Step::Keep("functionResponse"),
-    Step::Convert("inlineData", |blob| record(blob, BLOB)),
+    Step::Convert("inlineData", |blob, endpoint| record(blob, BLOB, endpoint)),
     Step::Keep("text"),
     Step::Keep("thought"),
     Step::Keep("thoughtSignature"),
@@ -102,12 +108,12 @@ fn user_turn(parts: Vec<Value>) -> Value {
 }
 
 /// The wire form of a system instruction.
-pub(super) fn system_instruction(origin: Value) -> Projection<Value> {
-    record(content(origin)?, CONTENT)
+pub(super) fn system_instruction(origin: Value, endpoint: Endpoint<'_>) -> Projection<Value> {
+    record(content(origin)?, CONTENT, endpoint)
 }
 
 /// The wire form of the request contents: one content, one part, or a homogeneous list.
-pub(super) fn contents(origin: Value) -> Projection<Value> {
+pub(super) fn contents(origin: Value, endpoint: Endpoint<'_>) -> Projection<Value> {
     let turns = match origin {
         Value::Array(items) if items.is_empty() => {
             return Err(Failure::error("contents are required"));
@@ -120,7 +126,7 @@ pub(super) fn contents(origin: Value) -> Projection<Value> {
         }
         single => vec![content(single)?],
     };
-    record_list(Value::Array(turns), CONTENT)
+    record_list(Value::Array(turns), CONTENT, endpoint)
 }
 
 /// Keep a non-empty content list or group admitted non-call parts into one user turn.
@@ -149,3 +155,29 @@ fn turn_list(items: Vec<Value>) -> Projection<Vec<Value>> {
     }
     Ok(turns)
 }
+
+/// Select endpoint-specific part members without changing content union grouping.
+fn part_selection(endpoint: Endpoint<'_>) -> &'static [Step] {
+    match endpoint {
+        Endpoint::Public => PART,
+        Endpoint::Vertex { .. } => VERTEX_PART,
+    }
+}
+
+/// Cloud part selection retains nested open records.
+const VERTEX_PART: &[Step] = &[
+    Step::Keep("mediaResolution"),
+    Step::Keep("codeExecutionResult"),
+    Step::Keep("executableCode"),
+    Step::Keep("fileData"),
+    Step::Keep("functionCall"),
+    Step::Keep("functionResponse"),
+    Step::Keep("inlineData"),
+    Step::Keep("text"),
+    Step::Keep("thought"),
+    Step::Keep("thoughtSignature"),
+    Step::Keep("videoMetadata"),
+    Step::Reject("toolCall"),
+    Step::Reject("toolResponse"),
+    Step::Reject("partMetadata"),
+];
