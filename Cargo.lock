@@ -2572,7 +2572,7 @@ dependencies = [
 name = "maestro-app"
 version = "0.1.0"
 dependencies = [
- "base64",
+ "base64 0.23.1",
  "chrono",
  "futures-util",
  "maestro-agent",
