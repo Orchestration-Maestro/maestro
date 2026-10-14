@@ -1,4 +1,4 @@
-//! Builds the author component once per test run.
+//! Builds the author component for test harnesses.
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
@@ -8,9 +8,8 @@ const TARGET: &str = "wasm32-wasip2";
 
 /// The component built from the shared author extension.
 ///
-/// The build is the one `just extension-author-component` runs. It happens once and every
-/// scenario shares the artifact. The compiler wrapper is not passed on, because the coverage wrapper
-/// would instrument the component target.
+/// Nextest supplies the artifact prepared before its tests; plain Cargo builds once per process.
+/// The compiler wrapper is not passed on, because coverage would instrument the component target.
 ///
 /// # Errors
 /// Returns the build's failure, which names the target to install when it is missing.
@@ -21,6 +20,9 @@ pub fn author_component() -> Result<&'static Path, String> {
 
 /// Runs the author build and finds the artifact it reports.
 fn build() -> Result<PathBuf, String> {
+    if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
+        return Ok(PathBuf::from(path));
+    }
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let output = Command::new(cargo)
         .current_dir(env!("CARGO_MANIFEST_DIR"))
@@ -48,4 +50,20 @@ fn build() -> Result<PathBuf, String> {
                 .is_some_and(|extension| extension == "wasm")
         })
         .ok_or_else(|| "the build reported no component".to_owned())
+}
+
+/// Prepares the artifact and warms its compilation cache before isolated tests start.
+#[test]
+#[ignore = "run by the nextest setup script"]
+fn prepare_nextest_component() -> Result<(), String> {
+    let path = author_component()?;
+    super::host::compiled(path).map_err(|error| error.to_string())?;
+    if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
+        std::fs::write(
+            environment,
+            format!("MAESTRO_AUTHOR_COMPONENT={}\n", path.display()),
+        )
+        .map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }

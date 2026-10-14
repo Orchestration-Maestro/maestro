@@ -15,7 +15,8 @@ check:
 
 # Run all workspace tests.
 test *args:
-    cargo test --workspace --locked "$@"
+    cargo nextest run --workspace --locked "$@"
+    cargo test --workspace --locked --doc "$@"
 
 # Run the same checks as continuous integration.
 ci: check test
@@ -56,7 +57,8 @@ models-dev:
 
 # Run native models tests with literal argument forwarding.
 models-test *args:
-    cargo test -p maestro-models --locked "$@"
+    cargo nextest run -p maestro-models --locked "$@"
+    cargo test -p maestro-models --locked --doc "$@"
 
 # Prepare models outputs without publication or root checks.
 models-prepublish: models-clean models-build
@@ -76,7 +78,8 @@ agent-dev:
 
 # Run native agent tests with literal argument forwarding.
 agent-test *args:
-    cargo test -p maestro-agent --locked "$@"
+    cargo nextest run -p maestro-agent --locked "$@"
+    cargo test -p maestro-agent --locked --doc "$@"
 
 # Prepare agent outputs without publication or root checks.
 agent-prepublish: agent-clean agent-build
@@ -96,7 +99,8 @@ tui-dev:
 
 # Run native tui tests with literal argument forwarding.
 tui-test *args:
-    cargo test -p maestro-tui --locked "$@"
+    cargo nextest run -p maestro-tui --locked "$@"
+    cargo test -p maestro-tui --locked --doc "$@"
 
 # Prepare tui outputs without publication or root checks.
 tui-prepublish: tui-clean tui-build
@@ -118,7 +122,8 @@ app-dev:
 
 # Run native app tests with literal argument forwarding.
 app-test *args:
-    cargo test -p maestro-app --locked "$@"
+    cargo nextest run -p maestro-app --locked "$@"
+    cargo test -p maestro-app --locked --doc "$@"
 
 # Prepare app outputs without publication or root checks.
 app-prepublish: app-clean app-build
@@ -135,7 +140,7 @@ models-dev-compile: models-dev
 
 # Run the terminal wrapping integration tests explicitly.
 tui-test-ansi *args:
-    cargo test -p maestro-tui --locked --test integration ansi_wrapping:: "$@"
+    cargo nextest run -p maestro-tui --locked --test integration ansi_wrapping:: "$@"
 
 # Compile standalone prerequisites before copying prepared assets.
 build-binary:

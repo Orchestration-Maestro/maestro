@@ -123,15 +123,29 @@ fn maestro_workspace_recipes_keep_phase_order() {
                 .unwrap()
                 .starts_with(&format!("cargo {phase}"))
         );
-        assert!(!log.contains("cargo test|--workspace"));
+        assert!(!log.contains("cargo nextest") && !log.contains("cargo test|--workspace"));
+    }
+    for (phase, expected) in [
+        ("nextest", "cargo nextest|run|--workspace|--locked\n"),
+        (
+            "test",
+            "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n",
+        ),
+    ] {
+        fs::remove_file(workspace.0.join("log")).unwrap();
+        let output = workspace
+            .command("test")
+            .env("MAESTRO_FAIL", phase)
+            .output()
+            .unwrap();
+        assert!(!output.status.success());
+        assert_eq!(workspace.log(), expected);
     }
     fs::remove_file(workspace.0.join("log")).unwrap();
     assert!(workspace.run("ci").status.success());
-    assert!(
-        workspace
-            .log()
-            .ends_with("cargo test|--workspace|--locked\n")
-    );
+    assert!(workspace.log().ends_with(
+        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    ));
 }
 
 #[test]
@@ -149,10 +163,56 @@ fn maestro_package_recipes_select_their_owners() {
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
-        assert_eq!(workspace.log(), format!("cargo test|-p|{owner}|--locked\n"));
+        assert_eq!(
+            workspace.log(),
+            format!(
+                "cargo nextest|run|-p|{owner}|--locked\ncargo test|-p|{owner}|--locked|--doc\n"
+            )
+        );
         assert_package_build(&workspace, prefix, owner);
     }
     assert_binary_build_order();
+}
+
+#[test]
+fn maestro_test_recipes_forward_literal_arguments() {
+    for (recipe, selection, doctests) in [
+        ("test", "--workspace|--locked", true),
+        ("models-test", "-p|maestro-models|--locked", true),
+        ("agent-test", "-p|maestro-agent|--locked", true),
+        ("tui-test", "-p|maestro-tui|--locked", true),
+        ("app-test", "-p|maestro-app|--locked", true),
+        (
+            "tui-test-ansi",
+            "-p|maestro-tui|--locked|--test|integration|ansi_wrapping::",
+            false,
+        ),
+    ] {
+        let workspace = Workspace::new();
+        let args = [
+            "",
+            "a space",
+            "'quoted'",
+            "\"double quoted\"",
+            "selected_behavior",
+            "--",
+            "--ignored",
+            "--exact",
+            "wrapped_ignored",
+            "--nocapture",
+        ];
+        let output = workspace.command(recipe).args(args).output().unwrap();
+        assert!(output.status.success(), "{recipe}");
+        let suffix = args.join("|");
+        let expected = if doctests {
+            format!(
+                "cargo nextest|run|{selection}|{suffix}\ncargo test|{selection}|--doc|{suffix}\n"
+            )
+        } else {
+            format!("cargo nextest|run|{selection}|{suffix}\n")
+        };
+        assert_eq!(workspace.log(), expected, "{recipe}");
+    }
 }
 
 fn assert_package_build(workspace: &Workspace, prefix: &str, owner: &str) {
@@ -990,39 +1050,8 @@ fn maestro_dev_compile_excludes_generation_and_other_owners() {
 fn maestro_native_tests_keep_filters_and_ignored_cases() {
     let workspace = Workspace::new();
     native_workspace(&workspace);
-    let output = workspace
-        .command("models-test")
-        .arg("selected_behavior")
-        .output()
-        .unwrap();
-    assert!(
-        output.status.success(),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed; 0 ignored"));
-    let output = workspace
-        .command("models-test")
-        .args(["--", "--ignored"])
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert!(String::from_utf8_lossy(&output.stdout).contains("ignored_behavior ... ok"));
-    let output = workspace
-        .command("models-test")
-        .arg("failing_behavior")
-        .env("MAESTRO_TEST_FAIL", "1")
-        .output()
-        .unwrap();
-    assert!(!output.status.success());
-    assert!(String::from_utf8_lossy(&output.stdout).contains("0 passed; 1 failed"));
-    let output = workspace
-        .command("models-test")
-        .arg("--doc")
-        .output()
-        .unwrap();
-    assert!(output.status.success());
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+    assert_model_test_selection(&workspace);
+    assert_native_doctests(&workspace);
     assert_terminal_test_selection(&workspace);
     let output = workspace
         .command("test")
@@ -1034,14 +1063,104 @@ fn maestro_native_tests_keep_filters_and_ignored_cases() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert_eq!(
-        String::from_utf8_lossy(&output.stdout)
-            .matches("1 passed; 0 failed; 0 ignored")
-            .count(),
-        4
-    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    for owner in [
+        "maestro-models",
+        "maestro-agent",
+        "maestro-tui",
+        "maestro-app",
+    ] {
+        assert!(
+            stderr.lines().any(|line| line.contains("PASS")
+                && line.ends_with(&format!("{owner} selected_behavior"))),
+            "{owner}"
+        );
+    }
 }
 
+/// Checks selected, ignored, failed and unmatched ordinary tests.
+fn assert_model_test_selection(workspace: &Workspace) {
+    let output = workspace
+        .command("models-test")
+        .arg("selected_behavior")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .lines()
+            .any(|line| line.contains("PASS") && line.ends_with("selected_behavior"))
+    );
+    let output = workspace
+        .command("models-test")
+        .args(["--", "--ignored"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .lines()
+            .any(|line| line.contains("PASS") && line.ends_with("ignored_behavior"))
+    );
+    let output = workspace
+        .command("models-test")
+        .arg("failing_behavior")
+        .env("MAESTRO_TEST_FAIL", "1")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("1 failed"));
+    let output = workspace
+        .command("models-test")
+        .arg("no_such_behavior")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("no tests to run"));
+}
+
+/// Exercises the actual doctest after ordinary tests and through Cargo alone.
+fn assert_native_doctests(workspace: &Workspace) {
+    let output = workspace.run("models-test");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("2 passed, 1 skipped"));
+    assert!(
+        !stderr
+            .lines()
+            .any(|line| line.contains("PASS") && line.contains("ignored_behavior"))
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+    let output = Command::new(env!("CARGO"))
+        .current_dir(&workspace.0)
+        .args(["test", "-p", "maestro-models", "--locked", "--doc"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+    let source = workspace.0.join("crates/maestro-models/src/lib.rs");
+    let original = fs::read_to_string(&source).unwrap();
+    fs::write(
+        &source,
+        original.replace("increment(1), 2", "increment(1), 3"),
+    )
+    .unwrap();
+    let output = workspace.run("models-test");
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("2 passed, 1 skipped"));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("0 passed; 1 failed"));
+    fs::write(source, original).unwrap();
+}
+
+/// Creates distinguishable terminal tests in one integration target.
 fn terminal_test_fixture(workspace: &Workspace) {
     let real_tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("../maestro-tui/tests");
     let tests = workspace.0.join("crates/maestro-tui/tests");
@@ -1054,7 +1173,7 @@ fn terminal_test_fixture(workspace: &Workspace) {
     for (target, source) in [
         (
             "ansi_wrapping",
-            "#[test] fn wrapped_lines() {}\n#[test] #[ignore] fn wrapped_ignored() {}\n",
+            "#[test] fn wrapped_lines() { println!(\"visible wrapping output\"); }\n#[test] #[ignore] fn wrapped_ignored() {}\n",
         ),
         ("ansi_columns", "#[test] fn column_slices() {}\n"),
     ] {
@@ -1089,9 +1208,14 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
         .output()
         .unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
     for ran in ["terminal_behavior", "wrapped_lines", "column_slices"] {
-        assert!(stdout.contains(&format!("{ran} ... ok")), "{ran}");
+        assert!(
+            stderr
+                .lines()
+                .any(|line| line.contains("PASS") && line.ends_with(ran)),
+            "{ran}"
+        );
     }
     let output = workspace
         .command("tui-test-ansi")
@@ -1099,11 +1223,16 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
         .output()
         .unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(!stdout.contains("terminal_behavior ..."));
-    assert!(!stdout.contains("column_slices ..."));
-    assert!(stdout.contains("wrapped_lines ... ok"));
-    assert!(stdout.contains("1 passed; 0 failed; 1 ignored"));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!stderr.contains("terminal_behavior"));
+    assert!(!stderr.contains("column_slices"));
+    assert!(
+        stderr
+            .lines()
+            .any(|line| line.contains("PASS") && line.ends_with("wrapped_lines"))
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("visible wrapping output"));
+    assert!(stderr.contains("1 passed, 2 skipped"), "{stderr}");
     let output = workspace
         .command("tui-test")
         .args([
@@ -1115,9 +1244,13 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
         .output()
         .unwrap();
     assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("wrapped_ignored ... ok"));
-    assert!(stdout.contains("1 passed; 0 failed; 0 ignored"));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr
+            .lines()
+            .any(|line| line.contains("PASS") && line.ends_with("wrapped_ignored"))
+    );
+    assert!(stderr.contains("1 passed, 4 skipped"));
 }
 
 #[test]
@@ -1183,9 +1316,25 @@ fn maestro_offline_recipe_is_explicit_only() {
         );
         assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
     }
+    let output = workspace
+        .command("test")
+        .env("HOME", &home)
+        .env("OPENAI_API_KEY", "controlled")
+        .env("MAESTRO_NO_LOCAL_LLM", "kept")
+        .env("MAESTRO_ENV_RESULT", workspace.0.join("env-result"))
+        .env("MAESTRO_FAIL", "nextest")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert_eq!(
+        fs::read_to_string(workspace.0.join("env-result")).unwrap(),
+        "key=true auth=true flag=kept\n"
+    );
+    assert_eq!(fs::read(&auth).unwrap(), b"synthetic authentication");
     let log = workspace.log();
     assert_eq!(log.matches("--bin|development|--|test-offline").count(), 1);
-    assert!(log.contains("cargo test|--workspace|--locked"));
+    assert!(log.contains("cargo nextest|run|--workspace|--locked"));
+    assert!(log.contains("cargo test|--workspace|--locked|--doc"));
     assert!(log.contains("cargo doc|--workspace|--no-deps|--locked"));
 }
 
@@ -1408,6 +1557,10 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
         "check",
         "test",
         "models-test",
+        "agent-test",
+        "tui-test",
+        "app-test",
+        "tui-test-ansi",
         "models-dev",
         "models-dev-compile",
         "dev-compile",

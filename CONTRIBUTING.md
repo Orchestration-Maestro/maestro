@@ -39,7 +39,9 @@ just check
 just test
 ```
 
-Both must pass.
+Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
+Development and test builds retain file:line debug information, not debugger
+variable views.
 
 Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
