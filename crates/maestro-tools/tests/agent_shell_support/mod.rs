@@ -578,10 +578,9 @@ pub fn hook_sequence() {
 /// Fresh inherited environment on successive calls, isolated from the test runner.
 #[cfg(unix)]
 pub fn environment_sequence() {
-    let fixture = fixture();
-    let sequence = fixture
+    let sequence = fixture()
         .sequences
-        .iter()
+        .into_iter()
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
     if std::env::var_os("MAESTRO_SHELL_SEQUENCE_CHILD").is_none() {
@@ -592,6 +591,7 @@ pub fn environment_sequence() {
                 "--nocapture",
             ])
             .env("MAESTRO_SHELL_SEQUENCE_CHILD", "1")
+            .env_remove("ADDED")
             .envs(
                 sequence["input"]["env"]
                     .as_object()

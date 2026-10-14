@@ -83,27 +83,36 @@ fn bash_native_uses_factory_shell_path_and_override_precedence() {
     });
 }
 
+/// Expected native PATH, retaining the captured value if the tool directory is present.
+#[cfg(unix)]
+fn expected_native_path() -> String {
+    let initial = std::env::var("PATH").unwrap_or_default();
+    if initial.split(':').any(|entry| entry == "/maestro/tool-bin") {
+        initial
+    } else if initial.is_empty() {
+        "/maestro/tool-bin".into()
+    } else {
+        format!("/maestro/tool-bin:{initial}")
+    }
+}
+
 /// Hook replacement observed through the local operation's real environment.
 #[cfg(unix)]
 fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
+    let initial_hook_value = std::env::var_os("MAESTRO_HOOK_ONLY");
+    let expected_path = expected_native_path();
     Arc::new(move |mut context: BashSpawnContext| {
         assert_eq!(
             context.command,
             "printf original-prefix\nprintf original-command"
         );
-        assert!(
-            !context
-                .env
-                .contains_key(std::ffi::OsStr::new("MAESTRO_HOOK_ONLY"))
+        assert_eq!(
+            context.env.get(std::ffi::OsStr::new("MAESTRO_HOOK_ONLY")),
+            initial_hook_value.as_ref()
         );
-        assert!(
-            context
-                .env
-                .get(std::ffi::OsStr::new("PATH"))
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .starts_with("/maestro/tool-bin:")
+        assert_eq!(
+            context.env.get(std::ffi::OsStr::new("PATH")).unwrap(),
+            std::ffi::OsStr::new(&expected_path)
         );
         context.env.clear();
         context
@@ -159,12 +168,7 @@ fn bash_native_combines_prefix_output_and_environment_hook() {
             .await
             .unwrap(),
         );
-        assert!(
-            value["content"][0]["text"]
-                .as_str()
-                .unwrap()
-                .starts_with("/maestro/tool-bin:")
-        );
+        assert_eq!(value["content"][0]["text"], expected_native_path());
     });
 }
 
@@ -322,7 +326,7 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
             }
         };
         let (mut root, _) = listener.accept().await.unwrap();
-        let mut holder = process_support::pipe_holder(pid).await;
+        let mut holder = read_support::pipe_holder(pid).await;
         root.write_all(b"exit\n").await.unwrap();
         let result = execution.await.unwrap();
         assert_eq!(

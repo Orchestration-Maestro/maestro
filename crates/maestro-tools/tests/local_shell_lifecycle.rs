@@ -13,13 +13,9 @@ use std::{
     time::Duration,
 };
 use tokio::io::AsyncWriteExt;
-#[allow(
-    dead_code,
-    reason = "Shared polling helpers serve multiple integration targets."
-)]
 mod process_support;
 #[cfg(target_os = "linux")]
-use process_support::pipe_holder;
+use read_support::pipe_holder;
 mod read_support;
 use read_support::TempDir;
 

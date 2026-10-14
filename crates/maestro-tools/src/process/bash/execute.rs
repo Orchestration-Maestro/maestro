@@ -87,7 +87,7 @@ impl Progress {
             }
         }
     }
-    /// Finish decoding, flush dirty progress and close even after a prior failure.
+    /// Finalize decoding and emit pending progress while error-free; always attempt artifact closure.
     fn finish(
         mut self,
         update: Option<&AgentToolUpdateCallback<BashToolDetails>>,
