@@ -98,7 +98,7 @@ struct Replay {
     owners: ExtensionCollection<Value, Value>,
     apis: Vec<ExtensionAPI<Value, Value>>,
     runtime: Arc<ExtensionRuntimeState>,
-    runner: ExtensionRunner<Value, Value>,
+    runner: Arc<ExtensionRunner<Value, Value>>,
     bus: EventBusController,
     trace: Arc<Mutex<Vec<Value>>>,
     warnings: Arc<Mutex<Vec<String>>>,
@@ -189,6 +189,15 @@ fn diagnostic_view(d: &Arc<RwLock<Vec<ResourceDiagnostic>>>) -> Value {
             .collect::<Vec<_>>()
     )
 }
+fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Value>) {
+    let owners = owners.try_write().unwrap();
+    for owner in owners.iter() {
+        let owner = owner.try_write().unwrap();
+        for shortcut in owner.shortcuts.values() {
+            assert!(shortcut.try_write().is_ok());
+        }
+    }
+}
 impl Replay {
     fn new(sources: Vec<Provenance>) -> Self {
         let trace = Arc::new(Mutex::new(Vec::new()));
@@ -209,19 +218,26 @@ impl Replay {
                 Ok(None)
             }),
         );
-        let owners = Arc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Value, Value> = Arc::new(RwLock::new(Vec::new()));
         let output = Arc::clone(&warnings);
-        let runner = ExtensionRunner::new(
-            Arc::clone(&owners),
-            Arc::clone(&runtime),
-            Arc::new(move |s| {
-                assert!(s.ends_with('\n'));
-                output
-                    .lock()
-                    .unwrap()
-                    .push(s.strip_suffix('\n').unwrap().to_owned());
-            }),
-        );
+        let runner = Arc::new_cyclic(|runner: &std::sync::Weak<ExtensionRunner<Value, Value>>| {
+            let runner = runner.clone();
+            let owners = Arc::clone(&owners);
+            ExtensionRunner::new(
+                Arc::clone(&owners),
+                Arc::clone(&runtime),
+                Arc::new(move |s| {
+                    let runner = runner.upgrade().unwrap();
+                    assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
+                    assert_registration_locks_released(&owners);
+                    assert!(s.ends_with('\n'));
+                    output
+                        .lock()
+                        .unwrap()
+                        .push(s.strip_suffix('\n').unwrap().to_owned());
+                }),
+            )
+        });
         let mut r = Self {
             owners,
             apis: Vec::new(),
@@ -238,18 +254,19 @@ impl Replay {
             has_ui: false,
         };
         for (i, source) in sources.into_iter().enumerate() {
-            r.add(source.record(), format!("/resolved/{i}"));
+            r.add(source.record(), &format!("/resolved/{i}"));
         }
         r
     }
-    fn add(&mut self, source: SourceInfo, resolved: String) {
+    fn add(&mut self, source: SourceInfo, resolved: &str) {
         let owner = Arc::new(RwLock::new(Extension::new(
             source.path.clone(),
-            resolved,
+            resolved.into(),
             Arc::new(RwLock::new(source)),
         )));
+        assert_eq!(owner.read().unwrap().resolved_path, resolved);
         self.apis.push(ExtensionAPI::new(
-            Arc::clone(&owner),
+            &owner,
             Arc::clone(&self.runtime),
             self.bus.for_extension(),
         ));
@@ -394,13 +411,27 @@ impl Replay {
                 ));
             }
             "invalidate" => self.runtime.invalidate(s.message),
-            "list_commands" => self.observations.push(json!(
-                self.runner
-                    .get_registered_commands()
-                    .iter()
-                    .map(command_view)
-                    .collect::<Vec<_>>()
-            )),
+            "list_commands" => {
+                let previous = self.runner.get_command_diagnostics();
+                previous.write().unwrap().push(ResourceDiagnostic {
+                    r#type: maestro_resources::DiagnosticType::Warning,
+                    message: "retained diagnostic".into(),
+                    path: None,
+                    collision: None,
+                });
+                self.observations.push(json!(
+                    self.runner
+                        .get_registered_commands()
+                        .iter()
+                        .map(command_view)
+                        .collect::<Vec<_>>()
+                ));
+                let current = self.runner.get_command_diagnostics();
+                assert!(!Arc::ptr_eq(&previous, &current));
+                assert!(current.read().unwrap().is_empty());
+                assert_eq!(previous.read().unwrap().len(), 1);
+                assert_eq!(previous.read().unwrap()[0].message, "retained diagnostic");
+            }
             "lookup" => self.observations.push(
                 self.runner
                     .get_command(s.name.as_deref().unwrap())
@@ -473,7 +504,7 @@ impl Replay {
             "ui" => self.has_ui = s.installed,
             "append_owner" => {
                 let path = s.path.unwrap();
-                self.add(serde_json::from_value(json!({"path":path,"source":"late","scope":"temporary","origin":"top-level"})).unwrap(),path);
+                self.add(serde_json::from_value(json!({"path":path,"source":"late","scope":"temporary","origin":"top-level"})).unwrap(),&path);
             }
             _ => panic!("unknown fixture operation"),
         }

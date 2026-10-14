@@ -6,7 +6,7 @@ use maestro_resources::SourceInfo;
 use maestro_tui::{AutocompleteItem, KeyId};
 use std::{
     ops::Deref,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, Weak},
 };
 
 /// The declared flag kind.
@@ -148,12 +148,12 @@ pub struct ExtensionRuntimeState {
     pub(crate) stale_message: RwLock<Option<String>>,
 }
 
-/// Registration facade retaining its owner, runtime and event bus.
+/// Registration facade borrowing its owner and retaining runtime and event bus.
 pub struct ExtensionAPI<C, CC> {
     /// Existing shared event capability.
     pub events: EventBus,
     /// Registration owner.
-    pub(crate) extension: ExtensionHandle<C, CC>,
+    pub(crate) extension: Weak<RwLock<Extension<C, CC>>>,
     /// Shared values and activity guard.
     pub(crate) runtime: Arc<ExtensionRuntimeState>,
 }
@@ -183,7 +183,7 @@ impl<C, CC> Clone for ExtensionAPI<C, CC> {
     fn clone(&self) -> Self {
         Self {
             events: self.events.clone(),
-            extension: Arc::clone(&self.extension),
+            extension: self.extension.clone(),
             runtime: Arc::clone(&self.runtime),
         }
     }

@@ -177,11 +177,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
     let runtime = Arc::new(ExtensionRuntimeState::new());
     let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
-    let api = ExtensionAPI::new(
-        Arc::clone(&owner),
-        Arc::clone(&runtime),
-        bus.for_extension(),
-    );
+    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
     api.register_command(
         "hello".into(),
         RegisteredCommandOptions {
@@ -191,7 +187,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
                 assert!(!capture.0.load(Ordering::SeqCst));
                 assert_eq!(args, "raw args");
                 assert_eq!(ctx, "owned context");
-                Box::pin(async { Ok(()) })
+                Box::pin(std::future::ready(Ok(())))
             }),
         },
     )
@@ -209,4 +205,174 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     assert!(!released.load(Ordering::SeqCst));
     drop(command);
     assert!(released.load(Ordering::SeqCst));
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn captured_command_facade_does_not_retain_owner() {
+        run_captured_facade("command");
+    }
+
+    #[test]
+    fn captured_completion_facade_does_not_retain_owner() {
+        run_captured_facade("completion");
+    }
+
+    #[test]
+    fn captured_shortcut_facade_does_not_retain_owner() {
+        run_captured_facade("shortcut");
+    }
+
+    fn run_captured_facade(kind: &str) {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(captured_facade_releases_owner(kind));
+    }
+
+    use maestro_extensions::types::{
+        ExtensionFlagOptions, ExtensionHandle, ExtensionRuntimeState, ExtensionShortcutOptions,
+        FlagType, FlagValue, RegisteredCommandOptions,
+    };
+    use maestro_extensions::{Extension, ExtensionAPI, SourceInfo, create_event_bus};
+    use std::sync::{Arc, RwLock};
+
+    fn live_facade() -> (ExtensionHandle<(), ()>, ExtensionAPI<(), ()>) {
+        let source: SourceInfo = serde_json::from_value(serde_json::json!({
+            "path":"/captured", "source":"cli", "scope":"temporary", "origin":"top-level"
+        }))
+        .unwrap();
+        let owner = Arc::new(RwLock::new(Extension::new(
+            "/captured".into(),
+            "/resolved".into(),
+            Arc::new(RwLock::new(source)),
+        )));
+        let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+        let api = ExtensionAPI::new(
+            &owner,
+            Arc::new(ExtensionRuntimeState::new()),
+            bus.for_extension(),
+        );
+        api.register_flag(
+            "live".into(),
+            ExtensionFlagOptions {
+                description: None,
+                r#type: FlagType::Boolean,
+                default: Some(FlagValue::Boolean(true)),
+            },
+        )
+        .unwrap();
+        (owner, api)
+    }
+
+    async fn captured_facade_releases_owner(kind: &str) {
+        let (owner, api) = live_facade();
+        let weak = Arc::downgrade(&owner);
+        let captured = api.clone();
+        let read_flag = move || {
+            assert_eq!(
+                captured.get_flag("live").unwrap(),
+                Some(FlagValue::Boolean(true))
+            );
+            captured
+                .register_flag(
+                    "nested".into(),
+                    ExtensionFlagOptions {
+                        description: None,
+                        r#type: FlagType::String,
+                        default: None,
+                    },
+                )
+                .unwrap();
+        };
+        install_and_invoke(kind, &owner, &api, read_flag).await;
+        assert!(owner.read().unwrap().flags.contains_key("nested"));
+        drop(owner);
+        assert!(
+            weak.upgrade().is_none(),
+            "{kind} captured facade leaked its owner"
+        );
+        assert!(
+            api.get_flag("live")
+                .unwrap_err()
+                .to_string()
+                .starts_with("This extension ctx is stale")
+        );
+        assert!(
+            api.register_flag(
+                "late".into(),
+                ExtensionFlagOptions {
+                    description: None,
+                    r#type: FlagType::Boolean,
+                    default: None,
+                }
+            )
+            .unwrap_err()
+            .to_string()
+            .starts_with("This extension ctx is stale")
+        );
+    }
+
+    async fn install_and_invoke(
+        kind: &str,
+        owner: &ExtensionHandle<(), ()>,
+        api: &ExtensionAPI<(), ()>,
+        read_flag: impl Fn() + Send + Sync + 'static,
+    ) {
+        if kind == "shortcut" {
+            api.register_shortcut(
+                "ctrl+y".into(),
+                ExtensionShortcutOptions {
+                    description: None,
+                    handler: Arc::new(move |()| {
+                        read_flag();
+                        Box::pin(std::future::ready(Ok(())))
+                    }),
+                },
+            )
+            .unwrap();
+            let handler = Arc::clone(
+                &owner.read().unwrap().shortcuts["ctrl+y"]
+                    .read()
+                    .unwrap()
+                    .handler,
+            );
+            handler(()).await.unwrap();
+            return;
+        }
+        let options = if kind == "command" {
+            RegisteredCommandOptions {
+                description: None,
+                get_argument_completions: None,
+                handler: Arc::new(move |_, ()| {
+                    read_flag();
+                    Box::pin(std::future::ready(Ok(())))
+                }),
+            }
+        } else {
+            RegisteredCommandOptions {
+                description: None,
+                get_argument_completions: Some(Arc::new(move |_| {
+                    read_flag();
+                    Box::pin(std::future::ready(Ok(None)))
+                })),
+                handler: Arc::new(|_, ()| Box::pin(std::future::ready(Ok(())))),
+            }
+        };
+        api.register_command("captured".into(), options).unwrap();
+        let command = Arc::clone(&owner.read().unwrap().commands["captured"]);
+        if kind == "command" {
+            let handler = Arc::clone(&command.read().unwrap().handler);
+            handler(String::new(), ()).await.unwrap();
+        } else {
+            let complete = command
+                .read()
+                .unwrap()
+                .get_argument_completions
+                .clone()
+                .unwrap();
+            assert!(complete(String::new()).await.unwrap().is_none());
+        }
+    }
 }

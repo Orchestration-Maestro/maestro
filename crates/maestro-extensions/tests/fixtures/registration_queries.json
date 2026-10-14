@@ -327,6 +327,10 @@
           "owner": 0,
           "type": "boolean",
           "default": false
+        },
+        {
+          "op": "change_path",
+          "path": "/changed-after-registration.wasm"
         }
       ],
       "observe": [
@@ -4135,6 +4139,10 @@
           "op": "shortcut",
           "key": "CTRL+Y",
           "owner": 1
+        },
+        {
+          "op": "change_path",
+          "path": "/changed-after-registration.wasm"
         }
       ],
       "observe": [

@@ -3,7 +3,10 @@
 `maestro-extensions` registers commands, flags and shortcuts on caller-supplied
 extension owners. It does not load extension artifacts or create application contexts.
 The caller supplies provenance, an existing event bus, effective keybindings and
-its current UI-presence observation.
+its current UI-presence observation. The loader or runtime retains a strong extension
+owner. API clones hold weak owner handles, so callbacks may capture them without
+keeping a discarded extension alive. After the last strong owner is released,
+registration and facade flag reads return the stale-context error.
 
 ## Register and query
 
@@ -29,7 +32,7 @@ let bus = create_event_bus(
     Arc::new(|tail| { tokio::spawn(tail); }),
     Arc::new(|line| eprint!("{line}")),
 );
-let api = ExtensionAPI::new(owner, Arc::clone(&runtime), bus.for_extension());
+let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
 api.register_command("hello".into(), RegisteredCommandOptions {
     description: Some("Say hello".into()),
     get_argument_completions: None,
