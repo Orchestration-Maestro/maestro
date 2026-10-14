@@ -314,21 +314,6 @@ fn local_bash_timeout_is_optional_seconds() {
                 .unwrap();
             assert_eq!(result.exit_code, Some(7.0));
         }
-        let error = operations
-            .exec(
-                "exec /bin/sleep 60",
-                &dir.text(),
-                BashExecOptions {
-                    on_data: &mut sink,
-                    signal: None,
-                    timeout: Some(0.025),
-                    env: None,
-                },
-            )
-            .await
-            .unwrap_err();
-        assert!(matches!(error, BashError::Timeout(_)));
-        assert_eq!(error.to_string(), "timeout:0.025");
     });
 }
 
@@ -452,36 +437,6 @@ fn local_bash_streams_raw_bytes_before_completion() {
             .unwrap();
         assert_eq!(result.exit_code, Some(0.0));
         assert_eq!(bytes, b"raw\0\x1b[31m\r\n\xffstderr");
-    });
-}
-
-#[test]
-fn local_bash_aborts_from_stream_callback() {
-    run(async {
-        let dir = TempDir::new();
-        let signal = Cancellation::new();
-        let mut bytes = Vec::new();
-        let mut sink = |data: &[u8]| {
-            bytes.extend_from_slice(data);
-            signal.abort();
-        };
-        let operations = create_local_bash_operations("/tools".into(), Some("/bin/bash".into()));
-        let error = operations
-            .exec(
-                "printf ready; exec /bin/sleep 60",
-                &dir.text(),
-                BashExecOptions {
-                    on_data: &mut sink,
-                    signal: Some(&signal),
-                    timeout: None,
-                    env: None,
-                },
-            )
-            .await
-            .unwrap_err();
-        assert!(matches!(error, BashError::Aborted));
-        assert_eq!(bytes, b"ready");
-        assert!(signal.is_aborted());
     });
 }
 

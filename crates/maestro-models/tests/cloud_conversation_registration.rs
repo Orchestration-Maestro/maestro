@@ -31,6 +31,7 @@ mod child_process;
 )]
 #[path = "support/transport.rs"]
 mod transport;
+use bedrock::diagnostic as error;
 use chat::{TestResult, block_on};
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, stream, stream_simple,
@@ -120,16 +121,6 @@ async fn explicit_routes() -> TestResult {
         assert_eq!(bundled::text_of(&completion.await?), "registered");
     }
     absent_options().await
-}
-
-/// Callback setup error used by controlled replacement pairs.
-fn error(text: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: text.into(),
-        stack: None,
-        code: None,
-    }
 }
 
 /// Restores the default pair and bundled registry after an override test.
