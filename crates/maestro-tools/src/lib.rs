@@ -1,6 +1,6 @@
 //! Tool definitions, the `read`, `write`, `edit`, `ls`, `find`, `grep` and native `bash` tools,
 //! the file mutation queue, output and inline-image helpers and word-level edit diff rendering
-//! for Maestro tools.
+//! for Maestro tools. Native [tools] factories select individual tools and ordered presets.
 //!
 //! Native bash definitions retain `BashRenderState` for call/result timing and
 //! five-row visual previews. [`truncate_to_visual_lines`] also selects wrapped
@@ -51,7 +51,15 @@ pub mod read;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod search;
 pub mod tool_definition_wrapper;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod tools;
 pub mod types;
+#[cfg(not(target_arch = "wasm32"))]
+pub use tools::{
+    ALL_TOOL_NAMES, Tool, ToolDef, ToolName, ToolsOptions, create_all_tool_definitions,
+    create_all_tools, create_coding_tool_definitions, create_coding_tools,
+    create_read_only_tool_definitions, create_read_only_tools, create_tool, create_tool_definition,
+};
 pub mod utils;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod write;

@@ -28,6 +28,7 @@ mod edit_rendering;
 mod edit_snapshot_matching;
 mod edit_support;
 mod exif_orientation_behavior;
+mod factory_support;
 mod find_execution;
 mod find_rendering;
 #[cfg(not(target_arch = "wasm32"))]
@@ -44,6 +45,7 @@ mod loop_support;
 mod ls_execution;
 mod ls_rendering;
 mod ls_support;
+mod maestro_tool_factories;
 mod process_support;
 mod queue_ordering;
 mod read_execution;
