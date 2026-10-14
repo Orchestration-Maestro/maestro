@@ -20,25 +20,34 @@ sys.exit(int(sys.argv[1]))
             b"null:".to_vec()
         };
         expected.extend_from_slice(input.unwrap_or_default());
-        for (stderr, code) in [
-            (OutputMode::Capture, 0),
-            (OutputMode::Capture, 7),
-            (OutputMode::Discard, 0),
-            (OutputMode::Discard, 7),
+        for (stdout, stderr, code) in [
+            (OutputMode::Capture, OutputMode::Capture, 0),
+            (OutputMode::Capture, OutputMode::Capture, 7),
+            (OutputMode::Capture, OutputMode::Discard, 0),
+            (OutputMode::Capture, OutputMode::Discard, 7),
+            (OutputMode::Discard, OutputMode::Capture, 0),
+            (OutputMode::Discard, OutputMode::Capture, 7),
         ] {
             let mut command = Command::new("python3");
             command.args(["-c", script, &code.to_string()]);
             let output = spawn_sync(
                 &mut command,
                 SpawnSyncOptions::Capture {
-                    stdout: OutputMode::Capture,
+                    stdout,
                     input,
                     timeout: None,
                     stderr,
                 },
             )
             .unwrap();
-            assert_eq!(output.stdout, expected);
+            assert_eq!(
+                output.stdout,
+                if stdout == OutputMode::Capture {
+                    &expected[..]
+                } else {
+                    b""
+                }
+            );
             assert_eq!(
                 output.stderr,
                 if stderr == OutputMode::Capture {
