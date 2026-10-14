@@ -42,6 +42,7 @@ just test
 Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
 A test that binds the fixed OAuth callback port goes in a module named
 `oauth_callback`, which nextest runs one at a time.
+Shared Linux CI reserves ports 53692 and 1455 from automatic allocation so OAuth callback tests can bind their required ports.
 Development and test builds retain file:line debug information, not debugger
 variable views.
 
