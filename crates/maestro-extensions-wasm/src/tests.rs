@@ -983,3 +983,5 @@ fn assert_async_exports(contract: &Contract) {
         "every event, command and pending call is native async"
     );
 }
+
+mod tool_record_views;

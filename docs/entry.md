@@ -33,7 +33,8 @@ write those identity members before their own fields. Preparation writes
 
 Optional entry/header fields and `previousSummary` use the request owner's
 [`Presence<T>`](records.md#stored-session-entries). Detail types need no `Default`
-for decoding. `Omittable` controls serialization of context settings and the
+for decoding. [`Omittable`](../crates/maestro-request/src/presence.rs) in the request
+owner controls serialization of context settings and the
 new-session parent: `Presence::Missing` and `None` are omitted; text is written,
 including empty text. These generic fields have no deserialization default.
 

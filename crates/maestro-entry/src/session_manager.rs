@@ -1,27 +1,8 @@
 //! Session file and context records shared by the native session and the extension guest.
-use maestro_request::presence::Presence;
+use maestro_request::presence::{Omittable, Presence};
 use maestro_request::types::UserContent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-/// A record field type that serialization may leave out.
-pub trait Omittable {
-    /// Whether serialization leaves the field out; never, unless the type says otherwise.
-    fn is_omitted(&self) -> bool {
-        false
-    }
-}
-impl Omittable for String {}
-impl<T> Omittable for Presence<T> {
-    fn is_omitted(&self) -> bool {
-        self.is_missing()
-    }
-}
-impl<T> Omittable for Option<T> {
-    fn is_omitted(&self) -> bool {
-        self.is_none()
-    }
-}
 
 /// Identity and timestamp shared by session entries.
 #[derive(Debug, Clone, Serialize, Deserialize)]

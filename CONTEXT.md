@@ -110,7 +110,7 @@ are later scope, not active foundation concepts.
 ### Structure
 
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
-- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The declared `maestro-tool` library, which depends only on `maestro-request`, owns the tool interchange records; `maestro-tools` keeps execution.
+- **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool-record library](docs/tool-records.md), `maestro-tool`, depends only on `maestro-request` and owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
 - **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process leaf and the optional foundation utility, without application selectors or framework/highlighting engines.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.

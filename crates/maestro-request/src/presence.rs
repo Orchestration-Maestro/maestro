@@ -41,3 +41,22 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Presence<T> {
         Ok(Option::<T>::deserialize(deserializer)?.map_or(Self::Null, Self::Present))
     }
 }
+
+/// A record field type that serialization may leave out.
+pub trait Omittable {
+    /// Whether serialization leaves the field out; never, unless the type says otherwise.
+    fn is_omitted(&self) -> bool {
+        false
+    }
+}
+impl Omittable for String {}
+impl<T> Omittable for Presence<T> {
+    fn is_omitted(&self) -> bool {
+        self.is_missing()
+    }
+}
+impl<T> Omittable for Option<T> {
+    fn is_omitted(&self) -> bool {
+        self.is_none()
+    }
+}

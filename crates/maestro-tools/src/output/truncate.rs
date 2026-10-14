@@ -19,71 +19,35 @@ pub struct TruncationOptions {
 }
 
 /// The limit that stopped selection.
-#[derive(Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TruncationBy {
-    /// Newline-entry quota.
-    Lines,
-    /// UTF-8 byte quota.
-    Bytes,
-}
+pub use maestro_tool::tools::truncate::TruncationBy;
+/// Selected output with native counts.
+pub type TruncationResult = maestro_tool::tools::truncate::TruncationResult<usize>;
 
-/// Selected output with original and retained counts.
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TruncationResult {
-    /// Selected text.
-    pub content: String,
-    /// Whether a limit required selection.
-    pub truncated: bool,
-    /// Stopping limit, or null when the input fitted.
-    pub truncated_by: Option<TruncationBy>,
-    /// Original literal-newline entry count, including a final empty entry.
-    pub total_lines: usize,
-    /// Original UTF-8 byte count.
-    pub total_bytes: usize,
-    /// Selected entry count, including an empty partial tail entry.
-    pub output_lines: usize,
-    /// Selected text's UTF-8 byte count.
-    pub output_bytes: usize,
-    /// Whether tail selection retained only a suffix of the final input entry.
-    pub last_line_partial: bool,
-    /// Whether head selection rejected an oversized first input entry.
-    pub first_line_exceeds_limit: bool,
-    /// Applied entry budget.
-    pub max_lines: usize,
-    /// Applied byte budget.
-    pub max_bytes: usize,
-}
-
-impl TruncationResult {
-    /// Account for an input before selecting output.
-    fn new(content: &str, options: TruncationOptions) -> Self {
-        let total_lines = content.split('\n').count();
-        let total_bytes = content.len();
-        let max_lines = options.max_lines.unwrap_or(DEFAULT_MAX_LINES);
-        let max_bytes = options.max_bytes.unwrap_or(DEFAULT_MAX_BYTES);
-        let fits = total_lines <= max_lines && total_bytes <= max_bytes;
-        Self {
-            content: if fits { content.into() } else { String::new() },
-            truncated: false,
-            truncated_by: None,
-            total_lines,
-            total_bytes,
-            output_lines: total_lines,
-            output_bytes: total_bytes,
-            last_line_partial: false,
-            first_line_exceeds_limit: false,
-            max_lines,
-            max_bytes,
-        }
+/// Account for an input before selecting output.
+fn initial_result(content: &str, options: TruncationOptions) -> TruncationResult {
+    let total_lines = content.split('\n').count();
+    let total_bytes = content.len();
+    let max_lines = options.max_lines.unwrap_or(DEFAULT_MAX_LINES);
+    let max_bytes = options.max_bytes.unwrap_or(DEFAULT_MAX_BYTES);
+    let fits = total_lines <= max_lines && total_bytes <= max_bytes;
+    TruncationResult {
+        content: if fits { content.into() } else { String::new() },
+        truncated: false,
+        truncated_by: None,
+        total_lines,
+        total_bytes,
+        output_lines: total_lines,
+        output_bytes: total_bytes,
+        last_line_partial: false,
+        first_line_exceeds_limit: false,
+        max_lines,
+        max_bytes,
     }
 }
-
 /// Retain complete leading newline-separated entries.
 #[must_use]
 pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationResult {
-    let mut result = TruncationResult::new(content, options);
+    let mut result = initial_result(content, options);
     if result.total_lines <= result.max_lines && result.total_bytes <= result.max_bytes {
         return result;
     }
@@ -122,7 +86,7 @@ pub fn truncate_head(content: &str, options: TruncationOptions) -> TruncationRes
 /// Retain trailing newline-separated entries.
 #[must_use]
 pub fn truncate_tail(content: &str, options: TruncationOptions) -> TruncationResult {
-    let mut result = TruncationResult::new(content, options);
+    let mut result = initial_result(content, options);
     if result.total_lines <= result.max_lines && result.total_bytes <= result.max_bytes {
         return result;
     }

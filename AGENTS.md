@@ -108,8 +108,7 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   boundary semantics (object acceptance, canonical keys, truth, compact and
   pretty text). `maestro-entry` and `maestro-tool` define session and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`
-  projects a brand pack and depends on text and JSON. Text, JSON, entry and brand exist; tool
-  remains a policy row until later extraction issues create them; add no `common`, `utils` or
+  projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with

@@ -2527,6 +2527,7 @@ dependencies = [
  "futures-util",
  "maestro-models",
  "maestro-text",
+ "maestro-tool",
  "serde",
  "serde_json",
  "tokio",
@@ -2660,6 +2661,7 @@ dependencies = [
  "maestro-entry",
  "maestro-json",
  "maestro-request",
+ "maestro-tool",
  "serde",
  "serde_json",
  "tokio",
@@ -2896,6 +2898,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-tool"
+version = "0.1.0"
+dependencies = [
+ "maestro-request",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-tooling"
 version = "0.1.0"
 dependencies = [
@@ -2921,6 +2932,7 @@ dependencies = [
  "maestro-process",
  "maestro-text",
  "maestro-theme",
+ "maestro-tool",
  "maestro-tui",
  "num-traits",
  "owo-colors",
