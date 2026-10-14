@@ -85,6 +85,7 @@ mod cloud_model_routes;
 mod cloud_profile_credentials;
 mod compatibility_invocation;
 mod content_generation_conversion;
+mod content_generation_invocation;
 mod content_generation_preparation;
 mod content_generation_reduction;
 mod content_generation_transport;

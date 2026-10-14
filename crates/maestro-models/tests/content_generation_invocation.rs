@@ -4,26 +4,14 @@
     reason = "shared chat support serves multiple test binaries"
 )]
 
-#[cfg(test)]
-#[path = "support/chat.rs"]
-mod chat;
-
+use crate::{bundled, chat, child_process, response_output};
 use chat::TestResult;
-#[cfg(test)]
-#[path = "support/bundled.rs"]
-mod bundled;
-#[cfg(test)]
-#[path = "support/response_output.rs"]
-mod response_output;
 
 #[test]
 fn raw_request_projects_the_selected_payload() -> TestResult {
     content_invocation::assert_rows("raw_request_projects_the_selected_payload")
 }
 
-#[cfg(test)]
-#[path = "support/child_process.rs"]
-mod child_process;
 #[cfg(test)]
 #[path = "support/content_invocation.rs"]
 mod content_invocation;
