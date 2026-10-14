@@ -1,0 +1,6715 @@
+[
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "off",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "off",
+        "label": "off",
+        "description": "No reasoning"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "minimal",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "\u001b[38;5;32m→ minimal     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "minimal",
+        "label": "minimal",
+        "description": "Very brief reasoning (~1k tokens)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "low",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "low",
+        "label": "low",
+        "description": "Light reasoning (~2k tokens)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "medium",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "\u001b[38;5;32m→ medium      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "medium",
+        "label": "medium",
+        "description": "Moderate reasoning (~8k tokens)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "high",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "high",
+        "label": "high",
+        "description": "Deep reasoning (~16k tokens)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_levels_keep_descriptions_and_current_selection",
+    "input": {
+      "current": "xhigh",
+      "levels": [
+        "off",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "\u001b[38;5;32m→ xhigh       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "xhigh",
+        "label": "xhigh",
+        "description": "Maximum reasoning (~32k tokens)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "high",
+      "available": []
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;33m  No matching commands\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": null,
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;33m  No matching commands\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": null,
+        "events": [
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "xhigh",
+      "available": []
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;33m  No matching commands\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": null,
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;33m  No matching commands\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": null,
+        "events": [
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "high",
+      "available": [
+        "high",
+        "off",
+        "high",
+        "minimal"
+      ]
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
+          "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+          "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+          "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "high",
+          "label": "high",
+          "description": "Deep reasoning (~16k tokens)"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
+          "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+          "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+          "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "high",
+          "label": "high",
+          "description": "Deep reasoning (~16k tokens)"
+        },
+        "events": [
+          [
+            "select",
+            "high"
+          ],
+          [
+            "select",
+            "off"
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "xhigh",
+      "available": [
+        "high",
+        "off",
+        "high",
+        "minimal"
+      ]
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
+          "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+          "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+          "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "high",
+          "label": "high",
+          "description": "Deep reasoning (~16k tokens)"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ high        Deep reasoning (~16k tokens)\u001b[39m",
+          "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+          "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+          "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "high",
+          "label": "high",
+          "description": "Deep reasoning (~16k tokens)"
+        },
+        "events": [
+          [
+            "select",
+            "high"
+          ],
+          [
+            "select",
+            "off"
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "high",
+      "available": [
+        "low"
+      ]
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "low",
+          "label": "low",
+          "description": "Light reasoning (~2k tokens)"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "low",
+          "label": "low",
+          "description": "Light reasoning (~2k tokens)"
+        },
+        "events": [
+          [
+            "select",
+            "low"
+          ],
+          [
+            "select",
+            "low"
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_supplied_order_duplicates_and_missing_current",
+    "input": {
+      "current": "xhigh",
+      "available": [
+        "low"
+      ]
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "low",
+          "label": "low",
+          "description": "Light reasoning (~2k tokens)"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "low",
+          "label": "low",
+          "description": "Light reasoning (~2k tokens)"
+        },
+        "events": [
+          [
+            "select",
+            "low"
+          ],
+          [
+            "select",
+            "low"
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "off"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "off"
+        ],
+        [
+          "select",
+          "xhigh"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "minimal"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "minimal"
+        ],
+        [
+          "select",
+          "off"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "low"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "low"
+        ],
+        [
+          "select",
+          "minimal"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "medium"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "medium"
+        ],
+        [
+          "select",
+          "low"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "high"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "high"
+        ],
+        [
+          "select",
+          "medium"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "thinking_selection_reports_typed_levels",
+    "input": {
+      "current": "xhigh"
+    },
+    "expected": {
+      "events": [
+        [
+          "select",
+          "xhigh"
+        ],
+        [
+          "select",
+          "high"
+        ],
+        [
+          "cancel"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "thinking",
+      "width": 12
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────\u001b[39m",
+        "\u001b[38;5;32m→ off\u001b[39m",
+        "  minimal",
+        "  low",
+        "  medium",
+        "  high",
+        "  xhigh",
+        "\u001b[38;5;31m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "thinking",
+      "width": 40
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ off\u001b[39m",
+        "  minimal",
+        "  low",
+        "  medium",
+        "  high",
+        "  xhigh",
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "thinking",
+      "width": 41
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k\u001b[0m\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k toke\u001b[0m\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k t\u001b[0m\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k toke\u001b[0m\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k t\u001b[0m\u001b[39m",
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "thinking",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ off         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "theme",
+      "width": 12
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────\u001b[39m",
+        "  aaaaaaaa\u001b[0m",
+        "\u001b[38;5;32m→ dark\u001b[39m",
+        "  light",
+        "\u001b[38;5;31m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "theme",
+      "width": 40
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m",
+        "  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\u001b[0m",
+        "\u001b[38;5;32m→ dark\u001b[39m",
+        "  light",
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "theme",
+      "width": 41
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m",
+        "  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\u001b[0m",
+        "\u001b[38;5;32m→ dark\u001b[39m",
+        "  light",
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "theme",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "\u001b[38;5;32m→ dark                            (current)\u001b[39m",
+        "  light",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "images",
+      "width": 12
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────\u001b[39m",
+        "  Yes",
+        "\u001b[38;5;32m→ No\u001b[39m",
+        "\u001b[38;5;31m────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "images",
+      "width": 40
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m",
+        "  Yes",
+        "\u001b[38;5;32m→ No\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "images",
+      "width": 41
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m",
+        "  Yes\u001b[38;5;33m         Show images inline in ter\u001b[0m\u001b[39m",
+        "\u001b[38;5;32m→ No          Show text placeholder ins\u001b[0m\u001b[39m",
+        "\u001b[38;5;31m─────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "select_list_layout_uses_bounded_primary_columns",
+    "input": {
+      "kind": "images",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  Yes\u001b[38;5;33m         Show images inline in terminal\u001b[39m",
+        "\u001b[38;5;32m→ No          Show text placeholder instead\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_inventory_marks_only_the_current_name",
+    "input": {
+      "current": "dark",
+      "names": [
+        "dark",
+        "light",
+        "zeta",
+        "é",
+        "𐀀",
+        ""
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+        "  light",
+        "  zeta",
+        "  é",
+        "  𐀀",
+        "  ",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "dark",
+        "label": "dark",
+        "description": "(current)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "theme_inventory_marks_only_the_current_name",
+    "input": {
+      "current": "light",
+      "names": [
+        "dark",
+        "light",
+        "zeta",
+        "é",
+        "𐀀",
+        ""
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  dark",
+        "\u001b[38;5;32m→ light       (current)\u001b[39m",
+        "  zeta",
+        "  é",
+        "  𐀀",
+        "  ",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "light",
+        "label": "light",
+        "description": "(current)"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "theme_inventory_marks_only_the_current_name",
+    "input": {
+      "current": "missing",
+      "names": [
+        "dark",
+        "light",
+        "zeta",
+        "é",
+        "𐀀",
+        ""
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark\u001b[39m",
+        "  light",
+        "  zeta",
+        "  é",
+        "  𐀀",
+        "  ",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "dark",
+        "label": "dark"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "theme_inventory_marks_only_the_current_name",
+    "input": {
+      "current": "",
+      "names": [
+        "dark",
+        "light",
+        "zeta",
+        "é",
+        "𐀀",
+        ""
+      ]
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark\u001b[39m",
+        "  light",
+        "  zeta",
+        "  é",
+        "  𐀀",
+        "  ",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "selected": {
+        "value": "dark",
+        "label": "dark"
+      },
+      "events": []
+    }
+  },
+  {
+    "test": "theme_preview_follows_navigation_not_programmatic_changes",
+    "input": {
+      "ops": [
+        {
+          "index": 0
+        },
+        {
+          "filter": "d"
+        },
+        {
+          "key": "\u001b[B"
+        },
+        {
+          "key": "\u001b[A"
+        },
+        {
+          "key": "\r"
+        },
+        {
+          "key": "\u001b"
+        },
+        {
+          "filter": "no-such-theme"
+        },
+        {
+          "key": "\u001b[B"
+        },
+        {
+          "key": "\r"
+        },
+        {
+          "key": "\u001b"
+        }
+      ]
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "  dark",
+            "\u001b[38;5;32m→ light       (current)\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "light",
+            "label": "light",
+            "description": "(current)"
+          },
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "  light\u001b[38;5;33m       (current)\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": [
+            [
+              "preview",
+              "dark"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;32m→ dark\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": {
+            "value": "dark",
+            "label": "dark"
+          },
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;33m  No matching commands\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": null,
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;33m  No matching commands\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": null,
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;33m  No matching commands\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": null,
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "\u001b[38;5;33m  No matching commands\u001b[39m",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "selected": null,
+          "events": [
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "select",
+              "dark"
+            ],
+            [
+              "cancel"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07"
+      ],
+      "currentIndex": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "  theme-03",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07"
+      ],
+      "currentIndex": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  dark",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "\u001b[38;5;32m→ theme-03    (current)\u001b[39m",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07"
+      ],
+      "currentIndex": 9
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  dark",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "  theme-03",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "\u001b[38;5;32m→ theme-07    (current)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08"
+      ],
+      "currentIndex": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "  theme-03",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;33m  (1/11)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08"
+      ],
+      "currentIndex": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  dark",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "\u001b[38;5;32m→ theme-03    (current)\u001b[39m",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;33m  (6/11)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08"
+      ],
+      "currentIndex": 10
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "  theme-03",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;32m→ theme-08    (current)\u001b[39m",
+        "\u001b[38;5;33m  (11/11)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08",
+        "theme-09",
+        "theme-10",
+        "theme-11",
+        "theme-12",
+        "theme-13",
+        "theme-14",
+        "theme-15",
+        "theme-16",
+        "theme-17",
+        "theme-18"
+      ],
+      "currentIndex": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "  theme-03",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;33m  (1/21)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08",
+        "theme-09",
+        "theme-10",
+        "theme-11",
+        "theme-12",
+        "theme-13",
+        "theme-14",
+        "theme-15",
+        "theme-16",
+        "theme-17",
+        "theme-18"
+      ],
+      "currentIndex": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  dark",
+        "  light",
+        "  theme-00",
+        "  theme-01",
+        "  theme-02",
+        "\u001b[38;5;32m→ theme-03    (current)\u001b[39m",
+        "  theme-04",
+        "  theme-05",
+        "  theme-06",
+        "  theme-07",
+        "\u001b[38;5;33m  (6/21)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "theme_window_shows_ten_names_with_scroll_position",
+    "input": {
+      "names": [
+        "dark",
+        "light",
+        "theme-00",
+        "theme-01",
+        "theme-02",
+        "theme-03",
+        "theme-04",
+        "theme-05",
+        "theme-06",
+        "theme-07",
+        "theme-08",
+        "theme-09",
+        "theme-10",
+        "theme-11",
+        "theme-12",
+        "theme-13",
+        "theme-14",
+        "theme-15",
+        "theme-16",
+        "theme-17",
+        "theme-18"
+      ],
+      "currentIndex": 20
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  theme-09",
+        "  theme-10",
+        "  theme-11",
+        "  theme-12",
+        "  theme-13",
+        "  theme-14",
+        "  theme-15",
+        "  theme-16",
+        "  theme-17",
+        "\u001b[38;5;32m→ theme-18    (current)\u001b[39m",
+        "\u001b[38;5;33m  (21/21)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "image_choices_render_and_report_both_boolean_values",
+    "input": {
+      "current": false
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "  Yes\u001b[38;5;33m         Show images inline in terminal\u001b[39m",
+          "\u001b[38;5;32m→ No          Show text placeholder instead\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "no",
+          "label": "No",
+          "description": "Show text placeholder instead"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "  Yes\u001b[38;5;33m         Show images inline in terminal\u001b[39m",
+          "\u001b[38;5;32m→ No          Show text placeholder instead\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "no",
+          "label": "No",
+          "description": "Show text placeholder instead"
+        },
+        "events": [
+          [
+            "select",
+            false
+          ],
+          [
+            "select",
+            true
+          ],
+          [
+            "select",
+            false
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "image_choices_render_and_report_both_boolean_values",
+    "input": {
+      "current": true
+    },
+    "expected": {
+      "before": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+          "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "yes",
+          "label": "Yes",
+          "description": "Show images inline in terminal"
+        },
+        "events": []
+      },
+      "after": {
+        "lines": [
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+          "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "selected": {
+          "value": "yes",
+          "label": "Yes",
+          "description": "Show images inline in terminal"
+        },
+        "events": [
+          [
+            "select",
+            true
+          ],
+          [
+            "select",
+            false
+          ],
+          [
+            "select",
+            true
+          ],
+          [
+            "cancel"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "message_initial_identity_defaults_to_newest",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "1"
+        }
+      ],
+      "initial": null
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "id-2"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_identity_defaults_to_newest",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "1"
+        }
+      ],
+      "initial": "id-0"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "id-0"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_identity_defaults_to_newest",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "1"
+        }
+      ],
+      "initial": "id-1"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "id-1"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_identity_defaults_to_newest",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "1"
+        }
+      ],
+      "initial": "missing"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "id-2"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_identity_defaults_to_newest",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "1"
+        }
+      ],
+      "initial": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "id-2"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_duplicate_uses_first_and_empty_id_is_absent",
+    "input": {
+      "messages": [
+        {
+          "id": "duplicate",
+          "text": "older",
+          "timestamp": "z"
+        },
+        {
+          "id": "",
+          "text": "empty id"
+        },
+        {
+          "id": "duplicate",
+          "text": "newer",
+          "timestamp": "a"
+        }
+      ],
+      "initial": "duplicate"
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1molder\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  empty id",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "  newer",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "duplicate"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_initial_duplicate_uses_first_and_empty_id_is_absent",
+    "input": {
+      "messages": [
+        {
+          "id": "duplicate",
+          "text": "older",
+          "timestamp": "z"
+        },
+        {
+          "id": "",
+          "text": "empty id"
+        },
+        {
+          "id": "duplicate",
+          "text": "newer",
+          "timestamp": "a"
+        }
+      ],
+      "initial": ""
+    },
+    "expected": {
+      "lines": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "  older",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "  empty id",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mnewer\u001b[22m",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "events": [
+        [
+          "select",
+          "duplicate"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "  hello\nworld  "
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mhello world\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "﻿hello﻿"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mhello\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "hello"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mhello\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "\t\n   hello 　"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mhello\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "A\n\nB"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mA  B\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "A\r\nB"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mA\r B\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "A\rB"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mA\rB\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "A\tB"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mA\tB\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": " \n\t "
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_text_replaces_only_lf_and_trims_defined_whitespace",
+    "input": {
+      "text": "A B"
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mA B\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 1
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 2
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 3
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m.\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 4
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m..\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m...\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 8
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mabcdef\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "abcdef",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mabcdef\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 1
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 2
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 3
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m.\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 4
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m..\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m...\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 8
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m界界界\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "界界界",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m界界界\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 1
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 2
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 3
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m.\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 4
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m..\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mééé\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 8
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mééé\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "ééé",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mééé\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 1
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 2
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 3
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m.\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 4
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m..\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m...\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 8
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m👩‍💻👩‍💻\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "👩‍💻👩‍💻",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m👩‍💻👩‍💻\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 1
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 2
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 3
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m.\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 4
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m..\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 5
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[0m...\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 8
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[31mcol\u001b[0m...\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+    "input": {
+      "text": "\u001b[31mcolored\u001b[0m",
+      "width": 80
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1m\u001b[31mcolored\u001b[0m\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 9\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 9\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 9\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 9\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 9\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 9\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 9\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 9\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 9\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "1"
+        }
+      ],
+      "index": 4
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 9\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 9\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 9\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 9\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 4\u001b[22m",
+        "\u001b[38;5;33m  Message 5 of 9\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 9\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 9\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 9\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 9\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "1"
+        }
+      ],
+      "index": 5
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 9\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 9\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 9\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 9\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 9\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 5\u001b[22m",
+        "\u001b[38;5;33m  Message 6 of 9\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 9\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 9\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 9\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "1"
+        }
+      ],
+      "index": 6
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 9\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 9\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 9\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 9\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 9\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 9\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 6\u001b[22m",
+        "\u001b[38;5;33m  Message 7 of 9\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 9\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 9\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "1"
+        }
+      ],
+      "index": 8
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 9\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 9\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 9\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 9\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 9\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 9\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 9\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 9\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 8\u001b[22m",
+        "\u001b[38;5;33m  Message 9 of 9\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 10\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 10\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 10\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 10\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 10\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 10\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 10\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 10\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 10\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 10\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "1"
+        }
+      ],
+      "index": 4
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 10\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 10\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 10\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 10\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 4\u001b[22m",
+        "\u001b[38;5;33m  Message 5 of 10\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 10\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 10\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 10\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 10\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 10\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "1"
+        }
+      ],
+      "index": 5
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 10\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 10\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 10\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 10\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 10\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 5\u001b[22m",
+        "\u001b[38;5;33m  Message 6 of 10\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 10\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 10\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 10\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 10\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "1"
+        }
+      ],
+      "index": 6
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 10\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 10\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 10\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 10\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 10\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 10\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 6\u001b[22m",
+        "\u001b[38;5;33m  Message 7 of 10\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 10\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 10\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 10\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "1"
+        }
+      ],
+      "index": 9
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 10\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 10\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 10\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 10\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 10\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 10\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 10\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 10\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 10\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 9\u001b[22m",
+        "\u001b[38;5;33m  Message 10 of 10\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 11\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 11\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 11\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 11\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 11\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 11\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 11\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 11\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 11\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (1/11)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "1"
+        }
+      ],
+      "index": 4
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 11\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 11\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 11\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 4\u001b[22m",
+        "\u001b[38;5;33m  Message 5 of 11\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 11\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 11\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 11\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 11\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (5/11)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "1"
+        }
+      ],
+      "index": 5
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 11\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 11\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 11\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 11\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 5\u001b[22m",
+        "\u001b[38;5;33m  Message 6 of 11\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 11\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 11\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 11\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (6/11)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "1"
+        }
+      ],
+      "index": 6
+    },
+    "expected": {
+      "lines": [
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 11\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 11\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 11\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 11\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 6\u001b[22m",
+        "\u001b[38;5;33m  Message 7 of 11\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 11\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 11\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 11\u001b[39m",
+        "",
+        "  message 10",
+        "\u001b[38;5;33m  Message 11 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (7/11)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "1"
+        }
+      ],
+      "index": 10
+    },
+    "expected": {
+      "lines": [
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 11\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 11\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 11\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 11\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 11\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 11\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 11\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 11\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 10\u001b[22m",
+        "\u001b[38;5;33m  Message 11 of 11\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (11/11)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 12\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 12\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 12\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 12\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 12\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 12\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 12\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 12\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 12\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (1/12)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "1"
+        }
+      ],
+      "index": 4
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 12\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 12\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 12\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 4\u001b[22m",
+        "\u001b[38;5;33m  Message 5 of 12\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 12\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 12\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 12\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 12\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (5/12)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "1"
+        }
+      ],
+      "index": 5
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 12\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 12\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 12\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 12\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 5\u001b[22m",
+        "\u001b[38;5;33m  Message 6 of 12\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 12\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 12\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 12\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (6/12)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "1"
+        }
+      ],
+      "index": 6
+    },
+    "expected": {
+      "lines": [
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 12\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 12\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 12\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 12\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 6\u001b[22m",
+        "\u001b[38;5;33m  Message 7 of 12\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 12\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 12\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 12\u001b[39m",
+        "",
+        "  message 10",
+        "\u001b[38;5;33m  Message 11 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (7/12)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "1"
+        }
+      ],
+      "index": 11
+    },
+    "expected": {
+      "lines": [
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 12\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 12\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 12\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 12\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 12\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 12\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 12\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 12\u001b[39m",
+        "",
+        "  message 10",
+        "\u001b[38;5;33m  Message 11 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 11\u001b[22m",
+        "\u001b[38;5;33m  Message 12 of 12\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (12/12)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "21"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "20"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "19"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "18"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "17"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "16"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "15"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "14"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "13"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-12",
+          "text": "message 12",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-13",
+          "text": "message 13",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-14",
+          "text": "message 14",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-15",
+          "text": "message 15",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-16",
+          "text": "message 16",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-17",
+          "text": "message 17",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-18",
+          "text": "message 18",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-19",
+          "text": "message 19",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-20",
+          "text": "message 20",
+          "timestamp": "1"
+        }
+      ],
+      "index": 0
+    },
+    "expected": {
+      "lines": [
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 21\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 21\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 21\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 21\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 21\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 21\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 21\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 21\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 21\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (1/21)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "21"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "20"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "19"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "18"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "17"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "16"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "15"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "14"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "13"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-12",
+          "text": "message 12",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-13",
+          "text": "message 13",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-14",
+          "text": "message 14",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-15",
+          "text": "message 15",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-16",
+          "text": "message 16",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-17",
+          "text": "message 17",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-18",
+          "text": "message 18",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-19",
+          "text": "message 19",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-20",
+          "text": "message 20",
+          "timestamp": "1"
+        }
+      ],
+      "index": 4
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 21\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 21\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 21\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 4\u001b[22m",
+        "\u001b[38;5;33m  Message 5 of 21\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 21\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 21\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 21\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 21\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (5/21)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "21"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "20"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "19"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "18"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "17"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "16"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "15"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "14"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "13"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-12",
+          "text": "message 12",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-13",
+          "text": "message 13",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-14",
+          "text": "message 14",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-15",
+          "text": "message 15",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-16",
+          "text": "message 16",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-17",
+          "text": "message 17",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-18",
+          "text": "message 18",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-19",
+          "text": "message 19",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-20",
+          "text": "message 20",
+          "timestamp": "1"
+        }
+      ],
+      "index": 5
+    },
+    "expected": {
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 21\u001b[39m",
+        "",
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 21\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 21\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 21\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 5\u001b[22m",
+        "\u001b[38;5;33m  Message 6 of 21\u001b[39m",
+        "",
+        "  message 6",
+        "\u001b[38;5;33m  Message 7 of 21\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 21\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 21\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (6/21)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "21"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "20"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "19"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "18"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "17"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "16"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "15"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "14"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "13"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-12",
+          "text": "message 12",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-13",
+          "text": "message 13",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-14",
+          "text": "message 14",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-15",
+          "text": "message 15",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-16",
+          "text": "message 16",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-17",
+          "text": "message 17",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-18",
+          "text": "message 18",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-19",
+          "text": "message 19",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-20",
+          "text": "message 20",
+          "timestamp": "1"
+        }
+      ],
+      "index": 6
+    },
+    "expected": {
+      "lines": [
+        "  message 1",
+        "\u001b[38;5;33m  Message 2 of 21\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 21\u001b[39m",
+        "",
+        "  message 3",
+        "\u001b[38;5;33m  Message 4 of 21\u001b[39m",
+        "",
+        "  message 4",
+        "\u001b[38;5;33m  Message 5 of 21\u001b[39m",
+        "",
+        "  message 5",
+        "\u001b[38;5;33m  Message 6 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 6\u001b[22m",
+        "\u001b[38;5;33m  Message 7 of 21\u001b[39m",
+        "",
+        "  message 7",
+        "\u001b[38;5;33m  Message 8 of 21\u001b[39m",
+        "",
+        "  message 8",
+        "\u001b[38;5;33m  Message 9 of 21\u001b[39m",
+        "",
+        "  message 9",
+        "\u001b[38;5;33m  Message 10 of 21\u001b[39m",
+        "",
+        "  message 10",
+        "\u001b[38;5;33m  Message 11 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (7/21)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_window_centers_and_clamps_ten_rows",
+    "input": {
+      "messages": [
+        {
+          "id": "id-0",
+          "text": "message 0",
+          "timestamp": "21"
+        },
+        {
+          "id": "id-1",
+          "text": "message 1",
+          "timestamp": "20"
+        },
+        {
+          "id": "id-2",
+          "text": "message 2",
+          "timestamp": "19"
+        },
+        {
+          "id": "id-3",
+          "text": "message 3",
+          "timestamp": "18"
+        },
+        {
+          "id": "id-4",
+          "text": "message 4",
+          "timestamp": "17"
+        },
+        {
+          "id": "id-5",
+          "text": "message 5",
+          "timestamp": "16"
+        },
+        {
+          "id": "id-6",
+          "text": "message 6",
+          "timestamp": "15"
+        },
+        {
+          "id": "id-7",
+          "text": "message 7",
+          "timestamp": "14"
+        },
+        {
+          "id": "id-8",
+          "text": "message 8",
+          "timestamp": "13"
+        },
+        {
+          "id": "id-9",
+          "text": "message 9",
+          "timestamp": "12"
+        },
+        {
+          "id": "id-10",
+          "text": "message 10",
+          "timestamp": "11"
+        },
+        {
+          "id": "id-11",
+          "text": "message 11",
+          "timestamp": "10"
+        },
+        {
+          "id": "id-12",
+          "text": "message 12",
+          "timestamp": "9"
+        },
+        {
+          "id": "id-13",
+          "text": "message 13",
+          "timestamp": "8"
+        },
+        {
+          "id": "id-14",
+          "text": "message 14",
+          "timestamp": "7"
+        },
+        {
+          "id": "id-15",
+          "text": "message 15",
+          "timestamp": "6"
+        },
+        {
+          "id": "id-16",
+          "text": "message 16",
+          "timestamp": "5"
+        },
+        {
+          "id": "id-17",
+          "text": "message 17",
+          "timestamp": "4"
+        },
+        {
+          "id": "id-18",
+          "text": "message 18",
+          "timestamp": "3"
+        },
+        {
+          "id": "id-19",
+          "text": "message 19",
+          "timestamp": "2"
+        },
+        {
+          "id": "id-20",
+          "text": "message 20",
+          "timestamp": "1"
+        }
+      ],
+      "index": 20
+    },
+    "expected": {
+      "lines": [
+        "  message 11",
+        "\u001b[38;5;33m  Message 12 of 21\u001b[39m",
+        "",
+        "  message 12",
+        "\u001b[38;5;33m  Message 13 of 21\u001b[39m",
+        "",
+        "  message 13",
+        "\u001b[38;5;33m  Message 14 of 21\u001b[39m",
+        "",
+        "  message 14",
+        "\u001b[38;5;33m  Message 15 of 21\u001b[39m",
+        "",
+        "  message 15",
+        "\u001b[38;5;33m  Message 16 of 21\u001b[39m",
+        "",
+        "  message 16",
+        "\u001b[38;5;33m  Message 17 of 21\u001b[39m",
+        "",
+        "  message 17",
+        "\u001b[38;5;33m  Message 18 of 21\u001b[39m",
+        "",
+        "  message 18",
+        "\u001b[38;5;33m  Message 19 of 21\u001b[39m",
+        "",
+        "  message 19",
+        "\u001b[38;5;33m  Message 20 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 20\u001b[22m",
+        "\u001b[38;5;33m  Message 21 of 21\u001b[39m",
+        "",
+        "\u001b[38;5;33m  (21/21)\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "message_navigation_wraps_and_empty_confirmation_is_inert",
+    "input": {
+      "n": 0,
+      "ops": [
+        "\u001b[B",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b",
+        "z"
+      ]
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": [
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;33m  No user messages found\u001b[39m"
+          ],
+          "events": [
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "message_navigation_wraps_and_empty_confirmation_is_inert",
+    "input": {
+      "n": 1,
+      "ops": [
+        "\u001b[B",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b",
+        "z"
+      ]
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "message_navigation_wraps_and_empty_confirmation_is_inert",
+    "input": {
+      "n": 3,
+      "ops": [
+        "\u001b[B",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b[A",
+        "\r",
+        "\u001b",
+        "z"
+      ]
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-2"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-2"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-2"
+            ],
+            [
+              "select",
+              "id-1"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-2"
+            ],
+            [
+              "select",
+              "id-1"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "select",
+              "id-2"
+            ],
+            [
+              "select",
+              "id-1"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "selectors_read_live_bindings_and_reject_wrong_modifiers",
+    "input": {
+      "kind": "thinking"
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ medium      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "  low\u001b[38;5;33m         Light reasoning (~2k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ medium      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              "medium"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              "medium"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+            "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+            "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+            "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+            "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+            "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              "medium"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "selectors_read_live_bindings_and_reject_wrong_modifiers",
+    "input": {
+      "kind": "theme"
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  dark\u001b[38;5;33m        (current)\u001b[39m",
+            "\u001b[38;5;32m→ light\u001b[39m"
+          ],
+          "events": [
+            [
+              "preview",
+              "light"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  dark\u001b[38;5;33m        (current)\u001b[39m",
+            "\u001b[38;5;32m→ light\u001b[39m"
+          ],
+          "events": [
+            [
+              "preview",
+              "light"
+            ],
+            [
+              "select",
+              "light"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": [
+            [
+              "preview",
+              "light"
+            ],
+            [
+              "select",
+              "light"
+            ],
+            [
+              "preview",
+              "dark"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+            "  light"
+          ],
+          "events": [
+            [
+              "preview",
+              "light"
+            ],
+            [
+              "select",
+              "light"
+            ],
+            [
+              "preview",
+              "dark"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "selectors_read_live_bindings_and_reject_wrong_modifiers",
+    "input": {
+      "kind": "images"
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  Yes\u001b[38;5;33m         Show images inline in terminal\u001b[39m",
+            "\u001b[38;5;32m→ No          Show text placeholder instead\u001b[39m"
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  Yes\u001b[38;5;33m         Show images inline in terminal\u001b[39m",
+            "\u001b[38;5;32m→ No          Show text placeholder instead\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              false
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              false
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+            "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m"
+          ],
+          "events": [
+            [
+              "select",
+              false
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "selectors_read_live_bindings_and_reject_wrong_modifiers",
+    "input": {
+      "kind": "messages"
+    },
+    "expected": {
+      "frames": [
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": []
+        },
+        {
+          "lines": [
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "  message 2",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ]
+          ]
+        },
+        {
+          "lines": [
+            "  message 0",
+            "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+            "",
+            "  message 1",
+            "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+            "",
+            "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 2\u001b[22m",
+            "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+            ""
+          ],
+          "events": [
+            [
+              "select",
+              "id-0"
+            ],
+            [
+              "cancel"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "message_binding_collision_prefers_navigation",
+    "input": {},
+    "expected": {
+      "events": [
+        [
+          "select",
+          "id-1"
+        ]
+      ],
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "message_callbacks_are_replaceable_clearable_and_reentrant",
+    "input": {},
+    "expected": {
+      "events": [
+        [
+          "new-select",
+          "id-2"
+        ],
+        [
+          "new-cancel"
+        ]
+      ],
+      "lines": [
+        "  message 0",
+        "\u001b[38;5;33m  Message 1 of 3\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 1\u001b[22m",
+        "\u001b[38;5;33m  Message 2 of 3\u001b[39m",
+        "",
+        "  message 2",
+        "\u001b[38;5;33m  Message 3 of 3\u001b[39m",
+        ""
+      ]
+    }
+  },
+  {
+    "test": "selector_live_colors_preserve_construction_time_help",
+    "input": {
+      "kind": "thinking"
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;33m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;33m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "\u001b[38;5;32m→ low         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;33m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;33m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;33m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;37m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;37m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "\u001b[38;5;36m→ low         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;37m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;37m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;37m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_children_and_focus_list_keep_distinct_identities",
+    "input": {
+      "kind": "thinking"
+    },
+    "expected": {
+      "identity": true,
+      "cleared": [],
+      "retained": [
+        "  off\u001b[38;5;37m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;37m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "\u001b[38;5;36m→ low         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;37m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;37m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;37m       Maximum reasoning (~32k tokens)\u001b[39m"
+      ],
+      "restored": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "  off\u001b[38;5;37m         No reasoning\u001b[39m",
+        "  minimal\u001b[38;5;37m     Very brief reasoning (~1k tokens)\u001b[39m",
+        "\u001b[38;5;36m→ low         Light reasoning (~2k tokens)\u001b[39m",
+        "  medium\u001b[38;5;37m      Moderate reasoning (~8k tokens)\u001b[39m",
+        "  high\u001b[38;5;37m        Deep reasoning (~16k tokens)\u001b[39m",
+        "  xhigh\u001b[38;5;37m       Maximum reasoning (~32k tokens)\u001b[39m",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_live_colors_preserve_construction_time_help",
+    "input": {
+      "kind": "theme"
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ dark        (current)\u001b[39m",
+        "  light",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;36m→ dark        (current)\u001b[39m",
+        "  light",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_children_and_focus_list_keep_distinct_identities",
+    "input": {
+      "kind": "theme"
+    },
+    "expected": {
+      "identity": true,
+      "cleared": [],
+      "retained": [
+        "\u001b[38;5;36m→ dark        (current)\u001b[39m",
+        "  light"
+      ],
+      "restored": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;36m→ dark        (current)\u001b[39m",
+        "  light",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_live_colors_preserve_construction_time_help",
+    "input": {
+      "kind": "images"
+    },
+    "expected": {
+      "before": [
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;32m→ Yes         Show images inline in terminal\u001b[39m",
+        "  No\u001b[38;5;33m          Show text placeholder instead\u001b[39m",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;36m→ Yes         Show images inline in terminal\u001b[39m",
+        "  No\u001b[38;5;37m          Show text placeholder instead\u001b[39m",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_children_and_focus_list_keep_distinct_identities",
+    "input": {
+      "kind": "images"
+    },
+    "expected": {
+      "identity": true,
+      "cleared": [],
+      "retained": [
+        "\u001b[38;5;36m→ Yes         Show images inline in terminal\u001b[39m",
+        "  No\u001b[38;5;37m          Show text placeholder instead\u001b[39m"
+      ],
+      "restored": [
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "\u001b[38;5;36m→ Yes         Show images inline in terminal\u001b[39m",
+        "  No\u001b[38;5;37m          Show text placeholder instead\u001b[39m",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_live_colors_preserve_construction_time_help",
+    "input": {
+      "kind": "messages"
+    },
+    "expected": {
+      "before": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ],
+      "after": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "\u001b[38;5;36m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;37m  Message 1 of 1\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "selector_children_and_focus_list_keep_distinct_identities",
+    "input": {
+      "kind": "messages"
+    },
+    "expected": {
+      "identity": true,
+      "cleared": [],
+      "retained": [
+        "\u001b[38;5;36m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;37m  Message 1 of 1\u001b[39m",
+        ""
+      ],
+      "restored": [
+        "",
+        " \u001b[1mFork from Message\u001b[22m                                                              ",
+        " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+        " \u001b[38;5;33msession\u001b[39m                                                                        ",
+        "",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+        "",
+        "\u001b[38;5;36m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+        "\u001b[38;5;37m  Message 1 of 1\u001b[39m",
+        "",
+        "",
+        "\u001b[38;5;35m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+      ]
+    }
+  },
+  {
+    "test": "empty_message_auto_cancel_uses_one_original_delayed_callback",
+    "input": {
+      "mode": "empty"
+    },
+    "expected": {
+      "initial": {
+        "lines": [
+          "",
+          " \u001b[1mFork from Message\u001b[22m                                                              ",
+          " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+          " \u001b[38;5;33msession\u001b[39m                                                                        ",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          "\u001b[38;5;33m  No user messages found\u001b[39m",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [],
+        "delays": [
+          100
+        ]
+      },
+      "before": [],
+      "at": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "after": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "empty_message_auto_cancel_uses_one_original_delayed_callback",
+    "input": {
+      "mode": "cancel_before_timer"
+    },
+    "expected": {
+      "initial": {
+        "lines": [
+          "",
+          " \u001b[1mFork from Message\u001b[22m                                                              ",
+          " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+          " \u001b[38;5;33msession\u001b[39m                                                                        ",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          "\u001b[38;5;33m  No user messages found\u001b[39m",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [],
+        "delays": [
+          100
+        ]
+      },
+      "before": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "at": [
+        [
+          "original-cancel"
+        ],
+        [
+          "original-cancel"
+        ]
+      ],
+      "after": [
+        [
+          "original-cancel"
+        ],
+        [
+          "original-cancel"
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "empty_message_auto_cancel_uses_one_original_delayed_callback",
+    "input": {
+      "mode": "replace_callback"
+    },
+    "expected": {
+      "initial": {
+        "lines": [
+          "",
+          " \u001b[1mFork from Message\u001b[22m                                                              ",
+          " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+          " \u001b[38;5;33msession\u001b[39m                                                                        ",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          "\u001b[38;5;33m  No user messages found\u001b[39m",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [],
+        "delays": [
+          100
+        ]
+      },
+      "before": [],
+      "at": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "after": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "empty_message_auto_cancel_uses_one_original_delayed_callback",
+    "input": {
+      "mode": "parent_removed"
+    },
+    "expected": {
+      "initial": {
+        "lines": [
+          "",
+          " \u001b[1mFork from Message\u001b[22m                                                              ",
+          " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+          " \u001b[38;5;33msession\u001b[39m                                                                        ",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          "\u001b[38;5;33m  No user messages found\u001b[39m",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [],
+        "delays": [
+          100
+        ]
+      },
+      "before": [],
+      "at": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "after": [
+        [
+          "original-cancel"
+        ]
+      ],
+      "pending": 0
+    }
+  },
+  {
+    "test": "empty_message_auto_cancel_uses_one_original_delayed_callback",
+    "input": {
+      "mode": "nonempty"
+    },
+    "expected": {
+      "initial": {
+        "lines": [
+          "",
+          " \u001b[1mFork from Message\u001b[22m                                                              ",
+          " \u001b[38;5;33mSelect a user message to copy the active path up to that point into a new      ",
+          " \u001b[38;5;33msession\u001b[39m                                                                        ",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+          "",
+          "\u001b[38;5;32m› \u001b[39m\u001b[1mmessage 0\u001b[22m",
+          "\u001b[38;5;33m  Message 1 of 1\u001b[39m",
+          "",
+          "",
+          "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+        ],
+        "events": [],
+        "delays": []
+      },
+      "before": [],
+      "at": [],
+      "after": [],
+      "pending": 0
+    }
+  },
+  {
+    "test": "theme_discovery_failure_propagates_without_callbacks",
+    "input": {},
+    "expected": {
+      "failed": true,
+      "missing_file": true,
+      "events": []
+    }
+  }
+]

@@ -40,7 +40,7 @@ impl CompactionSummaryMessageComponent {
         self.0.set_expanded(expanded);
     }
 }
-message_children!(CompactionSummaryMessageComponent, Box, 0.panel);
+component_children!(CompactionSummaryMessageComponent, Box, 0.panel);
 impl Component for CompactionSummaryMessageComponent {
     fn render(&self, width: usize) -> Vec<String> {
         self.0.panel.render(width)

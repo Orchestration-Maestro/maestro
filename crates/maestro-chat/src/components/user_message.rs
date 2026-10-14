@@ -29,7 +29,7 @@ impl UserMessageComponent {
         Self { container }
     }
 }
-message_children!(UserMessageComponent, Container, container);
+component_children!(UserMessageComponent, Container, container);
 impl Component for UserMessageComponent {
     fn render(&self, width: usize) -> Vec<String> {
         super::mark_zone(self.container.render(width))

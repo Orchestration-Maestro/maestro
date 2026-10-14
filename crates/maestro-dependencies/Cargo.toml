@@ -68,7 +68,7 @@ syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-
 [target.x86_64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
-either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+either = { version = "1.19.0", features = ["use_std"] }
 form_urlencoded = { version = "1.2.2" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
@@ -96,7 +96,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extr
 [target.aarch64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
-either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+either = { version = "1.19.0", features = ["use_std"] }
 form_urlencoded = { version = "1.2.2" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
@@ -124,7 +124,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extr
 [target.x86_64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
-either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+either = { version = "1.19.0", features = ["use_std"] }
 form_urlencoded = { version = "1.2.2" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
@@ -150,7 +150,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extr
 [target.aarch64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
-either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+either = { version = "1.19.0", features = ["use_std"] }
 form_urlencoded = { version = "1.2.2" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
@@ -175,7 +175,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extr
 
 [target.x86_64-pc-windows-msvc.dependencies]
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
-either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+either = { version = "1.19.0", features = ["use_std"] }
 form_urlencoded = { version = "1.2.2" }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 num-integer = { version = "0.1.47", features = ["i128"] }

@@ -1,7 +1,7 @@
 //! Interactive borders, countdowns, loaders and editor routing.
 
-/// Gives message widgets their existing child-array owner's editing interface.
-macro_rules! message_children {
+/// Gives composed widgets their existing child-array owner's editing interface.
+macro_rules! component_children {
     ($name:ty, $target:ty, $($field:tt)+) => {
         impl std::ops::Deref for $name {
             type Target = $target;
@@ -114,3 +114,38 @@ impl MessageRendering {
         ))
     }
 }
+
+pub mod thinking_selector;
+
+/// Composes the shared bounded-column list between live borders.
+fn bordered_select_list(
+    items: Vec<maestro_tui::SelectItem>,
+    max_visible: usize,
+    theme: LiveTheme,
+) -> (maestro_tui::Container, Rc<maestro_tui::SelectList>) {
+    use maestro_tui::{Container, SelectList, SelectListLayoutOptions};
+    let container = Container::new();
+    let list = Rc::new(SelectList::new(
+        items,
+        max_visible,
+        maestro_theme::get_select_list_theme(theme.clone()),
+        SelectListLayoutOptions {
+            min_primary_column_width: Some(12),
+            max_primary_column_width: Some(32),
+            ..Default::default()
+        },
+    ));
+    container.add_child(Rc::new(dynamic_border::DynamicBorder::new(
+        theme.clone(),
+        None,
+    )));
+    container.add_child(list.clone());
+    container.add_child(Rc::new(dynamic_border::DynamicBorder::new(theme, None)));
+    (container, list)
+}
+
+pub mod show_images_selector;
+
+pub mod theme_selector;
+
+pub mod user_message_selector;

@@ -1,0 +1,668 @@
+//! Strict recorded inputs and public-output projections.
+use maestro_app::ThinkingLevel;
+use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
+use maestro_tui::{Component, SelectList};
+use serde::{Deserialize, de::DeserializeOwned};
+use serde_json::Value;
+use std::{cell::RefCell, rc::Rc};
+
+/// One corpus query owned by a named witness.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Case {
+    /// Witness name.
+    test: String,
+    /// Input decoded by the witness.
+    input: Value,
+    /// Output decoded by the witness.
+    expected: Value,
+}
+/// Strictly decode a nonempty group.
+pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
+    let rows: Vec<Case> =
+        serde_json::from_str(include_str!("../fixtures/simple_selectors.json")).unwrap();
+    let owners = [
+        "thinking_levels_keep_descriptions_and_current_selection",
+        "thinking_supplied_order_duplicates_and_missing_current",
+        "thinking_selection_reports_typed_levels",
+        "select_list_layout_uses_bounded_primary_columns",
+        "theme_inventory_marks_only_the_current_name",
+        "theme_preview_follows_navigation_not_programmatic_changes",
+        "theme_window_shows_ten_names_with_scroll_position",
+        "image_choices_render_and_report_both_boolean_values",
+        "message_initial_identity_defaults_to_newest",
+        "message_initial_duplicate_uses_first_and_empty_id_is_absent",
+        "message_text_replaces_only_lf_and_trims_defined_whitespace",
+        "message_clipping_preserves_cells_graphemes_and_escape_sequences",
+        "message_window_centers_and_clamps_ten_rows",
+        "message_navigation_wraps_and_empty_confirmation_is_inert",
+        "selectors_read_live_bindings_and_reject_wrong_modifiers",
+        "message_binding_collision_prefers_navigation",
+        "message_callbacks_are_replaceable_clearable_and_reentrant",
+        "selector_live_colors_preserve_construction_time_help",
+        "selector_children_and_focus_list_keep_distinct_identities",
+        "empty_message_auto_cancel_uses_one_original_delayed_callback",
+        "theme_discovery_failure_propagates_without_callbacks",
+    ];
+    let mut queries = std::collections::HashSet::new();
+    for row in &rows {
+        assert!(owners.contains(&row.test.as_str()), "orphan corpus group");
+        assert!(
+            queries.insert((row.test.clone(), row.input.to_string())),
+            "duplicate corpus query"
+        );
+    }
+    assert!(
+        owners
+            .iter()
+            .all(|owner| rows.iter().any(|row| row.test == *owner)),
+        "missing corpus group"
+    );
+    let result: Vec<_> = rows
+        .into_iter()
+        .filter(|row| row.test == name)
+        .map(|row| {
+            (
+                serde_json::from_value(row.input).unwrap(),
+                serde_json::from_value(row.expected).unwrap(),
+            )
+        })
+        .collect();
+    assert!(!result.is_empty(), "missing corpus group");
+    result
+}
+/// Exact three-role palette used by the recordings.
+pub fn colors(shift: u8) -> Rc<Theme> {
+    Rc::new(
+        Theme::new(
+            [
+                (ThemeColor::Border, ColorValue::Index(31 + shift)),
+                (ThemeColor::Accent, ColorValue::Index(32 + shift)),
+                (ThemeColor::Muted, ColorValue::Index(33 + shift)),
+            ],
+            [],
+            ColorMode::Truecolor,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    )
+}
+/// Ordered caller notifications, keeping value types intact.
+#[derive(Clone, Default)]
+pub struct Events(Rc<RefCell<Vec<Vec<Value>>>>);
+impl Events {
+    /// Current ordered transcript.
+    pub fn get(&self) -> Vec<Vec<Value>> {
+        self.0.borrow().clone()
+    }
+    /// Append a named event with its optional value.
+    pub fn push(&self, name: &str, value: Option<Value>) {
+        let mut event = vec![Value::from(name)];
+        event.extend(value);
+        self.0.borrow_mut().push(event);
+    }
+    /// Thinking confirmation.
+    pub fn thinking(&self) -> Rc<dyn Fn(ThinkingLevel)> {
+        let events = self.clone();
+        Rc::new(move |value| events.push("select", Some(serde_json::to_value(value).unwrap())))
+    }
+    /// Cancellation.
+    pub fn cancel(&self) -> Rc<dyn Fn()> {
+        let events = self.clone();
+        Rc::new(move || events.push("cancel", None))
+    }
+}
+/// Thinking inventory query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThinkingInput {
+    /// Preselection.
+    pub current: ThinkingLevel,
+    /// Supplied order.
+    pub levels: Vec<ThinkingLevel>,
+}
+/// Selected record with absent descriptions distinguished from empty text.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Item {
+    /// Stored identity.
+    value: String,
+    /// Display label.
+    label: String,
+    /// Optional description.
+    description: Option<String>,
+}
+/// Entire component output and ordered callbacks.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Snapshot {
+    /// Complete styled rows.
+    lines: Vec<String>,
+    /// Selected record or absence.
+    selected: Option<Item>,
+    /// Ordered notifications.
+    events: Vec<Vec<Value>>,
+}
+/// Project observable output without losing rows or notification identity.
+pub fn snapshot(
+    component: &dyn Component,
+    list: &SelectList,
+    events: &Events,
+    width: usize,
+) -> Snapshot {
+    Snapshot {
+        lines: component.render(width),
+        selected: list.get_selected_item().map(|item| Item {
+            value: item.value.clone(),
+            label: item.label.clone(),
+            description: item.description.clone(),
+        }),
+        events: events.get(),
+    }
+}
+/// Thinking inventory with independently supplied availability.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AvailableInput {
+    /// Current level.
+    pub current: ThinkingLevel,
+    /// Supplied levels.
+    pub available: Vec<ThinkingLevel>,
+}
+/// Current level query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CurrentLevel {
+    /// Current level.
+    pub current: ThinkingLevel,
+}
+/// Two full snapshots.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BeforeAfter {
+    /// Initial state.
+    pub before: Snapshot,
+    /// State after input.
+    pub after: Snapshot,
+}
+/// Ordered notifications alone.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EventOutput {
+    /// Notifications.
+    pub events: Vec<Vec<Value>>,
+}
+/// Image-display starting value.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ImageInput {
+    /// Starting bool.
+    pub current: bool,
+}
+/// Complete domain inventory, in source order.
+pub fn levels() -> Vec<ThinkingLevel> {
+    vec![
+        ThinkingLevel::Off,
+        ThinkingLevel::Minimal,
+        ThinkingLevel::Low,
+        ThinkingLevel::Medium,
+        ThinkingLevel::High,
+        ThinkingLevel::Xhigh,
+    ]
+}
+/// Deliver keys to the public input interface.
+pub fn input(component: &dyn Component, keys: &[&str]) {
+    for key in keys {
+        component.input_handler().unwrap().handle_input(key);
+    }
+}
+impl Events {
+    /// Boolean confirmation.
+    pub fn images(&self) -> Rc<dyn Fn(bool)> {
+        let events = self.clone();
+        Rc::new(move |value| events.push("select", Some(Value::from(value))))
+    }
+}
+/// Current theme and source inventory.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeInput {
+    /// Current name.
+    pub current: String,
+    /// Registry names.
+    pub names: Vec<String>,
+}
+/// Complete terminal rows.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Rows {
+    /// Styled output.
+    pub lines: Vec<String>,
+}
+/// A native registry over disposable files, using the existing theme fixture owner.
+pub fn registry(names: &[String]) -> (super::live::Scratch, Rc<maestro_theme::ThemeState>) {
+    let scratch = super::live::Scratch::new("selectors");
+    for name in names
+        .iter()
+        .filter(|name| !matches!(name.as_str(), "dark" | "light"))
+    {
+        scratch.write(
+            &format!("custom/{name}.json"),
+            &super::live::custom_json(name, "#123456").to_string(),
+        );
+    }
+    let state = Rc::new(maestro_theme::ThemeState::new(
+        maestro_theme::ThemeDirectories {
+            themes_dir: concat!(env!("CARGO_MANIFEST_DIR"), "/../maestro-theme/assets/theme")
+                .into(),
+            custom_themes_dir: scratch.path("custom"),
+        },
+        super::live::Ops::new(&[]),
+    ));
+    state.set_theme_instance(colors(0)).unwrap();
+    (scratch, state)
+}
+impl Events {
+    /// Name confirmation.
+    pub fn select(&self) -> Rc<dyn Fn(&str)> {
+        let events = self.clone();
+        Rc::new(move |value| events.push("select", Some(Value::from(value))))
+    }
+    /// Theme preview.
+    pub fn preview(&self) -> Rc<dyn Fn(&str)> {
+        let events = self.clone();
+        Rc::new(move |value| events.push("preview", Some(Value::from(value))))
+    }
+}
+/// Selector kind used by cross-component recordings.
+#[derive(Clone, Copy, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    /// Thinking picker.
+    Thinking,
+    /// Theme picker.
+    Theme,
+    /// Image picker.
+    Images,
+    /// Message picker.
+    Messages,
+}
+/// Layout query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LayoutInput {
+    /// Selector kind.
+    pub kind: Kind,
+    /// Viewport cells.
+    pub width: usize,
+}
+/// Ordered list configuration or input operations.
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum Operation {
+    /// Programmatic selection.
+    Index { index: isize },
+    /// Programmatic filter.
+    Filter { filter: String },
+    /// Input delivery.
+    Key { key: String },
+}
+/// Configuration sequence.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Operations {
+    /// Ordered operations.
+    pub ops: Vec<Operation>,
+}
+/// Full snapshots after each operation.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Snapshots {
+    /// Every frame including initial state.
+    pub frames: Vec<Snapshot>,
+}
+/// Theme-window input.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThemeWindow {
+    /// Registry input order.
+    pub names: Vec<String>,
+    /// Current input position.
+    #[serde(rename = "currentIndex")]
+    pub current_index: usize,
+}
+/// Empty query with no unread members.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Empty {}
+/// Discovery-failure recording.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Failure {
+    /// Constructor failed.
+    pub failed: bool,
+    /// Native not-found cause.
+    pub missing_file: bool,
+    /// No callbacks.
+    pub events: Vec<String>,
+}
+/// Constructor record accepted by the recorded selector.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Message {
+    /// Entry identity.
+    pub id: String,
+    /// Authored text.
+    pub text: String,
+    /// Accepted but unrendered timestamp.
+    pub timestamp: Option<String>,
+}
+/// Message identity query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MessageInitial {
+    /// Chronological records.
+    pub messages: Vec<Message>,
+    /// Optional initial identity.
+    pub initial: Option<String>,
+}
+/// Entire output with caller notifications.
+#[derive(Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Frame {
+    /// Complete rows.
+    pub lines: Vec<String>,
+    /// Ordered notifications.
+    pub events: Vec<Vec<Value>>,
+}
+/// Authored text query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TextInput {
+    /// Text to normalize.
+    pub text: String,
+}
+/// Authored text and viewport query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClipInput {
+    /// Text to clip.
+    pub text: String,
+    /// Viewport cells.
+    pub width: usize,
+}
+/// Message window query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MessageWindow {
+    /// Supplied messages.
+    pub messages: Vec<Message>,
+    /// Initial position.
+    pub index: usize,
+}
+/// Convert fixture records to constructor input, preserving every field.
+pub fn messages(
+    records: Vec<Message>,
+) -> Vec<maestro_chat::components::user_message_selector::UserMessageItem> {
+    records
+        .into_iter()
+        .map(
+            |record| maestro_chat::components::user_message_selector::UserMessageItem {
+                id: record.id,
+                text: record.text,
+                timestamp: record.timestamp,
+            },
+        )
+        .collect()
+}
+/// Source-generated chronological input for interaction recordings.
+pub fn entries(
+    count: usize,
+) -> Vec<maestro_chat::components::user_message_selector::UserMessageItem> {
+    (0..count)
+        .map(
+            |index| maestro_chat::components::user_message_selector::UserMessageItem {
+                id: format!("id-{index}"),
+                text: format!("message {index}"),
+                timestamp: Some((count - index).to_string()),
+            },
+        )
+        .collect()
+}
+/// Construct a message selector with the controlled runtime.
+pub fn message_selector(
+    records: Vec<maestro_chat::components::user_message_selector::UserMessageItem>,
+    initial: Option<String>,
+    events: &Events,
+    theme: maestro_theme::LiveTheme,
+    runtime: &super::manual_runtime::ManualRuntime,
+) -> maestro_chat::UserMessageSelectorComponent {
+    maestro_chat::UserMessageSelectorComponent::new(
+        records,
+        events.select(),
+        events.cancel(),
+        maestro_chat::components::user_message_selector::UserMessageSelectorOptions {
+            initial_selected_id: initial,
+            theme,
+            runtime: runtime.handle(),
+        },
+    )
+}
+/// Count and ordered key input.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Navigation {
+    /// Message count.
+    pub n: usize,
+    /// Input bytes.
+    pub ops: Vec<String>,
+}
+/// Every observable frame after input.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Frames {
+    /// Ordered frames.
+    pub frames: Vec<Frame>,
+}
+/// Process-wide admission for the active keybinding manager transaction.
+static ADMISSION: std::sync::Mutex<()> = std::sync::Mutex::new(());
+/// Restores the active manager before releasing admission.
+pub struct BindingsGuard {
+    /// Original active handle.
+    original: maestro_tui::KeybindingsManager,
+    /// Spans construction, all input, restoration and cleanup.
+    _guard: std::sync::MutexGuard<'static, ()>,
+}
+impl Drop for BindingsGuard {
+    fn drop(&mut self) {
+        maestro_tui::set_keybindings(self.original.clone());
+    }
+}
+/// Admit one complete selector transaction involving global keybindings.
+pub fn bindings_guard() -> BindingsGuard {
+    let guard = ADMISSION
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    BindingsGuard {
+        original: maestro_tui::get_keybindings(),
+        _guard: guard,
+    }
+}
+/// Publish replacement bindings for future input calls.
+pub fn bindings(keys: [&str; 4]) {
+    let overrides = [
+        "tui.select.up",
+        "tui.select.down",
+        "tui.select.confirm",
+        "tui.select.cancel",
+    ]
+    .into_iter()
+    .zip(keys)
+    .map(|(action, key)| {
+        (
+            action.into(),
+            Some(maestro_tui::KeybindingKeys::Single(key.into())),
+        )
+    })
+    .collect();
+    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
+        maestro_tui::TUI_KEYBINDINGS.clone(),
+        overrides,
+    ));
+}
+/// Cross-selector kind query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct KindInput {
+    /// Component kind.
+    pub kind: Kind,
+}
+/// Public component owners, without erasing their container interface.
+pub enum Picker {
+    /// Thinking picker.
+    Thinking(maestro_chat::ThinkingSelectorComponent),
+    /// Theme picker.
+    Theme(maestro_chat::ThemeSelectorComponent),
+    /// Image picker.
+    Images(maestro_chat::ShowImagesSelectorComponent),
+    /// Message picker.
+    Messages(maestro_chat::UserMessageSelectorComponent),
+}
+impl Picker {
+    /// Shared container interface.
+    pub fn container(&self) -> &maestro_tui::Container {
+        match self {
+            Self::Thinking(value) => value,
+            Self::Theme(value) => value,
+            Self::Images(value) => value,
+            Self::Messages(value) => value,
+        }
+    }
+    /// Focus handle as a real toolkit component.
+    pub fn list(&self) -> Rc<dyn Component> {
+        match self {
+            Self::Thinking(value) => value.get_select_list().clone(),
+            Self::Theme(value) => value.get_select_list().clone(),
+            Self::Images(value) => value.get_select_list().clone(),
+            Self::Messages(value) => value.get_message_list().clone(),
+        }
+    }
+}
+/// Construct each recorded cross-component starting state.
+pub fn picker(
+    kind: Kind,
+    message_count: usize,
+    state: &maestro_theme::ThemeState,
+    events: &Events,
+    runtime: &super::manual_runtime::ManualRuntime,
+) -> Picker {
+    match kind {
+        Kind::Thinking => Picker::Thinking(maestro_chat::ThinkingSelectorComponent::new(
+            ThinkingLevel::Low,
+            levels(),
+            events.thinking(),
+            events.cancel(),
+            state.theme(),
+        )),
+        Kind::Theme => Picker::Theme(
+            maestro_chat::ThemeSelectorComponent::new(
+                "dark",
+                events.select(),
+                events.cancel(),
+                events.preview(),
+                state,
+            )
+            .unwrap(),
+        ),
+        Kind::Images => Picker::Images(maestro_chat::ShowImagesSelectorComponent::new(
+            true,
+            events.images(),
+            events.cancel(),
+            state.theme(),
+        )),
+        Kind::Messages => Picker::Messages(message_selector(
+            entries(message_count),
+            None,
+            events,
+            state.theme(),
+            runtime,
+        )),
+    }
+}
+/// Color-switch output.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ColorFrames {
+    /// Initial rows.
+    pub before: Vec<String>,
+    /// Rows after publication.
+    pub after: Vec<String>,
+}
+/// Child-array replacement output.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Children {
+    /// Stable getter identity.
+    pub identity: bool,
+    /// Rows after clearing chrome.
+    pub cleared: Vec<String>,
+    /// Independently retained list.
+    pub retained: Vec<String>,
+    /// Rows after restoring original children.
+    pub restored: Vec<String>,
+}
+/// Empty-list continuation scenario.
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimerMode {
+    /// Empty constructor.
+    Empty,
+    /// Escape before the deadline.
+    CancelBeforeTimer,
+    /// Replace mutable list callback.
+    ReplaceCallback,
+    /// Remove chrome.
+    ParentRemoved,
+    /// Nonempty constructor.
+    Nonempty,
+}
+/// Timer scenario query.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimerInput {
+    /// Scenario.
+    pub mode: TimerMode,
+}
+/// Construction observation and scheduled delay.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimerInitial {
+    /// Complete panel rows.
+    pub lines: Vec<String>,
+    /// Ordered notifications.
+    pub events: Vec<Vec<Value>>,
+    /// Requested delays in milliseconds.
+    pub delays: Vec<u64>,
+}
+/// Continuation observations at each boundary.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimerOutput {
+    /// Construction state.
+    pub initial: TimerInitial,
+    /// Events at 99 milliseconds.
+    pub before: Vec<Vec<Value>>,
+    /// Events at 100 milliseconds.
+    pub at: Vec<Vec<Value>>,
+    /// Events after a further 100 milliseconds.
+    pub after: Vec<Vec<Value>>,
+    /// Outstanding continuations.
+    pub pending: usize,
+}
+
+/// Drive the controlled clock and surface each continuation failure.
+pub fn advance(runtime: &super::manual_runtime::ManualRuntime, millis: u64) {
+    for result in runtime.advance_to(super::manual_runtime::ms(millis)) {
+        result.unwrap();
+    }
+}

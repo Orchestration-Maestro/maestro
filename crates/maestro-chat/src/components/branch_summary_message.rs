@@ -111,7 +111,7 @@ impl SummaryDisplay {
         self.rebuild();
     }
 }
-message_children!(BranchSummaryMessageComponent, Box, 0.panel);
+component_children!(BranchSummaryMessageComponent, Box, 0.panel);
 impl Component for BranchSummaryMessageComponent {
     fn render(&self, width: usize) -> Vec<String> {
         self.0.panel.render(width)
