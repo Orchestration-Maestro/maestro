@@ -2,17 +2,22 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod support {
+    /// Shared complete attachment observations.
+    pub mod attachment_observation;
     /// Strict recorded observations.
     pub mod attachments;
 }
 use maestro_app::browser::utils::attachment_utils::{
-    Attachment, AttachmentError, AttachmentSource, load_attachment,
+    AttachmentError, AttachmentSource, load_attachment,
 };
 use maestro_models::{Fetch, FetchError, HttpResponse};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::json;
 use std::sync::{Arc, Mutex};
-use support::attachments::{corpus, equal};
+use support::{
+    attachment_observation::observed,
+    attachments::{corpus, equal},
+};
 
 /// Already-read platform source metadata.
 #[derive(Deserialize)]
@@ -37,30 +42,6 @@ fn run<T>(future: impl std::future::Future<Output = T>) -> T {
         .build()
         .unwrap()
         .block_on(future)
-}
-/// Compare full results, replacing only a checked nondeterministic identifier.
-fn observed(result: Result<Attachment, AttachmentError>) -> Value {
-    match result {
-        Ok(mut value) => {
-            let suffix = value
-                .id
-                .strip_prefix(&format!("{}_", value.file_name))
-                .unwrap();
-            let (time, random) = suffix.split_once('_').unwrap();
-            let time: f64 = time.parse().unwrap();
-            let random: f64 = random.parse().unwrap();
-            assert!(time > 0.0 && time.fract() == 0.0);
-            assert!((0.0..1.0).contains(&random));
-            assert!(value.id.ends_with(ryu_js::Buffer::new().format(random)));
-            value.id = format!("{}_<generated>", value.file_name);
-            json!({"attachment":value})
-        }
-        Err(AttachmentError::Unsupported(mime)) => {
-            json!({"error":format!("Unsupported file type: {mime}")})
-        }
-        Err(AttachmentError::HttpStatus(_)) => json!({"error":"Failed to fetch file"}),
-        Err(AttachmentError::Fetch(error)) => json!({"error":error.to_string()}),
-    }
 }
 /// Replay one local source suite.
 fn local_suite(suite: &str) {
@@ -156,20 +137,45 @@ fn attachment_serialization_keeps_optional_and_empty_fields() {
 }
 #[test]
 fn document_formats_do_not_fall_through_to_images_or_text() {
+    let bytes = include_bytes!("fixtures/pptx/packages/01.pptx");
+    for (name, mime) in [
+        (
+            "a.pdf",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ),
+        (
+            "a.docx",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ),
+        ("a.pptx", "application/pdf"),
+        (
+            "a.pptx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+    ] {
+        let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
+        assert!(matches!(
+            run(load_attachment(
+                AttachmentSource::File {
+                    bytes,
+                    name,
+                    mime_type: mime
+                },
+                None,
+                &fetch
+            )),
+            Err(AttachmentError::Unsupported(_))
+        ));
+    }
     for (name, mime) in [
         ("a.PDF", "image/png"),
         ("a.docx", "text/plain"),
-        ("a.pptx", "image/jpeg"),
         ("a.XLSX", "text/plain"),
         ("a.xls", "image/png"),
         ("plain.txt", "application/pdf"),
         (
             "plain.txt",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ),
-        (
-            "plain.txt",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         ),
         ("plain.txt", "application/vnd.ms-excel"),
         (

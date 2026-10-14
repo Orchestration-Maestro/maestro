@@ -1,7 +1,6 @@
 //! One indexed ZIP owner for Word parts and resource bytes.
 use super::super::{DocxError, Options, Relationship, XmlParser, parse_xml_string, utils};
 use std::{
-    collections::HashMap,
     io::{Cursor, Read},
     sync::Mutex,
 };
@@ -11,7 +10,7 @@ pub(crate) struct OpenXmlPackage {
     /// Supplied archive bytes and native metadata.
     archive: Mutex<zip::ZipArchive<Cursor<Vec<u8>>>>,
     /// Sanitized archive spelling to last central-directory entry index.
-    entries: HashMap<String, usize>,
+    entries: indexmap::IndexMap<String, usize>,
     /// XML admission policy.
     options: Options,
 }
@@ -21,7 +20,7 @@ impl OpenXmlPackage {
     pub(crate) fn open(data: &[u8], options: Options) -> Result<Self, DocxError> {
         let mut archive =
             zip::ZipArchive::new(Cursor::new(data.to_vec())).map_err(archive_error)?;
-        let mut entries = HashMap::new();
+        let mut entries = indexmap::IndexMap::new();
         for index in 0..archive.len() {
             let entry = archive.by_index(index).map_err(archive_error)?;
             let candidate = (entry.central_header_start(), index);
@@ -51,9 +50,23 @@ impl OpenXmlPackage {
     pub(crate) fn contains(&self, path: &str) -> bool {
         self.index(path).is_some()
     }
+    /// Enumerate sanitized names in first-insertion order.
+    pub(crate) fn names(&self) -> impl Iterator<Item = &str> {
+        self.entries.keys().map(String::as_str)
+    }
+    /// Decode an exact admitted name without relationship-path normalization.
+    pub(crate) fn text_exact(&self, name: &str) -> Result<Option<String>, DocxError> {
+        Ok(self
+            .read_index(self.entries.get(name).copied())?
+            .map(|data| String::from_utf8_lossy(&data).into_owned()))
+    }
     /// Read resource bytes only when requested.
     pub(crate) fn read(&self, path: &str) -> Result<Option<Vec<u8>>, DocxError> {
-        let Some(index) = self.index(path) else {
+        self.read_index(self.index(path))
+    }
+    /// Share indexed reads between exact and relationship lookups.
+    fn read_index(&self, index: Option<usize>) -> Result<Option<Vec<u8>>, DocxError> {
+        let Some(index) = index else {
             return Ok(None);
         };
         let mut archive = self

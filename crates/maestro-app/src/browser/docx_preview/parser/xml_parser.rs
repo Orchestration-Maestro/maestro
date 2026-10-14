@@ -203,3 +203,10 @@ impl<'input> XmlParser<'input> {
         convert_length(self.attr(element, name), usage)
     }
 }
+
+/// Decode one text fragment, preserving literal carriage returns and raw failures.
+pub(crate) fn decode_text(text: &str) -> String {
+    let fragment = format!("<t>{}</t>", text.replace('\r', "&#13;"));
+    parse_xml_string(&fragment, false)
+        .map_or_else(|_| text.to_owned(), |xml| xml.root().text_content())
+}

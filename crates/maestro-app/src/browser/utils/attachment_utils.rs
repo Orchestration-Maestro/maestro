@@ -1,7 +1,9 @@
-//! Image and text attachment records and loading.
+//! Image, text and presentation attachment records and loading.
+use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::Serialize;
+use std::fmt::Write;
 use std::{borrow::Cow, fmt};
 
 /// Model-facing attachment classification.
@@ -68,6 +70,8 @@ pub enum AttachmentError {
     HttpStatus(u16),
     /// Media type not supported by this loader.
     Unsupported(String),
+    /// Presentation package processing failure.
+    Pptx(DocxError),
 }
 impl fmt::Display for AttachmentError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -77,6 +81,7 @@ impl fmt::Display for AttachmentError {
                 write!(formatter, "Failed to fetch attachment: HTTP {status}")
             }
             Self::Unsupported(mime) => write!(formatter, "Unsupported file type: {mime}"),
+            Self::Pptx(error) => write!(formatter, "Failed to process PPTX: {error}"),
         }
     }
 }
@@ -84,15 +89,16 @@ impl std::error::Error for AttachmentError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Fetch(error) => Some(error),
+            Self::Pptx(error) => Some(error),
             _ => None,
         }
     }
 }
-/// Load original bytes as an image or text attachment using the supplied transport.
+/// Load original bytes as an image, text or presentation attachment.
 ///
 /// # Errors
-/// Returns transport/body failures, non-success status, or an unsupported media type.
-/// Reserved document formats are unsupported until their extractors are available.
+/// Returns transport/body failures, non-success status, unsupported media types,
+/// or presentation package processing failures. PDF, Word and spreadsheets remain unsupported.
 pub async fn load_attachment(
     source: AttachmentSource<'_>,
     file_name: Option<&str>,
@@ -100,32 +106,8 @@ pub async fn load_attachment(
 ) -> Result<Attachment, AttachmentError> {
     let file_name = file_name.filter(|name| !name.is_empty());
     let (bytes, name, mime) = resolve_source(source, file_name, fetch).await?;
-    let lower_name = name.to_lowercase();
-    if [".pdf", ".docx", ".pptx", ".xlsx", ".xls"]
-        .iter()
-        .any(|suffix| lower_name.ends_with(suffix))
-        || [
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "application/vnd.ms-excel",
-        ]
-        .contains(&mime.as_str())
-    {
-        return Err(AttachmentError::Unsupported(mime));
-    }
-    let text = mime.starts_with("text/")
-        || [
-            ".txt", ".md", ".json", ".xml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".yml",
-            ".yaml",
-        ]
-        .iter()
-        .any(|suffix| lower_name.ends_with(suffix));
-    let image = mime.starts_with("image/");
-    if !image && !text {
-        return Err(AttachmentError::Unsupported(mime));
-    }
+    let (mime, extracted_text) = attachment_text(&bytes, &name, mime)?;
+    let image = extracted_text.is_none();
     let content = STANDARD.encode(&bytes);
     Ok(Attachment {
         id: format!(
@@ -139,15 +121,11 @@ pub async fn load_attachment(
             AttachmentType::Document
         },
         file_name: name,
-        mime_type: if image || mime.starts_with("text/") {
-            mime
-        } else {
-            "text/plain".into()
-        },
+        mime_type: mime,
         size: bytes.len(),
         preview: image.then(|| content.clone()),
         content,
-        extracted_text: (!image).then(|| maestro_text::decode_utf8(&bytes).into_owned()),
+        extracted_text,
     })
 }
 /// Resolve bytes and metadata without applying format policy.
@@ -210,4 +188,141 @@ async fn resolve_source<'a>(
             mime
         },
     ))
+}
+
+/// Canonical presentation media type.
+const PPTX_MIME: &str = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+/// Extract selected slide text without admitting whole-part XML.
+fn process_pptx(bytes: &[u8], file_name: &str) -> Result<String, DocxError> {
+    let package = OpenXmlPackage::open(bytes, Options::default())?;
+    let mut output = format!("<pptx filename=\"{file_name}\">");
+    for (position, (name, _)) in pptx_parts(&package, "ppt/slides/slide").iter().enumerate() {
+        let source = package.text_exact(name)?.unwrap_or_default();
+        let (matched, runs) = pptx_runs(&source);
+        if matched {
+            let _ = write!(output, "\n<slide number=\"{}\">", position + 1);
+            if !runs.is_empty() {
+                output.push('\n');
+                output.push_str(&runs.join("\n"));
+            }
+            output.push_str("\n</slide>");
+        }
+    }
+    let notes = pptx_parts(&package, "ppt/notesSlides/notesSlide");
+    if !notes.is_empty() {
+        output.push_str("\n<notes>");
+        for (name, digits) in notes {
+            let source = package.text_exact(name)?.unwrap_or_default();
+            let (_, runs) = pptx_runs(&source);
+            if !runs.is_empty() {
+                let _ = write!(output, "\n[Slide {digits} notes]: {}", runs.join(" "));
+            }
+        }
+        output.push_str("\n</notes>");
+    }
+    output.push_str("\n</pptx>");
+    Ok(output)
+}
+
+/// Stable numeric ordering retains admitted names and original digit spelling.
+fn pptx_parts<'a>(package: &'a OpenXmlPackage, prefix: &str) -> Vec<(&'a str, &'a str)> {
+    let mut parts: Vec<_> = package
+        .names()
+        .filter_map(|name| {
+            let stem = name.strip_suffix(".xml")?;
+            let (_, digits) = stem.rsplit_once(prefix)?;
+            if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                return None;
+            }
+            Some((name, digits, digits.parse::<f64>().unwrap_or(f64::INFINITY)))
+        })
+        .collect();
+    parts.sort_by(|left, right| left.2.total_cmp(&right.2));
+    parts
+        .into_iter()
+        .map(|(name, digits, _)| (name, digits))
+        .collect()
+}
+
+/// Scan literal nonempty text runs monotonically, retaining raw match presence.
+fn pptx_runs(mut source: &str) -> (bool, Vec<String>) {
+    let mut matched = false;
+    let mut runs = Vec::new();
+    while let Some(start) = source.find("<a:t") {
+        source = &source[start + 4..];
+        let Some(end) = source.find('>') else { break };
+        source = &source[end + 1..];
+        let Some(end) = source.find('<') else { break };
+        let text = &source[..end];
+        source = &source[end..];
+        if !text.is_empty() && source.starts_with("</a:t>") {
+            matched = true;
+            if text.chars().any(|c| !maestro_text::is_whitespace_scalar(c)) {
+                runs.push(decode_text(text));
+            }
+            source = &source[6..];
+        }
+    }
+    (matched, runs)
+}
+
+/// Select document policy before image/text fallback and derive document text.
+fn attachment_text(
+    bytes: &[u8],
+    name: &str,
+    mime: String,
+) -> Result<(String, Option<String>), AttachmentError> {
+    let lower_name = name.to_lowercase();
+    if [".pdf", ".docx"]
+        .iter()
+        .any(|suffix| lower_name.ends_with(suffix))
+        || [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ]
+        .contains(&mime.as_str())
+    {
+        return Err(AttachmentError::Unsupported(mime));
+    }
+    if mime == PPTX_MIME
+        || name
+            .rsplit_once('.')
+            .is_some_and(|(_, extension)| extension.eq_ignore_ascii_case("pptx"))
+    {
+        return Ok((
+            PPTX_MIME.into(),
+            Some(process_pptx(bytes, name).map_err(AttachmentError::Pptx)?),
+        ));
+    }
+    if [".xlsx", ".xls"]
+        .iter()
+        .any(|suffix| lower_name.ends_with(suffix))
+        || [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+        ]
+        .contains(&mime.as_str())
+    {
+        return Err(AttachmentError::Unsupported(mime));
+    }
+    if mime.starts_with("image/") {
+        return Ok((mime, None));
+    }
+    if !mime.starts_with("text/")
+        && ![
+            ".txt", ".md", ".json", ".xml", ".html", ".css", ".js", ".ts", ".jsx", ".tsx", ".yml",
+            ".yaml",
+        ]
+        .iter()
+        .any(|suffix| lower_name.ends_with(suffix))
+    {
+        return Err(AttachmentError::Unsupported(mime));
+    }
+    let mime = if mime.starts_with("text/") {
+        mime
+    } else {
+        "text/plain".into()
+    };
+    Ok((mime, Some(maestro_text::decode_utf8(bytes).into_owned())))
 }

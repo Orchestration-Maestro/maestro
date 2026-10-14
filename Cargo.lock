@@ -2738,6 +2738,7 @@ dependencies = [
  "chrono",
  "clipboard-rs",
  "futures-util",
+ "indexmap",
  "maestro-agent",
  "maestro-catalog",
  "maestro-credentials",
