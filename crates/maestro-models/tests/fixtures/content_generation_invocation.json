@@ -2760,7 +2760,7 @@
     "test": "segments_accept_all_declared_delimiters",
     "input": {
       "chunks": [
-        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\n\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]},\"finishReason\":\"STOP\"}]}\n\n"
+        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\n\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]}}]}\n\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\n\ndata: {\"candidates\":[{\"finishReason\":\"STOP\"}]}\n\n"
       ]
     },
     "expected": {
@@ -2802,9 +2802,14 @@
           "delta": "B"
         },
         {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "A"
+        },
+        {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "AB"
+          "content": "ABA"
         },
         {
           "type": "done",
@@ -2816,7 +2821,7 @@
         "content": [
           {
             "type": "text",
-            "text": "AB"
+            "text": "ABA"
           }
         ],
         "api": "google-generative-ai",
@@ -2924,7 +2929,7 @@
     "test": "segments_accept_all_declared_delimiters",
     "input": {
       "chunks": [
-        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\rdata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]},\"finishReason\":\"STOP\"}]}\r\r"
+        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\rdata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]}}]}\r\rdata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\rdata: {\"candidates\":[{\"finishReason\":\"STOP\"}]}\r\r"
       ]
     },
     "expected": {
@@ -2966,9 +2971,14 @@
           "delta": "B"
         },
         {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "A"
+        },
+        {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "AB"
+          "content": "ABA"
         },
         {
           "type": "done",
@@ -2980,7 +2990,7 @@
         "content": [
           {
             "type": "text",
-            "text": "AB"
+            "text": "ABA"
           }
         ],
         "api": "google-generative-ai",
@@ -3088,7 +3098,7 @@
     "test": "segments_accept_all_declared_delimiters",
     "input": {
       "chunks": [
-        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\n\r\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]},\"finishReason\":\"STOP\"}]}\r\n\r\n"
+        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\n\r\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]}}]}\r\n\r\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\r\n\r\ndata: {\"candidates\":[{\"finishReason\":\"STOP\"}]}\r\n\r\n"
       ]
     },
     "expected": {
@@ -3130,9 +3140,14 @@
           "delta": "B"
         },
         {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "A"
+        },
+        {
           "type": "text_end",
           "contentIndex": 0,
-          "content": "AB"
+          "content": "ABA"
         },
         {
           "type": "done",
@@ -3144,7 +3159,7 @@
         "content": [
           {
             "type": "text",
-            "text": "AB"
+            "text": "ABA"
           }
         ],
         "api": "google-generative-ai",
@@ -10437,6 +10452,90 @@
         },
         "stopReason": "error",
         "errorMessage": "got status: RESOURCE_EXHAUSTED. {\"error\":{\"code\":\" 4.29e2 \",\"status\":\"RESOURCE_EXHAUSTED\",\"message\":\"changed request failure\"}}"
+      }
+    }
+  },
+  {
+    "test": "null_response_roots_do_not_end_streaming",
+    "input": {
+      "chunks": [
+        "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"A\"}]}}]}\n\ndata: null\n\ndata: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"B\"}]},\"finishReason\":\"STOP\"}]}\n\n"
+      ]
+    },
+    "expected": {
+      "fetches": 1,
+      "hooks": 1,
+      "responseHooks": 0,
+      "request": {
+        "url": "https://fixture.invalid/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
+        "method": "POST",
+        "body": "{\"contents\":[{\"parts\":[{\"text\":\"changed prompt\"}],\"role\":\"user\"}],\"systemInstruction\":{\"parts\":[{\"text\":\"changed system\"}],\"role\":\"user\"},\"generationConfig\":{}}",
+        "headers": [
+          [
+            "content-type",
+            "application/json"
+          ],
+          [
+            "x-goog-api-key",
+            "fixture-key"
+          ]
+        ],
+        "hasSignal": false
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "A"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "B"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0,
+          "content": "AB"
+        },
+        {
+          "type": "done",
+          "reason": "stop"
+        }
+      ],
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "AB"
+          }
+        ],
+        "api": "google-generative-ai",
+        "provider": "google",
+        "model": "gemini-2.5-flash",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop"
       }
     }
   }

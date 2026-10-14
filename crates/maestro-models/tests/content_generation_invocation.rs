@@ -34,6 +34,11 @@ fn segments_accept_all_declared_delimiters() -> TestResult {
 }
 
 #[test]
+fn null_response_roots_do_not_end_streaming() -> TestResult {
+    content_invocation::assert_rows("null_response_roots_do_not_end_streaming")
+}
+
+#[test]
 fn eof_requires_a_whitespace_only_tail() -> TestResult {
     content_invocation::assert_rows("eof_requires_a_whitespace_only_tail")
 }

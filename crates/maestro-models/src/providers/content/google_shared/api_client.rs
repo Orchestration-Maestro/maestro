@@ -277,7 +277,7 @@ impl ContentSource {
                     self.decoder
                         .push(&bytes)
                         .into_iter()
-                        .map(|event| Ok(event.data)),
+                        .map(|event| Ok(response_data(event.data))),
                 ),
                 Some(Err(error)) => {
                     self.ended = true;
@@ -296,6 +296,15 @@ impl ContentSource {
                 }
             }
         }
+    }
+}
+
+/// Normalize a null root to the empty response selected by the transport adapter.
+fn response_data(data: String) -> String {
+    if crate::providers::json_text::raw_json(&data).is_ok_and(|raw| raw.get() == "null") {
+        "{}".to_owned()
+    } else {
+        data
     }
 }
 

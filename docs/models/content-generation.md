@@ -307,7 +307,8 @@ result still observes completion. The module's `stream_simple_google` first sele
 stream. The [root simple wrapper](module-linkage.md#root-entry-points) settles that error
 into a stream.
 
-The raw entry captures `GOOGLE_GEMINI_BASE_URL` synchronously into owned client settings.
+On native targets, the raw entry captures `GOOGLE_GEMINI_BASE_URL` synchronously into
+owned client settings; browser targets supply no environment fallback.
 It is used only for an empty model endpoint, after trimming the shared text whitespace set;
 an absent or empty fallback keeps the built-in endpoint and version. The supplied endpoint
 is never trimmed. `create_client` receives this optional owned fallback without reading
@@ -330,7 +331,9 @@ otherwise text is wrapped with status and reason phrase. Body/JSON failures win 
 
 The [shared HTTP framing owner](../../crates/maestro-models/src/providers/http/server_sent_events.rs)
 selects whole data segments for this protocol; other callers retain field framing. Ordered
-items feed the existing [response reducer](#response-reduction). A non-whitespace EOF tail
+items feed the existing [response reducer](#response-reduction); a JSON null root becomes
+an empty response before reduction. A non-whitespace EOF tail
 fails; a residual bare error with numeric or decimal numeric-string code in `[400, 600)`
-is classified consistently across chunk boundaries. Reduction failures preserve prior
-content without closing its active block. Clean EOF uses the shared conclusion policy.
+is classified consistently across chunk boundaries. Source and framing failures preserve
+prior content without closing its active block; [reducer failures](#response-reduction)
+retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.

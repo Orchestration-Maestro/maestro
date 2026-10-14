@@ -5,12 +5,12 @@ use super::line_decoder::LineDecoder;
 #[cfg(test)]
 mod tests;
 
-/// One event: its optional name and its data lines joined by line feeds.
+/// One event with an optional name and a payload selected by the framing mode.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct ServerSentEvent {
     /// The last `event` field of the event, if it had one.
     pub(crate) event: Option<String>,
-    /// The `data` fields joined by `\n`.
+    /// Joined `data` fields in field mode, or the whole payload in data-segment mode.
     pub(crate) data: String,
 }
 
@@ -50,9 +50,10 @@ impl SseDecoder {
 
 /// Reads server-sent events from body chunks.
 ///
-/// Completed lines are read as each chunk arrives. CR, LF and CRLF end a line; CR ends its
-/// line immediately and one following LF is skipped, even across chunks. UTF-8 bytes stay buffered
-/// until their line ends. A blank line dispatches the collected event.
+/// In field mode, completed lines are read as each chunk arrives. CR, LF and CRLF end a
+/// line; CR ends its line immediately and one following LF is skipped, even across chunks.
+/// UTF-8 bytes stay buffered until their line ends. A blank line dispatches the collected
+/// event. Data-segment mode instead preserves each completed segment's payload.
 #[derive(Default)]
 pub(crate) struct SseMessages {
     /// Splits body chunks into lines.
@@ -74,8 +75,8 @@ impl SseMessages {
         events
     }
 
-    /// End the body: a last line without its ending is read, but an event whose blank line
-    /// never arrived is not delivered.
+    /// In field mode, read a final unterminated line without delivering an event whose
+    /// blank line never arrived. Data-segment mode returns no events.
     pub(crate) fn finish(&mut self) -> Vec<ServerSentEvent> {
         if self.segments.is_some() {
             return Vec::new();
@@ -105,7 +106,7 @@ struct Segments {
 }
 
 impl Segments {
-    /// Scan each new byte once, retaining at most delimiter-length lookbehind.
+    /// Advance a monotone delimiter scan with bounded lookbehind across chunks.
     fn push(&mut self, chunk: &[u8]) -> Vec<ServerSentEvent> {
         self.buffer.extend_from_slice(chunk);
         let mut start = 0;
