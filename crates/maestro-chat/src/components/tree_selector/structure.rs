@@ -1,6 +1,5 @@
 //! One indentation algorithm for physical and visible tree projections.
-use super::TreeList;
-use maestro_app::SessionTreeNode;
+use super::{SessionTreeNode, tree_list::TreeState};
 use std::collections::HashMap;
 /// A continuing vertical line at its original display level.
 #[derive(Clone)]
@@ -25,14 +24,14 @@ pub(super) struct FlatNode {
     pub virtual_child: bool,
 }
 /// Projected parent and children, keyed by the last visible occurrence.
-#[derive(Default)]
-pub(super) struct Structure<'tree> {
+#[derive(Clone, Default)]
+pub(super) struct Structure {
     /// Geometry in visible occurrence order.
     pub rows: Vec<FlatNode>,
     /// Nearest visible parent by retained identity.
-    pub parents: HashMap<&'tree str, Option<&'tree str>>,
+    pub parents: HashMap<String, Option<String>>,
     /// Ordered visible identities under each parent.
-    pub children: HashMap<Option<&'tree str>, Vec<&'tree str>>,
+    pub children: HashMap<Option<String>, Vec<String>>,
     /// Whether display indentation suppresses a virtual root.
     pub multiple_roots: bool,
 }
@@ -96,21 +95,17 @@ fn assign(rows: &mut [FlatNode], roots: &[usize], children: &[Vec<usize>]) {
     }
 }
 /// Initial geometry follows physical child occurrences in active-first order.
-pub(super) fn physical(nodes: &[&SessionTreeNode<'_>]) -> Vec<FlatNode> {
+pub(super) fn physical(nodes: &[SessionTreeNode]) -> Vec<FlatNode> {
     let indices: HashMap<_, _> = nodes
         .iter()
         .enumerate()
-        .map(|(i, n)| (std::ptr::from_ref(*n), i))
+        .map(|(i, n)| (n.index, i))
         .collect();
     let mut has_parent = vec![false; nodes.len()];
     let children: Vec<Vec<_>> = nodes
         .iter()
         .map(|node| {
-            let mut children: Vec<_> = node
-                .children
-                .iter()
-                .map(|child| indices[&std::ptr::from_ref(child)])
-                .collect();
+            let mut children: Vec<_> = node.children().map(|child| indices[&child.index]).collect();
             children.sort_unstable();
             for &child in &children {
                 has_parent[child] = true;
@@ -127,40 +122,45 @@ pub(super) fn physical(nodes: &[&SessionTreeNode<'_>]) -> Vec<FlatNode> {
     assign(&mut rows, &roots, &children);
     rows
 }
-impl<'tree> TreeList<'tree, '_> {
+impl TreeState {
     /// Rebuild visible maps and last-identity geometry from stored parent links.
-    pub(super) fn project(&self) -> Structure<'tree> {
+    pub(super) fn project(&self) -> Structure {
         let indices: HashMap<_, _> = self
             .visible
             .iter()
             .enumerate()
-            .filter_map(|(i, n)| n.entry["id"].as_str().map(|id| (id, i)))
+            .filter_map(|(i, n)| n.entry()["id"].as_str().map(|id| (id.to_owned(), i)))
             .collect();
         let mut structure = Structure::default();
         let physical: HashMap<_, _> = self
             .nodes
             .iter()
-            .zip(&self.physical)
-            .map(|(n, row)| (std::ptr::from_ref(*n), row))
+            .zip(self.physical.iter())
+            .map(|(n, row)| (n.index, row))
             .collect();
         structure.rows = self
             .visible
             .iter()
-            .map(|node| physical[&std::ptr::from_ref(*node)].clone())
+            .map(|node| physical[&node.index].clone())
             .collect();
         for node in &self.visible {
-            let Some(id) = node.entry["id"].as_str() else {
+            let Some(id) = node.entry()["id"].as_str() else {
                 continue;
             };
             let parent = self
                 .ancestors(
                     self.parents
                         .get(id)
-                        .and_then(|n| n.entry["parentId"].as_str()),
+                        .and_then(|n| n.entry()["parentId"].as_str()),
                 )
-                .find(|parent| indices.contains_key(parent));
-            structure.parents.insert(id, parent);
-            structure.children.entry(parent).or_default().push(id);
+                .find(|parent| indices.contains_key(*parent))
+                .map(str::to_owned);
+            structure.parents.insert(id.to_owned(), parent.clone());
+            structure
+                .children
+                .entry(parent)
+                .or_default()
+                .push(id.to_owned());
         }
         let roots: Vec<_> = structure
             .children
@@ -174,10 +174,10 @@ impl<'tree> TreeList<'tree, '_> {
         }
         structure.multiple_roots = roots.len() > 1;
         let mut children = vec![vec![]; self.visible.len()];
-        for (&id, &index) in &indices {
+        for (id, &index) in &indices {
             children[index] = structure
                 .children
-                .get(&Some(id))
+                .get(&Some(id.clone()))
                 .into_iter()
                 .flatten()
                 .map(|child| indices[child])
@@ -187,16 +187,16 @@ impl<'tree> TreeList<'tree, '_> {
         structure
     }
 }
-impl Structure<'_> {
+impl Structure {
     /// A visible root or branch-start with descendants can fold.
     pub(super) fn is_foldable(&self, id: &str) -> bool {
         self.children
-            .get(&Some(id))
+            .get(&Some(id.to_owned()))
             .is_some_and(|children| !children.is_empty())
             && self.parents.get(id).is_none_or(|parent| {
-                parent.is_none_or(|parent| {
+                parent.as_deref().is_none_or(|parent| {
                     self.children
-                        .get(&Some(parent))
+                        .get(&Some(parent.to_owned()))
                         .is_some_and(|siblings| siblings.len() > 1)
                 })
             })

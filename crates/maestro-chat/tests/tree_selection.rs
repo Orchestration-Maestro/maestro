@@ -134,19 +134,19 @@ fn callbacks_report_current_selection_without_mutating_it() {
     support::group("callbacks_report_current_selection_without_mutating_it");
 }
 
-/// Replays the attributed borrowed history observations.
+/// Replays the attributed retained history observations.
 #[test]
 fn deep_histories_keep_navigation_iterative() {
     support::group("deep_histories_keep_navigation_iterative");
 }
 
-/// Replays the attributed borrowed history observations.
+/// Replays the attributed retained history observations.
 #[test]
-fn selected_node_borrows_original_records() {
-    support::group("selected_node_borrows_original_records");
+fn selected_node_retains_shared_record_identity() {
+    support::group("selected_node_retains_shared_record_identity");
 }
 
-/// Replays the attributed borrowed history observations.
+/// Replays the attributed retained history observations.
 #[test]
 fn opaque_entry_fields_survive_selection() {
     support::group("opaque_entry_fields_survive_selection");

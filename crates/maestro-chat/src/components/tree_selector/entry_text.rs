@@ -16,7 +16,7 @@ pub(super) fn text(value: &Value) -> io::Result<&str> {
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "display field is not text"))
 }
 /// The content prefix, with text blocks concatenated before normalization.
-fn content(value: &Value, limit: usize) -> io::Result<String> {
+pub(super) fn content(value: &Value, limit: usize) -> io::Result<String> {
     if let Some(text) = value.as_str() {
         return Ok(truncate_utf16(text, limit));
     }

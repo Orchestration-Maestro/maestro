@@ -1,0 +1,88 @@
+{
+  "identity": {
+    "same_node": true,
+    "same_entry": true,
+    "child_ids": [
+      "b"
+    ],
+    "label_present": true,
+    "label": null,
+    "label_after_alias_edit": "edited",
+    "entry_alias_shared": true,
+    "entry_alias_distinct_nodes": true,
+    "entry_alias_labels_independent": true
+  },
+  "transcript": [
+    [
+      "before",
+      "a",
+      "a"
+    ],
+    [
+      "after",
+      "b"
+    ],
+    [
+      "replacement",
+      "b"
+    ]
+  ],
+  "surviving": {
+    "entry": {
+      "id": "a",
+      "parentId": null,
+      "type": "message",
+      "message": {
+        "role": "user",
+        "content": "root"
+      },
+      "extension": {
+        "ordered": {
+          "z": 1,
+          "a": 2
+        }
+      }
+    },
+    "children": [
+      {
+        "id": "b",
+        "parentId": "a",
+        "type": "message",
+        "message": {
+          "role": "user",
+          "content": "child"
+        }
+      }
+    ],
+    "label": null
+  },
+  "definitions": [
+    [
+      "app.tree.foldOrUp",
+      {
+        "defaultKeys": [
+          "ctrl+left",
+          "alt+left"
+        ],
+        "description": "Fold tree branch or move up"
+      }
+    ],
+    [
+      "app.tree.unfoldOrDown",
+      {
+        "defaultKeys": [
+          "ctrl+right",
+          "alt+right"
+        ],
+        "description": "Unfold tree branch or move down"
+      }
+    ],
+    [
+      "app.tree.editLabel",
+      {
+        "defaultKeys": "shift+l",
+        "description": "Edit tree label"
+      }
+    ]
+  ]
+}

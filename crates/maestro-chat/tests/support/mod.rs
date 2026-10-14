@@ -1,8 +1,9 @@
 //! Strict recorded inputs replayed through the public navigation interface.
+pub mod occurrences;
 pub mod registry;
 pub mod tree;
-use maestro_app::{SessionTreeNode, presentation_data::keybindings::KEYBINDINGS};
-use maestro_chat::components::tree_selector::{FilterMode, TreeList};
+use maestro_app::presentation_data::keybindings::KEYBINDINGS;
+use maestro_chat::components::tree_selector::{FilterMode, SessionTreeNode, TreeList};
 use maestro_tui::{
     KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
 };
@@ -143,37 +144,19 @@ fn bindings(values: &BTreeMap<String, Binding>) -> KeybindingsConfig {
         })
         .collect()
 }
-/// Resolves every supplied occurrence to its original node address.
-fn occurrences<'tree, 'entry>(
-    tree: &'tree [SessionTreeNode<'entry>],
-    input: &'entry Input,
-) -> Vec<&'tree SessionTreeNode<'entry>> {
-    let mut nodes = vec![None; input.nodes.len()];
-    let mut pending: Vec<_> = tree.iter().collect();
-    while let Some(node) = pending.pop() {
-        let index = input
-            .nodes
-            .iter()
-            .position(|value| std::ptr::eq(&raw const value.entry, node.entry))
-            .unwrap();
-        nodes[index] = Some(node);
-        pending.extend(&node.children);
-    }
-    nodes.into_iter().map(Option::unwrap).collect()
-}
 /// Checks occurrence identity and a full ordered visible cycle through public keys.
 fn frame(
-    list: &mut TreeList<'_, '_>,
+    list: &mut TreeList,
     expected: &Frame,
-    nodes: &[&SessionTreeNode<'_>],
+    nodes: &[Option<SessionTreeNode>],
     events: &RefCell<Vec<Vec<String>>>,
 ) {
     assert_eq!(*events.borrow(), expected.events, "callback transcript");
     let selected = list.get_selected_node();
     assert_eq!(
-        selected.map(|node| nodes
+        selected.as_ref().map(|node| nodes
             .iter()
-            .position(|value| std::ptr::eq(*value, node))
+            .position(|value| value.as_ref() == Some(node))
             .unwrap()),
         expected.selected,
         "selected occurrence"
@@ -187,13 +170,13 @@ fn frame(
         for offset in 0..expected.visible.len() {
             let occurrence = expected.visible[(start + offset) % expected.visible.len()];
             assert!(
-                std::ptr::eq(list.get_selected_node().unwrap(), nodes[occurrence]),
+                list.get_selected_node().as_ref() == nodes[occurrence].as_ref(),
                 "visible occurrence order"
             );
             list.handle_input("\u{1b}[B").unwrap();
         }
         assert!(
-            std::ptr::eq(list.get_selected_node().unwrap(), nodes[index]),
+            list.get_selected_node().as_ref() == nodes[index].as_ref(),
             "full cycle wraps to original occurrence"
         );
     } else {
@@ -201,7 +184,7 @@ fn frame(
     }
 }
 /// Drives a key event or caller configuration change through the existing manager.
-fn apply_operation(list: &mut TreeList<'_, '_>, operation: &Operation) {
+fn apply_operation(list: &mut TreeList, operation: &Operation) {
     match operation {
         Operation::Key(data) => list.handle_input(data).unwrap(),
         Operation::Registry(change) => {
@@ -229,7 +212,6 @@ fn replay(case: &Case) {
         bindings(&case.input.bindings),
     ));
     let tree = tree(&case.input.nodes, &case.input.roots);
-    let nodes = occurrences(&tree, &case.input);
     let result = TreeList::new(
         &tree,
         case.input.leaf.as_deref(),
@@ -239,10 +221,7 @@ fn replay(case: &Case) {
     );
     let mut list = match result {
         Ok(list) => {
-            assert!(
-                case.expected.error.is_none(),
-                "expected constructor failure"
-            );
+            assert!(case.expected.error.is_none(), "constructor failure");
             list
         }
         Err(error) => {
@@ -252,25 +231,28 @@ fn replay(case: &Case) {
             return;
         }
     };
+    let nodes = occurrences::occurrences(&list, &case.input.nodes);
     let events = Rc::new(RefCell::new(Vec::new()));
     if case.input.callbacks {
         let selected = events.clone();
-        list.on_select = Some(Box::new(move |id| {
+        list.set_on_select(Some(Rc::new(move |id| {
             selected.borrow_mut().push(vec!["select".into(), id.into()]);
-        }));
+        })));
         let canceled = events.clone();
-        list.on_cancel = Some(Box::new(move || {
+        list.set_on_cancel(Some(Rc::new(move || {
             canceled.borrow_mut().push(vec!["cancel".into()]);
-        }));
+        })));
     }
     assert_eq!(case.expected.frames.len(), case.input.ops.len() + 1);
     frame(&mut list, &case.expected.frames[0], &nodes, &events);
     for (operation, expected) in case.input.ops.iter().zip(&case.expected.frames[1..]) {
         apply_operation(&mut list, operation);
+        let nodes = occurrences::occurrences(&list, &case.input.nodes);
         frame(&mut list, expected, &nodes, &events);
     }
     if case.name.starts_with("opaque_entry_fields") {
-        let entry = list.get_selected_node().unwrap().entry;
+        let node = list.get_selected_node().unwrap();
+        let entry = node.entry();
         assert_eq!(entry["extension"]["nested"][0]["untouched"], true);
         assert_eq!(entry["extension"]["ordered"]["z"], 1);
         assert_eq!(entry["extension"]["ordered"]["a"], 2);

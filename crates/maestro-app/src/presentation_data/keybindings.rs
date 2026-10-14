@@ -2,7 +2,7 @@
 use maestro_tui::{KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, TUI_KEYBINDINGS};
 use std::sync::LazyLock;
 
-/// Toolkit actions extended with tree-filter actions for caller-installed managers.
+/// Toolkit actions extended with tree navigation actions for caller-installed managers.
 pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
     let mut definitions = TUI_KEYBINDINGS.clone();
     definitions.extend(
@@ -54,5 +54,30 @@ pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
             )
         }),
     );
+    for (id, keys, description) in [
+        (
+            "app.tree.foldOrUp",
+            vec!["ctrl+left", "alt+left"],
+            "Fold tree branch or move up",
+        ),
+        (
+            "app.tree.unfoldOrDown",
+            vec!["ctrl+right", "alt+right"],
+            "Unfold tree branch or move down",
+        ),
+        ("app.tree.editLabel", vec!["shift+l"], "Edit tree label"),
+    ] {
+        definitions.push((
+            id.to_owned(),
+            KeybindingDefinition {
+                default_keys: if keys.len() == 1 {
+                    KeybindingKeys::Single(keys[0].to_owned())
+                } else {
+                    KeybindingKeys::Multiple(keys.into_iter().map(str::to_owned).collect())
+                },
+                description: Some(description.to_owned()),
+            },
+        ));
+    }
     definitions
 });

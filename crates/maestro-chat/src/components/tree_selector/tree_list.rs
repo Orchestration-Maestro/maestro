@@ -1,28 +1,25 @@
-//! Borrowed tree ordering, entry filtering and selection.
+//! Retained tree ordering, entry filtering and selection.
+use super::navigation::Notification;
 use super::{
-    FilterMode,
+    FilterMode, SessionTreeNode,
     structure::{FlatNode, Structure},
 };
-use maestro_app::{SessionTreeNode, is_truthy, is_whitespace_scalar};
+use maestro_app::{SessionTreeNode as InputNode, is_truthy, is_whitespace_scalar};
+use maestro_theme::LiveTheme;
+use maestro_tui::tui::TuiRuntime;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
-use std::io;
+use std::{cell::RefCell, io, rc::Rc};
 
-/// A selection callback accepting the retained entry identity.
-type SelectCallback<'tree> = Box<dyn FnMut(&str) + 'tree>;
-
-/// A navigation view borrowing the supplied session tree.
-pub struct TreeList<'tree, 'entry: 'tree> {
-    /// Callback receiving the confirmed entry identity.
-    pub on_select: Option<SelectCallback<'tree>>,
-    /// Callback for ordinary cancellation.
-    pub on_cancel: Option<Box<dyn FnMut() + 'tree>>,
+/// Mutable navigation state, independently borrowed from notification slots.
+#[derive(Clone)]
+pub(super) struct TreeState {
     /// Nodes in navigation order.
-    pub(super) nodes: Vec<&'tree SessionTreeNode<'entry>>,
+    pub(super) nodes: Rc<Vec<SessionTreeNode>>,
     /// Last occurrence of each entry identity.
-    pub(super) parents: HashMap<&'tree str, &'tree SessionTreeNode<'entry>>,
+    pub(super) parents: Rc<HashMap<String, SessionTreeNode>>,
     /// Nodes admitted by the current filter.
-    pub(super) visible: Vec<&'tree SessionTreeNode<'entry>>,
+    pub(super) visible: Vec<SessionTreeNode>,
     /// Selected position in the visible view.
     pub(super) selected: usize,
     /// Entry categories admitted by the view.
@@ -30,62 +27,71 @@ pub struct TreeList<'tree, 'entry: 'tree> {
     /// Page movement distance.
     pub(super) max_visible_lines: usize,
     /// Current history leaf identity.
-    pub(super) leaf: Option<&'tree str>,
+    pub(super) leaf: Option<String>,
     /// Physical occurrence geometry, retained across filtered projections.
-    pub(super) physical: Vec<FlatNode>,
+    pub(super) physical: Rc<Vec<FlatNode>>,
     /// Current visible geometry and ancestry.
-    pub(super) structure: Structure<'tree>,
+    pub(super) structure: Structure,
     /// Stored ancestry of the current history leaf.
-    pub(super) active_path: HashSet<&'tree str>,
+    pub(super) active_path: Rc<HashSet<String>>,
     /// Last assistant call for each tool identity.
-    pub(super) tool_calls: HashMap<&'tree str, &'tree Value>,
+    pub(super) tool_calls: Rc<HashMap<String, (usize, usize)>>,
+    /// Folded semantic entry identities.
+    pub(super) folded: HashSet<String>,
+    /// Authored literal search query.
+    pub(super) query: String,
     /// Last selection retained through empty views.
-    bookmark: Option<&'tree str>,
+    bookmark: Option<String>,
 }
-impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
-    /// Orders and filters a borrowed tree, selecting the explicit target or leaf.
+impl TreeState {
+    /// Orders and filters a retained tree, selecting the explicit target or leaf.
     ///
     /// # Errors
     /// Returns invalid data when a reached message or content read is malformed.
     pub fn new(
-        tree: &'tree [SessionTreeNode<'entry>],
-        current_leaf_id: Option<&'tree str>,
+        tree: &[InputNode<'_>],
+        current_leaf_id: Option<&str>,
         max_visible_lines: usize,
         initial_selected_id: Option<&str>,
         initial_filter_mode: Option<FilterMode>,
     ) -> io::Result<Self> {
-        let nodes = flatten_tree(tree, current_leaf_id)?;
+        let nodes = Rc::new(super::nodes::retain(&flatten_tree(tree, current_leaf_id)?));
         let parents = nodes
             .iter()
-            .filter_map(|node| node.entry.get("id")?.as_str().map(|id| (id, *node)))
+            .filter_map(|node| {
+                node.entry()
+                    .get("id")?
+                    .as_str()
+                    .map(|id| (id.to_owned(), node.clone()))
+            })
             .collect();
         let mut list = Self {
-            on_select: None,
-            on_cancel: None,
-            active_path: HashSet::new(),
-            physical: super::structure::physical(&nodes),
-            tool_calls: super::tool_call::collect(&nodes),
+            active_path: Rc::new(HashSet::new()),
+            physical: Rc::new(super::structure::physical(&nodes)),
+            tool_calls: Rc::new(super::tool_call::collect(&nodes)),
             structure: Structure::default(),
             nodes,
-            parents,
+            parents: Rc::new(parents),
             visible: Vec::new(),
             selected: 0,
             mode: initial_filter_mode.unwrap_or_default(),
             max_visible_lines,
-            leaf: current_leaf_id,
+            leaf: current_leaf_id.map(str::to_owned),
             bookmark: None,
+            query: String::new(),
+            folded: HashSet::new(),
         };
-        list.active_path = list.ancestors(current_leaf_id).collect();
+        list.active_path = Rc::new(list.ancestors(current_leaf_id).map(str::to_owned).collect());
         list.apply_filter()?;
         list.selected = list.nearest_visible(initial_selected_id.or(current_leaf_id));
         list.remember_selection();
         Ok(list)
     }
 
-    /// Borrows the selected original node, or returns none for an empty view.
+    /// Retains the selected occurrence, or returns none for an empty view.
     #[must_use]
-    pub fn get_selected_node(&self) -> Option<&'tree SessionTreeNode<'entry>> {
-        self.visible.get(self.selected).copied()
+    pub fn get_selected_node(&self) -> Option<SessionTreeNode> {
+        self.visible.get(self.selected).cloned()
     }
 
     /// Selects the last visible match, walking parents from the last full-tree match.
@@ -97,7 +103,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
             .visible
             .iter()
             .enumerate()
-            .filter_map(|(i, node)| node.entry.get("id")?.as_str().map(|id| (id, i)))
+            .filter_map(|(i, node)| node.entry().get("id")?.as_str().map(|id| (id, i)))
             .collect();
         for id in self.ancestors(target) {
             if let Some(index) = indices.get(id) {
@@ -108,12 +114,12 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
     }
 
     /// Stored parent traversal is bounded by the retained identity count.
-    pub(super) fn ancestors<'a>(&self, target: Option<&'a str>) -> impl Iterator<Item = &'a str>
-    where
-        'tree: 'a,
-    {
+    pub(super) fn ancestors<'a>(
+        &'a self,
+        target: Option<&'a str>,
+    ) -> impl Iterator<Item = &'a str> {
         std::iter::successors(target, |id| {
-            self.parents.get(id)?.entry["parentId"].as_str()
+            self.parents.get(*id)?.entry()["parentId"].as_str()
         })
         .take(self.parents.len())
     }
@@ -121,21 +127,35 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
     /// Rebuilds the view and keeps the last valid selection through empty views.
     pub(super) fn apply_filter(&mut self) -> io::Result<()> {
         let mut visible = Vec::new();
-        for node in &self.nodes {
-            if self.includes(node)? {
-                visible.push(*node);
+        for node in self.nodes.iter() {
+            if self.includes(node)? && super::search::matches(node, &self.query)? {
+                visible.push(node.clone());
             }
         }
+        let mut hidden = HashSet::new();
+        for node in self.nodes.iter() {
+            if let Some(parent) = node.entry()["parentId"].as_str()
+                && (self.folded.contains(parent) || hidden.contains(parent))
+                && let Some(id) = node.entry()["id"].as_str()
+            {
+                hidden.insert(id.to_owned());
+            }
+        }
+        visible.retain(|node| {
+            node.entry()["id"]
+                .as_str()
+                .is_none_or(|id| !hidden.contains(id))
+        });
         self.visible = visible;
         self.structure = self.project();
-        self.selected = self.nearest_visible(self.bookmark);
+        self.selected = self.nearest_visible(self.bookmark.as_deref());
         self.remember_selection();
         Ok(())
     }
 
     /// Checks assistant eligibility before applying the selected entry categories.
-    fn includes(&self, node: &SessionTreeNode<'_>) -> io::Result<bool> {
-        let entry = node.entry;
+    fn includes(&self, node: &SessionTreeNode) -> io::Result<bool> {
+        let entry = node.entry();
         let message = if entry["type"] == "message" {
             Some(read_message(entry)?)
         } else {
@@ -144,7 +164,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
         let role = message
             .and_then(|value| value.get("role"))
             .and_then(Value::as_str);
-        if role == Some("assistant") && !self.leaf.is_some_and(|id| entry["id"] == id) {
+        if role == Some("assistant") && !self.leaf.as_deref().is_some_and(|id| entry["id"] == id) {
             let message = read_message(entry)?;
             let text = has_text_content(&message["content"])?;
             let stop = &message["stopReason"];
@@ -160,7 +180,7 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
             FilterMode::Default => !settings,
             FilterMode::NoTools => !settings && role != Some("toolResult"),
             FilterMode::UserOnly => role == Some("user"),
-            FilterMode::LabeledOnly => node.label.is_some(),
+            FilterMode::LabeledOnly => node.label().is_some(),
             FilterMode::All => true,
         })
     }
@@ -168,16 +188,20 @@ impl<'tree, 'entry: 'tree> TreeList<'tree, 'entry> {
     /// Updates the bookmark only when a node is selected.
     pub(super) fn remember_selection(&mut self) {
         if let Some(node) = self.get_selected_node() {
-            self.bookmark = node.entry.get("id").and_then(serde_json::Value::as_str);
+            self.bookmark = node
+                .entry()
+                .get("id")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned);
         }
     }
 }
 
 /// Computes active subtree membership once, then walks stable active-first groups.
 fn flatten_tree<'tree, 'entry>(
-    tree: &'tree [SessionTreeNode<'entry>],
+    tree: &'tree [InputNode<'entry>],
     leaf: Option<&str>,
-) -> io::Result<Vec<&'tree SessionTreeNode<'entry>>> {
+) -> io::Result<Vec<&'tree InputNode<'entry>>> {
     let mut preorder = Vec::new();
     let mut pending: Vec<_> = tree.iter().collect();
     while let Some(node) = pending.pop() {
@@ -207,9 +231,9 @@ fn flatten_tree<'tree, 'entry>(
 
 /// Pushes reversed inactive and active groups for active-first stack traversal.
 fn push_ordered<'tree, 'entry>(
-    nodes: &'tree [SessionTreeNode<'entry>],
-    active: &HashMap<*const SessionTreeNode<'entry>, bool>,
-    pending: &mut Vec<&'tree SessionTreeNode<'entry>>,
+    nodes: &'tree [InputNode<'entry>],
+    active: &HashMap<*const InputNode<'entry>, bool>,
+    pending: &mut Vec<&'tree InputNode<'entry>>,
 ) {
     for group in [false, true] {
         pending.extend(
@@ -252,4 +276,129 @@ fn has_text_content(content: &Value) -> io::Result<bool> {
         }
     }
     Ok(false)
+}
+
+/// A shared selection notification.
+type SelectCallback = Rc<dyn Fn(&str)>;
+/// A shared label-edit notification.
+type LabelCallback = Rc<dyn Fn(&str, Option<Value>)>;
+
+/// A retained session-tree navigation view with replaceable notifications.
+pub struct TreeList {
+    /// Copy-on-write navigation snapshot, allowing render-time reentry.
+    state: RefCell<Rc<TreeState>>,
+    /// Current confirmation notification.
+    select: RefCell<Option<SelectCallback>>,
+    /// Current ordinary cancellation notification.
+    cancel: RefCell<Option<Rc<dyn Fn()>>>,
+    /// Current label-edit notification.
+    label: RefCell<Option<LabelCallback>>,
+}
+impl TreeList {
+    /// Retains the supplied tree, selecting the explicit target or leaf.
+    ///
+    /// # Errors
+    /// Returns invalid data when a reached message or content read is malformed.
+    pub fn new(
+        tree: &[maestro_app::SessionTreeNode<'_>],
+        current_leaf_id: Option<&str>,
+        max_visible_lines: usize,
+        initial_selected_id: Option<&str>,
+        initial_filter_mode: Option<FilterMode>,
+    ) -> io::Result<Self> {
+        Ok(Self {
+            state: RefCell::new(Rc::new(TreeState::new(
+                tree,
+                current_leaf_id,
+                max_visible_lines,
+                initial_selected_id,
+                initial_filter_mode,
+            )?)),
+            select: RefCell::new(None),
+            cancel: RefCell::new(None),
+            label: RefCell::new(None),
+        })
+    }
+    /// Returns a shared selected occurrence, or none for an empty view.
+    #[must_use]
+    pub fn get_selected_node(&self) -> Option<SessionTreeNode> {
+        self.state.borrow().get_selected_node()
+    }
+    /// Returns the authored query, without token normalization.
+    #[must_use]
+    pub fn get_search_query(&self) -> String {
+        self.state.borrow().query.clone()
+    }
+    /// Applies live registered keys before accepting printable query input.
+    ///
+    /// # Errors
+    /// Returns invalid data for reached malformed content during filtering.
+    pub fn handle_input(&self, key_data: &str) -> io::Result<()> {
+        let notification = Rc::make_mut(&mut self.state.borrow_mut()).handle_input(key_data)?;
+        match notification {
+            Some(Notification::Select(id)) => {
+                if let Some(callback) = self.on_select() {
+                    callback(&id);
+                }
+            }
+            Some(Notification::Cancel) => {
+                if let Some(callback) = self.on_cancel() {
+                    callback();
+                }
+            }
+            Some(Notification::Label(id, label)) => {
+                if let Some(callback) = self.on_label_edit() {
+                    callback(&id, label);
+                }
+            }
+            None => {}
+        }
+        Ok(())
+    }
+    /// Renders a stable navigation snapshot with live theme and host observations.
+    ///
+    /// # Errors
+    /// Returns invalid data for reached malformed display fields or theme failures.
+    pub fn render(
+        &self,
+        width: usize,
+        theme: &LiveTheme,
+        runtime: &dyn TuiRuntime,
+        styles_enabled: bool,
+    ) -> io::Result<Vec<String>> {
+        let state = Rc::clone(&self.state.borrow());
+        state.render(width, theme, runtime, styles_enabled)
+    }
+    /// Leaves this uncached view unchanged.
+    pub fn invalidate(&self) {}
+    /// Returns the installed confirmation callback.
+    #[must_use]
+    pub fn on_select(&self) -> Option<SelectCallback> {
+        self.select.borrow().clone()
+    }
+    /// Replaces or removes the confirmation callback.
+    pub fn set_on_select(&self, callback: Option<SelectCallback>) {
+        let old = self.select.replace(callback);
+        drop(old);
+    }
+    /// Returns the installed cancellation callback.
+    #[must_use]
+    pub fn on_cancel(&self) -> Option<Rc<dyn Fn()>> {
+        self.cancel.borrow().clone()
+    }
+    /// Replaces or removes the cancellation callback.
+    pub fn set_on_cancel(&self, callback: Option<Rc<dyn Fn()>>) {
+        let old = self.cancel.replace(callback);
+        drop(old);
+    }
+    /// Returns the installed label-edit callback.
+    #[must_use]
+    pub fn on_label_edit(&self) -> Option<LabelCallback> {
+        self.label.borrow().clone()
+    }
+    /// Replaces or removes the label-edit callback.
+    pub fn set_on_label_edit(&self, callback: Option<LabelCallback>) {
+        let old = self.label.replace(callback);
+        drop(old);
+    }
 }

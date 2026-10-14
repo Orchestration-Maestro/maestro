@@ -110,16 +110,11 @@ fn mode(value: &str) -> FilterMode {
     }
 }
 /// Observe one frame with the surviving list and theme slot.
-fn frame(
-    list: &TreeList<'_, '_>,
-    input: &Input,
-    frame: &Frame,
-    host: &manual_runtime::ManualRuntime,
-) {
+fn frame(list: &TreeList, input: &Input, frame: &Frame, host: &manual_runtime::ManualRuntime) {
     assert_eq!(
         list.get_selected_node()
-            .map(|n| n.entry["id"].as_str().unwrap()),
-        frame.selected.as_deref()
+            .map(|n| n.entry()["id"].as_str().unwrap().to_owned()),
+        frame.selected
     );
     let (state, live) = published::published(&palette::palette(&input.palettes[0]));
     assert_eq!(
@@ -151,11 +146,7 @@ fn frame(
     }
 }
 /// Apply a key or render-local change without altering process environment.
-fn operation(
-    list: &mut TreeList<'_, '_>,
-    operation: &Operation,
-    host: &mut manual_runtime::ManualRuntime,
-) {
+fn operation(list: &mut TreeList, operation: &Operation, host: &mut manual_runtime::ManualRuntime) {
     match operation {
         Operation::Key(key) => list.handle_input(key).unwrap(),
         Operation::Change(change) => {

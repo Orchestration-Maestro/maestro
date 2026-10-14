@@ -31,7 +31,7 @@ fn tree_filter_definitions_keep_toolkit_defaults() {
     );
     assert_eq!(
         KEYBINDINGS.len(),
-        TUI_KEYBINDINGS.len() + fixture.filters.len()
+        TUI_KEYBINDINGS.len() + fixture.filters.len() + 3
     );
     let manager = KeybindingsManager::new(KEYBINDINGS.clone(), Vec::new());
     for (id, row) in fixture.filters {
