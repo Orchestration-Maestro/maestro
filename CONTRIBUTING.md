@@ -41,6 +41,8 @@ just test
 
 Both must pass.
 
+On x86_64 Linux the pinned tools include `mold` (see `mise.toml`); run cargo from an activated mise shell.
+
 Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
 If you are adding a new provider, see `AGENTS.md` for required tests.

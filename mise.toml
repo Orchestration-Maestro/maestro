@@ -16,3 +16,6 @@ watchexec = "2.8.0"
 
 # Finds attachment paths in native completion tests.
 fd = "10.5.0"
+
+# Links x86_64 Linux builds faster than the default linker.
+mold = "2.42.1"

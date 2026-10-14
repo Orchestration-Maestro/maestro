@@ -23,6 +23,8 @@ Clippy with warnings denied, strict public rustdoc and workspace conventions.
 `just test` runs all tests; `just ci` runs both, matching shared Linux CI.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
+x86_64 Linux builds link with `mold` through clang (`.cargo/config.toml`);
+mise pins `mold`, so run cargo from an activated mise shell or `mise exec --`.
 
 The commit hook formats the code, re-stages the staged files and runs
 `just check`; unformatted code is fixed, never rejected. It also rejects
