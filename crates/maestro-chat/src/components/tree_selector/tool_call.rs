@@ -1,44 +1,46 @@
 //! Borrowed assistant tool-call lookup.
-use maestro_app::SessionTreeNode;
+use super::{SessionTreeNode, tree_list::TreeState};
 use serde_json::Value;
 use std::collections::HashMap;
 /// Keep the last call in full navigation order, including hidden rows.
-pub(super) fn collect<'tree>(
-    nodes: &[&'tree SessionTreeNode<'_>],
-) -> HashMap<&'tree str, &'tree Value> {
+pub(super) fn collect(nodes: &[SessionTreeNode]) -> HashMap<String, (usize, usize)> {
     nodes
         .iter()
-        .filter(|node| {
-            node.entry["type"] == "message" && node.entry["message"]["role"] == "assistant"
+        .enumerate()
+        .filter(|(_, node)| {
+            node.entry()["type"] == "message" && node.entry()["message"]["role"] == "assistant"
         })
-        .flat_map(|node| {
-            node.entry["message"]["content"]
+        .flat_map(|(index, node)| {
+            node.entry()["message"]["content"]
                 .as_array()
                 .into_iter()
                 .flatten()
+                .enumerate()
+                .filter(|(_, block)| block["type"] == "toolCall")
+                .filter_map(move |(block_index, block)| {
+                    block["id"]
+                        .as_str()
+                        .map(|id| (id.to_owned(), (index, block_index)))
+                })
         })
-        .filter(|block| block["type"] == "toolCall")
-        .filter_map(|block| block["id"].as_str().map(|id| (id, block)))
         .collect()
 }
-use super::{
-    TreeList,
-    entry_text::{normalize, text},
-};
+use super::entry_text::{normalize, text};
 use maestro_app::{is_truthy, truncate_utf16};
 use maestro_tui::tui::TuiRuntime;
 use std::{borrow::Cow, io};
-impl TreeList<'_, '_> {
+impl TreeState {
     /// Resolve a visible result against all retained assistant calls.
     pub(super) fn tool_result(
         &self,
         message: &Value,
         runtime: &dyn TuiRuntime,
     ) -> io::Result<String> {
-        if let Some(call) = message["toolCallId"]
+        if let Some(&(index, block)) = message["toolCallId"]
             .as_str()
             .and_then(|id| self.tool_calls.get(id))
         {
+            let call = &self.nodes[index].entry()["message"]["content"][block];
             return format_call(text(&call["name"])?, &call["arguments"], runtime);
         }
         let name = message

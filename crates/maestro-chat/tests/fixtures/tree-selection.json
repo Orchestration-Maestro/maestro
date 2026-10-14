@@ -506,9 +506,6 @@
     "deep_histories_keep_navigation_iterative": [
       "deep_histories_keep_navigation_iterative_1"
     ],
-    "selected_node_borrows_original_records": [
-      "selected_node_borrows_original_records_1"
-    ],
     "opaque_entry_fields_survive_selection": [
       "opaque_entry_fields_survive_selection_1"
     ],
@@ -520,6 +517,9 @@
     ],
     "hidden_parent_cycle_falls_back_to_last_visible": [
       "hidden_parent_cycle_falls_back_to_last_visible"
+    ],
+    "selected_node_retains_shared_record_identity": [
+      "selected_node_retains_shared_record_identity_1"
     ]
   },
   "cases": [
@@ -45870,7 +45870,7 @@
       }
     },
     {
-      "case": "selected_node_borrows_original_records_1",
+      "case": "selected_node_retains_shared_record_identity_1",
       "input": {
         "nodes": [
           {

@@ -1,12 +1,15 @@
-//! Navigable views over a borrowed session tree.
+//! Retained session-tree navigation, literal search and folding.
 
 mod entry_text;
 mod navigation;
+mod nodes;
 mod render;
+mod search;
 mod structure;
 mod tool_call;
 mod tree_list;
 
+pub use nodes::SessionTreeNode;
 pub use tree_list::TreeList;
 
 /// Entry categories included in the navigation view.

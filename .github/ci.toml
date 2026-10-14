@@ -1,7 +1,7 @@
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-models", "maestro-packages", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 test_tools = true
 reserved_ports = [53692, 1455]
-spelling_words = ["writeable", "ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "SECON", "SINGL", "curren", "twoo", "hree", "mone", "meight", "caf", "flate", "mport", "mak", "routeros", "styl", "Nd", "extens", "UE", "Iz", "Packag", "Assistent", "Dokument", "Ein", "Konfiguration", "Konversation", "Modell", "Sie", "alle", "als", "ein", "ist", "lokal", "manuell", "oder", "vor", "BRE", "Fo", "PN", "PTD", "Pn", "SHW", "Skup", "conosle", "cusotm", "exectuion", "havea", "iif", "makrdown", "thet"]
+spelling_words = ["writeable", "ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "SECON", "SINGL", "curren", "twoo", "hree", "mone", "meight", "caf", "flate", "mport", "mak", "routeros", "styl", "Nd", "extens", "UE", "Iz", "Packag", "Assistent", "Dokument", "Ein", "Konfiguration", "Konversation", "Modell", "Sie", "alle", "als", "ein", "ist", "lokal", "manuell", "oder", "vor", "BRE", "Fo", "PN", "PTD", "Pn", "SHW", "Skup", "conosle", "cusotm", "exectuion", "havea", "iif", "makrdown", "thet", "alha", "missin"]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",

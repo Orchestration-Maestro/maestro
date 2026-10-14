@@ -1,9 +1,9 @@
-//! Styled rows and position status for the borrowed tree.
-use super::{FilterMode, TreeList};
+//! Styled rows and position status for the retained tree.
+use super::{FilterMode, tree_list::TreeState};
 use maestro_theme::{LiveTheme, ThemeColor};
 use maestro_tui::{TruncateOptions, truncate_to_width, tui::TuiRuntime};
 use std::io;
-impl TreeList<'_, '_> {
+impl TreeState {
     /// Renders the visible window followed by its position and filter status.
     ///
     /// # Errors
@@ -64,7 +64,7 @@ impl TreeList<'_, '_> {
         runtime: &dyn TuiRuntime,
         styles: bool,
     ) -> io::Result<String> {
-        let node = self.visible[index];
+        let node = &self.visible[index];
         let selected = index == self.selected;
         let fg = |key, text: &str| theme.fg(&key, text).map_err(io::Error::other);
         let cursor = if selected {
@@ -72,7 +72,17 @@ impl TreeList<'_, '_> {
         } else {
             "  ".to_owned()
         };
-        let active = node.entry["id"]
+        let geometry = &self.structure.rows[index];
+        let fold_marker = if node.entry()["id"]
+            .as_str()
+            .is_some_and(|id| self.folded.contains(id))
+            && (!geometry.show_connector || geometry.virtual_child)
+        {
+            fg(ThemeColor::Accent, "⊞ ")?
+        } else {
+            String::new()
+        };
+        let active = node.entry()["id"]
             .as_str()
             .is_some_and(|id| self.active_path.contains(id));
         let marker = if active {
@@ -81,24 +91,30 @@ impl TreeList<'_, '_> {
             String::new()
         };
         let label = node
-            .label
+            .label()
+            .as_ref()
             .and_then(serde_json::Value::as_str)
             .filter(|s| !s.is_empty())
             .map(|label| fg(ThemeColor::Warning, &format!("[{label}] ")))
             .transpose()?
             .unwrap_or_default();
-        let content =
-            if node.entry["type"] == "message" && node.entry["message"]["role"] == "toolResult" {
-                fg(
-                    ThemeColor::Muted,
-                    &self.tool_result(&node.entry["message"], runtime)?,
-                )?
-            } else {
-                super::entry_text::entry(node.entry, theme, styles)?
-            };
+        let content = if node.entry()["type"] == "message"
+            && node.entry()["message"]["role"] == "toolResult"
+        {
+            fg(
+                ThemeColor::Muted,
+                &self.tool_result(&node.entry()["message"], runtime)?,
+            )?
+        } else {
+            super::entry_text::entry(node.entry(), theme, styles)?
+        };
         let content = maestro_theme::Theme::bold(&content, selected && styles);
-        let line =
-            cursor + &fg(ThemeColor::Dim, &self.prefix(index))? + &marker + &label + &content;
+        let line = cursor
+            + &fg(ThemeColor::Dim, &self.prefix(index))?
+            + &fold_marker
+            + &marker
+            + &label
+            + &content;
         if selected {
             theme
                 .bg(&maestro_theme::ThemeBg::SelectedBg, &line)
@@ -114,19 +130,24 @@ impl TreeList<'_, '_> {
             .indent
             .saturating_sub(usize::from(self.structure.multiple_roots));
         let connector = row.show_connector && !row.virtual_child;
-        let foldable = self.visible[index].entry["id"]
+        let foldable = self.visible[index].entry()["id"]
             .as_str()
             .is_some_and(|id| self.structure.is_foldable(id));
+        let folded = self.visible[index].entry()["id"]
+            .as_str()
+            .is_some_and(|id| self.folded.contains(id));
         (0..indent)
             .map(|level| {
                 if let Some(gutter) = row.gutters.iter().find(|g| g.position == level) {
                     ["   ", "│  "][usize::from(gutter.show)]
                 } else if connector && level + 1 == indent {
-                    match (row.is_last, foldable) {
-                        (true, true) => "└⊟ ",
-                        (true, false) => "└─ ",
-                        (false, true) => "├⊟ ",
-                        (false, false) => "├─ ",
+                    match (row.is_last, foldable, folded) {
+                        (true, _, true) => "└⊞ ",
+                        (false, _, true) => "├⊞ ",
+                        (true, true, false) => "└⊟ ",
+                        (true, false, false) => "└─ ",
+                        (false, true, false) => "├⊟ ",
+                        (false, false, false) => "├─ ",
                     }
                 } else {
                     "   "
@@ -134,8 +155,6 @@ impl TreeList<'_, '_> {
             })
             .collect()
     }
-    /// Leaves this uncached view unchanged.
-    pub fn invalidate(&self) {}
     /// The badge for the nondefault category selection.
     fn status(&self) -> &'static str {
         match self.mode {
