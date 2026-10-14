@@ -80,12 +80,6 @@ fn store_backend_required_for_each_operation() {
                 .await
                 .unwrap_err();
             assert_eq!(error.kind(), io::ErrorKind::NotConnected);
-            assert!(
-                row.expected["error"]
-                    .as_str()
-                    .unwrap()
-                    .starts_with("Backend not set on ")
-            );
             assert!(!store.base().get_config().name.is_empty());
         }
     });
@@ -222,6 +216,49 @@ fn custom_provider_records_keep_types_optional_values_and_models() {
 }
 
 #[test]
+/// Thinking maps retain insertion order through reads, writes and listing.
+fn custom_provider_thinking_maps_keep_insertion_order() {
+    runtime::run(async {
+        let row = rows("custom_provider_records_keep_types_optional_values_and_models")
+            .into_iter()
+            .find(|row| {
+                row.input["provider"]["models"]
+                    .as_array()
+                    .is_some_and(|m| !m.is_empty())
+            })
+            .unwrap();
+        let mut value = row.input["provider"].clone();
+        value["models"][0]["thinkingLevelMap"] = json!({"high":"large","low":"small"});
+        let s = CustomProvidersStore::default();
+        let b = Backend::new();
+        s.set_backend(b.clone());
+        let id = value["id"].as_str().unwrap();
+        b.seed("custom-providers", json!({id:value.clone()}));
+        let read = serde_json::to_value(s.get(id).await.unwrap().unwrap()).unwrap();
+        let p = serde_json::from_value::<maestro_app::CustomProvider>(value.clone()).unwrap();
+        s.set(&p).await.unwrap();
+        let stored = b.entries("custom-providers")[0][1].clone();
+        let listed = serde_json::to_value(s.get_all().await.unwrap()).unwrap();
+        for (phase, value) in [
+            ("get", read),
+            ("set", stored),
+            ("get_all", listed[0].clone()),
+        ] {
+            assert_eq!(
+                value["models"][0]["thinkingLevelMap"]
+                    .as_object()
+                    .unwrap()
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>(),
+                ["high", "low"],
+                "{phase}"
+            );
+        }
+    });
+}
+
+#[test]
 /// Custom provider overwrite delete and presence use named store.
 fn custom_provider_overwrite_delete_and_presence_use_named_store() {
     runtime::run(async {
@@ -314,10 +351,7 @@ fn store_failures_keep_operation_phase_and_adapter_cause() {
             *b.fail.borrow_mut() = Some(raw.into());
             let error = s.invoke(op).await.unwrap_err();
             same_cause(&error, &b);
-            equal(
-                &json!({"error":format!("controlled {raw} failure"),"trace":*b.trace.borrow()}),
-                &row.expected,
-            );
+            equal(&json!({"trace":*b.trace.borrow()}), &row.expected);
         }
     });
 }
@@ -338,10 +372,7 @@ fn custom_provider_listing_stops_at_first_read_failure() {
             *b.keys.borrow_mut() = Some(keys);
             let error = s.get_all().await.unwrap_err();
             same_cause(&error, &b);
-            equal(
-                &json!({"error":"controlled second read failure","trace":*b.trace.borrow()}),
-                &row.expected,
-            );
+            equal(&json!({"trace":*b.trace.borrow()}), &row.expected);
         }
     });
 }

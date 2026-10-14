@@ -472,7 +472,7 @@ pub(super) fn reasoning(
     let map = model.thinking_level_map.as_ref();
     if effort.is_some() || summary.is_some() {
         let effort = effort.map_or("medium", |level| {
-            map.and_then(|m| m.get(&level.into()))
+            map.and_then(|m| m.get(&crate::ModelThinkingLevel::from(level)))
                 .and_then(Option::as_deref)
                 .unwrap_or_else(|| level_name(level))
         });

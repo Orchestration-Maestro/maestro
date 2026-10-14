@@ -1,10 +1,10 @@
 //! Storage contracts exercised through browser and application SDK exports.
 #![cfg(test)]
-use maestro_app::browser::storage::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
 use maestro_web::{
     AutoDiscoveryProviderType, CustomProvider, CustomProviderType, CustomProvidersStore,
-    IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
-    StorageBackend, StorageTransaction, Store, StoreConfig,
+    IndexConfig, IndexDirection, IndexedDBConfig, ManualProviderType, ProviderKeysStore, QuotaInfo,
+    SettingsStore, StorageBackend, StorageOperation, StorageTransaction, Store, StoreConfig,
+    TransactionMode,
 };
 use serde_json::{Value, json};
 use std::{

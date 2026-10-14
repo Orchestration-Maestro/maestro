@@ -3,6 +3,8 @@
 The application owns browser-store policy. Both `maestro_app` and
 `maestro_web` export `Store`, `SettingsStore`, `ProviderKeysStore`,
 `CustomProvidersStore`, their configuration records and the storage traits.
+`maestro_web` also exports the backend signature types `IndexDirection`,
+`TransactionMode`, `StorageOperation` and `QuotaInfo`.
 Backend implementations are supplied by the caller, not constructed by stores.
 
 Each default store has an out-of-line key schema named `settings`,
@@ -22,8 +24,8 @@ reads return `None`. Conversion failures return `InvalidData`; adapter errors
 propagate unchanged. Provider-key presence is independent of empty key content.
 
 Custom providers retain their literal protocol/family and complete model
-records. `Presence` distinguishes omitted, null, empty and populated optional
-keys/models. Listing obtains keys once, reads each sequentially in adapter
+records, including thinking-map insertion order. `Presence` distinguishes
+omitted, null, empty and populated optional keys/models. Listing obtains keys once, reads each sequentially in adapter
 order, skips missing records and stops at the first failure. Each read selects
 the then-current backend, so a rebind during listing affects later reads.
 

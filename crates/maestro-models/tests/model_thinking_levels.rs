@@ -1,8 +1,8 @@
 use ModelThinkingLevel::{High, Low, Medium, Minimal, Off, Xhigh};
+use maestro_models::ThinkingLevelMap;
 use maestro_models::{
     Model, ModelThinkingLevel, clamp_thinking_level, get_model, get_supported_thinking_levels,
 };
-use std::collections::BTreeMap;
 
 const LEVELS: [ModelThinkingLevel; 6] = [Off, Minimal, Low, Medium, High, Xhigh];
 
@@ -25,7 +25,7 @@ fn assert_mapping_rules(model: &mut Model) {
         &[Off, Minimal, Low, Medium, High],
         [Off, Minimal, Low, Medium, High, High],
     );
-    model.thinking_level_map = Some(BTreeMap::new());
+    model.thinking_level_map = Some(ThinkingLevelMap::new());
     assert_selection(
         model,
         &[Off, Minimal, Low, Medium, High],
@@ -43,7 +43,7 @@ fn assert_mapping_rules(model: &mut Model) {
             .collect();
         assert_eq!(get_supported_thinking_levels(model), expected);
     }
-    let mut map: BTreeMap<_, _> = LEVELS
+    let mut map: ThinkingLevelMap = LEVELS
         .into_iter()
         .rev()
         .map(|level| (level, Some("native-custom".into())))
@@ -71,7 +71,7 @@ fn assert_mapping_rules(model: &mut Model) {
 fn assert_nonreasoning_maps(model: &mut Model) {
     for map in [
         None,
-        Some(BTreeMap::new()),
+        Some(ThinkingLevelMap::new()),
         Some(LEVELS.into_iter().map(|level| (level, None)).collect()),
         Some(
             LEVELS

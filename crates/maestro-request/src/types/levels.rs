@@ -16,7 +16,7 @@ pub enum ThinkingLevel {
     Xhigh,
 }
 /// Represent the accepted reasoning levels, with Off only on model selection.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum ModelThinkingLevel {
     /// Off.

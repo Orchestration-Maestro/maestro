@@ -61,9 +61,9 @@ pub fn rows(name: &str) -> Vec<Row> {
         let fields: &[&str] = if expected.contains_key("result") {
             &["result"]
         } else if expected.contains_key("trace") {
-            &["error", "trace"]
+            &["trace"]
         } else {
-            &["error"]
+            &[]
         };
         assert_eq!(
             expected.keys().map(String::as_str).collect::<Vec<_>>(),

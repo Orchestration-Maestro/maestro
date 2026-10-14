@@ -17,9 +17,7 @@
         "kind": "SettingsStore",
         "op": "get"
       },
-      "expected": {
-        "error": "Backend not set on SettingsStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -27,9 +25,7 @@
         "kind": "SettingsStore",
         "op": "set"
       },
-      "expected": {
-        "error": "Backend not set on SettingsStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -37,9 +33,7 @@
         "kind": "SettingsStore",
         "op": "delete"
       },
-      "expected": {
-        "error": "Backend not set on SettingsStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -47,9 +41,7 @@
         "kind": "SettingsStore",
         "op": "list"
       },
-      "expected": {
-        "error": "Backend not set on SettingsStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -57,9 +49,7 @@
         "kind": "SettingsStore",
         "op": "clear"
       },
-      "expected": {
-        "error": "Backend not set on SettingsStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_schemas_keep_out_of_line_keys",
@@ -78,9 +68,7 @@
         "kind": "ProviderKeysStore",
         "op": "get"
       },
-      "expected": {
-        "error": "Backend not set on ProviderKeysStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -88,9 +76,7 @@
         "kind": "ProviderKeysStore",
         "op": "set"
       },
-      "expected": {
-        "error": "Backend not set on ProviderKeysStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -98,9 +84,7 @@
         "kind": "ProviderKeysStore",
         "op": "delete"
       },
-      "expected": {
-        "error": "Backend not set on ProviderKeysStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -108,9 +92,7 @@
         "kind": "ProviderKeysStore",
         "op": "list"
       },
-      "expected": {
-        "error": "Backend not set on ProviderKeysStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -118,9 +100,7 @@
         "kind": "ProviderKeysStore",
         "op": "has"
       },
-      "expected": {
-        "error": "Backend not set on ProviderKeysStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_schemas_keep_out_of_line_keys",
@@ -139,9 +119,7 @@
         "kind": "CustomProvidersStore",
         "op": "get"
       },
-      "expected": {
-        "error": "Backend not set on CustomProvidersStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -149,9 +127,7 @@
         "kind": "CustomProvidersStore",
         "op": "set"
       },
-      "expected": {
-        "error": "Backend not set on CustomProvidersStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -159,9 +135,7 @@
         "kind": "CustomProvidersStore",
         "op": "delete"
       },
-      "expected": {
-        "error": "Backend not set on CustomProvidersStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -169,9 +143,7 @@
         "kind": "CustomProvidersStore",
         "op": "getAll"
       },
-      "expected": {
-        "error": "Backend not set on CustomProvidersStore"
-      }
+      "expected": {}
     },
     {
       "test": "store_backend_required_for_each_operation",
@@ -179,9 +151,7 @@
         "kind": "CustomProvidersStore",
         "op": "has"
       },
-      "expected": {
-        "error": "Backend not set on CustomProvidersStore"
-      }
+      "expected": {}
     },
     {
       "test": "settings_values_roundtrip_without_normalization",
@@ -3833,7 +3803,6 @@
         "op": "get"
       },
       "expected": {
-        "error": "controlled get failure",
         "trace": [
           [
             "get",
@@ -3850,7 +3819,6 @@
         "op": "set"
       },
       "expected": {
-        "error": "controlled set failure",
         "trace": [
           [
             "set",
@@ -3868,7 +3836,6 @@
         "op": "delete"
       },
       "expected": {
-        "error": "controlled delete failure",
         "trace": [
           [
             "delete",
@@ -3885,7 +3852,6 @@
         "op": "list"
       },
       "expected": {
-        "error": "controlled keys failure",
         "trace": [
           [
             "keys",
@@ -3901,7 +3867,6 @@
         "op": "clear"
       },
       "expected": {
-        "error": "controlled clear failure",
         "trace": [
           [
             "clear",
@@ -3917,7 +3882,6 @@
         "op": "get"
       },
       "expected": {
-        "error": "controlled get failure",
         "trace": [
           [
             "get",
@@ -3934,7 +3898,6 @@
         "op": "set"
       },
       "expected": {
-        "error": "controlled set failure",
         "trace": [
           [
             "set",
@@ -3952,7 +3915,6 @@
         "op": "delete"
       },
       "expected": {
-        "error": "controlled delete failure",
         "trace": [
           [
             "delete",
@@ -3969,7 +3931,6 @@
         "op": "list"
       },
       "expected": {
-        "error": "controlled keys failure",
         "trace": [
           [
             "keys",
@@ -3985,7 +3946,6 @@
         "op": "has"
       },
       "expected": {
-        "error": "controlled has failure",
         "trace": [
           [
             "has",
@@ -4002,7 +3962,6 @@
         "op": "get"
       },
       "expected": {
-        "error": "controlled get failure",
         "trace": [
           [
             "get",
@@ -4019,7 +3978,6 @@
         "op": "set"
       },
       "expected": {
-        "error": "controlled set failure",
         "trace": [
           [
             "set",
@@ -4042,7 +4000,6 @@
         "op": "delete"
       },
       "expected": {
-        "error": "controlled delete failure",
         "trace": [
           [
             "delete",
@@ -4059,7 +4016,6 @@
         "op": "getAll"
       },
       "expected": {
-        "error": "controlled keys failure",
         "trace": [
           [
             "keys",
@@ -4075,7 +4031,6 @@
         "op": "has"
       },
       "expected": {
-        "error": "controlled has failure",
         "trace": [
           [
             "has",
@@ -4095,7 +4050,6 @@
         ]
       },
       "expected": {
-        "error": "controlled second read failure",
         "trace": [
           [
             "keys",

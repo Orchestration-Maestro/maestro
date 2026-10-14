@@ -218,7 +218,7 @@ pub(crate) fn map_thinking_level_to_effort(model: &Model, level: ThinkingLevel) 
     let mapped = model
         .thinking_level_map
         .as_ref()
-        .and_then(|mapping| mapping.get(&level.into()))
+        .and_then(|mapping| mapping.get(&crate::ModelThinkingLevel::from(level)))
         .and_then(Option::as_ref);
     mapped.map_or_else(
         || {

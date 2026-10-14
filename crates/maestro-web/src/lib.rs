@@ -24,3 +24,7 @@ pub use maestro_app::{
     IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
     StorageBackend, StorageTransaction, Store, StoreConfig,
 };
+
+pub use maestro_app::browser::storage::{
+    IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
+};
