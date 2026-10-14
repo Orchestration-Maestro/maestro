@@ -11,9 +11,10 @@ use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeMap,
+    future::Future,
     io,
     process::{ExitStatus, Output},
-    task::Poll,
+    task::{Context, Poll, Waker},
 };
 use tokio::{process::Command, sync::oneshot};
 
@@ -261,7 +262,8 @@ async fn replay_case(case: &Case, process_error: bool) {
     };
     let mut copy = Box::pin(copy_to_clipboard_with(&case.input.text, &effects));
     if pending {
-        assert!(matches!(futures_util::poll!(&mut copy), Poll::Pending));
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(matches!(copy.as_mut().poll(&mut context), Poll::Pending));
         assert_eq!(
             *effects.trace.borrow(),
             vec![json!(["native", case.input.text])]
