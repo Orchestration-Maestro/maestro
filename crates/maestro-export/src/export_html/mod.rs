@@ -161,7 +161,7 @@ fn render_call(
     }
     Ok(())
 }
-/// Merge present results while clearing newly absent result fields.
+/// Replace result fields in collapsed/expanded order while retaining call output.
 fn render_result(
     message: &Value,
     renderer: &dyn ToolHtmlRenderer,
@@ -197,14 +197,14 @@ fn render_result(
     };
     let record = records.entry(id.to_owned()).or_insert_with(|| json!({}));
     if let Value::Object(record) = record {
+        record.shift_remove("resultHtmlCollapsed");
+        record.shift_remove("resultHtmlExpanded");
         for (key, value) in [
             ("resultHtmlCollapsed", result.collapsed),
             ("resultHtmlExpanded", result.expanded),
         ] {
             if let Some(value) = value {
                 record.insert(key.to_owned(), value.into());
-            } else {
-                record.shift_remove(key);
             }
         }
     }

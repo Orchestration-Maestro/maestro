@@ -470,6 +470,39 @@ fn repeated_ids_replace_calls_and_merge_results() {
     record("absent_result_keeps_call");
 }
 #[test]
+fn repeated_results_restore_declared_field_order() {
+    let mut view = call_view("x");
+    for _ in 0..2 {
+        view.data["entries"].as_array_mut().unwrap().push(json!({
+            "type": "message",
+            "message": {"role": "toolResult", "toolCallId": "x", "toolName": "custom"}
+        }));
+    }
+    let renderer = Renderer::from(Returns {
+        call: vec![json!("C")],
+        result: vec![
+            json!({"expanded": "E1"}),
+            json!({"collapsed": "C2", "expanded": "E2"}),
+        ],
+    });
+    let operations = Operations::default();
+    export_session_to_html(
+        &view,
+        None,
+        Some(ExportOptions {
+            tool_renderer: Some(&renderer),
+            ..ExportOptions::default()
+        }),
+        &operations,
+    )
+    .unwrap();
+    let data: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    assert_eq!(
+        serde_json::to_string(&data["renderedTools"]).unwrap(),
+        r#"{"x":{"callHtml":"C","resultHtmlCollapsed":"C2","resultHtmlExpanded":"E2"}}"#
+    );
+}
+#[test]
 fn rendered_record_fields_preserve_missing_and_empty() {
     record("absence_and_null");
 }

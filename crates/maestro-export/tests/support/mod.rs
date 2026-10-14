@@ -519,7 +519,7 @@ pub fn record(name: &str) {
             .cloned()
             .unwrap_or_else(|| json!({}));
         assert_eq!(
-            maestro_json::compact_json(&records).unwrap(),
+            serde_json::to_string(&records).unwrap(),
             row.expected.json.unwrap()
         );
     }

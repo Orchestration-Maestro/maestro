@@ -2674,10 +2674,20 @@
             "toolName": "custom",
             "content": [
               {
-                "type": "text",
-                "text": "result"
+                "type": "image",
+                "data": "aW1hZ2U=",
+                "mimeType": "image/png"
               }
-            ]
+            ],
+            "details": {
+              "nested": {
+                "count": 2
+              },
+              "labels": [
+                "first",
+                "second"
+              ]
+            }
           }
         },
         {
@@ -2732,12 +2742,19 @@
             "name": "custom",
             "content": [
               {
-                "type": "text",
-                "text": "result"
+                "type": "image",
+                "data": "aW1hZ2U=",
+                "mimeType": "image/png"
               }
             ],
             "details": {
-              "absent": true
+              "nested": {
+                "count": 2
+              },
+              "labels": [
+                "first",
+                "second"
+              ]
             },
             "isError": false
           },
@@ -3136,12 +3153,6 @@
             "role": "toolResult",
             "toolCallId": "a",
             "toolName": "custom",
-            "content": [
-              {
-                "type": "text",
-                "text": "result"
-              }
-            ],
             "details": null,
             "isError": null
           }
@@ -3155,12 +3166,7 @@
             "role": "toolResult",
             "toolCallId": "b",
             "toolName": "custom",
-            "content": [
-              {
-                "type": "text",
-                "text": "result"
-              }
-            ],
+            "content": null,
             "isError": false
           }
         }
@@ -3200,12 +3206,9 @@
             "kind": "result",
             "id": "a",
             "name": "custom",
-            "content": [
-              {
-                "type": "text",
-                "text": "result"
-              }
-            ],
+            "content": {
+              "absent": true
+            },
             "details": null,
             "isError": false
           },
@@ -3213,12 +3216,7 @@
             "kind": "result",
             "id": "b",
             "name": "custom",
-            "content": [
-              {
-                "type": "text",
-                "text": "result"
-              }
-            ],
+            "content": null,
             "details": {
               "absent": true
             },
@@ -3393,9 +3391,6 @@
       "entries": [
         {
           "type": "message",
-          "id": "entry",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00Z",
           "message": {
             "role": "assistant",
             "content": [
@@ -3423,8 +3418,7 @@
         "call": [
           {
             "throw": "call failed"
-          },
-          "unreached"
+          }
         ]
       },
       "expected": {
@@ -3446,9 +3440,6 @@
       "entries": [
         {
           "type": "message",
-          "id": "entry",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00Z",
           "message": {
             "role": "toolResult",
             "toolCallId": "a",
@@ -3463,9 +3454,6 @@
         },
         {
           "type": "message",
-          "id": "entry",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00Z",
           "message": {
             "role": "toolResult",
             "toolCallId": "b",
@@ -3483,8 +3471,7 @@
         "result": [
           {
             "throw": "result failed"
-          },
-          {}
+          }
         ]
       },
       "expected": {
@@ -3513,9 +3500,6 @@
       "entries": [
         {
           "type": "message",
-          "id": "entry",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00Z",
           "message": {
             "role": "assistant",
             "content": [
@@ -3559,9 +3543,6 @@
       "entries": [
         {
           "type": "message",
-          "id": "entry",
-          "parentId": null,
-          "timestamp": "2026-01-01T00:00:00Z",
           "message": {
             "role": "assistant",
             "content": [
@@ -3729,17 +3710,7 @@
         }
       ],
       "returns": {
-        "result": [
-          {
-            "expanded": "P"
-          },
-          {
-            "expanded": "C"
-          },
-          {
-            "expanded": "T"
-          }
-        ]
+        "result": []
       },
       "expected": {
         "json": "{}",
@@ -4294,8 +4265,7 @@
             "parameters": {
               "type": "object",
               "extra": null
-            },
-            "label": "omit"
+            }
           },
           {
             "name": "a",
@@ -4460,14 +4430,7 @@
           "error": "first resolution failed"
         }
       ],
-      "explicit": [
-        {
-          "pageBg": "#111111"
-        },
-        {
-          "cardBg": "#222222"
-        }
-      ],
+      "explicit": [],
       "expected": {
         "error": "first resolution failed",
         "calls": [
@@ -4490,9 +4453,6 @@
       "explicit": [
         {
           "pageBg": "#111111"
-        },
-        {
-          "cardBg": "#222222"
         }
       ],
       "expected": {
