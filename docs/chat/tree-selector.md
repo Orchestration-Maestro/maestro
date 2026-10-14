@@ -47,6 +47,30 @@ mode when it differs from the current mode, or return to default when it is alre
 selected; the default shortcut always selects default. Forward and
 backward cycles follow `Default`, `NoTools`, `UserOnly`, `LabeledOnly`, `All`.
 
-Rendering and visual metadata are tracked in [#764](https://github.com/Orchestration-Maestro/maestro/issues/764).
+## Rendering
+
+`render(width, &LiveTheme, &dyn TuiRuntime, styles_enabled)` returns the visible
+window and position/filter status, clipped with the toolkit's terminal-cell
+formatter. Branch gutters follow the filtered parent projection; hidden parents
+attach to the nearest visible ancestor. Active marks follow the current leaf,
+not the selection. Attached nonempty labels precede entry content.
+
+The list borrows display fields only when their row reaches the window. Reached
+malformed text or a missing matched tool-argument receiver returns `InvalidData`;
+theme failures are propagated. Tool results resolve the last matching call from
+all ordered assistant rows, including hidden rows. Path summaries read the supplied
+runtime's nonempty HOME, then USERPROFILE, at each render and shorten a raw prefix.
+Tool argument fields use their tool defaults for falsy values. Truthy strings
+render unchanged; other truthy values render as compact JSON. Entry text remains
+strictly string-valued. Rendering performs no filesystem or scheduling operations.
+
+The supplied live theme is read on every render. `styles_enabled` controls bold
+selection and italic empty titles; colors remain theme-owned. `invalidate()` is a
+no-op because there is no render cache. The borrowed list has an inherent render
+method, not a toolkit `Component` implementation.
+
+Message previews use the shared [UTF-16 prefix helper](../text.md) before newline/tab
+normalization and shared-whitespace trimming. Tool summaries reuse the application's
+JSON and read-range exports; their tool-specific prefix budgets remain here.
 Search, folds, labels and the selector wrapper are tracked in [#768](https://github.com/Orchestration-Maestro/maestro/issues/768).
 Application startup installs the effective manager in [#217](https://github.com/Orchestration-Maestro/maestro/issues/217).

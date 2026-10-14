@@ -138,3 +138,19 @@ fn markup_modes_escape_once_and_append() {
         }
     }
 }
+
+/// UTF-16 budgets retain complete Unicode scalars.
+#[test]
+fn utf16_prefix_keeps_whole_scalars() {
+    for (text, limit, expected) in [
+        ("", 40, ""),
+        ("abc", 2, "ab"),
+        ("abc", 3, "abc"),
+        ("abc", 4, "abc"),
+        ("😀x", 1, ""),
+        ("😀x", 2, "😀"),
+        ("a😀", 2, "a"),
+    ] {
+        assert_eq!(maestro_text::truncate_utf16(text, limit), expected);
+    }
+}

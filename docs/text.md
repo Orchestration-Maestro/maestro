@@ -19,6 +19,9 @@ stable sorting and comparator lifetime.
 - **Newlines.** `normalize_to_lf` converts every CRLF pair and lone CR to LF and touches
   nothing else. Frontmatter parsing, the editor's stored text, Markdown parsing and
   edit matching all call it; each keeps its own tab policy.
+- **UTF-16 prefixes.** `truncate_utf16(text, limit)` returns the longest whole-scalar
+  prefix within the unit budget. Models and tree previews share this helper, also
+  re-exported from `maestro_app`.
 - **Lexical order.** `utf16_order` compares UTF-16 code units, so supplementary
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`

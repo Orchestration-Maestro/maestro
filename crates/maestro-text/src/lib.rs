@@ -23,7 +23,7 @@ mod whitespace;
 pub use utf8::{Utf8Stream, decode_utf8};
 
 pub use flags::is_truthy_env_flag;
-pub use lexical::utf16_order;
+pub use lexical::{truncate_utf16, utf16_order};
 pub use newlines::normalize_to_lf;
 pub use whitespace::{WHITESPACE, is_whitespace_scalar};
 

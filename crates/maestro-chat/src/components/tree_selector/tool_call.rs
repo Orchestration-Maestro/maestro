@@ -1,0 +1,134 @@
+//! Borrowed assistant tool-call lookup.
+use maestro_app::SessionTreeNode;
+use serde_json::Value;
+use std::collections::HashMap;
+/// Keep the last call in full navigation order, including hidden rows.
+pub(super) fn collect<'tree>(
+    nodes: &[&'tree SessionTreeNode<'_>],
+) -> HashMap<&'tree str, &'tree Value> {
+    nodes
+        .iter()
+        .filter(|node| {
+            node.entry["type"] == "message" && node.entry["message"]["role"] == "assistant"
+        })
+        .flat_map(|node| {
+            node.entry["message"]["content"]
+                .as_array()
+                .into_iter()
+                .flatten()
+        })
+        .filter(|block| block["type"] == "toolCall")
+        .filter_map(|block| block["id"].as_str().map(|id| (id, block)))
+        .collect()
+}
+use super::{
+    TreeList,
+    entry_text::{normalize, text},
+};
+use maestro_app::{is_truthy, truncate_utf16};
+use maestro_tui::tui::TuiRuntime;
+use std::{borrow::Cow, io};
+impl TreeList<'_, '_> {
+    /// Resolve a visible result against all retained assistant calls.
+    pub(super) fn tool_result(
+        &self,
+        message: &Value,
+        runtime: &dyn TuiRuntime,
+    ) -> io::Result<String> {
+        if let Some(call) = message["toolCallId"]
+            .as_str()
+            .and_then(|id| self.tool_calls.get(id))
+        {
+            return format_call(text(&call["name"])?, &call["arguments"], runtime);
+        }
+        let name = message
+            .get("toolName")
+            .filter(|v| !v.is_null())
+            .map_or(Ok("tool"), text)?;
+        Ok(format!("[{name}]"))
+    }
+}
+/// Summarize only the fields used by the selected tool kind.
+fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result<String> {
+    if args.is_null() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "missing tool arguments receiver",
+        ));
+    }
+    match name {
+        "bash" => {
+            let raw = argument(args, "command", "")?;
+            let command = truncate_utf16(&normalize(&raw), 50);
+            Ok(format!(
+                "[bash: {command}{}]",
+                if raw.encode_utf16().count() > 50 {
+                    "..."
+                } else {
+                    ""
+                }
+            ))
+        }
+        "read" | "write" | "edit" => {
+            let raw = if args.get("path").is_some_and(is_truthy) {
+                argument(args, "path", "")?
+            } else {
+                argument(args, "file_path", "")?
+            };
+            let path = shorten_path(&raw, runtime);
+            let range = if name == "read" {
+                maestro_app::format_read_line_range(args)
+            } else {
+                String::new()
+            };
+            Ok(format!("[{name}: {path}{range}]"))
+        }
+        "grep" | "find" | "ls" => {
+            let path = shorten_path(&argument(args, "path", ".")?, runtime);
+            if name == "ls" {
+                return Ok(format!("[ls: {path}]"));
+            }
+            let pattern = argument(args, "pattern", "")?;
+            let pattern = if name == "grep" {
+                format!("/{pattern}/")
+            } else {
+                pattern.into_owned()
+            };
+            Ok(format!("[{name}: {pattern} in {path}]"))
+        }
+        _ => {
+            let serialized = maestro_app::compact_json(args).map_err(io::Error::other)?;
+            let preview = truncate_utf16(&serialized, 40);
+            Ok(format!(
+                "[{name}: {preview}{}]",
+                if serialized.encode_utf16().count() > 40 {
+                    "..."
+                } else {
+                    ""
+                }
+            ))
+        }
+    }
+}
+/// Display truthy arguments, otherwise the tool's own default.
+fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<'a, str>> {
+    let Some(value) = args.get(key).filter(|v| is_truthy(v)) else {
+        return Ok(Cow::Borrowed(default));
+    };
+    if let Some(text) = value.as_str() {
+        return Ok(Cow::Borrowed(text));
+    }
+    maestro_app::compact_json(value)
+        .map(Cow::Owned)
+        .map_err(io::Error::other)
+}
+/// Bind the live nonempty home observation only when formatting a path.
+fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
+    let home = runtime
+        .environment("HOME")
+        .filter(|s| !s.is_empty())
+        .or_else(|| runtime.environment("USERPROFILE").filter(|s| !s.is_empty()));
+    home.as_deref()
+        .and_then(|home| path.strip_prefix(home))
+        .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
+}

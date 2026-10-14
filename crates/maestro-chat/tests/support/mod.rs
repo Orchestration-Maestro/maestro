@@ -1,27 +1,20 @@
 //! Strict recorded inputs replayed through the public navigation interface.
+pub mod registry;
+pub mod tree;
 use maestro_app::{SessionTreeNode, presentation_data::keybindings::KEYBINDINGS};
 use maestro_chat::components::tree_selector::{FilterMode, TreeList};
 use maestro_tui::{
     KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
 };
-use serde::{Deserialize, Deserializer};
-use serde_json::Value;
+use registry::{REGISTRY, Restore};
+use serde::Deserialize;
 use std::{
     cell::RefCell,
     collections::{BTreeMap, HashSet},
     rc::Rc,
-    sync::Mutex,
 };
+use tree::{Node, tree};
 
-/// Serializes global key manager replacements across test cases.
-static REGISTRY: Mutex<()> = Mutex::new(());
-/// Restores the caller's manager, including after a failed assertion.
-struct Restore(KeybindingsManager);
-impl Drop for Restore {
-    fn drop(&mut self) {
-        set_keybindings(self.0.clone());
-    }
-}
 /// Recorded scenario inventory.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -71,22 +64,6 @@ struct Input {
 /// Defaults recorded invocations to installed callbacks.
 fn callbacks_enabled() -> bool {
     true
-}
-/// One borrowed node's recorded fields.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Node {
-    /// Original entry passed intact to the existing owner type.
-    entry: Value,
-    /// Child occurrence indices.
-    children: Vec<usize>,
-    /// Present labels retain explicit null.
-    #[serde(default, deserialize_with = "present_value")]
-    label: Option<Value>,
-}
-/// Distinguishes an explicitly null label from an omitted label.
-fn present_value<'de, D: Deserializer<'de>>(decoder: D) -> Result<Option<Value>, D::Error> {
-    Value::deserialize(decoder).map(Some)
 }
 /// Accepted caller binding shapes.
 #[derive(Deserialize)]
@@ -164,36 +141,6 @@ fn bindings(values: &BTreeMap<String, Binding>) -> KeybindingsConfig {
             };
             (id.clone(), Some(keys))
         })
-        .collect()
-}
-/// Builds owned child containers iteratively over borrowed raw entries.
-fn tree(input: &Input) -> Vec<SessionTreeNode<'_>> {
-    let mut order = Vec::new();
-    let mut pending = input.roots.clone();
-    while let Some(index) = pending.pop() {
-        order.push(index);
-        pending.extend(&input.nodes[index].children);
-    }
-    assert_eq!(order.len(), input.nodes.len());
-    let mut built: Vec<Option<SessionTreeNode<'_>>> =
-        (0..input.nodes.len()).map(|_| None).collect();
-    for index in order.into_iter().rev() {
-        let node = &input.nodes[index];
-        built[index] = Some(SessionTreeNode {
-            entry: &node.entry,
-            children: node
-                .children
-                .iter()
-                .map(|&child| built[child].take().unwrap())
-                .collect(),
-            label: node.label.as_ref(),
-            label_timestamp: None,
-        });
-    }
-    input
-        .roots
-        .iter()
-        .map(|&index| built[index].take().unwrap())
         .collect()
 }
 /// Resolves every supplied occurrence to its original node address.
@@ -281,7 +228,7 @@ fn replay(case: &Case) {
         KEYBINDINGS.clone(),
         bindings(&case.input.bindings),
     ));
-    let tree = tree(&case.input);
+    let tree = tree(&case.input.nodes, &case.input.roots);
     let nodes = occurrences(&tree, &case.input);
     let result = TreeList::new(
         &tree,

@@ -208,3 +208,24 @@ impl AnsiStream {
         strip_ansi(&std::mem::take(&mut self.pending))
     }
 }
+
+/// Format a line number or count the way the model has always seen it.
+pub(crate) fn num(value: f64) -> String {
+    ryu_js::Buffer::new().format(value).to_owned()
+}
+
+/// `:start-end` for the offset and limit arguments, empty when neither is present; a
+/// non-numeric offset counts as 1 and a non-numeric limit as 0, and an end of 0 is omitted.
+#[must_use]
+pub fn format_read_line_range(args: &Value) -> String {
+    let (offset, limit) = (args.get("offset"), args.get("limit"));
+    if offset.is_none() && limit.is_none() {
+        return String::new();
+    }
+    let start = offset.and_then(Value::as_f64).unwrap_or(1.0);
+    let end = limit
+        .map(|limit| (start + limit.as_f64().unwrap_or(0.0)) - 1.0)
+        .filter(|end| *end != 0.0 && !end.is_nan());
+    let tail = end.map_or_else(String::new, |end| format!("-{}", num(end)));
+    format!(":{}{tail}", num(start))
+}

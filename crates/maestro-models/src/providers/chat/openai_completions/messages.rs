@@ -1,5 +1,6 @@
 //! Typed chat-completion wire messages and the conversion from conversation history.
 
+use maestro_text::truncate_utf16;
 use serde::ser::{SerializeMap, SerializeStruct};
 use serde::{Serialize, Serializer};
 use serde_json::Value;
@@ -262,17 +263,6 @@ fn normalize_tool_call_id(id: &str, provider: &str) -> String {
         return truncate_utf16(id, ID_LIMIT);
     }
     id.to_owned()
-}
-
-/// Keep the longest prefix of whole characters that fits in `limit` UTF-16 units.
-fn truncate_utf16(text: &str, limit: usize) -> String {
-    let mut units = 0;
-    text.chars()
-        .take_while(|character| {
-            units += character.len_utf16();
-            units <= limit
-        })
-        .collect()
 }
 
 /// Convert a user turn; an empty block list produces no message.
