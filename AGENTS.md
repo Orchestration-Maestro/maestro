@@ -95,6 +95,10 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 
 ## Crates
 
+Dependency descriptions below state domain edges; each also permits the
+[native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier).
+This includes leaves, exact sets and the core-to-dedicated prohibition; the unifier itself has no workspace dependencies.
+
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never depend on dedicated
   (non-core) crates.
@@ -120,9 +124,9 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 - `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
   dedicated, unpublished and without workspace dependencies. Members declare it only
   as a non-optional normal dependency under `cfg(not(target_arch = "wasm32"))`; it
-  never supplies a required edge, and only its generated section may declare
-  `serde_json` directly (lint inheritance and the workspace precision entry still
-  apply).
+  never supplies a required edge. The crate is exempt from member `serde_json`
+  inheritance (lint inheritance and the workspace precision entry still apply).
+  Never hand-edit its generated manifest section.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
   no workspace dependencies, including the path utility. Only theme/application
   may depend on watch; only settings/credentials may depend on lock. Follow the

@@ -11,9 +11,9 @@ platforms = [
     "x86_64-pc-windows-msvc",
 ]
 
-# Only the runtime adapter may declare wasmtime packages, so the unifier cannot
-# list them. The guest crate's wasmtime test host is therefore left out of the
-# traversal (verify honours this too) and may build its own copies of shared
-# dependencies.
+# Preserve runtime library ownership (docs/architecture.md): leave the guest
+# crate's wasmtime test host out of traversal (verify honours this too). The
+# unifier lists no wasmtime packages; the test host may build its own copies
+# of shared dependencies.
 [traversal-excludes]
 third-party = [{ name = "wasmtime" }, { name = "wasmtime-wasi" }]

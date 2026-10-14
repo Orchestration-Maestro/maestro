@@ -6,6 +6,10 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
+Dependency descriptions here state domain edges, subject to the
+[native feature-unifier exception](specs/maestro-port.md#native-feature-unifier),
+including leaves and exact sets. The unifier itself has no workspace dependencies.
+
 The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, and it has no workspace dependencies.
@@ -118,9 +122,9 @@ and only as a non-optional normal dependency under
 in the specification table, cannot satisfy a required direct dependency and is the
 only crate whose direct `serde_json` entries bypass member inheritance.
 
-`maestro-path` has no internal dependencies and is the one named exception to
-leaf and exact-set rules. Any crate in the specification table may declare it as
-a normal or build dependency (optional and target-specific forms included)
+`maestro-path` has no domain dependencies and is the optional utility exception to
+leaf and exact-set rules, alongside the native feature unifier. Any crate in the
+specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
 adapter, shared request owner, cancellation leaf, watch leaf, lock leaf, process leaf,
 file-pattern crate, text leaf, JSON leaf, entry and tool record crates, brand crate and the
