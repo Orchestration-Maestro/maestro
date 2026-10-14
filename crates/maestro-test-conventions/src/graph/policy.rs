@@ -13,6 +13,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
+    // Common text operations include CSS string serialization for brand and application callers.
     ("maestro-text", &[]),
     ("maestro-json", &[]),
     ("maestro-entry", &["maestro-request"]),
