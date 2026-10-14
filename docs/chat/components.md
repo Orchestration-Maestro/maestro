@@ -40,3 +40,6 @@ summary widgets over the same toolkit and live theme.
 
 The application exports `key_hint`, `key_text` and `raw_key_hint` from their
 [tools owner](../../crates/maestro-tools/src/keybinding_hints.rs). The toolkit exports its shared `Cancellation` type.
+
+- Native [`ExtensionEditorComponent`](extension-ui.md) composes multiline input,
+  live borders, captured hints and inherited-terminal external editing.

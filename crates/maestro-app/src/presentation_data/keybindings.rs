@@ -2,7 +2,7 @@
 use maestro_tui::{KeybindingDefinition, KeybindingDefinitions, KeybindingKeys, TUI_KEYBINDINGS};
 use std::sync::LazyLock;
 
-/// Toolkit actions extended with model editing and tree navigation actions for caller-installed managers.
+/// Toolkit actions extended with application actions for caller-installed managers.
 pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
     let mut definitions = TUI_KEYBINDINGS.clone();
     definitions.extend(
@@ -21,6 +21,7 @@ pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
                 "alt+down",
                 "Move model down in order",
             ),
+            ("app.editor.external", "ctrl+g", "Open external editor"),
             (
                 "app.tree.filter.default",
                 "ctrl+d",

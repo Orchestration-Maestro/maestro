@@ -33,6 +33,8 @@ struct State {
     on_resize: Option<ResizeCallback>,
     /// Controlled failure for cursor hiding.
     hide_error: Option<io::ErrorKind>,
+    /// Controlled failure after recording terminal stop.
+    stop_error: Option<io::ErrorKind>,
     /// Observer of every recorded byte string.
     tap: Option<Tap>,
 }
@@ -57,6 +59,7 @@ impl RecordingTerminal {
                 on_resize: None,
                 tap: None,
                 hide_error: None,
+                stop_error: None,
             })),
         }
     }
@@ -79,6 +82,11 @@ impl RecordingTerminal {
     /// Makes cursor hiding fail with the supplied kind, or restores success.
     pub fn set_hide_error(&self, kind: Option<io::ErrorKind>) {
         self.state.borrow_mut().hide_error = kind;
+    }
+
+    /// Makes terminal stop fail after recording its occurrence.
+    pub fn set_stop_error(&self, kind: Option<io::ErrorKind>) {
+        self.state.borrow_mut().stop_error = kind;
     }
 
     /// Forgets the writes recorded so far.
@@ -174,7 +182,10 @@ impl Terminal for RecordingTerminal {
 
     fn stop(&mut self) -> io::Result<()> {
         self.end();
-        Ok(())
+        self.state
+            .borrow()
+            .stop_error
+            .map_or(Ok(()), |kind| Err(io::Error::new(kind, "stop failure")))
     }
 
     fn drain_input(

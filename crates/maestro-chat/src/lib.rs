@@ -51,3 +51,5 @@ pub use components::session_selector::*;
 
 #[cfg(test)]
 extern crate self as maestro_chat;
+#[cfg(not(target_arch = "wasm32"))]
+pub use components::extension_editor::{ExtensionEditorComponent, ExtensionEditorOptions};
