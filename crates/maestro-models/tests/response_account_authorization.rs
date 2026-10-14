@@ -75,49 +75,6 @@ fn token_fetch(account: &str) -> Fetch {
         })
     })
 }
-#[test]
-fn maestro_response_tokens_require_account_claim() {
-    run(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let _occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-            .await
-            .unwrap();
-        for (account, operation) in ["é猫😀", " ", ""]
-            .into_iter()
-            .flat_map(|account| [(account, "login"), (account, "refresh")])
-        {
-            let result = if operation == "login" {
-                maestro_models::login_openai_codex(
-                    Arc::new(Manual),
-                    None,
-                    Some(token_fetch(account)),
-                )
-                .await
-            } else {
-                refresh_openai_codex_token("old".into(), Some(token_fetch(account))).await
-            };
-            if account.is_empty() {
-                assert_eq!(
-                    result.unwrap_err().to_string(),
-                    "Failed to extract accountId from token"
-                );
-            } else {
-                let credentials = result.unwrap();
-                assert_eq!(
-                    credentials.extra,
-                    [(
-                        "accountId".into(),
-                        serde_json::Value::String(account.into())
-                    )]
-                    .into_iter()
-                    .collect()
-                );
-                assert_eq!(credentials.refresh, "rotated");
-                assert_eq!(credentials.access.split('.').count(), 3);
-            }
-        }
-    });
-}
 
 /// Fixed-port scenarios and the stderr subprocess share admission.
 static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
@@ -146,81 +103,6 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
         assert_eq!(prompt.allow_empty, None);
         Box::pin(async { Ok("pasted-code".into()) })
     }
-}
-#[test]
-fn maestro_response_login_falls_back_after_bind_failure() {
-    run(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-            .await
-            .unwrap();
-        let fetch = token_fetch("manual-account");
-        let checked: Fetch = Arc::new(move |request| {
-            let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
-                .into_owned()
-                .collect();
-            assert_eq!(fields["code"], "pasted-code");
-            fetch(request)
-        });
-        let credentials = maestro_models::login_openai_codex(Arc::new(Manual), None, Some(checked))
-            .await
-            .unwrap();
-        assert_eq!(credentials.extra["accountId"], "manual-account");
-        drop(occupied);
-    });
-}
-
-#[test]
-fn response_provider_delegates_and_borrows_access_key() {
-    run(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
-            .await
-            .unwrap();
-        let provider = maestro_models::OPENAI_CODEX_OAUTH_PROVIDER;
-        assert_eq!(
-            (
-                provider.id(),
-                provider.name(),
-                provider.uses_callback_server()
-            ),
-            (
-                "openai-codex",
-                "ChatGPT Plus/Pro (Codex Subscription)",
-                Some(true)
-            )
-        );
-        let credentials = provider
-            .login(
-                Arc::new(Protocol {
-                    originator: "maestro",
-                    auth: maestro_models::EventStream::new(|_| true, Clone::clone),
-                }),
-                Some(token_fetch("provider-account")),
-            )
-            .await
-            .unwrap();
-        let access = provider.get_api_key(&credentials).unwrap();
-        assert!(std::ptr::eq(access.as_ptr(), credentials.access.as_ptr()));
-        let checked: Fetch = Arc::new(|request| {
-            let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
-                .into_owned()
-                .collect();
-            assert_eq!(fields["refresh_token"], "rotated");
-            token_fetch("refreshed-account")(request)
-        });
-        let rotated = provider
-            .refresh_token(credentials, Some(checked))
-            .await
-            .unwrap();
-        assert_eq!(rotated.extra["accountId"], "refreshed-account");
-        let models = vec![
-            maestro_models::get_model("google", "gemini-2.5-flash").unwrap(),
-            maestro_models::get_model("anthropic", "claude-sonnet-4-5").unwrap(),
-        ];
-        assert!(provider.modify_models(&models, &rotated).is_none());
-        drop(occupied);
-    });
 }
 
 /// Protocol-aware manual interaction retaining the actual authorization URL.
@@ -304,43 +186,6 @@ impl maestro_models::OAuthLoginCallbacks for Protocol {
         }))
     }
 }
-#[test]
-fn maestro_response_authorization_keeps_protocol_fields() {
-    run(async {
-        let _permit = PORT.acquire().await.unwrap();
-        for originator in [None, Some(""), Some("x +&=😀")] {
-            let callbacks = Arc::new(Protocol {
-                originator: originator.unwrap_or("maestro"),
-                auth: maestro_models::EventStream::new(|_| true, Clone::clone),
-            });
-            let auth = callbacks.auth.clone();
-            let fetch: Fetch = Arc::new(move |request| {
-                use base64::Engine as _;
-                use sha2::{Digest as _, Sha256};
-                let info = auth.result().now_or_never().unwrap();
-                let url = url::Url::parse(&info.url).unwrap();
-                let fields: BTreeMap<_, _> = url.query_pairs().collect();
-                let form: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body).collect();
-                assert_eq!(form["code"], "protocol-code");
-                assert_eq!(form["code_verifier"].len(), 43);
-                assert_ne!(form["code_verifier"], fields["state"]);
-                let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
-                    .encode(Sha256::digest(form["code_verifier"].as_bytes()));
-                assert_eq!(challenge, fields["code_challenge"]);
-                assert_eq!(form["redirect_uri"], fields["redirect_uri"]);
-                token_fetch("protocol-account")(request)
-            });
-            let credentials = maestro_models::login_openai_codex(
-                callbacks,
-                originator.map(str::to_owned),
-                Some(fetch),
-            )
-            .await
-            .unwrap();
-            assert_eq!(credentials.extra["accountId"], "protocol-account");
-        }
-    });
-}
 
 /// Callback-only interaction publishes the bound listener's URL.
 struct Browser {
@@ -401,62 +246,6 @@ async fn callback_response(target: &str) -> String {
     )
     .await;
     String::from_utf8(native_response(&peer).await).unwrap()
-}
-#[test]
-fn maestro_response_callback_pages_preserve_status() {
-    run(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let callbacks = Arc::new(Browser {
-            auth: maestro_models::EventStream::new(|_| true, Clone::clone),
-        });
-        let auth = callbacks.auth.clone();
-        let release = maestro_models::EventStream::new(|()| true, |()| ());
-        let gate = release.clone();
-        let fetch: Fetch = Arc::new(move |request| Box::pin(released_fetch(gate.clone(), request)));
-        let work = tokio::spawn(maestro_models::login_openai_codex(
-            callbacks,
-            None,
-            Some(fetch),
-        ));
-        let info = auth.result().await;
-        let url = url::Url::parse(&info.url).unwrap();
-        let state = url.query_pairs().find(|(key, _)| key == "state").unwrap().1;
-        assert!(
-            callback_response("http://[")
-                .await
-                .starts_with("HTTP/1.1 400 ")
-        );
-        for (target, status, message) in [
-            ("/wrong".into(), 404, "Callback route not found."),
-            (
-                "/auth/callback?state=wrong&code=x".into(),
-                400,
-                "State mismatch.",
-            ),
-            (
-                format!("/auth/callback?state={state}"),
-                400,
-                "Missing authorization code.",
-            ),
-            (
-                "//[".into(),
-                500,
-                "Internal error while processing OAuth callback.",
-            ),
-            (
-                format!("/auth/callback?state={state}&code=browser"),
-                200,
-                "OpenAI authentication completed. You can close this window.",
-            ),
-        ] {
-            check_page(&target, status, message).await;
-        }
-        release.push(());
-        assert_eq!(
-            work.await.unwrap().unwrap().extra["accountId"],
-            "callback-account"
-        );
-    });
 }
 /// Release the same callback-selected token request after page consumption.
 async fn released_fetch(
@@ -576,4 +365,230 @@ async fn check_page(target: &str, status: u16, message: &str) {
         maestro_models::oauth_error_html(message, None)
     };
     assert_eq!(body, expected.unwrap());
+}
+
+/// Tests that bind the fixed callback port live in an `oauth_callback` module.
+mod oauth_callback {
+    use super::*;
+
+    #[test]
+    fn maestro_response_tokens_require_account_claim() {
+        run(maestro_response_tokens_require_account_claim_flow());
+    }
+
+    async fn maestro_response_tokens_require_account_claim_flow() {
+        let _permit = PORT.acquire().await.unwrap();
+        let _occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
+            .await
+            .unwrap();
+        for (account, operation) in ["é猫😀", " ", ""]
+            .into_iter()
+            .flat_map(|account| [(account, "login"), (account, "refresh")])
+        {
+            let result = if operation == "login" {
+                maestro_models::login_openai_codex(
+                    Arc::new(Manual),
+                    None,
+                    Some(token_fetch(account)),
+                )
+                .await
+            } else {
+                refresh_openai_codex_token("old".into(), Some(token_fetch(account))).await
+            };
+            if account.is_empty() {
+                assert_eq!(
+                    result.unwrap_err().to_string(),
+                    "Failed to extract accountId from token"
+                );
+            } else {
+                let credentials = result.unwrap();
+                assert_eq!(
+                    credentials.extra,
+                    [(
+                        "accountId".into(),
+                        serde_json::Value::String(account.into())
+                    )]
+                    .into_iter()
+                    .collect()
+                );
+                assert_eq!(credentials.refresh, "rotated");
+                assert_eq!(credentials.access.split('.').count(), 3);
+            }
+        }
+    }
+
+    #[test]
+    fn maestro_response_login_falls_back_after_bind_failure() {
+        run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
+                .await
+                .unwrap();
+            let fetch = token_fetch("manual-account");
+            let checked: Fetch = Arc::new(move |request| {
+                let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
+                    .into_owned()
+                    .collect();
+                assert_eq!(fields["code"], "pasted-code");
+                fetch(request)
+            });
+            let credentials =
+                maestro_models::login_openai_codex(Arc::new(Manual), None, Some(checked))
+                    .await
+                    .unwrap();
+            assert_eq!(credentials.extra["accountId"], "manual-account");
+            drop(occupied);
+        });
+    }
+
+    #[test]
+    fn response_provider_delegates_and_borrows_access_key() {
+        run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let occupied = tokio::net::TcpListener::bind("127.0.0.1:1455")
+                .await
+                .unwrap();
+            let provider = maestro_models::OPENAI_CODEX_OAUTH_PROVIDER;
+            assert_eq!(
+                (
+                    provider.id(),
+                    provider.name(),
+                    provider.uses_callback_server()
+                ),
+                (
+                    "openai-codex",
+                    "ChatGPT Plus/Pro (Codex Subscription)",
+                    Some(true)
+                )
+            );
+            let credentials = provider
+                .login(
+                    Arc::new(Protocol {
+                        originator: "maestro",
+                        auth: maestro_models::EventStream::new(|_| true, Clone::clone),
+                    }),
+                    Some(token_fetch("provider-account")),
+                )
+                .await
+                .unwrap();
+            let access = provider.get_api_key(&credentials).unwrap();
+            assert!(std::ptr::eq(access.as_ptr(), credentials.access.as_ptr()));
+            let checked: Fetch = Arc::new(|request| {
+                let fields: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body)
+                    .into_owned()
+                    .collect();
+                assert_eq!(fields["refresh_token"], "rotated");
+                token_fetch("refreshed-account")(request)
+            });
+            let rotated = provider
+                .refresh_token(credentials, Some(checked))
+                .await
+                .unwrap();
+            assert_eq!(rotated.extra["accountId"], "refreshed-account");
+            let models = vec![
+                maestro_models::get_model("google", "gemini-2.5-flash").unwrap(),
+                maestro_models::get_model("anthropic", "claude-sonnet-4-5").unwrap(),
+            ];
+            assert!(provider.modify_models(&models, &rotated).is_none());
+            drop(occupied);
+        });
+    }
+
+    #[test]
+    fn maestro_response_authorization_keeps_protocol_fields() {
+        run(maestro_response_authorization_keeps_protocol_fields_flow());
+    }
+
+    async fn maestro_response_authorization_keeps_protocol_fields_flow() {
+        let _permit = PORT.acquire().await.unwrap();
+        for originator in [None, Some(""), Some("x +&=😀")] {
+            let callbacks = Arc::new(Protocol {
+                originator: originator.unwrap_or("maestro"),
+                auth: maestro_models::EventStream::new(|_| true, Clone::clone),
+            });
+            let auth = callbacks.auth.clone();
+            let fetch: Fetch = Arc::new(move |request| {
+                use base64::Engine as _;
+                use sha2::{Digest as _, Sha256};
+                let info = auth.result().now_or_never().unwrap();
+                let url = url::Url::parse(&info.url).unwrap();
+                let fields: BTreeMap<_, _> = url.query_pairs().collect();
+                let form: BTreeMap<_, _> = url::form_urlencoded::parse(&request.body).collect();
+                assert_eq!(form["code"], "protocol-code");
+                assert_eq!(form["code_verifier"].len(), 43);
+                assert_ne!(form["code_verifier"], fields["state"]);
+                let challenge = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                    .encode(Sha256::digest(form["code_verifier"].as_bytes()));
+                assert_eq!(challenge, fields["code_challenge"]);
+                assert_eq!(form["redirect_uri"], fields["redirect_uri"]);
+                token_fetch("protocol-account")(request)
+            });
+            let credentials = maestro_models::login_openai_codex(
+                callbacks,
+                originator.map(str::to_owned),
+                Some(fetch),
+            )
+            .await
+            .unwrap();
+            assert_eq!(credentials.extra["accountId"], "protocol-account");
+        }
+    }
+
+    #[test]
+    fn maestro_response_callback_pages_preserve_status() {
+        run(async {
+            let _permit = PORT.acquire().await.unwrap();
+            let callbacks = Arc::new(Browser {
+                auth: maestro_models::EventStream::new(|_| true, Clone::clone),
+            });
+            let auth = callbacks.auth.clone();
+            let release = maestro_models::EventStream::new(|()| true, |()| ());
+            let gate = release.clone();
+            let fetch: Fetch =
+                Arc::new(move |request| Box::pin(released_fetch(gate.clone(), request)));
+            let work = tokio::spawn(maestro_models::login_openai_codex(
+                callbacks,
+                None,
+                Some(fetch),
+            ));
+            let info = auth.result().await;
+            let url = url::Url::parse(&info.url).unwrap();
+            let state = url.query_pairs().find(|(key, _)| key == "state").unwrap().1;
+            assert!(
+                callback_response("http://[")
+                    .await
+                    .starts_with("HTTP/1.1 400 ")
+            );
+            for (target, status, message) in [
+                ("/wrong".into(), 404, "Callback route not found."),
+                (
+                    "/auth/callback?state=wrong&code=x".into(),
+                    400,
+                    "State mismatch.",
+                ),
+                (
+                    format!("/auth/callback?state={state}"),
+                    400,
+                    "Missing authorization code.",
+                ),
+                (
+                    "//[".into(),
+                    500,
+                    "Internal error while processing OAuth callback.",
+                ),
+                (
+                    format!("/auth/callback?state={state}&code=browser"),
+                    200,
+                    "OpenAI authentication completed. You can close this window.",
+                ),
+            ] {
+                check_page(&target, status, message).await;
+            }
+            release.push(());
+            assert_eq!(
+                work.await.unwrap().unwrap().extra["accountId"],
+                "callback-account"
+            );
+        });
+    }
 }

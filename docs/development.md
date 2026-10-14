@@ -146,9 +146,9 @@ file:line, without debugger variable views.
 Nextest prepares the author component before guest-authoring tests and exports
 its path to their processes. The test host caches Wasmtime compilation beside
 the component in the build output directory; plain Cargo tests retain their
-self-building fallback. Seventeen native OAuth callback tests (eight unit and
-nine integration tests) share a single-thread nextest group because their
-redirect URIs require fixed ports; other tests remain parallel.
+self-building fallback. Native OAuth callback tests that bind a fixed port
+belong in an `oauth_callback` module, which joins a single-thread nextest group
+because their redirect URIs require fixed ports; other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the

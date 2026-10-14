@@ -371,49 +371,6 @@ fn authorization_input_decodes_first_query_values() {
         assert_eq!(parse_authorization_input(&input), expected, "{input:?}");
     }
 }
-#[test]
-fn callback_routes_preserve_status_and_escaped_text() {
-    for RouteCase {
-        path,
-        status,
-        content_type,
-        message,
-        details,
-        body,
-    } in corpus().routes
-    {
-        let actual = route(&path, "good");
-        assert_eq!(actual.status, status, "{path}");
-        assert_eq!(actual.content_type, content_type);
-        if let Some(body) = body {
-            assert_eq!(actual.body, body);
-        } else {
-            assert!(actual.body.contains(&message.unwrap()));
-            if let Some(details) = details {
-                assert!(actual.body.contains(&details));
-            }
-        }
-        assert_eq!(actual.accepted.is_some(), status == 200);
-    }
-    run(async {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        let server = super::callback::bind("good".into()).await.unwrap();
-        for (target, expected) in [("http://[", 400), ("//[", 500)] {
-            let mut peer = tokio::net::TcpStream::connect("127.0.0.1:53692")
-                .await
-                .unwrap();
-            let request =
-                format!("GET {target} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
-            write_native(&mut peer, request.as_bytes()).await;
-            assert!(
-                native_response(&mut peer)
-                    .await
-                    .starts_with(&format!("HTTP/1.1 {expected}"))
-            );
-        }
-        server.close().await;
-    });
-}
 /// Convert diagnostic markers into their exact supplied doubles.
 fn code(input: CodeInput) -> DiagnosticCode {
     match input {
@@ -881,42 +838,6 @@ fn login_callbacks_run_in_source_order_and_fail_cleanly() {
     });
 }
 #[test]
-fn listener_failure_reaches_pending_login() {
-    run(async {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        let callbacks = Interaction::new(None, "unused", "");
-        let release = crate::EventStream::new(|()| true, |()| ());
-        let failure = release.clone();
-        let server = super::native::bind_with(
-            "verifier".into(),
-            53692,
-            route,
-            |_| None,
-            move |_| {
-                let failure = failure.clone();
-                Box::pin(async move {
-                    failure.result().await;
-                    Err(std::io::Error::from_raw_os_error(5))
-                })
-            },
-        )
-        .await
-        .unwrap();
-        let stopped = server.stopped.clone();
-        let mut login = Box::pin(super::login(callbacks, success_fetch(), pkce(), server));
-        assert!(login.as_mut().now_or_never().is_none());
-        release.push(());
-        let error = login.await.unwrap_err();
-        assert_eq!(
-            error.to_string(),
-            std::io::Error::from_raw_os_error(5).to_string()
-        );
-        assert!(matches!(error.errno, Some(DiagnosticCode::Number(5.0))));
-        assert!(stopped.result().now_or_never().is_some());
-        let _released = native_probe("127.0.0.1");
-    });
-}
-#[test]
 fn login_wait_has_no_deadline() {
     run(async {
         tokio::time::pause();
@@ -953,64 +874,6 @@ fn subscription_ignores_signal_and_selector() {
             callbacks.signal.abort();
             accept(&wait, "accepted");
             assert_eq!(login.await.unwrap().access, "access");
-        }
-    });
-}
-#[test]
-fn callback_host_changes_bind_only() {
-    run(async {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        for (input, expected) in [
-            (None, "127.0.0.1"),
-            (Some(""), "127.0.0.1"),
-            (Some("127.0.0.2"), "127.0.0.2"),
-            (Some(" "), " "),
-        ] {
-            assert_eq!(
-                super::native::callback_host(input.map(str::to_owned)),
-                expected
-            );
-            let info = super::auth_info(&pkce());
-            let url = url::Url::parse(&info.url).unwrap();
-            assert_eq!(
-                url.query_pairs()
-                    .find(|(key, _)| key == "redirect_uri")
-                    .unwrap()
-                    .1,
-                "http://localhost:53692/callback"
-            );
-            let result = super::native::bind_with(
-                "verifier".into(),
-                53692,
-                route,
-                |key| {
-                    assert_eq!(key, "MAESTRO_OAUTH_CALLBACK_HOST");
-                    input.map(str::to_owned)
-                },
-                |listener| Box::pin(listener.accept()),
-            )
-            .await;
-            if expected == " " {
-                assert!(result.is_err());
-                continue;
-            }
-            let server = result.unwrap();
-            let address = format!("{expected}:53692");
-            let mut peer = tokio::net::TcpStream::connect(address).await.unwrap();
-            write_native(
-                &mut peer,
-                b"GET /callback?code=bound&state=verifier HTTP/1.1\r\nHost: localhost\r\n\r\n",
-            )
-            .await;
-            let super::native::CallbackOutcome::Accepted(fields) =
-                server.wait.next().await.unwrap()
-            else {
-                panic!("bound callback");
-            };
-            assert_eq!(fields.code.as_deref(), Some("bound"));
-            server.close().await;
-            drop(peer);
-            let _released = native_probe(expected);
         }
     });
 }
@@ -1148,65 +1011,6 @@ fn manual_failure_propagates_and_late_input_cannot_replace_code() {
                 .to_string(),
             "manual failed"
         );
-    });
-}
-#[test]
-fn listener_stops_after_exchange_starts() {
-    run(async {
-        let _permit = NATIVE_PORT.acquire().await.unwrap();
-        for (token_failure, body_pending) in [(false, false), (true, false), (false, true)] {
-            let callbacks = Interaction::new(Some(Ok("manual".into())), "unused", "");
-            let server = super::callback::bind("verifier".into()).await.unwrap();
-            let stopped = server.stopped.clone();
-            let release = crate::EventStream::new(|()| true, |()| ());
-            let entered = crate::EventStream::new(|()| true, |()| ());
-            let headers = release.clone();
-            let exchange_entered = entered.clone();
-            let body_entered = crate::EventStream::new(|()| true, |()| ());
-            let body_witness = body_entered.clone();
-            let stop_witness = stopped.clone();
-            let fetch: Fetch = Arc::new(move |request| {
-                assert!(stop_witness.result().now_or_never().is_none());
-                exchange_entered.push(());
-                let headers = headers.clone();
-                Box::pin(held_token(
-                    headers,
-                    request,
-                    token_failure,
-                    body_pending.then(|| body_witness.clone()),
-                ))
-            });
-            let login = tokio::spawn(super::login(callbacks, fetch, pkce(), server));
-            entered.result().await;
-            stopped.result().await;
-            if body_pending {
-                body_entered.result().await;
-            }
-            assert!(!login.is_finished());
-            let released = native_probe("127.0.0.1");
-            drop(released);
-            release.push(());
-            assert_eq!(login.await.unwrap().is_err(), token_failure);
-        }
-        let server = super::callback::bind("verifier".into()).await.unwrap();
-        let stopped = server.stopped.clone();
-        let callbacks = Interaction::new(None, "unused", "");
-        let mut login = Box::pin(super::login(callbacks, success_fetch(), pkce(), server));
-        assert!(login.as_mut().now_or_never().is_none());
-        drop(login);
-        stopped.result().await;
-        let released = native_probe("127.0.0.1");
-        drop(released);
-        let server = super::callback::bind("verifier".into()).await.unwrap();
-        let callbacks = Interaction::new(None, "unused", "auth");
-        assert_eq!(
-            super::login(callbacks, success_fetch(), pkce(), server)
-                .await
-                .unwrap_err()
-                .to_string(),
-            "auth failed"
-        );
-        let _released = native_probe("127.0.0.1");
     });
 }
 #[test]
@@ -1433,4 +1237,239 @@ async fn held_token(
             )
         })),
     })
+}
+
+/// Tests that bind the fixed callback port live in an `oauth_callback` module.
+mod oauth_callback {
+    use super::*;
+
+    #[test]
+    fn callback_routes_preserve_status_and_escaped_text() {
+        check_routes();
+        run(native_requests_flow());
+    }
+
+    fn check_routes() {
+        for RouteCase {
+            path,
+            status,
+            content_type,
+            message,
+            details,
+            body,
+        } in corpus().routes
+        {
+            let actual = route(&path, "good");
+            assert_eq!(actual.status, status, "{path}");
+            assert_eq!(actual.content_type, content_type);
+            if let Some(body) = body {
+                assert_eq!(actual.body, body);
+            } else {
+                assert!(actual.body.contains(&message.unwrap()));
+                assert!(details.is_none_or(|details| actual.body.contains(&details)));
+            }
+            assert_eq!(actual.accepted.is_some(), status == 200);
+        }
+    }
+
+    async fn native_requests_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        let server = super::super::callback::bind("good".into()).await.unwrap();
+        for (target, expected) in [("http://[", 400), ("//[", 500)] {
+            let mut peer = tokio::net::TcpStream::connect("127.0.0.1:53692")
+                .await
+                .unwrap();
+            let request =
+                format!("GET {target} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n");
+            write_native(&mut peer, request.as_bytes()).await;
+            assert!(
+                native_response(&mut peer)
+                    .await
+                    .starts_with(&format!("HTTP/1.1 {expected}"))
+            );
+        }
+        server.close().await;
+    }
+
+    #[test]
+    fn listener_failure_reaches_pending_login() {
+        run(listener_failure_reaches_pending_login_flow());
+    }
+
+    async fn listener_failure_reaches_pending_login_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        let callbacks = Interaction::new(None, "unused", "");
+        let release = crate::EventStream::new(|()| true, |()| ());
+        let failure = release.clone();
+        let server = super::super::native::bind_with(
+            "verifier".into(),
+            53692,
+            route,
+            |_| None,
+            move |_| {
+                let failure = failure.clone();
+                Box::pin(async move {
+                    failure.result().await;
+                    Err(std::io::Error::from_raw_os_error(5))
+                })
+            },
+        )
+        .await
+        .unwrap();
+        let stopped = server.stopped.clone();
+        let mut login = Box::pin(super::super::login(
+            callbacks,
+            success_fetch(),
+            pkce(),
+            server,
+        ));
+        assert!(login.as_mut().now_or_never().is_none());
+        release.push(());
+        let error = login.await.unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            std::io::Error::from_raw_os_error(5).to_string()
+        );
+        assert!(matches!(error.errno, Some(DiagnosticCode::Number(5.0))));
+        assert!(stopped.result().now_or_never().is_some());
+        let _released = native_probe("127.0.0.1");
+    }
+
+    #[test]
+    fn callback_host_changes_bind_only() {
+        run(callback_host_changes_bind_only_flow());
+    }
+
+    async fn callback_host_changes_bind_only_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        for (input, expected) in [
+            (None, "127.0.0.1"),
+            (Some(""), "127.0.0.1"),
+            (Some("127.0.0.2"), "127.0.0.2"),
+            (Some(" "), " "),
+        ] {
+            assert_eq!(
+                super::super::native::callback_host(input.map(str::to_owned)),
+                expected
+            );
+            let info = super::super::auth_info(&pkce());
+            let url = url::Url::parse(&info.url).unwrap();
+            assert_eq!(
+                url.query_pairs()
+                    .find(|(key, _)| key == "redirect_uri")
+                    .unwrap()
+                    .1,
+                "http://localhost:53692/callback"
+            );
+            let result = super::super::native::bind_with(
+                "verifier".into(),
+                53692,
+                route,
+                |key| {
+                    assert_eq!(key, "MAESTRO_OAUTH_CALLBACK_HOST");
+                    input.map(str::to_owned)
+                },
+                |listener| Box::pin(listener.accept()),
+            )
+            .await;
+            if expected == " " {
+                assert!(result.is_err());
+                continue;
+            }
+            let server = result.unwrap();
+            let address = format!("{expected}:53692");
+            let mut peer = tokio::net::TcpStream::connect(address).await.unwrap();
+            write_native(
+                &mut peer,
+                b"GET /callback?code=bound&state=verifier HTTP/1.1\r\nHost: localhost\r\n\r\n",
+            )
+            .await;
+            let super::super::native::CallbackOutcome::Accepted(fields) =
+                server.wait.next().await.unwrap()
+            else {
+                panic!("bound callback");
+            };
+            assert_eq!(fields.code.as_deref(), Some("bound"));
+            server.close().await;
+            drop(peer);
+            let _released = native_probe(expected);
+        }
+    }
+
+    #[test]
+    fn listener_stops_after_exchange_starts() {
+        run(listener_stops_after_exchange_starts_flow());
+    }
+
+    async fn listener_stops_after_exchange_starts_flow() {
+        let _permit = NATIVE_PORT.acquire().await.unwrap();
+        for (token_failure, body_pending) in [(false, false), (true, false), (false, true)] {
+            let callbacks = Interaction::new(Some(Ok("manual".into())), "unused", "");
+            let server = super::super::callback::bind("verifier".into())
+                .await
+                .unwrap();
+            let stopped = server.stopped.clone();
+            let release = crate::EventStream::new(|()| true, |()| ());
+            let entered = crate::EventStream::new(|()| true, |()| ());
+            let headers = release.clone();
+            let exchange_entered = entered.clone();
+            let body_entered = crate::EventStream::new(|()| true, |()| ());
+            let body_witness = body_entered.clone();
+            let stop_witness = stopped.clone();
+            let fetch: Fetch = Arc::new(move |request| {
+                assert!(stop_witness.result().now_or_never().is_none());
+                exchange_entered.push(());
+                let headers = headers.clone();
+                Box::pin(held_token(
+                    headers,
+                    request,
+                    token_failure,
+                    body_pending.then(|| body_witness.clone()),
+                ))
+            });
+            let login = tokio::spawn(super::super::login(callbacks, fetch, pkce(), server));
+            entered.result().await;
+            stopped.result().await;
+            if body_pending {
+                body_entered.result().await;
+            }
+            assert!(!login.is_finished());
+            let released = native_probe("127.0.0.1");
+            drop(released);
+            release.push(());
+            assert_eq!(login.await.unwrap().is_err(), token_failure);
+        }
+        listener_stops_after_drop_and_auth_failure().await;
+    }
+
+    async fn listener_stops_after_drop_and_auth_failure() {
+        let server = super::super::callback::bind("verifier".into())
+            .await
+            .unwrap();
+        let stopped = server.stopped.clone();
+        let callbacks = Interaction::new(None, "unused", "");
+        let mut login = Box::pin(super::super::login(
+            callbacks,
+            success_fetch(),
+            pkce(),
+            server,
+        ));
+        assert!(login.as_mut().now_or_never().is_none());
+        drop(login);
+        stopped.result().await;
+        let released = native_probe("127.0.0.1");
+        drop(released);
+        let server = super::super::callback::bind("verifier".into())
+            .await
+            .unwrap();
+        let callbacks = Interaction::new(None, "unused", "auth");
+        assert_eq!(
+            super::super::login(callbacks, success_fetch(), pkce(), server)
+                .await
+                .unwrap_err()
+                .to_string(),
+            "auth failed"
+        );
+        let _released = native_probe("127.0.0.1");
+    }
 }

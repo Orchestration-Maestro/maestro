@@ -89,40 +89,6 @@ impl maestro_models::OAuthLoginCallbacks for Manual {
 /// Fixed-port scenarios share an admission guard.
 static PORT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
 
-#[test]
-fn subscription_manual_login_uses_localhost_redirect() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let fetch: Fetch = Arc::new(|request| {
-                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-                assert_eq!(body["code"], "manual-code");
-                assert_eq!(body["state"], body["code_verifier"]);
-                assert_eq!(body["redirect_uri"], "http://localhost:53692/callback");
-                Box::pin(async {
-                    Ok(HttpResponse {
-                        status_text: String::new(),
-                        status: 200,
-                        headers: BTreeMap::new(),
-                        body: Box::pin(futures_util::stream::iter([Ok(
-                            br#"{"access_token":"a","refresh_token":"r","expires_in":3600}"#
-                                .to_vec(),
-                        )])),
-                    })
-                })
-            });
-            let result = maestro_models::login_anthropic(Arc::new(Manual), Some(fetch))
-                .await
-                .unwrap();
-            assert_eq!(result.access, "a");
-            assert_eq!(result.refresh, "r");
-            let _released = bind_callback_probe();
-        });
-}
-
 /// Callback-only interaction starts real loopback requests after receiving state.
 struct Callback {
     /// Owned peer producer, observed after login returns.
@@ -183,77 +149,6 @@ impl maestro_models::OAuthLoginCallbacks for Callback {
         panic!("valid callback must avoid prompt")
     }
 }
-#[test]
-fn subscription_callback_login_rejects_then_accepts() {
-    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
-        let _permit = PORT.acquire().await.unwrap();
-        let fetch: Fetch = Arc::new(|request| {
-            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-            assert_eq!(body["code"], "callback-code");
-            Box::pin(async { Ok(HttpResponse { status_text: String::new(), status: 200, headers: BTreeMap::new(), body: Box::pin(futures_util::stream::iter([Ok(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#.to_vec())])) }) })
-        });
-        let callbacks = Arc::new(Callback { peer: maestro_models::EventStream::new(|_| false, |_| ()) });
-        let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch)).await.unwrap();
-        let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
-        // The completed response established admission on this same keep-alive peer.
-        write_peer(&mut peer, b"GET /callback?code=fresh&state=wrong HTTP/1.1\r\nHost: localhost\r\n\r\n").await;
-        let mut byte = [0];
-        assert_eq!(read_peer(&mut peer, &mut byte).await, 0, "stopped listener served a fresh request");
-        assert_eq!(result.access, "callback-access");
-    });
-}
-#[test]
-fn subscription_provider_delegates_without_model_changes() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let provider = maestro_models::ANTHROPIC_OAUTH_PROVIDER;
-            assert_eq!(provider.id(), "anthropic");
-            assert_eq!(provider.name(), "Anthropic (Claude Pro/Max)");
-            assert_eq!(provider.uses_callback_server(), Some(true));
-            let fetch: Fetch = Arc::new(|request| {
-                let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
-                assert!(matches!(
-                    body["grant_type"].as_str(),
-                    Some("authorization_code" | "refresh_token")
-                ));
-                Box::pin(async {
-                    Ok(HttpResponse {
-                        status_text: String::new(),
-                        status: 200,
-                        headers: BTreeMap::new(),
-                        body: Box::pin(futures_util::stream::iter([Ok(
-                            br#"{"access_token":"key","refresh_token":"rotated","expires_in":1}"#
-                                .to_vec(),
-                        )])),
-                    })
-                })
-            });
-            let credentials = provider
-                .login(Arc::new(Manual), Some(fetch.clone()))
-                .await
-                .unwrap();
-            let key = provider.get_api_key(&credentials).unwrap();
-            assert_eq!(key.as_ptr(), credentials.access.as_ptr());
-            let mut models = maestro_models::get_models("openai");
-            models.truncate(2);
-            assert_eq!(models.len(), 2);
-            models[0].name = "first custom".into();
-            models[1].name = "second custom".into();
-            assert!(provider.modify_models(&models, &credentials).is_none());
-            assert_eq!(
-                provider
-                    .refresh_token(credentials, Some(fetch))
-                    .await
-                    .unwrap()
-                    .refresh,
-                "rotated"
-            );
-        });
-}
 /// Interaction which must never run after native binding failure.
 struct Uncalled;
 impl maestro_models::OAuthLoginCallbacks for Uncalled {
@@ -266,23 +161,6 @@ impl maestro_models::OAuthLoginCallbacks for Uncalled {
     ) -> maestro_models::BoxFuture<Result<String, maestro_models::OAuthError>> {
         panic!("binding failure must precede prompt")
     }
-}
-#[test]
-fn subscription_occupied_port_reports_native_error() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let _permit = PORT.acquire().await.unwrap();
-            let listener = bind_callback_probe();
-            let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
-                .await
-                .unwrap_err();
-            assert!(error.errno.is_some());
-            drop(listener);
-            let _released = bind_callback_probe();
-        });
 }
 #[test]
 fn subscription_default_client_reads_loopback_body() {
@@ -412,5 +290,129 @@ async fn raw_callback(peer: &mut tokio::net::TcpStream, target: &str) -> String 
                 return String::from_utf8(response).unwrap();
             }
         }
+    }
+}
+
+/// A successful JSON response carrying `body`.
+fn json_response(body: &'static [u8]) -> HttpResponse {
+    HttpResponse {
+        status_text: String::new(),
+        status: 200,
+        headers: BTreeMap::new(),
+        body: Box::pin(futures_util::stream::iter([Ok(body.to_vec())])),
+    }
+}
+
+/// Tests that bind the fixed callback port live in an `oauth_callback` module.
+mod oauth_callback {
+    use super::*;
+
+    #[test]
+    fn subscription_manual_login_uses_localhost_redirect() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let _permit = PORT.acquire().await.unwrap();
+                let fetch: Fetch = Arc::new(|request| {
+                    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+                    assert_eq!(body["code"], "manual-code");
+                    assert_eq!(body["state"], body["code_verifier"]);
+                    assert_eq!(body["redirect_uri"], "http://localhost:53692/callback");
+                    Box::pin(std::future::ready(Ok(json_response(
+                        br#"{"access_token":"a","refresh_token":"r","expires_in":3600}"#,
+                    ))))
+                });
+                let result = maestro_models::login_anthropic(Arc::new(Manual), Some(fetch))
+                    .await
+                    .unwrap();
+                assert_eq!(result.access, "a");
+                assert_eq!(result.refresh, "r");
+                let _released = bind_callback_probe();
+            });
+    }
+
+    #[test]
+    fn subscription_callback_login_rejects_then_accepts() {
+        tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+        let _permit = PORT.acquire().await.unwrap();
+        let fetch: Fetch = Arc::new(|request| {
+            let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+            assert_eq!(body["code"], "callback-code");
+            Box::pin(std::future::ready(Ok(json_response(br#"{"access_token":"callback-access","refresh_token":"callback-refresh","expires_in":1}"#))))
+        });
+        let callbacks = Arc::new(Callback { peer: maestro_models::EventStream::new(|_| false, |_| ()) });
+        let result = maestro_models::login_anthropic(callbacks.clone(), Some(fetch)).await.unwrap();
+        let mut peer = callbacks.peer.next().await.unwrap().await.unwrap();
+        // The completed response established admission on this same keep-alive peer.
+        write_peer(&mut peer, b"GET /callback?code=fresh&state=wrong HTTP/1.1\r\nHost: localhost\r\n\r\n").await;
+        let mut byte = [0];
+        assert_eq!(read_peer(&mut peer, &mut byte).await, 0, "stopped listener served a fresh request");
+        assert_eq!(result.access, "callback-access");
+    });
+    }
+
+    #[test]
+    fn subscription_provider_delegates_without_model_changes() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let _permit = PORT.acquire().await.unwrap();
+                let provider = maestro_models::ANTHROPIC_OAUTH_PROVIDER;
+                assert_eq!(provider.id(), "anthropic");
+                assert_eq!(provider.name(), "Anthropic (Claude Pro/Max)");
+                assert_eq!(provider.uses_callback_server(), Some(true));
+                let fetch: Fetch = Arc::new(|request| {
+                    let body: serde_json::Value = serde_json::from_slice(&request.body).unwrap();
+                    assert!(matches!(
+                        body["grant_type"].as_str(),
+                        Some("authorization_code" | "refresh_token")
+                    ));
+                    Box::pin(std::future::ready(Ok(json_response(
+                        br#"{"access_token":"key","refresh_token":"rotated","expires_in":1}"#,
+                    ))))
+                });
+                let credentials = provider
+                    .login(Arc::new(Manual), Some(fetch.clone()))
+                    .await
+                    .unwrap();
+                let key = provider.get_api_key(&credentials).unwrap();
+                assert_eq!(key.as_ptr(), credentials.access.as_ptr());
+                let mut models = maestro_models::get_models("openai");
+                models.truncate(2);
+                assert_eq!(models.len(), 2);
+                models[0].name = "first custom".into();
+                models[1].name = "second custom".into();
+                assert!(provider.modify_models(&models, &credentials).is_none());
+                assert_eq!(
+                    provider
+                        .refresh_token(credentials, Some(fetch))
+                        .await
+                        .unwrap()
+                        .refresh,
+                    "rotated"
+                );
+            });
+    }
+
+    #[test]
+    fn subscription_occupied_port_reports_native_error() {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                let _permit = PORT.acquire().await.unwrap();
+                let listener = bind_callback_probe();
+                let error = maestro_models::login_anthropic(Arc::new(Uncalled), None)
+                    .await
+                    .unwrap_err();
+                assert!(error.errno.is_some());
+                drop(listener);
+                let _released = bind_callback_probe();
+            });
     }
 }
