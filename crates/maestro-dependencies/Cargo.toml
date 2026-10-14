@@ -34,6 +34,7 @@ quote = { version = "1.0.47" }
 regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
 regex-syntax = { version = "0.8.11" }
 regress = { version = "0.12.0", features = ["prohibit-unsafe"] }
+roxmltree = { version = "0.21.1" }
 semver = { version = "1.0.28", features = ["serde"] }
 serde = { version = "1.0.229", features = ["alloc", "derive", "rc"] }
 serde_core = { version = "1.0.229", features = ["alloc", "rc"] }
@@ -81,6 +82,7 @@ num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
@@ -108,6 +110,7 @@ num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
@@ -133,6 +136,7 @@ num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
@@ -158,6 +162,7 @@ num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
@@ -176,6 +181,7 @@ getrandom = { version = "0.4.3", default-features = false, features = ["std", "s
 num-integer = { version = "0.1.47", features = ["i128"] }
 once_cell = { version = "1.21.4" }
 percent-encoding = { version = "2.3.2" }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }

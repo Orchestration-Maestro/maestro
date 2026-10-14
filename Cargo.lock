@@ -2726,7 +2726,7 @@ name = "maestro-dependencies"
 version = "0.1.0"
 dependencies = [
  "ahash",
- "base64",
+ "base64 0.23.1",
  "bitflags 2.13.2",
  "bytemuck",
  "cargo_metadata",
@@ -2763,7 +2763,9 @@ dependencies = [
  "regex-automata",
  "regex-syntax",
  "regress",
+ "roxmltree",
  "rustix",
+ "ryu",
  "semver",
  "serde",
  "serde_core",
@@ -3091,6 +3093,7 @@ dependencies = [
 name = "maestro-tool"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "maestro-request",
  "serde",
  "serde_json",

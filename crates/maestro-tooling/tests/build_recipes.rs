@@ -128,6 +128,16 @@ fn maestro_workspace_recipes_keep_phase_order() {
             assert!(!log.contains("cargo clippy"), "{log}");
         }
     }
+    assert_test_phase_failures(&workspace);
+    fs::remove_file(workspace.0.join("log")).unwrap();
+    assert!(workspace.run("ci").status.success());
+    assert!(workspace.log().ends_with(
+        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    ));
+}
+
+/// Checks that each test phase stops on failure without skipping doctests.
+fn assert_test_phase_failures(workspace: &Workspace) {
     for (phase, expected) in [
         ("nextest", "cargo nextest|run|--workspace|--locked\n"),
         (
@@ -144,11 +154,6 @@ fn maestro_workspace_recipes_keep_phase_order() {
         assert!(!output.status.success());
         assert_eq!(workspace.log(), expected);
     }
-    fs::remove_file(workspace.0.join("log")).unwrap();
-    assert!(workspace.run("ci").status.success());
-    assert!(workspace.log().ends_with(
-        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
-    ));
 }
 
 #[test]
