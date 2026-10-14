@@ -48,6 +48,9 @@ private implementation is test-gated until the full-format consumer is wired;
 it is not a public formatting operation. The internal alternate projection uses
 a tabular Thursday-epoch calendar, preserving the standard serial sentinels.
 Midnight carry retains both the effective epoch and the first captured calendar.
+Meridiem labels use the rounded clock. General tokens resolve in source order;
+spaces before literal digits join a fraction only after its denominator slash.
+Literal-prefixed scientific and engineering output applies the sign once.
 
 ## Word package reader
 

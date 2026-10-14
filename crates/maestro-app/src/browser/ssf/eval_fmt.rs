@@ -25,6 +25,7 @@ enum Kind {
     Parenthesis,
     Date(DateToken),
     General,
+    Meridiem,
 }
 
 /// Owned pattern or rendered text with its interpretation.
@@ -91,14 +92,12 @@ pub(super) fn eval_fmt(
     let Some(mut pieces) = tokenize(format, &mut context)? else {
         return Ok(String::new());
     };
-    for piece in &mut pieces {
-        if piece.kind == Kind::General {
-            piece.text = general(value);
-            piece.kind = Kind::Text;
-        }
-    }
     let digits = resolve_time(&mut pieces, &mut context);
     for piece in &mut pieces {
+        if piece.kind == Kind::Meridiem {
+            piece.text = meridiem_label(&piece.text, &context);
+            piece.kind = Kind::Text;
+        }
         if let Kind::Date(kind) = piece.kind
             && let Some(date) = &context.date
         {
@@ -290,7 +289,7 @@ fn date_field(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, 
     Some((Kind::Date(kind), input[..width].to_ascii_lowercase(), width))
 }
 
-/// Meridiem is computed before date-wide rounding, retaining supplied A/P case.
+/// Capture the meridiem spelling for rendering after clock rounding.
 #[cfg(test)]
 fn meridiem(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, String, usize)> {
     context.date(Calendar::Gregorian);
@@ -300,16 +299,25 @@ fn meridiem(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, St
     };
     context.date.as_ref()?;
     context.twelve = true;
+    Some((
+        Kind::Meridiem,
+        input[..pattern.len()].to_owned(),
+        pattern.len(),
+    ))
+}
+
+/// Render the retained meridiem spelling from the carried clock.
+#[cfg(test)]
+fn meridiem_label(input: &str, context: &Context<'_>) -> String {
     let afternoon = context.date.as_ref().is_some_and(|d| d.hour >= 12);
-    let label = match pattern {
-        "A/P" => input
+    match meridiem_pattern(input) {
+        Some("A/P") => input
             .chars()
             .nth(if afternoon { 2 } else { 0 })
             .map_or_else(String::new, |c| c.to_string()),
-        "AM/PM" => if afternoon { "PM" } else { "AM" }.to_owned(),
+        Some("AM/PM") => if afternoon { "PM" } else { "AM" }.to_owned(),
         _ => if afternoon { "下午" } else { "上午" }.to_owned(),
-    };
-    Some((Kind::Text, label, pattern.len()))
+    }
 }
 
 /// Resolve month/minute context and round all clock fields at one precision.

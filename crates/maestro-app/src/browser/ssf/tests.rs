@@ -283,3 +283,59 @@ fn zero_fraction_denominators_use_the_existing_writer_error() {
 fn selected_numeric_sections_keep_landed_rounding_and_precision_fixes() {
     partition(&["renderer_regressions"]);
 }
+
+#[test]
+fn meridiem_labels_follow_noon_and_midnight_rounding() {
+    for (period, noon, midnight) in [
+        ("AM/PM", "PM", "AM"),
+        ("A/P", "P", "A"),
+        ("上午/下午", "下午", "上午"),
+    ] {
+        for (seconds, label) in [(43199.75, noon), (86399.75, midnight)] {
+            assert_eq!(
+                super::eval_fmt::eval_fmt(
+                    &format!("h:mm:ss {period}"),
+                    super::GeneralValue::Number(44927.0 + seconds / 86400.0),
+                    false,
+                    1,
+                )
+                .unwrap(),
+                format!("12:00:00 {label}")
+            );
+        }
+    }
+}
+
+#[test]
+fn nonfraction_digit_literals_keep_their_separating_spaces() {
+    for format in ["0 2024", "0\" \"2024", "0_)2024"] {
+        assert_eq!(
+            super::eval_fmt::eval_fmt(format, super::GeneralValue::Number(1.0), false, 1).unwrap(),
+            "1 2024"
+        );
+    }
+}
+
+#[test]
+fn general_tokens_resolve_after_preceding_numeric_joins() {
+    assert_eq!(
+        super::eval_fmt::eval_fmt("0General?", super::GeneralValue::Number(1.0), false, 1).unwrap(),
+        "011"
+    );
+}
+
+#[test]
+fn literal_prefixed_exponents_emit_each_sign_once() {
+    for (format, positive, negative) in [
+        ("\"Mass=\"0.00E+00", "Mass=1.00E+00", "-Mass=1.00E+00"),
+        ("\"Mass=\"##0.0E+0", "Mass=1.0E+0", "-Mass=1.0E+0"),
+    ] {
+        for (value, expected) in [(1.0, positive), (-1.0, negative)] {
+            assert_eq!(
+                super::eval_fmt::eval_fmt(format, super::GeneralValue::Number(value), false, 1)
+                    .unwrap(),
+                expected
+            );
+        }
+    }
+}

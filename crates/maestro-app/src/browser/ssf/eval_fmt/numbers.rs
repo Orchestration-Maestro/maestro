@@ -1,7 +1,7 @@
 //! Numeric field joining and redistribution.
 
 #[cfg(test)]
-use super::{Context, FormatError, Kind, NumberToken, Piece, write_num};
+use super::{Context, FormatError, Kind, NumberToken, Piece, general, write_num};
 
 /// Render numeric fields through the shared writer.
 #[cfg(test)]
@@ -9,7 +9,7 @@ pub(super) fn render_numbers(
     pieces: &mut [Piece],
     context: &Context<'_>,
 ) -> Result<(), FormatError> {
-    let pattern = join_numbers(pieces);
+    let pattern = join_numbers(pieces, context);
     if pattern.is_empty() {
         return Ok(());
     }
@@ -23,11 +23,11 @@ pub(super) fn render_numbers(
             value
         },
     )?;
-    if value < 0.0
+    let sign_moved = value < 0.0
         && context.sections == 1
         && pieces.first().is_some_and(|p| p.kind == Kind::Text)
-        && rendered.starts_with('-')
-    {
+        && rendered.starts_with('-');
+    if sign_moved {
         rendered.remove(0);
         pieces[0].text.insert(0, '-');
     }
@@ -48,7 +48,11 @@ pub(super) fn render_numbers(
             pieces[index].text = write_num(
                 NumberToken::Number,
                 &pieces[index].text,
-                if magnitude { -value } else { value },
+                if sign_moved || magnitude {
+                    -value
+                } else {
+                    value
+                },
             )?;
             pieces[index].kind = Kind::Text;
         }
@@ -64,17 +68,23 @@ fn numeric(kind: Kind) -> bool {
 
 /// Join fraction fragments before sharing one numeric writer result.
 #[cfg(test)]
-fn join_numbers(pieces: &mut [Piece]) -> String {
+fn join_numbers(pieces: &mut [Piece], context: &Context<'_>) -> String {
     let mut pattern = String::new();
     for index in 0..pieces.len() {
+        if pieces[index].kind == Kind::General {
+            pieces[index].text = general(context.value);
+            pieces[index].kind = Kind::Text;
+        }
         if !numeric(pieces[index].kind) {
             continue;
         }
         let (left, right) = pieces.split_at_mut(index + 1);
+        let mut fraction = left[index].text.contains('/');
         let count = right
             .iter()
             .enumerate()
             .take_while(|(i, p)| {
+                fraction |= p.kind == Kind::Text && p.text == "/";
                 let next = right.get(i + 1);
                 matches!(p.kind, Kind::Question | Kind::Digits)
                     || (p.kind == Kind::Text && p.text == "/")
@@ -82,7 +92,7 @@ fn join_numbers(pieces: &mut [Piece]) -> String {
                         && next.is_some_and(|n| {
                             n.kind == Kind::Question
                                 || (n.kind == Kind::Text && n.text == "/")
-                                || (p.text == " " && n.kind == Kind::Digits)
+                                || (fraction && p.text == " " && n.kind == Kind::Digits)
                         }))
             })
             .count();
