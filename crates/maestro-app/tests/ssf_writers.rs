@@ -148,6 +148,9 @@ fn check(group: &str) {
                     match error {
                         FormatError::UnsupportedNumberFormat => "UnsupportedNumberFormat",
                         FormatError::InvalidDateFormat(_) => "InvalidDateFormat",
+                        FormatError::UnterminatedString => "UnterminatedString",
+                        FormatError::UnterminatedBlock => "UnterminatedBlock",
+                        FormatError::UnrecognizedCharacter(_) => "UnrecognizedCharacter",
                     }
                 );
                 Err(error)
