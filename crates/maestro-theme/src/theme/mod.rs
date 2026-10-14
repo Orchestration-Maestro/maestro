@@ -25,7 +25,7 @@ pub use code::{highlight_code, highlight_html};
 pub use components::{
     get_editor_theme, get_markdown_theme, get_select_list_theme, get_settings_list_theme,
 };
-pub use export::{ThemeExportColors, is_light_theme};
+pub use export::{ThemeExportColors, ansi256_to_hex, is_light_theme};
 #[cfg(not(target_arch = "wasm32"))]
 pub use fs_watch::NativeThemeWatchOperations;
 pub use fs_watch::{

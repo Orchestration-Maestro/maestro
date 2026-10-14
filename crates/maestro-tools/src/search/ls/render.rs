@@ -1,4 +1,5 @@
 //! Terminal rendering of ls calls and results.
+use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
 use super::super::listing::{ListingView, render_listing};
 use super::LsToolDetails;
@@ -10,7 +11,6 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::tui::ComponentHandle;
@@ -44,10 +44,11 @@ fn format_ls_call(args: &Value, theme: &Theme) -> Rendered<String> {
 /// # Errors
 /// Returns a theme or home failure; the previous component is left unchanged.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let args = render_args(args);
     let text = format_ls_call(args, theme)?;
     Ok(into_text(context.last_component.as_ref(), text))
 }
@@ -57,7 +58,7 @@ pub(super) fn render_call(
 /// # Errors
 /// Returns a theme or escape-expression failure; the previous component is left unchanged.
 pub(super) fn render_result(
-    result: &AgentToolResult<LsToolDetails>,
+    result: &ToolRenderResultLike<'_, LsToolDetails>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
@@ -68,8 +69,8 @@ pub(super) fn render_result(
         theme,
         context,
         ListingView {
-            count: result.details.as_ref().and_then(|d| d.entry_limit_reached),
-            truncation: result.details.as_ref().and_then(|d| d.truncation.as_ref()),
+            count: result.details.and_then(|d| d.entry_limit_reached),
+            truncation: result.details.and_then(|d| d.truncation.as_ref()),
             noun: "entries",
             preview_lines: 20,
             trailing_warning: None,

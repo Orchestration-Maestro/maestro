@@ -1,4 +1,5 @@
 //! Listing text selection, notices and terminal previews shared by file tools.
+use crate::output::render_utils::ToolRenderResultLike;
 use crate::{
     output::{
         render_parts::{expand_hint, float, num, paint},
@@ -9,7 +10,6 @@ use crate::{
     },
     types::{ToolRenderContext, ToolRenderResultOptions},
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_text::is_whitespace_scalar;
 use maestro_theme::{Theme, ThemeColor};
@@ -81,13 +81,17 @@ fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
 
 /// The result text: a preview of the listing, an overflow hint and the limit warning.
 pub(super) fn render_listing<D>(
-    result: &AgentToolResult<D>,
+    result: &ToolRenderResultLike<'_, D>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
     view: ListingView<'_>,
 ) -> Rendered<String> {
-    let output = get_text_output(Some(result), context.show_images, &context.terminal_image)?;
+    let output = get_text_output(
+        Some(result),
+        context.show_images,
+        &context.environment.terminal_image,
+    )?;
     let output = output.trim_matches(is_whitespace_scalar);
     let mut text = String::new();
     if !output.is_empty() {
@@ -104,7 +108,7 @@ pub(super) fn render_listing<D>(
         text = ["\n", &rows.join("\n")].concat();
         if lines.len() > shown {
             let counts = format!("{} more lines", lines.len() - shown);
-            text += &expand_hint(&counts, theme, &context.live_theme)?;
+            text += &expand_hint(&counts, theme, &context.environment.live_theme)?;
         }
     }
     Ok(text + &limit_warning(view, theme)?)

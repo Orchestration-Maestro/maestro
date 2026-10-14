@@ -134,7 +134,9 @@ fn read_preview_limits_count_logical_lines_before_wrapping() {
     let setup = Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": ["ctrl+o"]}));
     let ctx = context(&args, &setup, &env, None);
     let row = (tool().render_result.unwrap())(
-        &text_result(&lines.join("\n")),
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
+            &lines.join("\n"),
+        )),
         settled(false),
         &env.theme,
         &ctx,
@@ -213,9 +215,13 @@ fn read_highlighting_uses_only_selected_filename_language() {
             Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
         );
         let ctx = context(&args, &setup(), &env, None);
-        let row_component =
-            (tool().render_result.unwrap())(&text_result("a\tb"), settled(true), &env.theme, &ctx)
-                .unwrap();
+        let row_component = (tool().render_result.unwrap())(
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result("a\tb")),
+            settled(true),
+            &env.theme,
+            &ctx,
+        )
+        .unwrap();
         assert_eq!(*probe.calls.borrow(), calls, "{args} supported={supported}");
         assert_eq!(
             row_component.render(WIDTH)[1],
@@ -240,7 +246,9 @@ fn read_highlighting_reads_the_current_published_theme() {
     let render = |env: &Env| {
         let ctx = context(&args, &setup(), env, None);
         (tool().render_result.unwrap())(
-            &text_result("fn main() {}"),
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
+                "fn main() {}",
+            )),
             settled(true),
             &before_theme,
             &ctx,
@@ -292,9 +300,14 @@ fn native_row(
     theme: &Rc<maestro_theme::Theme>,
 ) -> String {
     let ctx = context(args, &setup(), env, None);
-    (tool().render_result.unwrap())(&text_result(code), settled(true), theme, &ctx)
-        .unwrap()
-        .render(WIDTH)[1]
+    (tool().render_result.unwrap())(
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(code)),
+        settled(true),
+        theme,
+        &ctx,
+    )
+    .unwrap()
+    .render(WIDTH)[1]
         .clone()
 }
 
@@ -378,10 +391,17 @@ fn read_renderers_reuse_the_supplied_text_slot() {
             Some(Rc::clone(&handle)),
         );
         let returned = if case.input["slot"] == "call" {
-            (tool().render_call.unwrap())(&ctx_args, &env.theme, &ctx).unwrap()
+            (tool().render_call.unwrap())(Some(&ctx_args), &env.theme, &ctx).unwrap()
         } else {
-            (tool().render_result.unwrap())(&text_result("after"), settled(true), &env.theme, &ctx)
-                .unwrap()
+            (tool().render_result.unwrap())(
+                &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
+                    "after",
+                )),
+                settled(true),
+                &env.theme,
+                &ctx,
+            )
+            .unwrap()
         };
         assert_eq!(
             case.expected["same"],
@@ -415,7 +435,7 @@ fn read_renderer_errors_leave_previous_text_unchanged() {
             &env,
             Some(Rc::clone(&prior) as ComponentHandle),
         );
-        let error = (tool().render_call.unwrap())(&args, &env.theme, &ctx)
+        let error = (tool().render_call.unwrap())(Some(&args), &env.theme, &ctx)
             .err()
             .unwrap();
         assert_eq!(
@@ -450,7 +470,9 @@ fn classified_results_avoid_unused_display_dependencies() {
     );
     for case in cases("classified_results_avoid_unused_display_dependencies") {
         let hidden = (tool().render_result.as_ref().unwrap())(
-            &text_result("secret"),
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
+                "secret",
+            )),
             settled(false),
             &env.theme,
             &ctx,
@@ -464,10 +486,14 @@ fn classified_results_avoid_unused_display_dependencies() {
         .map(|n| format!("line {n}"))
         .collect::<Vec<_>>()
         .join("\n");
-    let error =
-        (tool().render_result.unwrap())(&text_result(&overflow), settled(false), &env.theme, &ctx)
-            .err()
-            .unwrap();
+    let error = (tool().render_result.unwrap())(
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(&overflow)),
+        settled(false),
+        &env.theme,
+        &ctx,
+    )
+    .err()
+    .unwrap();
     assert_eq!(error.message, "Unknown theme color: muted");
 }
 
@@ -497,7 +523,7 @@ fn read_definition_keeps_render_alias_separate_from_execution_input() {
     let executable = wrap_tool_definition(definition, None);
     let args = json!({"file_path": "alias.txt", "offset": 2});
     let ctx = context(&args, &setup(), &env, None);
-    let row = render_call(&args, &env.theme, &ctx).unwrap();
+    let row = render_call(Some(&args), &env.theme, &ctx).unwrap();
     assert_eq!(
         strip_ansi(&row.render(WIDTH)[0]).unwrap().trim_end(),
         "read alias.txt:2"
@@ -530,7 +556,8 @@ fn one_read_definition_follows_each_render_context() {
         setup.cwd = cwd.to_owned();
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, &env, None);
-        let row = (definition.render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+        let row =
+            (definition.render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
         strip_ansi(&row.render(WIDTH)[0])
             .unwrap()
             .trim_end()
@@ -572,7 +599,7 @@ fn rooted_windows_documentation_paths_take_the_process_drive() {
     setup.cwd = format!("{other}\\project");
     let args = json!({"path": "\\pkg\\docs\\guide.md"});
     let ctx = context(&args, &setup, &env, None);
-    let row = (tool().render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+    let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
     let text = strip_ansi(&row.render(WIDTH)[0]).unwrap();
     assert!(text.starts_with("read docs docs/guide.md"), "{text}");
 }
@@ -587,7 +614,7 @@ fn documentation_paths_respect_windows_roots_and_separators() {
         setup.expanded = false;
         let args = json!({"path": case.input["absolutePath"]});
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool().render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+        let row = (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
         let text = strip_ansi(&row.render(WIDTH)[0]).unwrap();
         match case.expected.get("label") {
             Some(label) => assert!(
@@ -631,7 +658,7 @@ fn read_renders_without_process_directory() {
         setup.expanded = false;
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, &env, None);
-        (tool().render_call.as_ref().unwrap())(&args, &env.theme, &ctx).map(|row| {
+        (tool().render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).map(|row| {
             strip_ansi(&row.render(WIDTH)[0])
                 .unwrap()
                 .trim_end()
@@ -666,7 +693,9 @@ fn read_results_without_process_directory(env: &Env) {
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, env, None);
         (tool().render_result.as_ref().unwrap())(
-            &text_result("served"),
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
+                "served",
+            )),
             settled(false),
             &env.theme,
             &ctx,

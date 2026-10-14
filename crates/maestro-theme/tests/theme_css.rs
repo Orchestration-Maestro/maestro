@@ -500,3 +500,26 @@ fn theme_scratch_directories_are_exclusively_owned() {
         Some("#222222".to_owned())
     );
 }
+
+#[test]
+fn palette_expansion_is_shared_by_theme_and_converter() {
+    let mut json = custom_json("shared-palette", "#010203");
+    for index in 0..=255 {
+        json["colors"][format!("palette{index}")] = index.into();
+    }
+    let (_scratch, _ops, state) = custom("shared-palette", &[("shared-palette", json)]);
+    let colors = state
+        .get_resolved_theme_colors(Some("shared-palette"))
+        .unwrap();
+    for (index, expected) in PALETTE_HEX.lines().enumerate() {
+        let actual = maestro_theme::ansi256_to_hex(u32::try_from(index).unwrap());
+        assert_eq!(actual, expected);
+        assert_eq!(color(&colors, &format!("palette{index}")), actual);
+        assert_eq!(
+            maestro_theme::theme::ansi256_to_hex(u32::try_from(index).unwrap()),
+            actual
+        );
+    }
+    assert_eq!(maestro_theme::ansi256_to_hex(256), "#f8f8f8");
+    assert_eq!(maestro_theme::ansi256_to_hex(999), "#1dfe1dfe1dfe");
+}

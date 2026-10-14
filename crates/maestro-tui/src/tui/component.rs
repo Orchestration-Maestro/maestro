@@ -68,6 +68,14 @@ pub trait Component: std::any::Any {
     /// Renders the component for the supplied viewport width.
     fn render(&self, width: usize) -> Vec<String>;
 
+    /// Render a component that may report an ordinary rendering failure.
+    ///
+    /// # Errors
+    /// Returns the component's original rendering error.
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        Ok(self.render(width))
+    }
+
     /// Drops any cached rendering state so the next render starts from scratch.
     fn invalidate(&self) {}
 

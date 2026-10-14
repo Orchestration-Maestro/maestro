@@ -240,6 +240,9 @@ state cancels its watch and pending reload.
 
 ## Resolved colors for export
 
+`ansi256_to_hex` is the shared numeric palette expansion used by theme export and
+terminal-text HTML conversion. Indices above 255 retain authored grayscale arithmetic.
+
 Loading a custom theme resolves its colors in the same order, so the first
 failing alias is the same. `get_resolved_theme_colors` returns every color of a theme in
 canonical key order: array-index keys ascending, then the rest in authored order. The

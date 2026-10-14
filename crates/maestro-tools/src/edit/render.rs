@@ -1,4 +1,5 @@
 //! Retained edit previews on the caller's terminal runtime.
+use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
 use super::EditToolDetails;
 use crate::{
@@ -11,7 +12,6 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{Theme, ThemeBg, ThemeColor};
 use maestro_tui::{Box as TuiBox, Component, Container, Spacer, Text, tui::ComponentHandle};
@@ -160,9 +160,9 @@ fn build_call(
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<()> {
     let color = header_color(&component.state.borrow());
-    themed(themed(context.live_theme.get())?.bg(&color, ""))?;
+    themed(themed(context.environment.live_theme.get())?.bg(&color, ""))?;
     let weak = Rc::downgrade(component);
-    let live = context.live_theme.clone();
+    let live = context.environment.live_theme.clone();
     component.frame.set_bg_fn(Some(Rc::new(move |text| {
         let color = weak
             .upgrade()
@@ -181,7 +181,7 @@ fn build_call(
         Some(Ok(preview)) => Some(themed(render_diff(
             &preview.diff,
             &RenderDiffOptions::default(),
-            &context.live_theme,
+            &context.environment.live_theme,
         ))?),
     };
     if let Some(body) = body {
@@ -225,16 +225,19 @@ fn admit_preview(
     };
     let weak = Rc::downgrade(component);
     let invalidate = Rc::clone(&context.invalidate);
-    context.runtime.spawn_local(Box::pin(async move {
-        let preview = work.0.await;
-        if let Some(component) = weak.upgrade() {
-            let accepted = publish(&component, &work.1, preview);
-            if accepted {
-                invalidate();
+    context
+        .environment
+        .runtime
+        .spawn_local(Box::pin(async move {
+            let preview = work.0.await;
+            if let Some(component) = weak.upgrade() {
+                let accepted = publish(&component, &work.1, preview);
+                if accepted {
+                    invalidate();
+                }
             }
-        }
-        Ok(())
-    }));
+            Ok(())
+        }));
     Ok(())
 }
 
@@ -254,10 +257,11 @@ fn publish(component: &EditCallRenderComponent, request: &Rc<()>, preview: EditP
 
 /// Render the call after admitting complete input on the supplied runtime.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<ComponentHandle> {
+    let args = render_args(args);
     let component = call_component(context);
     admit_preview(&component, preview_input(args), context)?;
     build_call(&component, args, theme, context)?;
@@ -267,7 +271,7 @@ pub(super) fn render_call(
 /// Emit distinct result text only; ordinary successful execution text is hidden.
 fn format_result(
     preview: Option<&EditPreview>,
-    result: &AgentToolResult<EditToolDetails>,
+    result: &ToolRenderResultLike<'_, EditToolDetails>,
     theme: &Theme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<Option<String>> {
@@ -310,7 +314,7 @@ fn format_result(
     themed(render_diff(
         &details.diff,
         &RenderDiffOptions::default(),
-        &context.live_theme,
+        &context.environment.live_theme,
     ))
     .map(Some)
 }
@@ -318,10 +322,10 @@ fn format_result(
 /// Revoke pending work and install successful result details on an existing call.
 fn settle(
     component: &Rc<EditCallRenderComponent>,
-    result: &AgentToolResult<EditToolDetails>,
+    result: &ToolRenderResultLike<'_, EditToolDetails>,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> bool {
-    let input = preview_input(context.args);
+    let input = preview_input(render_args(context.args));
     let mut state = component.state.borrow_mut();
     state.request = None;
     state.settled = true;
@@ -345,7 +349,7 @@ fn settle(
 
 /// Render a result, reusing the detached result slot and rebuilding a retained call if changed.
 pub(super) fn render_result(
-    result: &AgentToolResult<EditToolDetails>,
+    result: &ToolRenderResultLike<'_, EditToolDetails>,
     _options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_, EditRenderState>,
@@ -354,7 +358,7 @@ pub(super) fn render_result(
     if let Some(call) = &call
         && settle(call, result, context)
     {
-        build_call(call, context.args, theme, context)?;
+        build_call(call, render_args(context.args), theme, context)?;
     }
     let output = match &call {
         Some(call) => format_result(call.state.borrow().preview.as_ref(), result, theme, context)?,

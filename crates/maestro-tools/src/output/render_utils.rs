@@ -15,7 +15,26 @@ use serde_json::Value;
 use std::sync::LazyLock;
 
 /// A tool result as renderers see it.
-pub type ToolRenderResultLike<D> = AgentToolResult<D>;
+pub struct ToolRenderResultLike<'a, D> {
+    /// Ordered content borrowed from the execution record.
+    pub content: &'a [UserBlock],
+    /// Borrowed details, preserving absence.
+    pub details: Option<&'a D>,
+    /// Termination hint supplied by the executed result, when present.
+    pub terminate: Option<bool>,
+    /// Error observation supplied by a rendering host.
+    pub is_error: Option<bool>,
+}
+impl<'a, D> From<&'a AgentToolResult<D>> for ToolRenderResultLike<'a, D> {
+    fn from(result: &'a AgentToolResult<D>) -> Self {
+        Self {
+            content: &result.content,
+            details: result.details.as_ref(),
+            terminate: result.terminate,
+            is_error: None,
+        }
+    }
+}
 
 /// Terminal escape sequences: OSC strings up to their first terminator, and CSI and related
 /// introducers with their parameters and a final byte from the listed set.
@@ -27,6 +46,12 @@ static ANSI: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new
 /// Rows of a compact preview.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) const PREVIEW_LINES: usize = 10;
+
+/// Borrow builtin arguments, treating a missing object as missing fields.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn render_args(args: Option<&Value>) -> &Value {
+    args.unwrap_or(&Value::Null)
+}
 
 /// The path argument: `file_path` unless it is absent or null, then `path`.
 #[cfg(not(target_arch = "wasm32"))]
@@ -121,7 +146,7 @@ pub fn strip_ansi(text: &str) -> Result<String, DiagnosticErrorInfo> {
 /// # Errors
 /// Returns the failure to compile the escape expression.
 pub fn get_text_output<D>(
-    result: Option<&ToolRenderResultLike<D>>,
+    result: Option<&ToolRenderResultLike<'_, D>>,
     show_images: bool,
     terminal_image: &TerminalImage,
 ) -> Result<String, DiagnosticErrorInfo> {

@@ -6,11 +6,10 @@ use crate::{
         render_parts::{
             downcast, expand_hint, float, into_text, num, paint, plain_expand_hint, themed,
         },
-        render_utils::{get_text_output, invalid_arg_text, str},
+        render_utils::{ToolRenderResultLike, get_text_output, invalid_arg_text, render_args, str},
         visual_truncate::{VisualTruncateResult, truncate_to_visual_lines},
     },
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::tui::{ComponentHandle, RepeatingTimer};
@@ -31,19 +30,20 @@ pub struct BashRenderState {
 }
 /// Draw authored arguments with the published theme.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     _theme: &Theme,
     context: &ToolRenderContext<'_, BashRenderState>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+    let args = render_args(args);
     if context.phase.execution_started {
-        let now = context.runtime.now().as_millis();
+        let now = context.environment.runtime.now().as_millis();
         let mut state = context.state.borrow_mut();
         if state.started_at.is_none() {
             state.started_at = Some(now);
             state.ended_at = None;
         }
     }
-    let theme = themed(context.live_theme.get())?;
+    let theme = themed(context.environment.live_theme.get())?;
     let command = match str(args.get("command")) {
         None => themed(invalid_arg_text(&theme))?,
         Some("") => paint(&theme, &ThemeColor::ToolOutput, "...")?,
@@ -73,7 +73,7 @@ fn timing(
     options: ToolRenderResultOptions,
     context: &ToolRenderContext<'_, BashRenderState>,
 ) -> Option<u128> {
-    let now = context.runtime.now().as_millis();
+    let now = context.environment.runtime.now().as_millis();
     let (start, end, needs_timer) = {
         let mut state = context.state.borrow_mut();
         if !options.is_partial || context.is_error {
@@ -92,7 +92,7 @@ fn timing(
         let weak = Rc::downgrade(&context.state);
         let invalidate = Rc::clone(&context.invalidate);
         let timer = RepeatingTimer::new(
-            Rc::clone(&context.runtime),
+            Rc::clone(&context.environment.runtime),
             Duration::from_secs(1),
             Rc::new(move || {
                 if let Some(_owner) = weak.upgrade() {
@@ -111,20 +111,24 @@ fn timing(
 }
 /// Draw the first captured duration through the existing text component.
 pub(super) fn render_result(
-    result: &AgentToolResult<BashToolDetails>,
+    result: &ToolRenderResultLike<'_, BashToolDetails>,
     options: ToolRenderResultOptions,
     _theme: &Theme,
     context: &ToolRenderContext<'_, BashRenderState>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let elapsed = timing(options, context);
-    let theme = themed(context.live_theme.get())?;
+    let theme = themed(context.environment.live_theme.get())?;
     let component = context
         .last_component
         .as_ref()
         .and_then(downcast::<BashResultRenderComponent>)
         .unwrap_or_else(|| Rc::new(BashResultRenderComponent::default()));
     component.frame.clear();
-    let output = get_text_output(Some(result), context.show_images, &context.terminal_image)?;
+    let output = get_text_output(
+        Some(result),
+        context.show_images,
+        &context.environment.terminal_image,
+    )?;
     let output = output.trim_matches(maestro_text::is_whitespace_scalar);
     if !output.is_empty() {
         let styled = output
@@ -141,12 +145,12 @@ pub(super) fn render_result(
             paint(&theme, &ThemeColor::Dim, "")?;
             component.frame.add_child(Rc::new(VisualTail {
                 text: styled,
-                live_theme: context.live_theme.clone(),
+                live_theme: context.environment.live_theme.clone(),
                 cache: RefCell::default(),
             }));
         }
     }
-    if let Some(notice) = metadata(result.details.as_ref()) {
+    if let Some(notice) = metadata(result.details) {
         let notice = paint(&theme, &ThemeColor::Warning, &notice)?;
         component
             .frame

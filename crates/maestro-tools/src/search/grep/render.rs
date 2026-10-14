@@ -6,22 +6,22 @@ use super::{
 use crate::{
     output::{
         render_parts::{into_text, limit_label, paint, themed},
-        render_utils::{invalid_arg_text, shorten_path, str},
+        render_utils::{ToolRenderResultLike, invalid_arg_text, render_args, shorten_path, str},
     },
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
 /// Render raw partial arguments, replacing a previous text only after success.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+    let args = render_args(args);
     let invalid = themed(invalid_arg_text(theme))?;
     let pattern = str(args.get("pattern")).map_or_else(
         || Ok(invalid.clone()),
@@ -51,12 +51,12 @@ pub(super) fn render_call(
 }
 /// Render result options through the shared preview and warning owner.
 pub(super) fn render_result(
-    result: &AgentToolResult<GrepToolDetails>,
+    result: &ToolRenderResultLike<'_, GrepToolDetails>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
-    let details = result.details.as_ref();
+    let details = result.details;
     let view = ListingView {
         count: details.and_then(|d| d.match_limit_reached),
         truncation: details.and_then(|d| d.truncation.as_ref()),

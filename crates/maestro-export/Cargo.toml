@@ -6,6 +6,9 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-tools = { path = "../maestro-tools" }
+maestro-tui = { path = "../maestro-tui" }
+serde.workspace = true
 maestro-session = { path = "../maestro-session" }
 maestro-models = { path = "../maestro-models" }
 maestro-theme = { path = "../maestro-theme" }
@@ -15,8 +18,6 @@ maestro-path = { path = "../maestro-path" }
 serde_json.workspace = true
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 
-[dev-dependencies]
-serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

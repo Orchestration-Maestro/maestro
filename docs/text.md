@@ -26,7 +26,8 @@ stable sorting and comparator lifetime.
   scalars sort before U+E000.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`
   in one pass and never rescan emitted entities. `EscapeMode` picks the apostrophe
-  spelling: `Xml` writes `&apos;`, `HtmlDecimal` and `HtmlHex` write numeric references.
+  spelling: `Xml` writes `&apos;`, `HtmlDecimal` and `HtmlHex` write numeric references; `HtmlDecimalPadded`
+  writes `&#039;` for literal HTML export.
 - **Collation** (feature `collation`). `collation::Collator::new` reads the first
   present of `LC_ALL`, `LC_MESSAGES` and `LANG` through the supplied reader, empty
   values included, and none means `en_US`. Encoding and modifier suffixes are

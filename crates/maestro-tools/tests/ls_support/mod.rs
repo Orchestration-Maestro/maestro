@@ -740,7 +740,7 @@ pub fn render_case_as<D>(
         let _bindings = bind(&setup.bindings);
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool.render_call.unwrap())(&args, &env.theme, &ctx).unwrap();
+        let row = (tool.render_call.unwrap())(Some(&args), &env.theme, &ctx).unwrap();
         return (row.render(CALL_WIDTH), CALL_WIDTH);
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
@@ -752,8 +752,13 @@ pub fn render_case_as<D>(
     };
     let args = Value::Null;
     let ctx = context(&args, &setup, &env, None);
-    let row =
-        (tool.render_result.unwrap())(&result(&input.result), options, &env.theme, &ctx).unwrap();
+    let row = (tool.render_result.unwrap())(
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(&input.result)),
+        options,
+        &env.theme,
+        &ctx,
+    )
+    .unwrap();
     (row.render(input.width), input.width)
 }
 
@@ -811,14 +816,19 @@ pub fn render_slot_as<D>(
     let (tool, result, args) = input;
     if slot == "call" {
         let ctx = context(args, &setup, env, Some(Rc::clone(previous)));
-        (tool.render_call.unwrap())(args, theme, &ctx)
+        (tool.render_call.unwrap())(Some(args), theme, &ctx)
     } else {
         let options = ToolRenderResultOptions {
             expanded: false,
             is_partial: false,
         };
         let ctx = context(&Value::Null, &setup, env, Some(Rc::clone(previous)));
-        (tool.render_result.unwrap())(result, options, theme, &ctx)
+        (tool.render_result.unwrap())(
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
+            options,
+            theme,
+            &ctx,
+        )
     }
 }
 

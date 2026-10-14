@@ -73,8 +73,12 @@ impl Row {
     }
     /// Render with this row's retained state.
     fn call(&self, args: &Value, last: Option<ComponentHandle>) -> ComponentHandle {
-        (self.tool.render_call.as_ref().unwrap())(args, &self.env.theme, &self.context(args, last))
-            .unwrap()
+        (self.tool.render_call.as_ref().unwrap())(
+            Some(args),
+            &self.env.theme,
+            &self.context(args, last),
+        )
+        .unwrap()
     }
     /// Settle the row, preserving its separate result component.
     fn result(
@@ -87,7 +91,7 @@ impl Row {
         let mut ctx = self.context(args, last);
         ctx.is_error = error;
         (self.tool.render_result.as_ref().unwrap())(
-            result,
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
             ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -182,7 +186,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
         let input = args("beta");
         let mut ctx = row.context(&input, None);
         ctx.phase.args_complete = false;
-        (row.tool.render_call.as_ref().unwrap())(&input, &row.env.theme, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
         assert_eq!(row.env.runtime.futures(), 0);
         let call = row.call(&input, None);
         for flag in 0..3 {
@@ -192,7 +196,7 @@ fn edit_preview_waits_for_complete_args_and_deduplicates() {
                 1 => ctx.expanded = true,
                 _ => ctx.phase.is_partial = true,
             }
-            (row.tool.render_call.as_ref().unwrap())(&input, &row.env.theme, &ctx).unwrap();
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
             assert_eq!(row.env.runtime.futures(), 1);
         }
         let mut alias = input.clone();
@@ -289,7 +293,8 @@ fn edit_completion_publishes_before_reentrant_invalidation() {
             capture.set(plain(&call).contains("beta"));
             assert_eq!(row.env.runtime.futures(), 0);
         });
-        let _call = (row.tool.render_call.as_ref().unwrap())(&input, &row.env.theme, &ctx).unwrap();
+        let _call =
+            (row.tool.render_call.as_ref().unwrap())(Some(&input), &row.env.theme, &ctx).unwrap();
         row.finish().await;
         assert!(observed.get());
     });
@@ -313,7 +318,7 @@ fn edit_settled_result_rejects_late_preview() {
                 ctx.is_error = error;
                 ctx.phase.is_partial = partial;
                 (row.tool.render_result.as_ref().unwrap())(
-                    &result(diff),
+                    &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(diff)),
                     ToolRenderResultOptions {
                         expanded: false,
                         is_partial: partial,
@@ -418,7 +423,8 @@ async fn native(name: &str) {
     }
     let mut ctx = row.context(&case.input, None);
     ctx.phase.args_complete = case.expected.file_exists.is_none();
-    let call = (row.tool.render_call.as_ref().unwrap())(&case.input, &row.env.theme, &ctx).unwrap();
+    let call =
+        (row.tool.render_call.as_ref().unwrap())(Some(&case.input), &row.env.theme, &ctx).unwrap();
     if let Some(exists) = case.expected.file_exists {
         replay_native(&row, &case, exists);
     } else {
@@ -541,7 +547,9 @@ fn edit_result_without_call_renders_detached_output() {
             is_partial: case.input["options"]["isPartial"].as_bool().unwrap(),
         };
         let out = (row.tool.render_result.as_ref().unwrap())(
-            &recorded_result(&case.input["result"]),
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&recorded_result(
+                &case.input["result"],
+            )),
             options,
             &row.env.theme,
             &ctx,
@@ -626,7 +634,9 @@ fn supplied_theme_routes() {
                 .contains(case.expected["title"].as_str().unwrap())
         );
         let out = (row.tool.render_result.as_ref().unwrap())(
-            &recorded_result(&case.input["result"]),
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&recorded_result(
+                &case.input["result"],
+            )),
             ToolRenderResultOptions {
                 expanded: false,
                 is_partial: false,
@@ -659,7 +669,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
         assert!(live[1].contains("38;5;1m"));
         let ctx = row.context(&input, None);
         let supplied = palette(20);
-        (row.tool.render_call.as_ref().unwrap())(&input, &supplied, &ctx).unwrap();
+        (row.tool.render_call.as_ref().unwrap())(Some(&input), &supplied, &ctx).unwrap();
         assert!(call.render(80)[1].contains("38;5;21m"));
         let failed = Row::new();
         failed.dir.file("file", b"unmatched");
@@ -676,7 +686,7 @@ fn edit_theme_replacement_updates_background_and_rebuilt_text() {
         assert!(call.render(80)[0].contains("48;5;33m"));
         let selected = palette(20);
         let ctx = failed.context(&input, None);
-        (failed.tool.render_call.as_ref().unwrap())(&input, &selected, &ctx).unwrap();
+        (failed.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
         assert!(call.render(80).join("\n").contains("38;5;24m"));
     });
 }
@@ -708,7 +718,8 @@ fn edit_preview_teardown_releases_owned_callbacks() {
             let _ = &capture;
         });
         let call =
-            (queued.tool.render_call.as_ref().unwrap())(&input, &queued.env.theme, &ctx).unwrap();
+            (queued.tool.render_call.as_ref().unwrap())(Some(&input), &queued.env.theme, &ctx)
+                .unwrap();
         drop(ctx);
         drop(call);
         drop(queued);
@@ -731,7 +742,7 @@ async fn selected_preview_theme_error(missing: &str) {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let error = (row.tool.render_call.as_ref().unwrap())(&input, &selected, &ctx)
+    let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
         .err()
         .unwrap();
     let kind = if missing.ends_with("Bg") {
@@ -755,7 +766,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
             .set_theme_instance(Rc::clone(&selected))
             .unwrap();
         let ctx = row.context(&input, None);
-        let error = (row.tool.render_call.as_ref().unwrap())(&input, &selected, &ctx)
+        let error = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx)
             .err()
             .unwrap();
         let kind = if missing.starts_with("toolPending") {
@@ -780,7 +791,7 @@ fn edit_renderer_propagates_selected_theme_errors() {
         .set_theme_instance(Rc::clone(&selected))
         .unwrap();
     let ctx = row.context(&input, None);
-    let call = (row.tool.render_call.as_ref().unwrap())(&input, &selected, &ctx).unwrap();
+    let call = (row.tool.render_call.as_ref().unwrap())(Some(&input), &selected, &ctx).unwrap();
     assert!(call.render(80)[1].contains("38;5;1m"));
     row.env
         .state

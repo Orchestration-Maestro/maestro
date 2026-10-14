@@ -645,3 +645,57 @@ fn public_options_forward_theme_and_renderer() {
         );
     }
 }
+
+#[path = "component_support/mod.rs"]
+#[allow(dead_code)]
+mod component_support;
+
+#[test]
+fn standard_renderer_integrates_with_document_export() {
+    use maestro_tui::Component;
+    use std::rc::Rc;
+    struct Row;
+    impl Component for Row {
+        fn render(&self, _: usize) -> Vec<String> {
+            vec!["custom result".into()]
+        }
+    }
+    let theme = component_support::theme();
+    let mut tool = component_support::definition::<(), Value, Value, Value>();
+    tool.render_result = Some(Rc::new(|_, _, _, _| Ok(Rc::new(Row))));
+    let tool = Rc::new(tool);
+    for available in [true, false] {
+        let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+            get_tool_definition: |_: &str| Ok(available.then(|| Rc::clone(&tool))),
+            theme: &theme,
+            cwd: "/work",
+            width: None,
+            environment: component_support::environment(),
+            create_state: || json!({}),
+        });
+        let view = View {
+            data: json!({"header":null,"leafId":null,"entries":[{"type":"message","message":{"role":"toolResult","toolCallId":"id","toolName":"custom","content":[],"isError":false}}]}),
+            ..View::default()
+        };
+        let operations = Operations::default();
+        export_session_to_html(
+            &view,
+            None,
+            Some(ExportOptions {
+                tool_renderer: Some(&renderer),
+                ..ExportOptions::default()
+            }),
+            &operations,
+        )
+        .unwrap();
+        let decoded: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+        if available {
+            assert_eq!(
+                decoded["renderedTools"],
+                json!({"id":{"resultHtmlExpanded":"<div class=\"ansi-line\">custom result</div>"}})
+            );
+        } else {
+            assert!(decoded.get("renderedTools").is_none());
+        }
+    }
+}

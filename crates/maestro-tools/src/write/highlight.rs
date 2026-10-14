@@ -12,8 +12,8 @@ const FULL_HIGHLIGHT_LINES: usize = 50;
 /// The rows of `code` in `language`.
 pub(super) fn rows(context: &ToolRenderContext<'_>, code: &str, language: &str) -> Vec<String> {
     highlight_code(
-        &context.live_theme,
-        &*context.highlighter,
+        &context.environment.live_theme,
+        &*context.environment.highlighter,
         code,
         Some(language),
     )

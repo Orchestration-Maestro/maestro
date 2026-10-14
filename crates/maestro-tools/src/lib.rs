@@ -100,7 +100,8 @@ pub use tool_definition_wrapper::{
 };
 pub use types::{
     ExecuteToolDefinition, ToolContextFactory, ToolDefinition, ToolRenderCall, ToolRenderContext,
-    ToolRenderPhase, ToolRenderResult, ToolRenderResultOptions, ToolRenderShell, define_tool,
+    ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultOptions,
+    ToolRenderShell, define_tool,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use write::{

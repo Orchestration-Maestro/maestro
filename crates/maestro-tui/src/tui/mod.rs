@@ -258,6 +258,10 @@ impl Component for TUI {
         self.shared.container.render(width)
     }
 
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.shared.container.try_render(width)
+    }
+
     fn invalidate(&self) {
         TUI::invalidate(self);
     }

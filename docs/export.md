@@ -66,3 +66,29 @@ errors propagate rather than triggering a standard-renderer fallback.
 The serializer does **not** sanitize supplied scripts, CSS or custom renderer
 HTML. Use trusted bundle/render providers. Base64 protects the session-data
 carrier; it is not a sanitization guarantee for the rest of the document.
+
+## Terminal text and standard tool rendering
+
+`ansi_to_html` escapes literal text once and converts ASCII SGR sequences into
+inline color, background, bold, dim, italic and underline spans. Other escape
+sequences stay literal. `ansi_lines_to_html` resets styles per line and emits
+adjacent `ansi-line` divs without separators; only an empty converted line becomes
+`&nbsp;`. Numeric colors use the [theme palette](theme.md#resolved-colors-for-export),
+not brand roles.
+
+`create_tool_html_renderer` implements the existing `ToolHtmlRenderer` contract
+through [tools-owned definitions](tools-read.md#tool-definitions). Supply live lookup,
+theme, cwd, host environment and a typed empty-state initializer. Width defaults
+to 100 only when omitted. The adapter retains arguments, shared mutable state and
+independent call/result component slots per call ID. Missing arguments stay missing.
+It executes no tool.
+
+Results render collapsed before expanded, retaining each returned component before
+calling its fallible `Component::try_render` method. Composite components propagate
+child rendering errors; reconstruction from a document supplies no termination hint.
+Result-edge blank lines are
+trimmed after SGR removal using [text whitespace](text.md); call padding and interior
+blank lines remain. Expanded output stays present even when empty; collapsed output
+is included only when nonempty and different. Ordinary lookup, callback, component
+and typed-input failures return absence without rolling back earlier mutations.
+Direct user-supplied renderer errors still propagate through the serializer.

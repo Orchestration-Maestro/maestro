@@ -124,6 +124,43 @@ impl Box {
         lines.extend((0..self.padding_y).map(|_| self.row("", width)));
         lines
     }
+    /// Composes child rows with the caller's failure policy and the shared cache.
+    fn render_children<E>(
+        &self,
+        width: usize,
+        render: impl FnOnce(&Container, usize) -> Result<Vec<String>, E>,
+    ) -> Result<Vec<String>, E> {
+        let generation = self.generation.get();
+        let padding = self.padding_x.min(width / 2);
+        let margin = " ".repeat(padding);
+        let child_lines: Vec<String> = render(&self.children, width - 2 * padding)?
+            .iter()
+            .map(|line| format!("{margin}{line}"))
+            .collect();
+        if child_lines.is_empty() {
+            return Ok(Vec::new());
+        }
+        let bg_sample = self
+            .background()
+            .map(|background| background(BACKGROUND_SAMPLE));
+        if let Some(rendered) = &*self.cache.borrow()
+            && rendered.width == width
+            && rendered.bg_sample == bg_sample
+            && rendered.child_lines == child_lines
+        {
+            return Ok(rendered.lines.clone());
+        }
+        let lines = self.compose(&child_lines, width);
+        if self.generation.get() == generation {
+            *self.cache.borrow_mut() = Some(Rendered {
+                width,
+                child_lines,
+                bg_sample,
+                lines: lines.clone(),
+            });
+        }
+        Ok(lines)
+    }
 }
 
 impl Default for Box {
@@ -138,38 +175,17 @@ impl Component for Box {
     /// the background, if any, is sampled, and the composed rows are reused when width,
     /// child rows and sample are unchanged.
     fn render(&self, width: usize) -> Vec<String> {
-        let generation = self.generation.get();
-        let padding = self.padding_x.min(width / 2);
-        let margin = " ".repeat(padding);
-        let child_lines: Vec<String> = self
-            .children
-            .render(width - 2 * padding)
-            .iter()
-            .map(|line| format!("{margin}{line}"))
-            .collect();
-        if child_lines.is_empty() {
-            return Vec::new();
-        }
-        let bg_sample = self
-            .background()
-            .map(|background| background(BACKGROUND_SAMPLE));
-        if let Some(rendered) = &*self.cache.borrow()
-            && rendered.width == width
-            && rendered.bg_sample == bg_sample
-            && rendered.child_lines == child_lines
-        {
-            return rendered.lines.clone();
-        }
-        let lines = self.compose(&child_lines, width);
-        if self.generation.get() == generation {
-            *self.cache.borrow_mut() = Some(Rendered {
-                width,
-                child_lines,
-                bg_sample,
-                lines: lines.clone(),
-            });
-        }
-        lines
+        self.render_children(width, |children, width| {
+            Ok::<_, std::convert::Infallible>(children.render(width))
+        })
+        .unwrap_or_else(|never| match never {})
+    }
+
+    fn try_render(
+        &self,
+        width: usize,
+    ) -> Result<Vec<String>, std::boxed::Box<dyn std::error::Error>> {
+        self.render_children(width, Component::try_render)
     }
 
     /// Drops the composed rows, then invalidates the children.

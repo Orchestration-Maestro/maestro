@@ -154,3 +154,15 @@ fn utf16_prefix_keeps_whole_scalars() {
         assert_eq!(maestro_text::truncate_utf16(text, limit), expected);
     }
 }
+
+#[test]
+fn html_decimal_padded_preserves_other_escape_modes() {
+    use maestro_text::markup::{EscapeMode, escape, escape_into};
+    assert_eq!(escape("'&", EscapeMode::HtmlDecimalPadded), "&#039;&amp;");
+    let mut out = String::from("prefix");
+    escape_into("'", &mut out, EscapeMode::HtmlDecimalPadded);
+    assert_eq!(out, "prefix&#039;");
+    assert_eq!(escape("'", EscapeMode::HtmlDecimal), "&#39;");
+    assert_eq!(escape("'", EscapeMode::HtmlHex), "&#x27;");
+    assert_eq!(escape("'", EscapeMode::Xml), "&apos;");
+}

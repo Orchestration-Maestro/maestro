@@ -129,7 +129,15 @@ fn display_output_handles_absence_and_orders_content_by_kind() {
                 details: None,
                 terminate: None,
             });
-        let output = get_text_output(result.as_ref(), false, &env.terminal).unwrap();
+        let output = get_text_output(
+            result
+                .as_ref()
+                .map(maestro_tools::output::render_utils::ToolRenderResultLike::from)
+                .as_ref(),
+            false,
+            &env.terminal,
+        )
+        .unwrap();
         assert_eq!(output, case.expected.as_str().unwrap(), "case {}", case.id);
     }
     let distinct = AgentToolResult::<Value> {
@@ -143,6 +151,50 @@ fn display_output_handles_absence_and_orders_content_by_kind() {
         details: None,
         terminate: None,
     };
-    let output = get_text_output(Some(&distinct), true, &env.terminal).unwrap();
+    let output = get_text_output(
+        Some(&maestro_tools::output::render_utils::ToolRenderResultLike::from(&distinct)),
+        true,
+        &env.terminal,
+    )
+    .unwrap();
     assert_eq!(output, "b\na\n[Image: [image/png]]\n[Image: [image/gif]]");
+}
+
+#[test]
+fn borrowed_result_view_keeps_error_and_optional_details() {
+    use maestro_tools::output::render_utils::ToolRenderResultLike;
+    let source = maestro_agent::AgentToolResult::<serde_json::Value> {
+        content: Vec::new(),
+        details: Some(serde_json::Value::Null),
+        terminate: None,
+    };
+    let mut view = ToolRenderResultLike::from(&source);
+    assert!(std::ptr::eq(view.content, source.content.as_slice()));
+    assert!(std::ptr::eq(
+        view.details.unwrap(),
+        source.details.as_ref().unwrap()
+    ));
+    assert!(view.details.unwrap().is_null());
+    assert_eq!(view.is_error, None);
+    view.is_error = Some(true);
+    assert_eq!(view.is_error, Some(true));
+    let absent = maestro_agent::AgentToolResult::<serde_json::Value> {
+        content: Vec::new(),
+        details: None,
+        terminate: None,
+    };
+    assert!(ToolRenderResultLike::from(&absent).details.is_none());
+}
+
+#[test]
+fn borrowed_result_view_preserves_termination_hint() {
+    use maestro_tools::output::render_utils::ToolRenderResultLike;
+    for terminate in [None, Some(false), Some(true)] {
+        let source = maestro_agent::AgentToolResult::<serde_json::Value> {
+            content: Vec::new(),
+            details: None,
+            terminate,
+        };
+        assert_eq!(ToolRenderResultLike::from(&source).terminate, terminate);
+    }
 }
