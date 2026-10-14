@@ -32,5 +32,8 @@ It reuses the [terminal toolkit](../terminal/components.md) and
   component, focus and editor traits delegate to the same editor, with input
   capabilities using the custom router.
 
+The [transcript messages](messages.md) provide user, assistant and expandable
+summary widgets over the same toolkit and live theme.
+
 The application exports `key_hint`, `key_text` and `raw_key_hint` from their
 [tools owner](../../crates/maestro-tools/src/keybinding_hints.rs). The toolkit exports its shared `Cancellation` type.

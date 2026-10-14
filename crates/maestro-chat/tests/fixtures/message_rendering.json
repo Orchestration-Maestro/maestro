@@ -1,0 +1,4238 @@
+[
+  {
+    "test": "user_markers_preserve_padded_height",
+    "case": "hello",
+    "input": {
+      "kind": "user",
+      "width": 20,
+      "text": "hello"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m                    \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mhello\u001b[39m              \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "user-empty",
+    "input": {
+      "kind": "user",
+      "width": 12,
+      "text": ""
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "user-blank",
+    "input": {
+      "kind": "user",
+      "width": 12,
+      "text": " \n\t﻿"
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "user-markdown",
+    "input": {
+      "kind": "user",
+      "width": 12,
+      "text": "one **bold**\n\n- item\n- second"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m            \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mone \u001b[39m\u001b[1m\u001b[38;2;58;77;109mbold\u001b[39m\u001b[22m   \u001b[49m",
+        "\u001b[48;2;56;76;108m            \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;94;95;127m- \u001b[39m\u001b[38;2;58;77;109mitem\u001b[39m     \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;94;95;127m- \u001b[39m\u001b[38;2;58;77;109msecond\u001b[39m   \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m            \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "user-wrapped",
+    "input": {
+      "kind": "user",
+      "width": 12,
+      "text": "abcdefghij klmnop qrstuv"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m            \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mabcdefghij \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mklmnop     \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mqrstuv\u001b[39m     \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m            \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "narrow-1",
+    "input": {
+      "kind": "user",
+      "width": 1,
+      "text": "hi"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m \u001b[49m",
+        "\u001b[48;2;56;76;108m\u001b[38;2;58;77;109mh\u001b[49m",
+        "\u001b[48;2;56;76;108m\u001b[38;2;58;77;109mi\u001b[39m\u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "narrow-2",
+    "input": {
+      "kind": "user",
+      "width": 2,
+      "text": "hi"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m  \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mh\u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mi\u001b[39m\u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m  \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "user_empty_and_wrapped_markdown",
+    "case": "narrow-3",
+    "input": {
+      "kind": "user",
+      "width": 3,
+      "text": "hi"
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m   \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mh \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;58;77;109mi\u001b[39m \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m   \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "assistant_zone_markers_follow_tool_presence",
+    "case": "text",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hello"
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 hello                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_zone_markers_follow_tool_presence",
+    "case": "tool-only",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_zone_markers_follow_tool_presence",
+    "case": "text-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "calling tool"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "",
+        " calling tool                           "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_zone_markers_follow_tool_presence",
+    "case": "thinking-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_empty_blocks_render_nothing",
+    "case": "none",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": []
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_empty_blocks_render_nothing",
+    "case": "empty-text",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_empty_blocks_render_nothing",
+    "case": "blank-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": " \n\t﻿"
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_empty_blocks_render_nothing",
+    "case": "both-blank",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "﻿"
+          },
+          {
+            "type": "thinking",
+            "thinking": " "
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_empty_blocks_render_nothing",
+    "case": "no-message",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": null,
+      "ops": [
+        {
+          "op": "hide",
+          "value": true
+        },
+        {
+          "op": "label",
+          "value": "Wait"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [],
+      [],
+      [],
+      []
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "repeated-text-False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      },
+      "hide": false
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " first                                  ",
+        " second                                 ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 first                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "repeated-text-True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "first"
+          },
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " first                                  ",
+        " second                                 ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 first                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-thought-text-False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "one"
+          },
+          {
+            "type": "thinking",
+            "thinking": "two"
+          },
+          {
+            "type": "text",
+            "text": "done"
+          }
+        ]
+      },
+      "hide": false
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mone\u001b[39m\u001b[23m                                    ",
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mtwo\u001b[39m\u001b[23m                                    ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 done                                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-thought-text-True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "one"
+          },
+          {
+            "type": "thinking",
+            "thinking": "two"
+          },
+          {
+            "type": "text",
+            "text": "done"
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            ",
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 done                                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "text-thought-False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "start"
+          },
+          {
+            "type": "thinking",
+            "thinking": "last"
+          }
+        ]
+      },
+      "hide": false
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " start                                  ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mlast\u001b[39m\u001b[23m                                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "text-thought-True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "start"
+          },
+          {
+            "type": "thinking",
+            "thinking": "last"
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " start                                  ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-blank-tool-False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "last"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ]
+      },
+      "hide": false
+    },
+    "expected": [
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mlast\u001b[39m\u001b[23m                                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-blank-tool-True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "last"
+          },
+          {
+            "type": "text",
+            "text": " "
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-tool-text-False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "before"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          },
+          {
+            "type": "text",
+            "text": "after"
+          }
+        ]
+      },
+      "hide": false
+    },
+    "expected": [
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mbefore\u001b[39m\u001b[23m                                 ",
+        "",
+        " after                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_order_keeps_only_required_thinking_gaps",
+    "case": "thought-tool-text-True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "before"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          },
+          {
+            "type": "text",
+            "text": "after"
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            ",
+        "",
+        " after                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "text-trimmed",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": " ﻿ value﻿ "
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 value                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "text-nel",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "value"
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 value                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "text-nel-only",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": ""
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007                                        "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "text-blank",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "  \n\t"
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "thinking-trimmed",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": " ﻿ value﻿ "
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mvalue\u001b[39m\u001b[23m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "thinking-nel",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "value"
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mvalue\u001b[39m\u001b[23m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "thinking-nel-only",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": ""
+          }
+        ]
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106m\u001b[39m\u001b[23m                                       "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_trimming_uses_shared_whitespace",
+    "case": "thinking-blank",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "  \n\t"
+          }
+        ]
+      }
+    },
+    "expected": [
+      []
+    ]
+  },
+  {
+    "test": "assistant_hidden_labels_follow_constructor_and_setters",
+    "case": "custom",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "secret"
+          },
+          {
+            "type": "text",
+            "text": "answer"
+          }
+        ]
+      },
+      "hide": true,
+      "label": "Private trace",
+      "ops": [
+        {
+          "op": "label",
+          "value": "Changed"
+        },
+        {
+          "op": "hide",
+          "value": false
+        },
+        {
+          "op": "label",
+          "value": "Later"
+        },
+        {
+          "op": "hide",
+          "value": true
+        },
+        {
+          "op": "label",
+          "value": ""
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mPrivate trace\u001b[39m\u001b[23m                          ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mChanged\u001b[39m\u001b[23m                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106msecret\u001b[39m\u001b[23m                                 ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106msecret\u001b[39m\u001b[23m                                 ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mLater\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "                                        ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 answer                                 "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_hidden_labels_follow_constructor_and_setters",
+    "case": "default",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "secret"
+          }
+        ]
+      },
+      "hide": true
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-missing-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-missing-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-missing-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-missing-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "aborted"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-empty-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "aborted",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-empty-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-empty-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-empty-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-standard-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "aborted",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-standard-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-standard-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mOperation aborted\u001b[39m                      "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-standard-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-custom-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "aborted",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mSpecific failure\u001b[39m                       "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-custom-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mSpecific failure\u001b[39m                       "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-custom-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mSpecific failure\u001b[39m                       "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-custom-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-spaces-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "aborted",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101m  \u001b[39m                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-spaces-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101m  \u001b[39m                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-spaces-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101m  \u001b[39m                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "aborted-spaces-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-missing-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "error"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-missing-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-missing-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "error"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-missing-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "error"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-empty-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "error",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-empty-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-empty-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Unknown error\u001b[39m                   "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-empty-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": ""
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-standard-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "error",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Request was aborted\u001b[39m             "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-standard-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Request was aborted\u001b[39m             "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-standard-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Request was aborted\u001b[39m             "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-standard-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Request was aborted"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-custom-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "error",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Specific failure\u001b[39m                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-custom-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Specific failure\u001b[39m                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-custom-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError: Specific failure\u001b[39m                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-custom-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "Specific failure"
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-spaces-empty",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [],
+        "stopReason": "error",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError:   \u001b[39m                              "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-spaces-partial",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " partial                                ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError:   \u001b[39m                              "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-spaces-thinking",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "trace"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[3m\u001b[38;2;52;74;106mtrace\u001b[39m\u001b[23m                                  ",
+        "",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mError:   \u001b[39m                              "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "error-spaces-tool",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          },
+          {
+            "type": "toolCall",
+            "id": "one",
+            "name": "read",
+            "arguments": {
+              "path": "fixture"
+            }
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "  "
+      }
+    },
+    "expected": [
+      [
+        "",
+        " partial                                "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "successful-stop",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "stopReason": "stop",
+        "errorMessage": "ignored"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ok                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "successful-length",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "stopReason": "length",
+        "errorMessage": "ignored"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ok                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_notices_keep_fallbacks_and_tool_suppression",
+    "case": "successful-toolUse",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ],
+        "stopReason": "toolUse",
+        "errorMessage": "ignored"
+      }
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 ok                                     "
+      ]
+    ]
+  },
+  {
+    "test": "assistant_updates_replace_content_and_marker_policy",
+    "case": "replace",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "old"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "update",
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "new"
+              },
+              {
+                "type": "toolCall",
+                "id": "one",
+                "name": "read",
+                "arguments": {
+                  "path": "fixture"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "op": "update",
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "last"
+              }
+            ]
+          }
+        },
+        {
+          "op": "update",
+          "message": {
+            "content": []
+          }
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 old                                    "
+      ],
+      [
+        "",
+        " \u001b[3m\u001b[38;2;52;74;106mnew\u001b[39m\u001b[23m                                    "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 last                                   "
+      ],
+      []
+    ]
+  },
+  {
+    "test": "assistant_invalidation_reuses_retained_message",
+    "case": "mutate",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "original"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "mutate",
+          "message": {
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "retained"
+              }
+            ]
+          },
+          "render": false
+        },
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "mutate",
+          "message": {
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ]
+          },
+          "render": false
+        },
+        {
+          "op": "hide",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 original                               "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mretained\u001b[39m\u001b[23m                               "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 latest                                 "
+      ]
+    ]
+  },
+  {
+    "test": "custom_markdown_theme_reaches_each_message_kind",
+    "case": "user",
+    "input": {
+      "kind": "user",
+      "width": 40,
+      "text": "# title",
+      "customMarkdown": true,
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m                                        \u001b[49m",
+        "\u001b[48;2;56;76;108m CUSTOM[\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m]                          \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "user",
+    "input": {
+      "kind": "user",
+      "width": 40,
+      "text": "# title",
+      "ops": [
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m                                        \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m                                        \u001b[49m"
+      ],
+      [
+        "\u001b]133;A\u0007\u001b[48;2;140;108;88m                                        \u001b[49m",
+        "\u001b[48;2;140;108;88m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;140;108;88m                                        \u001b[49m"
+      ],
+      [
+        "\u001b]133;A\u0007\u001b[48;2;140;108;88m                                        \u001b[49m",
+        "\u001b[48;2;140;108;88m \u001b[38;2;150;118;108m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;140;108;88m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_children_keep_container_alias_semantics",
+    "case": "user",
+    "input": {
+      "kind": "user",
+      "width": 40,
+      "text": "# title",
+      "ops": [
+        {
+          "op": "captureChildren",
+          "render": false
+        },
+        {
+          "op": "appendAlias",
+          "text": "alias-first"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "appendAlias",
+          "text": "detached"
+        },
+        {
+          "op": "append",
+          "text": "replacement"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m                                        \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;56;76;108m                                        \u001b[49m"
+      ],
+      [
+        "\u001b]133;A\u0007\u001b[48;2;56;76;108m                                        \u001b[49m",
+        "\u001b[48;2;56;76;108m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;56;76;108m                                        \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007alias-first                             "
+      ],
+      [],
+      [],
+      [
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b]133;A\u0007replacement                             "
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "user-dark",
+    "input": {
+      "kind": "user",
+      "width": 40,
+      "text": "# title",
+      "palette": "dark",
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "user-light",
+    "input": {
+      "kind": "user",
+      "width": 40,
+      "text": "# title",
+      "palette": "light",
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "custom_markdown_theme_reaches_each_message_kind",
+    "case": "assistant",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# title"
+          }
+        ]
+      },
+      "customMarkdown": true,
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 CUSTOM[\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m]                          "
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "assistant",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# title"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;150;118;108m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "message_children_keep_container_alias_semantics",
+    "case": "assistant",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# title"
+          }
+        ]
+      },
+      "ops": [
+        {
+          "op": "captureChildren",
+          "render": false
+        },
+        {
+          "op": "appendAlias",
+          "text": "alias-first"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "appendAlias",
+          "text": "detached"
+        },
+        {
+          "op": "append",
+          "text": "replacement"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        " \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  ",
+        "\u001b]133;B\u0007\u001b]133;C\u0007alias-first                             "
+      ],
+      [],
+      [],
+      [
+        "\u001b]133;B\u0007\u001b]133;C\u0007\u001b]133;A\u0007replacement                             "
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "assistant-dark",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# title"
+          }
+        ]
+      },
+      "palette": "dark",
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;217;160;102m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "assistant-light",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# title"
+          }
+        ]
+      },
+      "palette": "light",
+      "ops": []
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;31;26m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  "
+      ]
+    ]
+  },
+  {
+    "test": "custom_markdown_theme_reaches_each_message_kind",
+    "case": "branch",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "customMarkdown": true,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m CUSTOM[\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m]                          \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "branch",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;143;111;94mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;150;118;108m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_children_keep_container_alias_semantics",
+    "case": "branch",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "ops": [
+        {
+          "op": "captureChildren",
+          "render": false
+        },
+        {
+          "op": "appendAlias",
+          "text": "alias-first"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "appendAlias",
+          "text": "detached"
+        },
+        {
+          "op": "append",
+          "text": "replacement"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m alias-first                            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m replacement                            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "branch-dark",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "palette": "dark",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mBranch summary (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mBranch Summary\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "branch-light",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "palette": "light",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[39mBranch summary (\u001b[39m\u001b[38;2;42;31;26mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[1m\u001b[39mBranch Summary\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "custom_markdown_theme_reaches_each_message_kind",
+    "case": "compaction",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "customMarkdown": true,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m CUSTOM[\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m]                          \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "compaction",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;76;86;118m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;144;112;96m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[1m\u001b[38;2;143;111;94mCompacted from 1,234 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m",
+        "\u001b[48;2;142;110;92m \u001b[38;2;150;118;108m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;142;110;92m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_children_keep_container_alias_semantics",
+    "case": "compaction",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "ops": [
+        {
+          "op": "captureChildren",
+          "render": false
+        },
+        {
+          "op": "appendAlias",
+          "text": "alias-first"
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "appendAlias",
+          "text": "detached"
+        },
+        {
+          "op": "append",
+          "text": "replacement"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m alias-first                            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m replacement                            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "compaction-dark",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "palette": "dark",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to \u001b[49m",
+        "\u001b[48;2;42;31;26m expand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234 tokens\u001b[22m            \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;42;31;26m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_panels_use_shipped_brand_roles",
+    "case": "compaction-light",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "# title",
+      "tokens": 1234,
+      "palette": "light",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[39mCompacted from 1,234 tokens (\u001b[39m\u001b[38;2;42;31;26mctrl+o\u001b[39m\u001b[39m to \u001b[49m",
+        "\u001b[48;2;242;232;220m expand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[1m\u001b[39mCompacted from 1,234 tokens\u001b[22m            \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m",
+        "\u001b[48;2;242;232;220m \u001b[38;2;42;31;26m\u001b[1m\u001b[4mtitle\u001b[24m\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;242;232;220m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "branch_summary_expands_and_collapses",
+    "case": "toggle",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "## topic\n\nSummary **body**",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "expand",
+          "value": false
+        },
+        {
+          "op": "expand",
+          "value": false
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;76;86;118m\u001b[1mtopic\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSummary \u001b[39m\u001b[1m\u001b[38;2;62;79;111mbody\u001b[39m\u001b[22m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_hints_refresh_from_live_registry",
+    "case": "branch",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "summary",
+      "ops": [
+        {
+          "op": "keys",
+          "value": [
+            "alt+x",
+            "ctrl+e",
+            "alt+x"
+          ]
+        },
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "keys",
+          "value": []
+        },
+        {
+          "op": "expand",
+          "value": false
+        },
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104malt+x/ctrl+e\u001b[39m\u001b[38;2;62;79;111m to        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104malt+x/ctrl+e\u001b[39m\u001b[38;2;62;79;111m to        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104m\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_invalidation_rebuilds_edited_children",
+    "case": "branch",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "summary",
+      "ops": [
+        {
+          "op": "clear"
+        },
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "branch-1",
+    "input": {
+      "kind": "branch",
+      "width": 1,
+      "text": "",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;64;80;112m\u001b[1m[\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mb\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mh\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112m]\u001b[22m\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mB\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mh\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ms\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mu\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111my\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m(\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m\u001b[39m\u001b[38;2;48;72;104mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104ml\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104m+\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mx\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111md\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m)\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;64;80;112m\u001b[1m[\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mb\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mh\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112m]\u001b[22m\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1m\u001b[38;2;62;79;111mB\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mh\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mS\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mu\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111my\u001b[39m\u001b[22m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "branch-10",
+    "input": {
+      "kind": "branch",
+      "width": 10,
+      "text": "",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary  \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m  \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mto       \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m  \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;62;79;111mSummary\u001b[39m\u001b[22m  \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "branch-40",
+    "input": {
+      "kind": "branch",
+      "width": 40,
+      "text": "",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mBranch summary (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m      \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[branch]\u001b[22m\u001b[39m                               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mBranch Summary\u001b[39m\u001b[22m                         \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_summary_expands_and_collapses",
+    "case": "toggle",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "## topic\n\nSummary **body**",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "expand",
+          "value": false
+        },
+        {
+          "op": "expand",
+          "value": false
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;76;86;118m\u001b[1mtopic\u001b[22m\u001b[39m                                  \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mSummary \u001b[39m\u001b[1m\u001b[38;2;62;79;111mbody\u001b[39m\u001b[22m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_hints_refresh_from_live_registry",
+    "case": "compaction",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "keys",
+          "value": [
+            "alt+x",
+            "ctrl+e",
+            "alt+x"
+          ]
+        },
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "keys",
+          "value": []
+        },
+        {
+          "op": "expand",
+          "value": false
+        },
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104malt+x/ctrl+e\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104malt+x/ctrl+e\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens (\u001b[39m\u001b[38;2;48;72;104m\u001b[39m\u001b[38;2;62;79;111m to   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_invalidation_rebuilds_edited_children",
+    "case": "compaction",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "clear"
+        },
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "expand",
+          "value": true
+        },
+        {
+          "op": "clear"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "compaction-1",
+    "input": {
+      "kind": "compaction",
+      "width": 1,
+      "text": "",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;64;80;112m\u001b[1m[\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mi\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112m]\u001b[22m\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mC\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111md\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mf\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m1\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m,\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m2\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m3\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m4\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m,\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m5\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m6\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m7\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mk\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ms\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m(\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m\u001b[39m\u001b[38;2;48;72;104mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104ml\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104m+\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;48;72;104mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mx\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111md\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;62;79;111m)\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[38;2;64;80;112m\u001b[1m[\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mi\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;64;80;112m]\u001b[22m\u001b[39m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1m\u001b[38;2;62;79;111mC\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mp\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111ma\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mc\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111md\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mf\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mr\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mm\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m1\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m,\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m2\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m3\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m4\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m,\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m5\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m6\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111m7\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mt\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mo\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mk\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111me\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111mn\u001b[49m",
+        "\u001b[48;2;60;78;110m\u001b[1;38;2;62;79;111ms\u001b[39m\u001b[22m\u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "compaction-10",
+    "input": {
+      "kind": "compaction",
+      "width": 10,
+      "text": "",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compact \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112mion]\u001b[22m\u001b[39m     \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacte \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111md from   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m1,234,56 \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m7 tokens \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m  \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mto       \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m  \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compact \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;64;80;112mion]\u001b[22m\u001b[39m     \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacte \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;62;79;111md from   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;62;79;111m1,234,56 \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;62;79;111m7 tokens\u001b[39m\u001b[22m \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m",
+        "\u001b[48;2;60;78;110m          \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "summary_empty_text_keeps_its_header",
+    "case": "compaction-40",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "",
+      "tokens": 1234567,
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "0",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "0",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 0 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to     \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 0 tokens\u001b[39m\u001b[22m                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "-0",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "-0",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from -0 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to    \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from -0 tokens\u001b[39m\u001b[22m               \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "999",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "999",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 999 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 999 tokens\u001b[39m\u001b[22m              \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "1000",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "1000",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,000 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,000 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "9999",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "9999",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 9,999 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 9,999 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "10000",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "10000",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 10,000 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mto expand)\u001b[39m                             \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 10,000 tokens\u001b[39m\u001b[22m           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "1234567",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "1234567",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 1,234,567 tokens        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 1,234,567 tokens\u001b[39m\u001b[22m        \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "12.3455",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "12.3455",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 12.346 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mto expand)\u001b[39m                             \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 12.346 tokens\u001b[39m\u001b[22m           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "-12.3455",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "-12.3455",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from -12.346 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m  \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mto expand)\u001b[39m                             \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from -12.346 tokens\u001b[39m\u001b[22m          \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "0.0005",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "0.0005",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 0.001 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 0.001 tokens\u001b[39m\u001b[22m            \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "0.00049",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "0.00049",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from 0 tokens (\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to     \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mexpand)\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from 0 tokens\u001b[39m\u001b[22m                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "1e21",
+    "input": {
+      "kind": "compaction",
+      "width": 40,
+      "text": "summary",
+      "tokens": "1e21",
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111mCompacted from                         \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m1,000,000,000,000,000,000,000 tokens   \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111m(\u001b[39m\u001b[38;2;48;72;104mctrl+o\u001b[39m\u001b[38;2;62;79;111m to expand)\u001b[39m                     \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;64;80;112m\u001b[1m[compaction]\u001b[22m\u001b[39m                           \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1m\u001b[38;2;62;79;111mCompacted from                         \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[1;38;2;62;79;111m1,000,000,000,000,000,000,000 tokens\u001b[39m\u001b[22m   \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m",
+        "\u001b[48;2;60;78;110m \u001b[38;2;62;79;111msummary\u001b[39m                                \u001b[49m",
+        "\u001b[48;2;60;78;110m                                        \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "hidden",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "thought"
+          }
+        ]
+      },
+      "hide": true,
+      "ops": [
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;138;106;84mThinking...\u001b[39m\u001b[23m                            "
+      ]
+    ]
+  },
+  {
+    "test": "message_styles_refresh_with_live_theme",
+    "case": "abort",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "stopReason": "aborted",
+        "errorMessage": "Stopped"
+      },
+      "ops": [
+        {
+          "op": "theme",
+          "value": "b"
+        },
+        {
+          "op": "invalidate"
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mStopped\u001b[39m                                "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;42;69;101mStopped\u001b[39m                                "
+      ],
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;133;101;74mStopped\u001b[39m                                "
+      ]
+    ]
+  },
+  {
+    "test": "hidden_thinking_respects_decoration_enablement",
+    "case": "False",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "hidden"
+          }
+        ]
+      },
+      "hide": true,
+      "stylesEnabled": false
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[38;2;52;74;106mThinking...\u001b[39m                            "
+      ]
+    ]
+  },
+  {
+    "test": "hidden_thinking_respects_decoration_enablement",
+    "case": "True",
+    "input": {
+      "kind": "assistant",
+      "width": 40,
+      "message": {
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "hidden"
+          }
+        ]
+      },
+      "hide": true,
+      "stylesEnabled": true
+    },
+    "expected": [
+      [
+        "\u001b]133;A\u0007",
+        "\u001b]133;B\u0007\u001b]133;C\u0007 \u001b[3m\u001b[38;2;52;74;106mThinking...\u001b[39m\u001b[23m                            "
+      ]
+    ]
+  }
+]

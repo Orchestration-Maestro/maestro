@@ -1,0 +1,650 @@
+[
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-0",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {},
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-1",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "en_US.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-2",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "de_DE.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1.234.567,89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1.234.567,89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-3",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "fr_FR.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1 234 567,89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1 234 567,89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-4",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "en_IN.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 12,34,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 12,34,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-5",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "ar_EG.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from ١٬٢٣٤٬٥٦٧٫٨٩ tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from ١٬٢٣٤٬٥٦٧٫٨٩ tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-6",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "bn_BD.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from ১২,৩৪,৫৬৭.৮৯ tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from ১২,৩৪,৫৬৭.৮৯ tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-7",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "es_ES.UTF-8"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1.234.567,89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1.234.567,89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-8",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "de_DE",
+        "LC_MESSAGES": "fr_FR"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1 234 567,89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1 234 567,89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-9",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "de_DE",
+        "LC_MESSAGES": "fr_FR",
+        "LC_ALL": "en_US"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-10",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "C"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-11",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "POSIX"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-12",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": ""
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-13",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "not_a_locale"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-14",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "de_DE.UTF-8@euro"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1.234.567,89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1.234.567,89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-15",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "en_US",
+        "LC_ALL": ""
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  },
+  {
+    "test": "compaction_count_uses_locale_formatter",
+    "case": "locale-16",
+    "input": {
+      "kind": "compaction",
+      "text": "body",
+      "tokens": "1234567.89",
+      "width": 100,
+      "palette": "dark",
+      "environment": {
+        "LANG": "th_TH@numbers=thai"
+      },
+      "ops": [
+        {
+          "op": "expand",
+          "value": true
+        }
+      ]
+    },
+    "expected": [
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mCompacted from 1,234,567.89 tokens (\u001b[39m\u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[39m to expand)\u001b[39m                                              \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ],
+      [
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[38;2;217;160;102m\u001b[1m[compaction]\u001b[22m\u001b[39m                                                                                       \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[1m\u001b[39mCompacted from 1,234,567.89 tokens\u001b[22m                                                                 \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m",
+        "\u001b[48;2;42;31;26m \u001b[39mbody                                                                                               \u001b[49m",
+        "\u001b[48;2;42;31;26m                                                                                                    \u001b[49m"
+      ]
+    ]
+  }
+]

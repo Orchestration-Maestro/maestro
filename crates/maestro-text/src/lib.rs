@@ -1,5 +1,6 @@
-//! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8, whitespace membership, UTF-16
-//! lexical order, markup escaping, environment flag truth and, with the `collation` feature, locale comparison.
+//! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8,
+//! whitespace membership, UTF-16 lexical order, markup escaping, environment flag truth,
+//! optional `collation` locale comparison and optional `number-format` locale-number presentation.
 //!
 //! ```
 //! use maestro_text::{is_whitespace_scalar, markup::{EscapeMode, escape}, utf16_order};
@@ -25,3 +26,8 @@ pub use flags::is_truthy_env_flag;
 pub use lexical::utf16_order;
 pub use newlines::normalize_to_lf;
 pub use whitespace::{WHITESPACE, is_whitespace_scalar};
+
+#[cfg(any(feature = "collation", feature = "number-format"))]
+mod locale;
+#[cfg(feature = "number-format")]
+pub mod number_format;

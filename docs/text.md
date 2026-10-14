@@ -1,7 +1,7 @@
 # Text
 
 `maestro-text` is a core leaf below layer 0 with no workspace dependencies. It holds
-text decisions and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
+shared text operations and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
@@ -30,6 +30,15 @@ stable sorting and comparator lifetime.
   dropped, `C` and `POSIX` mean `en-US`, an empty name means `und`, and text that is
   not a locale selects the library default. The collator keeps the chosen locale,
   never the reader. `maestro_theme::Collator` re-exports it outside browser targets.
+
+## Numbers
+
+The optional `number-format` feature exports `number_format::LocaleNumberFormat`.
+Its constructor uses the same locale selection as the collator above, retaining
+neither the reader nor later environment changes. `format(f64)` returns locale
+grouping and digits, zero to three fractional digits, half-expand rounding and
+signed zero. It accepts finite values and returns an I/O error for conversion
+failures. The application re-exports this formatter for transcript summaries.
 
 ```rust
 use maestro_text::{markup::{EscapeMode, escape}, is_whitespace_scalar, utf16_order};
