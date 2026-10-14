@@ -20,7 +20,10 @@ just ci
 
 `just setup` installs pinned tools and prek hooks. `just check` runs formatting,
 Clippy with warnings denied, strict public rustdoc and workspace conventions.
-`just test` runs all tests; `just ci` runs both, matching shared Linux CI.
+`just test` runs workspace tests with cargo-nextest, then Cargo doctests after
+success. `just ci` runs checks and both test phases. Development and test builds
+use line-table debug information: backtraces retain file:line, but debugger
+variable views are unavailable.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 

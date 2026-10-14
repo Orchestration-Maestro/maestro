@@ -36,3 +36,9 @@ panic = "forbid"
 
 [patch.crates-io]
 yaml-rust2 = { path = "vendor/yaml-rust2" }
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.test]
+debug = "line-tables-only"

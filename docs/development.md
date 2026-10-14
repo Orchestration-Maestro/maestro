@@ -134,8 +134,23 @@ mise exec -- just test-offline
 mise exec -- just test -p maestro-tooling maestro_source_without_switch_preserves_environment
 ```
 
-Ordinary tests use Cargo/libtest directly, including filters, ignored cases and
-doctests. Only `test-offline` sets local-model suppression, removes its explicit
+The broad test recipes run cargo-nextest, then Cargo doctests only after success.
+They forward literal arguments to both phases; use options accepted by both,
+such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
+An unmatched ordinary-test filter fails rather than passing an empty selection.
+Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
+for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
+Development and test profiles use `debug = "line-tables-only"`: backtraces retain
+file:line, without debugger variable views.
+
+Nextest prepares the author component before guest-authoring tests and exports
+its path to their processes. The test host caches Wasmtime compilation beside
+the component in the build output directory; plain Cargo tests retain their
+self-building fallback. Eight native OAuth callback tests share a single-thread
+nextest group because their redirect URIs require fixed ports; other tests
+remain parallel.
+
+Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
 fixed backup path, restoring exactly the entry moved by that run on every
 ordinary return. Pre-existing backups are left untouched when no auth entry moves. It runs

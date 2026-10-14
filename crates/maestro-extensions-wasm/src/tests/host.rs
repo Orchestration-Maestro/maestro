@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 
 use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
-use wasmtime::{Config, Engine, Store};
+use wasmtime::{Cache, CacheConfig, Config, Engine, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -842,14 +842,16 @@ pub struct Harness {
     pub exports: Guest,
 }
 
-/// The engine and the component compiled from the built artifact; compiling dominates a test
-/// run, so every harness of the process shares one.
-fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
+/// Shares an engine within a process and cached compilation beside the built artifact.
+pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
     static COMPILED: OnceLock<Result<(Engine, Component), String>> = OnceLock::new();
     COMPILED
         .get_or_init(|| {
             let mut config = Config::new();
             config.wasm_component_model_async(true);
+            let mut cache = CacheConfig::new();
+            cache.with_directory(path.with_extension("wasmtime-cache"));
+            config.cache(Some(Cache::new(cache).map_err(|error| error.to_string())?));
             let engine = Engine::new(&config).map_err(|error| error.to_string())?;
             let component =
                 Component::from_file(&engine, path).map_err(|error| error.to_string())?;
