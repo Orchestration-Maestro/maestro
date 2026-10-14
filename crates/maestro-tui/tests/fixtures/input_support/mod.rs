@@ -7,7 +7,7 @@ use maestro_tui::{
 use std::sync::{Mutex, MutexGuard};
 
 /// Serializes every input test accessing process-wide state.
-static GLOBALS: Mutex<()> = Mutex::new(());
+pub(crate) static GLOBALS: Mutex<()> = Mutex::new(());
 
 /// Saved process globals held for one test.
 pub struct Globals {

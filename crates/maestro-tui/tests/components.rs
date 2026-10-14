@@ -13,14 +13,7 @@ use maestro_tui::{
     OverlayOptions, SlashCommand, Terminal, TruncatedText, is_focusable, visible_width,
 };
 
-mod fixtures {
-    pub mod editors;
-    pub mod futures;
-    pub mod providers;
-    pub mod terminals;
-    pub mod truncated_cases;
-    pub mod widgets;
-}
+use crate::fixtures;
 use fixtures::editors::{Bare, Rich};
 use fixtures::futures::{YieldOnce, block_on};
 use fixtures::providers::{CommandProvider, CountingProvider, item};

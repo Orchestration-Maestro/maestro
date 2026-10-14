@@ -1,11 +1,11 @@
 //! Retained inline image rendering through Component.
+use crate::image_support;
 use maestro_tui::images::terminal_image::*;
 use maestro_tui::{Component, Image, ImageOptions, ImageTheme};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
-mod image_support;
 
 /// Replays one retained component's sequential public operations.
 fn component_case(case: &serde_json::Value) -> Result<(), Box<dyn std::error::Error>> {

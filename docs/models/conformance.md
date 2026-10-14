@@ -28,8 +28,7 @@ or live billing. See [chat completions](chat-completions.md) for adapter rules a
 
 ```sh
 cargo test -p maestro-models --locked --test integration -- \
-  chat_empty_tools::
-  --test chat_response_identity --test chat_tool_choices --test routed_cache_write
+  chat_empty_tools:: chat_response_identity:: chat_tool_choices:: routed_cache_write::
 ```
 
 `routed_cache_write` supplies two controlled usage reports through
@@ -126,10 +125,7 @@ Run these cases without provider credentials:
 
 ```sh
 cargo test -p maestro-models --locked --test integration -- \
-  message_eager_input::
-  --test message_long_retention --test message_thinking_disabled \
-  --test message_adaptive_thinking --test account_tool_names \
-  --test account_message_routing
+  message_eager_input:: message_long_retention:: message_thinking_disabled:: message_adaptive_thinking:: account_tool_names:: account_message_routing::
 ```
 
 ### Inject a completed message
@@ -217,11 +213,7 @@ not live authentication acceptance, cache hits or remote answer quality.
 
 ```sh
 cargo test -p maestro-models --locked --test integration -- \
-  response_identity::
-  --test response_reasoning_replay --test response_affinity \
-  --test response_session_affinity --test response_tool_images \
-  --test interleaved_reasoning --test invocation_cancellation \
-  --test history_handoffs --test handoff_tool_ids
+  response_identity:: response_reasoning_replay:: response_affinity:: response_session_affinity:: response_tool_images:: interleaved_reasoning:: invocation_cancellation:: history_handoffs:: handoff_tool_ids::
 ```
 
 ## Controlled reasoning and Unicode histories
@@ -252,10 +244,7 @@ authentication validity or server schema acceptance.
 
 ```sh
 cargo test -p maestro-models --locked --test integration -- \
-  cloud_model_routes::
-  --test content_thinking_disabled --test conversation_reasoning \
-  --test conversation_tool_schema --test missing_tool_results \
-  --test provider_unicode
+  cloud_model_routes:: content_thinking_disabled:: conversation_reasoning:: conversation_tool_schema:: missing_tool_results:: provider_unicode::
 ```
 
 ## Controlled empty content and streaming
@@ -313,6 +302,5 @@ the adapter rules.
 
 ```sh
 cargo test -p maestro-models --locked --test integration -- \
-  cache_preferences::
-  --test provider_overflow --test tool_images
+  cache_preferences:: provider_overflow:: tool_images::
 ```

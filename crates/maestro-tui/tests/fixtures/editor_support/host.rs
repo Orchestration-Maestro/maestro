@@ -1,8 +1,6 @@
 #![cfg(test)]
 //! Shared controlled editor construction.
-#[allow(dead_code, reason = "Only the shared global guard is used here.")]
-#[path = "../input_support/mod.rs"]
-mod input_support;
+use crate::input_support;
 #[allow(
     dead_code,
     reason = "Shared controlled host supports other terminal tests."

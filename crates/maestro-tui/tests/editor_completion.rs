@@ -1,10 +1,8 @@
 #![cfg(test)]
 //! Completion requests, menus and key routing through the public editor.
 #[allow(dead_code, reason = "Each test crate uses part of the shared rig.")]
-#[path = "fixtures/completion_rig.rs"]
-mod rig;
-#[path = "fixtures/editor_support/host.rs"]
-mod support;
+use crate::completion_rig as rig;
+use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{
     ArgumentCompletions, AutocompleteOperations, Command, DirectoryEntry,
@@ -20,8 +18,7 @@ use rig::{Rig, offer};
 use std::{cell::RefCell, future::Future, io, pin::Pin, rc::Rc};
 
 #[allow(dead_code, reason = "Only the one-step suspension is used here.")]
-#[path = "fixtures/futures.rs"]
-mod futures;
+use crate::fixtures::futures;
 use futures::YieldOnce;
 
 const TAB: &str = "\t";

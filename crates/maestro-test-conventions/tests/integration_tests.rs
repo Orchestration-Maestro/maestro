@@ -3,8 +3,6 @@
 
 mod support;
 
-use std::io::Write;
-
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
@@ -12,23 +10,8 @@ fn workspace() -> Workspace {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-models"]);
     let root = workspace.root.join("crates/maestro-models");
-    let manifest = root.join("Cargo.toml");
-    let text = std::fs::read_to_string(&manifest).unwrap();
-    std::fs::write(
-        &manifest,
-        text.replace("[package]", "[package]\nautotests = false"),
-    )
-    .unwrap();
-    writeln!(
-        std::fs::OpenOptions::new()
-            .append(true)
-            .open(manifest)
-            .unwrap(),
-        "\n[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\""
-    )
-    .unwrap();
     std::fs::create_dir_all(root.join("tests")).unwrap();
-    std::fs::write(root.join("tests/integration.rs"), "").unwrap();
+    workspace.integration("maestro-models");
     workspace
 }
 

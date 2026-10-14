@@ -6,7 +6,7 @@ use crate::source::{Member, read_manifest};
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members
         .iter()
-        .filter(|member| member.name == "maestro-models")
+        .filter(|member| matches!(member.name.as_str(), "maestro-models" | "maestro-tui"))
     {
         check_member(member)?;
     }

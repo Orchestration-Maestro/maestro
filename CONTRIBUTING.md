@@ -76,7 +76,7 @@ AI can help group duplicates, summarize reports, and spot missing information. I
 
 No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.
 
-Integration tests in `maestro-models` share `tests/integration.rs`. Add new
+Integration tests in `maestro-models` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support
 modules stay in their existing directories. The conventions check requires
-`autotests = false` and one runnable `integration` target for this crate.
+`autotests = false` and one runnable `integration` target for these crates.

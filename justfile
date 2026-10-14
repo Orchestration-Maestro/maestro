@@ -135,7 +135,7 @@ models-dev-compile: models-dev
 
 # Run the terminal wrapping integration tests explicitly.
 tui-test-ansi *args:
-    cargo test -p maestro-tui --locked --test ansi_wrapping "$@"
+    cargo test -p maestro-tui --locked --test integration ansi_wrapping:: "$@"
 
 # Compile standalone prerequisites before copying prepared assets.
 build-binary:

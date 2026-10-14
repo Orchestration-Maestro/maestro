@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Owned paste markers through the retained editor.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 #[test]
 fn markers_distinguish_owned_numeric_and_canonical_identity() {
     support::run("markers_distinguish_owned_numeric_and_canonical_identity");

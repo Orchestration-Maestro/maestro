@@ -12,6 +12,9 @@ impl Drop for RegistryRestore {
 }
 #[test]
 fn global_registry_is_lazy_shared_replaceable_and_restorable() {
+    if run_child() {
+        return;
+    }
     let initial = get_keybindings();
     let restore = RegistryRestore(initial.clone());
     assert_eq!(initial.get_resolved_bindings().len(), 31);
@@ -69,4 +72,20 @@ fn global_registry_is_lazy_shared_replaceable_and_restorable() {
     );
     drop(restore);
     assert!(get_keybindings().matches("\x07", "tui.input.submit"));
+}
+
+/// Run the initial-global observation in a fresh process.
+fn run_child() -> bool {
+    if std::env::var_os("MAESTRO_BINDING_CHILD").is_none() {
+        let name = "binding_registry::global_registry_is_lazy_shared_replaceable_and_restorable";
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"])
+            .env("MAESTRO_BINDING_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains(&format!("test {name} ... ok")));
+        return true;
+    }
+    false
 }

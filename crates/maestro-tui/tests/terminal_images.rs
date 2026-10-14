@@ -68,8 +68,8 @@ fn capability_cache_reset_and_override_preserve_cells() {
     environment_callback_reenters_shared_state();
 }
 
-mod image_support;
-mod terminal_support;
+use crate::image_support;
+use crate::terminal_support;
 
 #[test]
 fn kitty_payload_chunk_boundaries_preserve_parameters() {

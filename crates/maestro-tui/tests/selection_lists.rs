@@ -1,6 +1,6 @@
 #![cfg(test)]
 #[cfg(test)]
-pub mod list_support;
+use crate::list_support;
 
 #[test]
 fn select_descriptions_collapse_breaks() {

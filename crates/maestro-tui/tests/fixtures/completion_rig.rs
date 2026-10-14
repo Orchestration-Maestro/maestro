@@ -1,6 +1,6 @@
 #![cfg(test)]
 //! A scripted completion provider and an editor wired to the controlled host.
-use crate::support::{self, manual_runtime::ManualRuntime};
+use crate::editor_host::{self as support, manual_runtime::ManualRuntime};
 use maestro_cancellation::Cancellation;
 use maestro_tui::autocomplete::{
     CompletionError, CompletionOptions, CompletionResult, CursorPosition,

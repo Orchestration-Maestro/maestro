@@ -1,10 +1,8 @@
 #![cfg(test)]
 //! Callback reentry, weak ownership, the shared component interface and local futures.
 #[allow(dead_code, reason = "Each test crate uses part of the shared rig.")]
-#[path = "fixtures/completion_rig.rs"]
-mod rig;
-#[path = "fixtures/editor_support/host.rs"]
-mod support;
+use crate::completion_rig as rig;
+use crate::editor_host as support;
 use maestro_cancellation::Cancellation;
 use maestro_tui::EditorComponent;
 use maestro_tui::editor_component::TextCallback;

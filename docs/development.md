@@ -148,7 +148,7 @@ controlled processes, without provider calls or operator credentials.
 
 `models-`, `agent-`, `tui-` and `app-` each offer `clean`, `build`, `dev`, `test` and
 `prepublish` forms. Package prepublish is clean then build, without root checks.
-`tui-test-ansi` runs only the `ansi_wrapping` integration-test target of the
+`tui-test-ansi` runs only the `ansi_wrapping` module in the integration-test target of the
 terminal toolkit. These commands fail when their owning crate is absent; no
 placeholder product package is installed.
 
@@ -174,3 +174,6 @@ application. Their integration tests import their libraries.
 The conventions checker shares its private manifest reader and source traversal
 helpers; span exclusion and test-owned timer discovery keep separate traversal
 policies.
+
+Select individual toolkit tests through `tui-test` using their module-qualified
+names, for example `just tui-test -- ansi_wrapping::name --exact`.

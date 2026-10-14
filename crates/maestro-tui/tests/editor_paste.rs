@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Bracketed paste admission through the retained editor.
-#[path = "fixtures/editor_support/mod.rs"]
-mod support;
+use crate::editor_support as support;
 use maestro_tui::{Editor, EditorOptions, tui::InputHandler};
 use std::{cell::RefCell, rc::Rc};
 #[test]
