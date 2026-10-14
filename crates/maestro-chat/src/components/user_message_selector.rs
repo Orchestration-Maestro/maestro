@@ -113,12 +113,8 @@ impl Component for UserMessageList {
         if count == 0 {
             return vec![self.paint(&ThemeColor::Muted, "  No user messages found")];
         }
-        let start = self
-            .selected
-            .get()
-            .saturating_sub(5)
-            .min(count.saturating_sub(10));
-        let end = (start + 10).min(count);
+        let window = super::list_window(self.selected.get(), count, 10);
+        let (start, end) = (window.start, window.end);
         let mut lines: Vec<_> = (start..end)
             .flat_map(|index| self.rows(index, width))
             .collect();

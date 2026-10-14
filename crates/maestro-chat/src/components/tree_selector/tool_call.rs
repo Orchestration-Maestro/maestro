@@ -130,7 +130,5 @@ fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
         .environment("HOME")
         .filter(|s| !s.is_empty())
         .or_else(|| runtime.environment("USERPROFILE").filter(|s| !s.is_empty()));
-    home.as_deref()
-        .and_then(|home| path.strip_prefix(home))
-        .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
+    super::super::shorten_home_path(path, home.as_deref())
 }

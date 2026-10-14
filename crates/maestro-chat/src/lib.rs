@@ -45,3 +45,8 @@ pub use components::login_dialog::{
     LoginDialogComponent, LoginDialogError, LoginDialogOptions, LoginDialogPlatform,
     LoginInputFuture,
 };
+
+pub use components::session_selector::*;
+
+#[cfg(test)]
+extern crate self as maestro_chat;
