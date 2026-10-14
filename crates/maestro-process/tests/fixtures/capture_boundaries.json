@@ -1,0 +1,68 @@
+[
+  {
+    "stdout": 16,
+    "stderr": 0,
+    "maxBuffer": 16,
+    "ok": true
+  },
+  {
+    "stdout": 17,
+    "stderr": 0,
+    "maxBuffer": 16,
+    "ok": false
+  },
+  {
+    "stdout": 0,
+    "stderr": 16,
+    "maxBuffer": 16,
+    "ok": true
+  },
+  {
+    "stdout": 0,
+    "stderr": 17,
+    "maxBuffer": 16,
+    "ok": false
+  },
+  {
+    "stdout": 8,
+    "stderr": 8,
+    "maxBuffer": 16,
+    "ok": true
+  },
+  {
+    "stdout": 9,
+    "stderr": 8,
+    "maxBuffer": 16,
+    "ok": false
+  },
+  {
+    "stdout": 8,
+    "stderr": 9,
+    "maxBuffer": 16,
+    "ok": false
+  },
+  {
+    "stdout": 0,
+    "stderr": 0,
+    "maxBuffer": 0,
+    "ok": true
+  },
+  {
+    "stdout": 1,
+    "stderr": 0,
+    "maxBuffer": 0,
+    "ok": true
+  },
+  {
+    "stdout": 52428800,
+    "stderr": 0,
+    "maxBuffer": 52428800,
+    "ok": true
+  },
+  {
+    "stdout": 52428801,
+    "stderr": 0,
+    "maxBuffer": 52428800,
+    "ok": false
+  }
+]

@@ -63,6 +63,7 @@ fn run_tool(
         .spawn_sync(
             Command::new(program).args(args),
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: maestro_process::OutputMode::Discard,
                 stderr: maestro_process::OutputMode::Discard,
                 input: text.map(str::as_bytes),

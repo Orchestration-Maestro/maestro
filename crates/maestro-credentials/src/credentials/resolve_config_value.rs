@@ -287,6 +287,7 @@ pub(in crate::credentials) mod native {
         attempt(spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(HELPER_TIMEOUT),

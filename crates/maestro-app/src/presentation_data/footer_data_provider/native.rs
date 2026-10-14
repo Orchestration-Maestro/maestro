@@ -139,6 +139,7 @@ impl FooterOperations for NativeFooterOperations {
         let output = spawn_sync(
             &mut symbolic_command(Path::new(repo_dir)),
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: None,
                 timeout: None,

@@ -1,11 +1,18 @@
-//! Native clipboard admission and text interface.
+//! Native clipboard admission and text/image interface.
 
 use super::clipboard::ClipboardPlatform;
 use futures_util::future::LocalBoxFuture;
 use std::io;
 
-/// Native text writer, shared by default and supplied adapters.
+/// Native clipboard interface shared by default and supplied adapters.
 pub trait ClipboardModule {
+    /// Probes image availability, retaining native failures.
+    ///
+    /// # Errors
+    /// Returns the native context or probe failure.
+    fn has_image(&self) -> io::Result<bool>;
+    /// Completes with owned PNG bytes or absent image data.
+    fn get_image_binary(&self) -> LocalBoxFuture<'_, io::Result<Option<Vec<u8>>>>;
     /// Completes after the native write.
     fn set_text<'a>(&'a self, text: &'a str) -> LocalBoxFuture<'a, io::Result<()>>;
 }
@@ -44,11 +51,23 @@ fn default_clipboard<T: ClipboardModule>(
 mod native {
     use super::{ClipboardModule, LocalBoxFuture, default_clipboard, io};
     use crate::utils::clipboard::{ClipboardOperations as _, NativeClipboardOperations};
-    use clipboard_rs::{Clipboard as _, ClipboardContext};
+    use clipboard_rs::{Clipboard as _, ClipboardContext, ContentFormat, common::RustImage as _};
 
-    /// Stateless bridge: each write owns its context.
+    /// Stateless bridge: each operation owns its context.
     struct NativeClipboard;
     impl ClipboardModule for NativeClipboard {
+        fn has_image(&self) -> io::Result<bool> {
+            let context = ClipboardContext::new().map_err(io::Error::other)?;
+            Ok(context.has(ContentFormat::Image))
+        }
+        fn get_image_binary(&self) -> LocalBoxFuture<'_, io::Result<Option<Vec<u8>>>> {
+            Box::pin(async {
+                let context = ClipboardContext::new().map_err(io::Error::other)?;
+                let image = context.get_image().map_err(io::Error::other)?;
+                let png = image.to_png().map_err(io::Error::other)?;
+                Ok(Some(png.get_bytes().to_vec()))
+            })
+        }
         fn set_text<'a>(&'a self, text: &'a str) -> LocalBoxFuture<'a, io::Result<()>> {
             Box::pin(async move {
                 let context = ClipboardContext::new().map_err(io::Error::other)?;

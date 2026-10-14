@@ -42,6 +42,7 @@ pub(super) fn probe(program: &str, operand: &str, deadline: Duration) -> Option<
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
+            max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: None,
             timeout: Some(deadline),

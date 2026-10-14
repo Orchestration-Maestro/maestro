@@ -2738,6 +2738,7 @@ dependencies = [
  "chrono",
  "clipboard-rs",
  "futures-util",
+ "image 0.24.9",
  "indexmap",
  "maestro-agent",
  "maestro-catalog",
@@ -2763,6 +2764,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "url",
+ "uuid",
  "zip",
 ]
 
@@ -3082,6 +3084,8 @@ dependencies = [
  "maestro-dependencies",
  "process-wrap",
  "rustix",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 

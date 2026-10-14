@@ -646,6 +646,7 @@ fn sync_capture_uses_each_callers_timeout() {
             let mut run = Box::pin(capture(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
                     stdout: OutputMode::Capture,
                     input: None,
                     timeout: Some(timeout),
@@ -720,6 +721,7 @@ fn capture_timeout_closes_inherited_stdout_after_direct_child_exit() {
         let mut run = Box::pin(capture(
             &mut command,
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(timeout),
@@ -780,13 +782,8 @@ fn stream_callback_can_abort_the_same_wait() {
     });
 }
 
-#[test]
-fn capture_input_deadline_reaps_the_ready_child() {
-    paused_runtime().block_on(async {
-        for (exited, operand) in [(false, "False"), (true, "True")] {
-            for timeout in [Duration::from_secs(5), Duration::from_secs(10)] {
-                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
-                let script = r"
+/// Child that reports readiness before leaving its input unread.
+const INPUT_HOLD: &str = r"
 import os, socket, sys
 exited = sys.argv[2] == 'True'
 pid = os.getpid()
@@ -799,10 +796,65 @@ s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
 s.sendall(str(pid).encode() + b'\n')
 s.recv(1)
 ";
+
+#[test]
+fn capture_overflow_drops_inherited_stdin() {
+    use std::io::Write;
+    runtime().block_on(async {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let script = format!(
+            "{}\nos.write(1, b'overflow')\nos.close(1); os.close(2)\ns.recv(1)\ns.sendall(b'done')",
+            INPUT_HOLD.replace("    os.close(1); os.close(2)\n", "")
+        );
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            &script,
+            &listener.local_addr().unwrap().port().to_string(),
+            "True",
+        ]);
+        // The orphan holds stdin without reading it; its readiness follows parent exit.
+        let input = vec![b'x'; 4_194_304];
+        let timeout = Duration::from_secs(5);
+        let mut run = Box::pin(capture(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                max_buffer_bytes: Some(1),
+                stdout: OutputMode::Capture,
+                input: Some(&input),
+                timeout: Some(timeout),
+                stderr: OutputMode::Capture,
+            },
+        ));
+        assert!(is_pending(&mut run).await);
+        let (mut socket, _) = listener.accept().unwrap();
+        let mut pid = String::new();
+        std::io::BufRead::read_line(&mut std::io::BufReader::new(&socket), &mut pid).unwrap();
+        socket.write_all(b"!").unwrap();
+        let result = run.await;
+        socket.write_all(b"!").unwrap();
+        let mut rest = [0; 4];
+        socket.read_exact(&mut rest).unwrap();
+        assert_eq!(&rest, b"done");
+        let error = result.unwrap_err();
+        let SpawnSyncError::Wait(error) = error else {
+            panic!("expected output-limit failure, got {error:?}");
+        };
+        assert_eq!(error.to_string(), "captured output exceeds byte limit");
+    });
+}
+
+#[test]
+fn capture_input_deadline_reaps_the_ready_child() {
+    paused_runtime().block_on(async {
+        for (exited, operand) in [(false, "False"), (true, "True")] {
+            for timeout in [Duration::from_secs(5), Duration::from_secs(10)] {
+                let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+
                 let mut command = Command::new("python3");
                 command.args([
                     "-c",
-                    script,
+                    INPUT_HOLD,
                     &listener.local_addr().unwrap().port().to_string(),
                     operand,
                 ]);
@@ -810,6 +862,7 @@ s.recv(1)
                 let mut run = Box::pin(capture(
                     &mut command,
                     SpawnSyncOptions::Capture {
+                        max_buffer_bytes: None,
                         stdout: OutputMode::Capture,
                         input: Some(&input),
                         timeout: Some(timeout),
@@ -856,6 +909,7 @@ fn capture_without_limit_waits_for_the_release() {
             let mut run = Box::pin(capture(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
                     stdout: OutputMode::Capture,
                     input: Some(b"input"),
                     timeout,

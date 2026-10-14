@@ -162,6 +162,7 @@ fn assert_sync_session(parent_session: i32, parent_group: i32) {
     let output = maestro_process::spawn_sync(
         &mut command,
         maestro_process::SpawnSyncOptions::Capture {
+            max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: None,
             timeout: Some(std::time::Duration::from_secs(5)),

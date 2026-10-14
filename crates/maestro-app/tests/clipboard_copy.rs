@@ -9,6 +9,12 @@ use std::{cell::Cell, io};
 /// Admission-only module; constructing it never touches the system clipboard.
 struct Module;
 impl ClipboardModule for Module {
+    fn has_image(&self) -> io::Result<bool> {
+        unreachable!("text operation must not probe images")
+    }
+    fn get_image_binary(&self) -> LocalBoxFuture<'_, io::Result<Option<Vec<u8>>>> {
+        unreachable!("text operation must not read images")
+    }
     fn set_text<'a>(&'a self, _: &'a str) -> LocalBoxFuture<'a, io::Result<()>> {
         unreachable!("admission must not write")
     }
@@ -191,6 +197,7 @@ fn native_launches() {
             .spawn_sync(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
                     stdout,
                     stderr,
                     input: Some(b"a\0\r\n"),
