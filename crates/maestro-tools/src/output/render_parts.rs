@@ -61,3 +61,12 @@ pub(crate) fn downcast<T: Any>(handle: &ComponentHandle) -> Option<Rc<T>> {
     let any: Rc<dyn Any> = Rc::<dyn Component>::clone(handle);
     any.downcast::<T>().ok()
 }
+
+/// The limit argument as it is spelled in the call line.
+pub(crate) fn limit_label(limit: &serde_json::Value) -> String {
+    match limit {
+        serde_json::Value::Number(number) => num(number.as_f64().unwrap_or(f64::NAN)),
+        serde_json::Value::String(text) => text.clone(),
+        other => other.to_string(),
+    }
+}

@@ -1,5 +1,6 @@
-//! Tool definitions, the `read`, `write`, `edit` and native `bash` tools, the file mutation queue,
-//! output and inline-image helpers and word-level edit diff rendering for Maestro tools.
+//! Tool definitions, the `read`, `write`, `edit`, `ls`, `find` and native `bash` tools,
+//! the file mutation queue, output and inline-image helpers and word-level edit diff rendering
+//! for Maestro tools.
 //!
 //! ```
 //! use maestro_tools::{TruncationOptions, truncate_head};
@@ -79,6 +80,11 @@ pub use process::{
 pub use read::{
     ReadContext, ReadOperations, ReadToolDetails, ReadToolInput, ReadToolOptions, create_read_tool,
     create_read_tool_definition,
+};
+#[cfg(not(target_arch = "wasm32"))]
+pub use search::find::{
+    FindGlobOptions, FindOperations, FindToolDetails, FindToolInput, FindToolOptions,
+    create_find_tool, create_find_tool_definition,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use search::ls::{

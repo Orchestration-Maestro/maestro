@@ -91,7 +91,7 @@ fn home() -> String {
 }
 
 /// Replace each placeholder of `vars` in every string of `value`.
-fn substitute(value: &Value, vars: &[(&str, &str)]) -> Value {
+pub fn substitute(value: &Value, vars: &[(&str, &str)]) -> Value {
     match value {
         Value::String(text) => {
             Value::String(vars.iter().fold(text.clone(), |text, (name, replacement)| {
@@ -110,7 +110,7 @@ fn substitute(value: &Value, vars: &[(&str, &str)]) -> Value {
 }
 
 /// Replace the `$HOME` placeholder in every string of `value`.
-fn with_home(value: &Value) -> Value {
+pub fn with_home(value: &Value) -> Value {
     substitute(value, &[("$HOME", &home())])
 }
 
@@ -641,11 +641,11 @@ struct CallInput {
 /// The truncation fields the result renderer reads.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct RecordedTruncation {
+pub struct RecordedTruncation {
     /// Whether a limit required selection.
-    truncated: bool,
+    pub truncated: bool,
     /// Byte budget.
-    max_bytes: usize,
+    pub max_bytes: usize,
 }
 
 /// Recorded result details.
@@ -711,32 +711,41 @@ struct OptionsInput {
     is_partial: bool,
 }
 
-/// The environment of a recorded context over the corpus palette.
-fn environment(context: &ContextInput) -> Env {
-    Env::with(
-        Rc::new(palette_of(&theme_keys(), context.theme_shift)),
-        Rc::new(NoLanguages),
-    )
-}
-
 /// The default ls tool whose renderers are under test.
 fn tool() -> maestro_tools::ToolDefinition<(), LsToolInput, LsToolDetails> {
     create_ls_tool_definition::<()>("/work".into(), LsToolOptions::default())
 }
 
 /// Render a recorded call or result and return its rows.
-pub fn render_case(case: &Case) -> (Vec<String>, usize) {
+pub fn render_case_as<D>(
+    case: &Case,
+    keys: &[String],
+    tool: maestro_tools::ToolDefinition<(), impl Send, D>,
+    result: impl Fn(&Value) -> AgentToolResult<D>,
+) -> (Vec<String>, usize) {
     if case.op == "call" {
         let input: CallInput = serde_json::from_value(case.input.clone()).unwrap();
-        let (setup, env) = (input.context.setup(), environment(&input.context));
+        let (setup, env) = (
+            input.context.setup(),
+            Env::with(
+                Rc::new(palette_of(keys, input.context.theme_shift)),
+                Rc::new(NoLanguages),
+            ),
+        );
         let _bindings = bind(&setup.bindings);
         let args = with_home(&input.args);
         let ctx = context(&args, &setup, &env, None);
-        let row = (tool().render_call.unwrap())(&args, &env.theme, &ctx).unwrap();
+        let row = (tool.render_call.unwrap())(&args, &env.theme, &ctx).unwrap();
         return (row.render(CALL_WIDTH), CALL_WIDTH);
     }
     let input: RenderInput = serde_json::from_value(case.input.clone()).unwrap();
-    let (setup, env) = (input.context.setup(), environment(&input.context));
+    let (setup, env) = (
+        input.context.setup(),
+        Env::with(
+            Rc::new(palette_of(keys, input.context.theme_shift)),
+            Rc::new(NoLanguages),
+        ),
+    );
     let _bindings = bind(&setup.bindings);
     let options = ToolRenderResultOptions {
         expanded: input.options.expanded,
@@ -744,8 +753,8 @@ pub fn render_case(case: &Case) -> (Vec<String>, usize) {
     };
     let args = Value::Null;
     let ctx = context(&args, &setup, &env, None);
-    let row = (tool().render_result.unwrap())(&ls_result(&input.result), options, &env.theme, &ctx)
-        .unwrap();
+    let row =
+        (tool.render_result.unwrap())(&result(&input.result), options, &env.theme, &ctx).unwrap();
     (row.render(input.width), input.width)
 }
 
@@ -788,34 +797,51 @@ struct SlotInput {
 }
 
 /// Render the replacement for a slot over `previous`.
-fn render_slot(
+pub fn render_slot_as<D>(
+    input: (
+        maestro_tools::ToolDefinition<(), impl Send, D>,
+        &AgentToolResult<D>,
+        &Value,
+    ),
     slot: &str,
     theme: &maestro_theme::Theme,
     env: &Env,
     previous: &ComponentHandle,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let setup = Setup::from(&json!({"readme": "", "bindings": []}));
+    let (tool, result, args) = input;
     if slot == "call" {
-        let args = json!({"path": "after"});
-        let ctx = context(&args, &setup, env, Some(Rc::clone(previous)));
-        (tool().render_call.unwrap())(&args, theme, &ctx)
+        let ctx = context(args, &setup, env, Some(Rc::clone(previous)));
+        (tool.render_call.unwrap())(args, theme, &ctx)
     } else {
-        let result = ls_result(&json!({"content": [{"type": "text", "text": "after"}]}));
         let options = ToolRenderResultOptions {
             expanded: false,
             is_partial: false,
         };
         let ctx = context(&Value::Null, &setup, env, Some(Rc::clone(previous)));
-        (tool().render_result.unwrap())(&result, options, theme, &ctx)
+        (tool.render_result.unwrap())(result, options, theme, &ctx)
     }
 }
 
 /// Run a recorded reuse case: the replacement is the same component and shows the new text.
-pub fn check_reuse(case: &Case) {
+pub fn check_reuse_as<D>(
+    case: &Case,
+    keys: &[String],
+    tool: maestro_tools::ToolDefinition<(), impl Send, D>,
+    result: &AgentToolResult<D>,
+    args: &Value,
+) {
     let input: SlotInput = serde_json::from_value(case.input.clone()).unwrap();
-    let env = Env::with(Rc::new(palette_of(&theme_keys(), 0)), Rc::new(NoLanguages));
+    let env = Env::with(Rc::new(palette_of(keys, 0)), Rc::new(NoLanguages));
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
-    let row = render_slot(&input.slot, &env.theme, &env, &previous).unwrap();
+    let row = render_slot_as(
+        (tool, result, args),
+        &input.slot,
+        &env.theme,
+        &env,
+        &previous,
+    )
+    .unwrap();
     assert!(Rc::ptr_eq(&row, &previous), "case {}", case.id);
     let expected = &case.expected;
     assert_eq!(expected["same"], json!(true));
@@ -830,20 +856,29 @@ pub fn check_reuse(case: &Case) {
 }
 
 /// Run a recorded theme-error case: the renderer fails and the previous component keeps its text.
-pub fn check_theme_error(case: &Case) {
+pub fn check_theme_error_as<D>(
+    case: &Case,
+    keys: &[String],
+    tool: maestro_tools::ToolDefinition<(), impl Send, D>,
+    result: &AgentToolResult<D>,
+    args: &Value,
+) {
     let input: SlotInput = serde_json::from_value(case.input.clone()).unwrap();
     let missing = if input.slot == "call" {
         "error"
     } else {
         "toolOutput"
     };
-    let keys: Vec<String> = theme_keys()
-        .into_iter()
-        .filter(|key| key != missing)
-        .collect();
+    let keys: Vec<String> = keys.iter().filter(|&key| key != missing).cloned().collect();
     let env = Env::with(Rc::new(palette_of(&keys, 0)), Rc::new(NoLanguages));
     let previous: ComponentHandle = Rc::new(Text::new("before".into(), 0, 0, None));
-    let Err(error) = render_slot(&input.slot, &env.theme, &env, &previous) else {
+    let Err(error) = render_slot_as(
+        (tool, result, args),
+        &input.slot,
+        &env.theme,
+        &env,
+        &previous,
+    ) else {
         panic!("case {} must fail", case.id);
     };
     assert_eq!(error.message, case.expected["error"].as_str().unwrap());
@@ -876,4 +911,30 @@ pub fn check_native(case: &Case, root: &str) {
         Err(error) => json!({"error": error.message}),
     };
     assert_eq!(observed, expected, "case {}", case.id);
+}
+
+/// Check listing component reuse with the recorded palette.
+pub fn check_reuse(case: &Case) {
+    check_reuse_as(
+        case,
+        &theme_keys(),
+        tool(),
+        &ls_result(&json!({"content":[{"type":"text","text":"after"}]})),
+        &json!({"path":"after"}),
+    );
+}
+/// Check listing theme failure with the recorded palette.
+pub fn check_theme_error(case: &Case) {
+    check_theme_error_as(
+        case,
+        &theme_keys(),
+        tool(),
+        &ls_result(&json!({"content":[{"type":"text","text":"after"}]})),
+        &json!({"path":"after"}),
+    );
+}
+
+/// Render a directory listing through the shared fixture driver.
+pub fn render_case(case: &Case) -> (Vec<String>, usize) {
+    render_case_as(case, &theme_keys(), tool(), ls_result)
 }

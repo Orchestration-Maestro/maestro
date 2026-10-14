@@ -4,19 +4,16 @@ use super::{DEFAULT_LIMIT, LsOperations, LsToolDetails, LsToolInput};
 use crate::{
     output::{
         render_parts::{float, num},
-        truncate::{DEFAULT_MAX_BYTES, TruncationOptions, format_size, truncate_head},
+        text_block,
     },
     path_utils::resolve_to_cwd,
     utils::diagnostics::{aborted, blocking, diagnostic, failure, guarded},
 };
 use maestro_agent::AgentToolResult;
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, TextContent, UserBlock};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use maestro_path::join;
 use maestro_theme::{Collator, NativeThemeOperations, ThemeOperations};
 use std::{path::Path, sync::Arc};
-
-/// The maximum safe-integer sentinel that leaves the line budget unbounded.
-const UNBOUNDED_LINES: u64 = 9_007_199_254_740_991;
 
 /// The settings every listing shares.
 pub(super) struct Lister {
@@ -29,10 +26,7 @@ pub(super) struct Lister {
 /// A result of one text block.
 fn text_result(text: String, details: Option<LsToolDetails>) -> AgentToolResult<LsToolDetails> {
     AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text,
-            text_signature: None,
-        })],
+        content: vec![text_block(text)],
         details,
         terminate: None,
     }
@@ -43,33 +37,18 @@ fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolRes
     if entries.is_empty() {
         return text_result("(empty directory)".into(), None);
     }
-    let truncation = truncate_head(
-        &entries.join("\n"),
-        TruncationOptions {
-            max_lines: Some(usize::try_from(UNBOUNDED_LINES).unwrap_or(usize::MAX)),
-            max_bytes: None,
-        },
-    );
-    let mut output = truncation.content.clone();
-    let mut notices = Vec::new();
-    if reached {
-        notices.push(format!(
+    let notices = if reached {
+        vec![format!(
             "{} entries limit reached. Use limit={} for more",
             num(limit),
             num(limit * 2.0)
-        ));
-    }
-    if truncation.truncated {
-        notices.push(format!(
-            "{} limit reached",
-            format_size(float(DEFAULT_MAX_BYTES))
-        ));
-    }
-    if !notices.is_empty() {
-        output = format!("{output}\n\n[{}]", notices.join(". "));
-    }
+        )]
+    } else {
+        Vec::new()
+    };
+    let (output, truncation) = super::super::listing::select_listing(&entries.join("\n"), notices);
     let details = LsToolDetails {
-        truncation: truncation.truncated.then_some(truncation),
+        truncation,
         entry_limit_reached: reached.then_some(limit),
     };
     let reported = details.truncation.is_some() || details.entry_limit_reached.is_some();
