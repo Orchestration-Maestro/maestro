@@ -798,6 +798,53 @@ s.recv(1)
 ";
 
 #[test]
+fn capture_overflow_drops_inherited_stdin() {
+    use std::io::Write;
+    paused_runtime().block_on(async {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let script = format!(
+            "{}\nos.write(1, b'overflow')\nos.close(1); os.close(2)\ns.recv(1)\ns.sendall(b'done')",
+            INPUT_HOLD.replace("    os.close(1); os.close(2)\n", "")
+        );
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            &script,
+            &listener.local_addr().unwrap().port().to_string(),
+            "True",
+        ]);
+        // The orphan holds stdin without reading it; its readiness follows parent exit.
+        let input = vec![b'x'; 4_194_304];
+        let timeout = Duration::from_secs(5);
+        let mut run = Box::pin(capture(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                max_buffer_bytes: Some(1),
+                stdout: OutputMode::Capture,
+                input: Some(&input),
+                timeout: Some(timeout),
+                stderr: OutputMode::Capture,
+            },
+        ));
+        assert!(is_pending(&mut run).await);
+        let (mut socket, _) = listener.accept().unwrap();
+        let mut pid = String::new();
+        std::io::BufRead::read_line(&mut std::io::BufReader::new(&socket), &mut pid).unwrap();
+        socket.write_all(b"!").unwrap();
+        let result = run.await;
+        socket.write_all(b"!").unwrap();
+        let mut rest = [0; 4];
+        socket.read_exact(&mut rest).unwrap();
+        assert_eq!(&rest, b"done");
+        let error = result.unwrap_err();
+        let SpawnSyncError::Wait(error) = error else {
+            panic!("expected output-limit failure, got {error:?}");
+        };
+        assert_eq!(error.to_string(), "captured output exceeds byte limit");
+    });
+}
+
+#[test]
 fn capture_input_deadline_reaps_the_ready_child() {
     paused_runtime().block_on(async {
         for (exited, operand) in [(false, "False"), (true, "True")] {

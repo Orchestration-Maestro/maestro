@@ -464,12 +464,14 @@ async fn complete_capture(
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
     let mut exceeded = false;
+    let cancel_input = tokio::sync::Notify::new();
     let mut collect = |stream, bytes: &[u8]| {
         if exceeded {
             return;
         }
         if bytes.len() > limit - stdout.len() - stderr.len() {
             exceeded = true;
+            cancel_input.notify_one();
             if let Some(sender) = sender.take() {
                 let _ = sender.send(());
             }
@@ -480,7 +482,13 @@ async fn complete_capture(
             }
         }
     };
-    let written = write_input(child.child.stdin.take(), input);
+    let stdin = child.child.stdin.take();
+    let written = async {
+        tokio::select! {
+            result = write_input(stdin, input) => result,
+            () = cancel_input.notified() => Ok(()),
+        }
+    };
     let stopped = async {
         let _ = receiver.await;
         Termination::Kill

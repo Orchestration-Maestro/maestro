@@ -296,8 +296,8 @@ reaping after acknowledged native startup. For capture and background launches,
 absent input uses the null device; present input closes its pipe after writing.
 None or zero disables the timeout; a selected timeout covers input transfer,
 child exit and captured pipe EOFs. None or zero also disables the byte bound;
-overflow stops collection and attempts to force-kill/reap the direct child through
-the same waiter, returning a wait failure.
+overflow stops collection, closes unfinished stdin and attempts to force-kill/reap
+the direct child through the same waiter, returning a wait failure.
 On expiry, it attempts to force-kill and reap the direct child if it is still running;
 native errors can prevent this. If the direct child has already exited, it closes
 unfinished pipe operations without signalling that child. It adds no general background

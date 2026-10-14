@@ -24,8 +24,9 @@ unless cleanup fails. Descendants are not signalled. Native failures retain thei
 unless a deadline wins.
 
 An optional `max_buffer_bytes` bounds combined captured stdout and stderr.
-`None` and zero disable it. Overflow stops collection and force-kills/reaps the
-direct child through the same waiter, returning `SpawnSyncError::Wait`; native
+`None` and zero disable it. Overflow stops collection, closes unfinished stdin
+and force-kills/reaps the direct child through the same waiter, returning
+`SpawnSyncError::Wait`; native
 cleanup failures can prevent reaping. Discarded streams do not consume the bound.
 
 `SpawnSyncOptions::Inherit` instead inherits all three descriptors, waits without

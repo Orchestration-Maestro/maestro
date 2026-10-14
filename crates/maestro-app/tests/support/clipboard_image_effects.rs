@@ -95,19 +95,13 @@ pub struct Expected {
     pub length: Option<usize>,
     pub fill: Option<u8>,
 }
-/// Strict parsing rejects unused fields in every record.
+/// Strict parsing rejects unknown typed-envelope fields.
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/clipboard_images.json")).unwrap()
 }
-/// Observed platform spelling.
-fn platform(name: &str) -> ClipboardPlatform {
-    match name {
-        "linux" => ClipboardPlatform::Linux,
-        "darwin" => ClipboardPlatform::Darwin,
-        "win32" => ClipboardPlatform::Win32,
-        _ => ClipboardPlatform::Other,
-    }
-}
+#[path = "clipboard_platform.rs"]
+mod recorded;
+use recorded::platform;
 /// A single transaction, with no shared mutable process state.
 struct Effects<'a> {
     case: &'a Case,
@@ -394,7 +388,12 @@ fn check_result(
                     serde_json::from_value(case.expected.result.as_ref().unwrap()["bytes"].clone())
                         .unwrap();
                 compare_pixels(&image.bytes, &expected_bytes);
-                assert_eq!(image.mime_type, "image/png");
+                assert_eq!(
+                    image.mime_type,
+                    case.expected.result.as_ref().unwrap()["mime"]
+                        .as_str()
+                        .unwrap()
+                );
                 return;
             }
             json!({"mime":image.mime_type,"bytes":image.bytes})
@@ -407,8 +406,12 @@ fn check_result(
         case.id
     );
 }
-/// JPEG output uses the already approved per-channel tolerance without rotating pixels.
+/// Converted JPEG pixels use per-channel tolerance without rotating the image.
 fn compare_pixels(actual: &[u8], expected: &[u8]) {
+    assert_eq!(
+        image::guess_format(actual).unwrap(),
+        image::ImageFormat::Png
+    );
     let actual = image::load_from_memory(actual).unwrap().to_rgba8();
     let expected = image::load_from_memory(expected).unwrap().to_rgba8();
     assert_eq!(actual.dimensions(), expected.dimensions());

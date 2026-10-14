@@ -82,15 +82,9 @@ pub struct Admission {
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/clipboard_copy.json")).unwrap()
 }
-/// Platform conversion for the recorded host observations.
-pub fn platform(name: &str) -> ClipboardPlatform {
-    match name {
-        "linux" => ClipboardPlatform::Linux,
-        "darwin" => ClipboardPlatform::Darwin,
-        "win32" => ClipboardPlatform::Win32,
-        _ => ClipboardPlatform::Other,
-    }
-}
+#[path = "clipboard_platform.rs"]
+mod recorded;
+pub use recorded::platform;
 /// A single operation's effects; no process-global state is mutated.
 pub struct Effects<'a> {
     pub case: &'a Case,
