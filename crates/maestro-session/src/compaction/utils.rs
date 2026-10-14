@@ -1,6 +1,6 @@
 //! Shared file tracking and conversation text for summaries.
 pub use maestro_entry::compaction::FileOperations;
-use maestro_models::{AssistantContent, AssistantMessage, Message, UserBlock, UserContent};
+use maestro_models::{AssistantContent, Message, UserBlock, UserContent};
 use serde_json::Value;
 use std::borrow::Cow;
 /// Create empty insertion-ordered file-operation sets.
@@ -99,65 +99,120 @@ fn truncate_for_summary(text: &str) -> String {
         text[boundary..].chars().count()
     )
 }
+/// Borrowed content needed by the conversation writer, without execution metadata.
+pub(crate) enum SummaryBlock<'a> {
+    /// Visible text.
+    Text(&'a str),
+    /// Reasoning text.
+    Thinking(&'a str),
+    /// Named tool and its argument object.
+    Tool(&'a str, &'a serde_json::Map<String, Value>),
+}
+/// A selected model message for the shared writer.
+pub(crate) enum SummaryMessage<'a> {
+    /// Projected user text.
+    User(Cow<'a, str>),
+    /// Assistant categories.
+    Assistant(Vec<SummaryBlock<'a>>),
+    /// Tool-result text.
+    Tool(String),
+}
 /// Append assistant categories in thinking, text and tool order.
 fn assistant_parts(
-    message: &AssistantMessage,
+    blocks: &[SummaryBlock<'_>],
     parts: &mut Vec<String>,
 ) -> Result<(), serde_json::Error> {
     let mut thinking = Vec::new();
     let mut text = Vec::new();
     let mut tools = Vec::new();
-    for block in &message.content {
+    for block in blocks {
         match block {
-            AssistantContent::Text(block) => text.push(block.text.as_str()),
-            AssistantContent::Thinking(block) => thinking.push(block.thinking.as_str()),
-            AssistantContent::ToolCall(block) => {
-                let args = maestro_json::canonical_entries(&block.arguments)
+            SummaryBlock::Text(block) => text.push(*block),
+            SummaryBlock::Thinking(block) => thinking.push(*block),
+            SummaryBlock::Tool(name, arguments) => {
+                let args = maestro_json::canonical_entries(*arguments)
                     .into_iter()
                     .map(|(key, value)| Ok(format!("{key}={}", maestro_json::compact_json(value)?)))
                     .collect::<Result<Vec<_>, serde_json::Error>>()?;
-                tools.push(format!("{}({})", block.name, args.join(", ")));
+                tools.push(format!("{name}({})", args.join(", ")));
             }
         }
     }
-    if !thinking.is_empty() {
-        parts.push(format!("[Assistant thinking]: {}", thinking.join("\n")));
-    }
-    if !text.is_empty() {
-        parts.push(format!("[Assistant]: {}", text.join("\n")));
-    }
-    if !tools.is_empty() {
-        parts.push(format!("[Assistant tool calls]: {}", tools.join("; ")));
+    for (label, blocks, separator) in [
+        ("Assistant thinking", thinking, "\n"),
+        ("Assistant", text, "\n"),
+        (
+            "Assistant tool calls",
+            tools.iter().map(String::as_str).collect(),
+            "; ",
+        ),
+    ] {
+        if !blocks.is_empty() {
+            parts.push(format!("[{label}]: {}", blocks.join(separator)));
+        }
     }
     Ok(())
 }
+/// Write both selected raw history and typed model messages through one formatter.
+fn serialize_selected<'a>(
+    messages: impl IntoIterator<Item = SummaryMessage<'a>>,
+) -> Result<String, serde_json::Error> {
+    let mut parts = Vec::new();
+    for message in messages {
+        match message {
+            SummaryMessage::User(content) if !content.is_empty() => {
+                parts.push(format!("[User]: {content}"));
+            }
+            SummaryMessage::Tool(content) if !content.is_empty() => {
+                parts.push(format!("[Tool result]: {}", truncate_for_summary(&content)));
+            }
+            SummaryMessage::Assistant(blocks) => assistant_parts(&blocks, &mut parts)?,
+            SummaryMessage::User(_) | SummaryMessage::Tool(_) => (),
+        }
+    }
+    Ok(parts.join("\n\n"))
+}
 /// Serialize already-projected model messages as labeled summary input.
-///
 /// Only tool results are clipped, at 2000 Unicode scalar values.
 ///
 /// # Errors
 /// Returns the canonical argument writer's JSON error.
 pub fn serialize_conversation(messages: &[Message]) -> Result<String, serde_json::Error> {
-    let mut parts = Vec::new();
-    for message in messages {
+    serialize_selected(messages.iter().map(|message| {
         match message {
-            Message::User(message) => {
-                let content = match &message.content {
-                    UserContent::Text(text) => Cow::Borrowed(text.as_str()),
-                    UserContent::Blocks(blocks) => Cow::Owned(plain_text(blocks)),
-                };
-                if !content.is_empty() {
-                    parts.push(format!("[User]: {content}"));
-                }
-            }
-            Message::Assistant(message) => assistant_parts(message, &mut parts)?,
-            Message::ToolResult(message) => {
-                let content = plain_text(&message.content);
-                if !content.is_empty() {
-                    parts.push(format!("[Tool result]: {}", truncate_for_summary(&content)));
-                }
-            }
+            Message::User(message) => SummaryMessage::User(match &message.content {
+                UserContent::Text(text) => Cow::Borrowed(text),
+                UserContent::Blocks(blocks) => Cow::Owned(plain_text(blocks)),
+            }),
+            Message::Assistant(message) => SummaryMessage::Assistant(
+                message
+                    .content
+                    .iter()
+                    .map(|block| match block {
+                        AssistantContent::Text(block) => SummaryBlock::Text(&block.text),
+                        AssistantContent::Thinking(block) => {
+                            SummaryBlock::Thinking(&block.thinking)
+                        }
+                        AssistantContent::ToolCall(block) => {
+                            SummaryBlock::Tool(&block.name, &block.arguments)
+                        }
+                    })
+                    .collect(),
+            ),
+            Message::ToolResult(message) => SummaryMessage::Tool(plain_text(&message.content)),
         }
-    }
-    Ok(parts.join("\n\n"))
+    }))
 }
+/// Serialize consumed raw fields without decoding unrelated historical metadata.
+pub(super) fn serialize_raw_conversation(messages: &[Value]) -> Result<String, serde_json::Error> {
+    serialize_selected(
+        messages
+            .iter()
+            .filter_map(|message| crate::messages::project_summary(message).transpose())
+            .collect::<Result<Vec<_>, _>>()?,
+    )
+}
+/// System instruction shared by history and prefix requests.
+pub const SUMMARIZATION_SYSTEM_PROMPT: &str = r"You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.
+
+Do NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.";

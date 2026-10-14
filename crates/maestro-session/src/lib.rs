@@ -17,7 +17,7 @@ pub mod session_cwd;
 
 pub use maestro_request::presence::Presence;
 
-/// Compaction preparation and summary input utilities.
+/// Compaction preparation, summary generation and shared input utilities.
 pub mod compaction;
 pub use compaction::{
     CompactionDetails, CompactionPreparation, CompactionSettings, ContextUsageEstimate,
@@ -26,3 +26,4 @@ pub use compaction::{
     extract_file_ops_from_message, find_cut_point, find_turn_start_index, format_file_operations,
     get_last_assistant_usage, prepare_compaction, serialize_conversation, should_compact,
 };
+pub use compaction::{CompactionResult, SummaryOptions, compact, generate_summary};

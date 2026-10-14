@@ -13,7 +13,8 @@ uses the existing [message formatting](../sessions/messages.md) owner.
 | serde_json | workspace `=1.0.151`; `preserve_order`, `float_roundtrip` | Ordered raw entries and open custom payload |
 | serde | workspace `=1.0.229`; `derive` | Explicit record views and test case decoding |
 | tokio | native `=1.53.2`, defaults off; `fs`, `rt` | Asynchronous directory, read and stat calls for session listing; tests also build the caller's runtime |
-| futures-util | workspace `=0.3.34`, defaults off; `std`, `sink` | Drive all candidate reads together in the listing task |
+| indexmap | `=2.14.2`, default `std` | Ordered summary-request headers on all targets |
+| futures-util | workspace `=0.3.34`, defaults off; `std`, `sink` | All targets: join split-summary observations; native listing: drive candidate reads together |
 
 The promoted serde dependency uses already locked serde/serde_core/serde_derive,
 proc-macro2, quote, syn and unicode-ident packages; no package version is added. License choices are MIT or
@@ -36,3 +37,9 @@ plus Unicode-3.0 for unicode-ident; no new execution runtime is added.
 The native listing closure adds Tokio 1.53.2, futures-util, futures-core, futures-sink
 and futures-task 0.3.34, pin-project-lite 0.2.17 and slab 0.4.12, all already locked
 (MIT, or MIT OR Apache-2.0). See [discovery](../discovery.md).
+
+Summary generation moves the existing futures-util declaration from native-only to
+all targets, retaining workspace features and version. Ordered headers use the already
+locked indexmap 2.14.2, equivalent 1.0.2 and hashbrown 0.17.1 closure (MIT OR Apache-2.0).
+Completion, cancellation and provider work remain with the existing model owner;
+no runtime, transport or workspace dependency edge is added.

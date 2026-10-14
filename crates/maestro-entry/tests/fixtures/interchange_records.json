@@ -102,5 +102,21 @@
   {
     "id": "preparation-previous",
     "text": "{\"firstKeptEntryId\":\"a4\",\"messagesToSummarize\":[{\"role\":\"user\",\"content\":\"x\",\"timestamp\":1},{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"},{\"type\":\"toolCall\",\"id\":\"read-z\",\"name\":\"read\",\"arguments\":{\"path\":\"z\"}},{\"type\":\"toolCall\",\"id\":\"read-a\",\"name\":\"read\",\"arguments\":{\"path\":\"a\"}},{\"type\":\"toolCall\",\"id\":\"read-z\",\"name\":\"read\",\"arguments\":{\"path\":\"z\"}},{\"type\":\"toolCall\",\"id\":\"write-w\",\"name\":\"write\",\"arguments\":{\"path\":\"w\"}},{\"type\":\"toolCall\",\"id\":\"edit-e\",\"name\":\"edit\",\"arguments\":{\"path\":\"e\"}}],\"api\":\"a\",\"provider\":\"p\",\"model\":\"m\",\"usage\":{\"input\":10,\"output\":10,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":20,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":2},{\"role\":\"user\",\"content\":\"x\",\"timestamp\":1},{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"x\"},{\"type\":\"toolCall\",\"id\":\"read-z\",\"name\":\"read\",\"arguments\":{\"path\":\"z\"}},{\"type\":\"toolCall\",\"id\":\"read-a\",\"name\":\"read\",\"arguments\":{\"path\":\"a\"}},{\"type\":\"toolCall\",\"id\":\"read-z\",\"name\":\"read\",\"arguments\":{\"path\":\"z\"}},{\"type\":\"toolCall\",\"id\":\"write-w\",\"name\":\"write\",\"arguments\":{\"path\":\"w\"}},{\"type\":\"toolCall\",\"id\":\"edit-e\",\"name\":\"edit\",\"arguments\":{\"path\":\"e\"}}],\"api\":\"a\",\"provider\":\"p\",\"model\":\"m\",\"usage\":{\"input\":10,\"output\":10,\"cacheRead\":0,\"cacheWrite\":0,\"totalTokens\":20,\"cost\":{\"input\":0,\"output\":0,\"cacheRead\":0,\"cacheWrite\":0,\"total\":0}},\"stopReason\":\"stop\",\"timestamp\":2}],\"turnPrefixMessages\":[{\"role\":\"user\",\"content\":\"x\",\"timestamp\":1}],\"isSplitTurn\":true,\"tokensBefore\":20,\"previousSummary\":\"earlier\",\"fileOps\":{\"read\":[\"z\",\"a\"],\"written\":[\"w\"],\"edited\":[\"e\"]},\"settings\":{\"enabled\":true,\"reserveTokens\":16384,\"keepRecentTokens\":1}}"
+  },
+  {
+    "id": "result-details-missing",
+    "text": "{\"summary\":\"authored\",\"firstKeptEntryId\":\"kept\",\"tokensBefore\":12.25}"
+  },
+  {
+    "id": "result-details-null",
+    "text": "{\"summary\":\"authored\",\"firstKeptEntryId\":\"kept\",\"tokensBefore\":12.25,\"details\":null}"
+  },
+  {
+    "id": "result-details-object",
+    "text": "{\"summary\":\"authored\",\"firstKeptEntryId\":\"kept\",\"tokensBefore\":12.25,\"details\":{\"readFiles\":[\"b\",\"a\"],\"modifiedFiles\":[\"c\"]}}"
+  },
+  {
+    "id": "result-details-string",
+    "text": "{\"summary\":\"authored\",\"firstKeptEntryId\":\"kept\",\"tokensBefore\":12.25,\"details\":\"opaque\"}"
   }
 ]

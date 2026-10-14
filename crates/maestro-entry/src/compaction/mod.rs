@@ -38,3 +38,19 @@ pub struct CompactionSettings {
     /// Recent tokens to keep.
     pub keep_recent_tokens: f64,
 }
+
+/// A generated or authored compaction with caller-selected details.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(bound(deserialize = "T: Deserialize<'de>"))]
+pub struct CompactionResult<T = serde_json::Value> {
+    /// Authored summary text.
+    pub summary: String,
+    /// First entry retained after compaction.
+    pub first_kept_entry_id: String,
+    /// Context size before compaction.
+    pub tokens_before: f64,
+    /// Optional caller-selected details.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub details: Presence<T>,
+}

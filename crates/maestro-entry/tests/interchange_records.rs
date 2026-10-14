@@ -251,3 +251,37 @@ fn native_contexts() -> [(&'static str, SessionContext<Value, Presence<Value>>);
         ("context-assistant-model", assistant),
     ]
 }
+
+#[test]
+fn compaction_result_keeps_optional_details_and_member_order() {
+    use maestro_entry::compaction::CompactionResult;
+    #[derive(Debug, serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Detail {
+        /// Selected payload.
+        value: String,
+    }
+    for (id, text) in rows() {
+        if id.starts_with("result-") {
+            round::<CompactionResult>(&text, &id);
+            let result: CompactionResult = serde_json::from_str(&text).unwrap();
+            assert_eq!(serde_json::to_string(&result).unwrap(), text, "{id}");
+            if id == "result-details-string" {
+                round::<CompactionResult<String>>(&text, &id);
+            }
+        }
+    }
+    for details in [None, Some(json!({"value":"selected"}))] {
+        let present = details.is_some();
+        let mut value = json!({"summary":"summary","firstKeptEntryId":"kept","tokensBefore":1});
+        if let Some(details) = details {
+            value["details"] = details;
+        }
+        let result: CompactionResult<Detail> = serde_json::from_value(value).unwrap();
+        match (present, result.details) {
+            (false, Presence::Missing) => (),
+            (true, Presence::Present(detail)) => assert_eq!(detail.value, "selected"),
+            _ => panic!("detail presence differs"),
+        }
+    }
+}
