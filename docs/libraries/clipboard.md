@@ -4,7 +4,8 @@
 It is included on Windows and Unix excluding iOS, Android and Emscripten; wasm32
 links no clipboard library. Unsupported hosts retain tool and terminal fallback.
 Each native text write creates a fresh context. Native admission caches eligibility,
-not a context; it is disabled in Termux and requires a display on Linux.
+not a context; the default module is available only on macOS, Linux and Windows.
+It is disabled in Termux and requires a display on Linux.
 
 The image dependency is unconditional, but no additional image or watcher feature
 is enabled and no image operation is exposed here. Existing base64 0.23.1 uses

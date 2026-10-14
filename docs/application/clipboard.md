@@ -8,9 +8,11 @@ observations, process launches and terminal output.
 A successful native write on macOS or Windows finishes local copying. Otherwise,
 macOS uses `pbcopy` and Windows uses `clip`. Other hosts try the Termux helper,
 then `wl-copy` with a Wayland display, then `xclip` and `xsel` with an X11 display.
-Native writes are skipped on Linux. Writers receive unchanged UTF-8 input and a
-five-second limit with output discarded; the Wayland probe has no deadline and
-its writer returns after acknowledged startup, without waiting for exit.
+Native writes are skipped on Linux; hosts outside macOS, Linux and Windows have
+no default native module. Helper writers receive unchanged UTF-8 input with output discarded.
+Only synchronous helper writers have a five-second limit. The Wayland probe and
+background writer have no deadline; the writer returns after acknowledged
+startup, without waiting for exit.
 
 Remote sessions identified by nonempty `SSH_CONNECTION`, `SSH_CLIENT` or
 `MOSH_CONNECTION` also receive an OSC 52 terminal sequence. Local copying uses

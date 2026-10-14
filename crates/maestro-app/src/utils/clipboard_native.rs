@@ -27,16 +27,22 @@ pub fn clipboard<T: ClipboardModule>(
     load()
 }
 
+/// Applies default native binding availability before environment admission.
+#[cfg(any(test, target_os = "macos", target_os = "linux", windows))]
+fn default_clipboard<T: ClipboardModule>(
+    platform: ClipboardPlatform,
+    env: impl Fn(&str) -> Option<String>,
+    load: impl FnOnce() -> Option<T>,
+) -> Option<T> {
+    (platform != ClipboardPlatform::Other)
+        .then(|| clipboard(platform, env, load))
+        .flatten()
+}
+
 /// Native library bridge on supported desktop targets.
-#[cfg(any(
-    windows,
-    all(
-        unix,
-        not(any(target_os = "ios", target_os = "android", target_os = "emscripten"))
-    )
-))]
+#[cfg(any(target_os = "macos", target_os = "linux", windows))]
 mod native {
-    use super::{ClipboardModule, LocalBoxFuture, clipboard, io};
+    use super::{ClipboardModule, LocalBoxFuture, default_clipboard, io};
     use crate::utils::clipboard::{ClipboardOperations as _, NativeClipboardOperations};
     use clipboard_rs::{Clipboard as _, ClipboardContext};
 
@@ -57,7 +63,7 @@ mod native {
         static MODULE: std::sync::OnceLock<Option<NativeClipboard>> = std::sync::OnceLock::new();
         MODULE
             .get_or_init(|| {
-                clipboard(
+                default_clipboard(
                     NativeClipboardOperations.platform(),
                     |name| NativeClipboardOperations.env(name),
                     || Some(NativeClipboard),
@@ -67,23 +73,14 @@ mod native {
             .map(|module| module as &dyn ClipboardModule)
     }
 }
-#[cfg(any(
-    windows,
-    all(
-        unix,
-        not(any(target_os = "ios", target_os = "android", target_os = "emscripten"))
-    )
-))]
+#[cfg(any(target_os = "macos", target_os = "linux", windows))]
 pub(super) use native::native_clipboard;
 
 /// Unsupported hosts retain the helper and terminal routes.
-#[cfg(not(any(
-    windows,
-    all(
-        unix,
-        not(any(target_os = "ios", target_os = "android", target_os = "emscripten"))
-    )
-)))]
+#[cfg(not(any(target_os = "macos", target_os = "linux", windows)))]
 pub(super) fn native_clipboard() -> Option<&'static dyn ClipboardModule> {
     None
 }
+
+#[cfg(test)]
+mod tests;
