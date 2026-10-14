@@ -27,6 +27,7 @@ maestro-path = { path = "../maestro-path" }
 maestro-watch = { path = "../maestro-watch" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
 

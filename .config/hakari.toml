@@ -1,0 +1,19 @@
+hakari-package = "maestro-dependencies"
+dep-format-version = "4"
+workspace-hack-line-style = "workspace-dotted"
+resolver = "3"
+exact-versions = true
+platforms = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+
+# Only the runtime adapter may declare wasmtime packages, so the unifier cannot
+# list them. The guest crate's wasmtime test host is therefore left out of the
+# traversal (verify honours this too) and may build its own copies of shared
+# dependencies.
+[traversal-excludes]
+third-party = [{ name = "wasmtime" }, { name = "wasmtime-wasi" }]

@@ -19,12 +19,15 @@ just ci
 ```
 
 `just setup` installs pinned tools and prek hooks. `just check` runs formatting,
-Clippy with warnings denied, strict public rustdoc and workspace conventions.
+`cargo hakari verify`, Clippy with warnings denied, strict public rustdoc and workspace conventions.
 `just test` runs workspace tests with cargo-nextest, then Cargo doctests after
 success. `just ci` runs checks and both test phases. Development and test builds
 use line-table debug information: backtraces retain file:line, but debugger
 variable views are unavailable.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
+Run `cargo hakari generate` after changing dependencies, their features or
+`Cargo.lock`, and `cargo hakari manage-deps` after adding a member (see
+[development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
 The commit hook formats the code, re-stages the staged files and runs

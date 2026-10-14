@@ -43,6 +43,11 @@ Both must pass. `just test` runs cargo-nextest followed by Cargo doctests.
 Development and test builds retain file:line debug information, not debugger
 variable views.
 
+After changing a dependency, its features or `Cargo.lock`, run `cargo hakari generate`
+(and `cargo hakari manage-deps` after adding a crate) and commit the result;
+`just check` runs `cargo hakari verify`. See
+[feature unification](docs/development.md#feature-unification).
+
 Do not edit `CHANGELOG.md`. Changelog entries are added by maintainers.
 
 If you are adding a new provider, see `AGENTS.md` for required tests.

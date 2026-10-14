@@ -2616,6 +2616,7 @@ name = "maestro-agent"
 version = "0.1.0"
 dependencies = [
  "futures-util",
+ "maestro-dependencies",
  "maestro-models",
  "maestro-text",
  "maestro-tool",
@@ -2632,6 +2633,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "maestro-agent",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-models",
  "maestro-path",
@@ -2657,6 +2659,7 @@ dependencies = [
 name = "maestro-brand"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "maestro-json",
  "maestro-text",
  "serde",
@@ -2667,6 +2670,7 @@ dependencies = [
 name = "maestro-cancellation"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "tokio",
 ]
 
@@ -2676,6 +2680,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "maestro-credentials",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-models",
  "maestro-pattern",
@@ -2692,6 +2697,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap",
  "maestro-app",
+ "maestro-dependencies",
  "maestro-theme",
  "maestro-tui",
  "regress",
@@ -2704,6 +2710,7 @@ name = "maestro-credentials"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-dependencies",
  "maestro-lock",
  "maestro-models",
  "maestro-path",
@@ -2715,10 +2722,77 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-dependencies"
+version = "0.1.0"
+dependencies = [
+ "ahash",
+ "base64",
+ "bitflags 2.13.2",
+ "bytemuck",
+ "cargo_metadata",
+ "chrono",
+ "crc32fast",
+ "digest 0.11.3",
+ "either",
+ "form_urlencoded",
+ "futures-channel",
+ "futures-core",
+ "futures-sink",
+ "futures-util",
+ "getrandom 0.4.3",
+ "hashbrown 0.17.1",
+ "icu_locale_core",
+ "icu_normalizer",
+ "icu_properties",
+ "icu_provider",
+ "idna",
+ "indexmap",
+ "libc",
+ "linux-raw-sys",
+ "litemap",
+ "log",
+ "memchr",
+ "mio",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "percent-encoding",
+ "potential_utf",
+ "proc-macro2",
+ "quote",
+ "regex-automata",
+ "regex-syntax",
+ "regress",
+ "rustix",
+ "semver",
+ "serde",
+ "serde_core",
+ "serde_json",
+ "sha2 0.11.0",
+ "simd-adler32",
+ "slab",
+ "smallvec",
+ "stable_deref_trait",
+ "syn 2.0.119",
+ "syn 3.0.6",
+ "tinystr",
+ "tokio",
+ "unicode-width",
+ "uuid",
+ "windows-sys 0.61.2",
+ "writeable",
+ "yoke",
+ "zerofrom",
+ "zerotrie",
+ "zerovec",
+]
+
+[[package]]
 name = "maestro-entry"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-dependencies",
  "maestro-request",
  "serde",
  "serde_json",
@@ -2729,6 +2803,7 @@ name = "maestro-export"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-models",
  "maestro-path",
@@ -2743,6 +2818,7 @@ dependencies = [
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "serde_json",
  "tokio",
 ]
@@ -2752,6 +2828,7 @@ name = "maestro-extensions-wasm"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
  "maestro-request",
@@ -2768,6 +2845,7 @@ dependencies = [
 name = "maestro-json"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "ryu-js",
  "serde",
  "serde_json",
@@ -2776,6 +2854,9 @@ dependencies = [
 [[package]]
 name = "maestro-lock"
 version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+]
 
 [[package]]
 name = "maestro-models"
@@ -2803,6 +2884,7 @@ dependencies = [
  "js-sys",
  "maestro-brand",
  "maestro-cancellation",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-request",
  "maestro-text",
@@ -2833,6 +2915,7 @@ name = "maestro-packages"
 version = "0.1.0"
 dependencies = [
  "git-url-parse",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-path",
  "maestro-pattern",
@@ -2853,6 +2936,7 @@ dependencies = [
 name = "maestro-path"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "serde",
  "serde_json",
 ]
@@ -2862,6 +2946,7 @@ name = "maestro-pattern"
 version = "0.1.0"
 dependencies = [
  "brace-expansion",
+ "maestro-dependencies",
  "maestro-text",
  "regress",
  "serde",
@@ -2872,6 +2957,7 @@ dependencies = [
 name = "maestro-process"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "process-wrap",
  "rustix",
  "tokio",
@@ -2882,6 +2968,7 @@ name = "maestro-request"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-dependencies",
  "serde",
  "serde_json",
 ]
@@ -2890,6 +2977,7 @@ dependencies = [
 name = "maestro-resources"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "maestro-path",
  "maestro-pattern",
  "maestro-request",
@@ -2909,6 +2997,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "maestro-agent",
+ "maestro-dependencies",
  "maestro-entry",
  "maestro-json",
  "maestro-models",
@@ -2926,6 +3015,7 @@ dependencies = [
 name = "maestro-settings"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "maestro-json",
  "maestro-lock",
  "maestro-path",
@@ -2940,6 +3030,7 @@ name = "maestro-test-conventions"
 version = "0.1.0"
 dependencies = [
  "cargo_metadata",
+ "maestro-dependencies",
  "proc-macro2",
  "pulldown-cmark",
  "ra-ap-rustc_lexer",
@@ -2953,6 +3044,7 @@ dependencies = [
 name = "maestro-test-terminal"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "maestro-tui",
  "serde",
  "serde_json",
@@ -2967,6 +3059,7 @@ dependencies = [
  "icu_collator",
  "icu_decimal",
  "icu_locale_core",
+ "maestro-dependencies",
  "serde",
  "serde_json",
 ]
@@ -2978,6 +3071,7 @@ dependencies = [
  "indexmap",
  "jsonschema",
  "maestro-brand",
+ "maestro-dependencies",
  "maestro-json",
  "maestro-path",
  "maestro-request",
@@ -3007,6 +3101,7 @@ name = "maestro-tooling"
 version = "0.1.0"
 dependencies = [
  "cargo_metadata",
+ "maestro-dependencies",
  "serde",
  "serde_json",
 ]
@@ -3023,6 +3118,7 @@ dependencies = [
  "indexmap",
  "kamadak-exif",
  "maestro-agent",
+ "maestro-dependencies",
  "maestro-models",
  "maestro-path",
  "maestro-process",
@@ -3048,6 +3144,7 @@ dependencies = [
  "base64 0.23.1",
  "getrandom 0.4.3",
  "maestro-cancellation",
+ "maestro-dependencies",
  "maestro-path",
  "maestro-process",
  "maestro-text",
@@ -3069,6 +3166,7 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "maestro-brand",
+ "maestro-dependencies",
  "maestro-path",
  "maestro-text",
  "maestro-tui",
@@ -3081,6 +3179,7 @@ dependencies = [
 name = "maestro-watch"
 version = "0.1.0"
 dependencies = [
+ "maestro-dependencies",
  "notify",
  "tokio",
 ]
@@ -3093,6 +3192,7 @@ dependencies = [
  "indexmap",
  "js-sys",
  "maestro-app",
+ "maestro-dependencies",
  "maestro-theme",
  "num-traits",
  "resvg",
