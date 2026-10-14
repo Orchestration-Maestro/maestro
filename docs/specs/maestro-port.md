@@ -176,7 +176,7 @@ from the optional foundation utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
-| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, locale construction and number formatting) | — | below 0 |
+| `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
 | `maestro-request` | define shared message and model-request records | — | below 0 |
@@ -218,7 +218,7 @@ internal dependencies. Only models and the terminal toolkit may depend on it.
 
 `maestro-text` and `maestro-json` are core leaves below layer 0 with no workspace
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
-lexical comparison, markup escaping, locale construction and optional locale-number
+lexical comparison, markup escaping, CSS string serialization, locale construction and optional locale-number
 formatting shared by transcript components. JSON owns JSON boundary
 semantics: object acceptance, canonical keys, truth, and compact and pretty text.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend

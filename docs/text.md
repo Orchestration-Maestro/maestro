@@ -28,6 +28,10 @@ stable sorting and comparator lifetime.
   in one pass and never rescan emitted entities. `EscapeMode` picks the apostrophe
   spelling: `Xml` writes `&apos;`, `HtmlDecimal` and `HtmlHex` write numeric references; `HtmlDecimalPadded`
   writes `&#039;` for literal HTML export.
+- **CSS strings.** `css::string` quotes text, escapes quotation marks and backslashes,
+  replaces NUL with U+FFFD and hex-escapes C0 controls, DEL and `<`. Brand font
+  stacks and invalid document font names share it. `css::escape_control` supplies
+  the same control escaping for brand property identifiers.
 - **Collation** (feature `collation`). `collation::Collator::new` reads the first
   present of `LC_ALL`, `LC_MESSAGES` and `LANG` through the supplied reader, empty
   values included, and none means `en_US`. Encoding and modifier suffixes are

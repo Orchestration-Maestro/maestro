@@ -1,8 +1,8 @@
 //! CSS custom properties for a resolved presentation.
 use crate::pack::BrandFont;
 use crate::presentation::BrandPresentation;
+use maestro_text::css::{escape_control, string};
 use std::collections::BTreeMap;
-use std::fmt::Write as _;
 
 /// Generic family keywords, which stay unquoted.
 const GENERIC_FAMILIES: [&str; 13] = [
@@ -79,34 +79,6 @@ pub fn font_stack(font: &BrandFont) -> String {
         })
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-/// Append the escape of a code point that CSS cannot carry literally, if it needs one.
-fn escape_control(out: &mut String, c: char) -> bool {
-    match c {
-        '\0' => out.push('\u{FFFD}'),
-        '\u{1}'..='\u{1F}' | '\u{7F}' | '<' => {
-            let _ = write!(out, "\\{:x} ", u32::from(c));
-        }
-        _ => return false,
-    }
-    true
-}
-
-/// Serialize a CSS string, quoted.
-fn string(text: &str) -> String {
-    let mut out = String::from("\"");
-    for c in text.chars() {
-        if escape_control(&mut out, c) {
-            continue;
-        }
-        if matches!(c, '"' | '\\') {
-            out.push('\\');
-        }
-        out.push(c);
-    }
-    out.push('"');
-    out
 }
 
 /// Serialize the role part of a custom property name.

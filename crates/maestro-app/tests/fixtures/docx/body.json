@@ -1,0 +1,3366 @@
+[
+  {
+    "test": "body_children_keep_order_and_repeats",
+    "input": {
+      "operation": "body",
+      "xml": "<body><p><r><t>b</t></r></p><altChunk id=\"a\"/><p><r><t>a</t></r></p><p><r><t>b</t></r></p></body>"
+    },
+    "expected": {
+      "roots": [
+        0,
+        3,
+        4,
+        7
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "b"
+        },
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": "a"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "a"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            8
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            9
+          ],
+          "parent": 7
+        },
+        {
+          "type": "text",
+          "text": "b"
+        }
+      ]
+    }
+  },
+  {
+    "test": "body_ignores_unknown_and_non_elements",
+    "input": {
+      "operation": "body",
+      "xml": "<body>text<!--comment--><?keep x?><unknown><p><r><t>hidden</t></r></p></unknown><r><t>no</t></r><sectPr/><p/></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "body_content_controls_handle_empty_and_missing",
+    "input": {
+      "operation": "body",
+      "xml": "<body/>"
+    },
+    "expected": {
+      "roots": [],
+      "nodes": []
+    }
+  },
+  {
+    "test": "body_content_controls_handle_empty_and_missing",
+    "input": {
+      "operation": "body",
+      "xml": "<body><sdt/></body>"
+    },
+    "expected": {
+      "roots": [],
+      "nodes": []
+    }
+  },
+  {
+    "test": "body_content_controls_handle_empty_and_missing",
+    "input": {
+      "operation": "body",
+      "xml": "<body><sdt><sdtContent/></sdt></body>"
+    },
+    "expected": {
+      "roots": [],
+      "nodes": []
+    }
+  },
+  {
+    "test": "body_content_controls_handle_empty_and_missing",
+    "input": {
+      "operation": "body",
+      "xml": "<body><sdt><wrong><sdtContent><p/></sdtContent></wrong></sdt></body>"
+    },
+    "expected": {
+      "roots": [],
+      "nodes": []
+    }
+  },
+  {
+    "test": "body_content_controls_flatten_recursively",
+    "input": {
+      "operation": "body",
+      "xml": "<body><sdt><sdtPr><p/></sdtPr><sdtContent><p><r><t>first</t></r></p><sdt><sdtContent><altChunk id=\"nested\"/><p><r><t>last</t></r></p></sdtContent></sdt></sdtContent></sdt><p><r><t>after</t></r></p></body>"
+    },
+    "expected": {
+      "roots": [
+        0,
+        3,
+        4,
+        7
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "first"
+        },
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": "nested"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "last"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            8
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            9
+          ],
+          "parent": 7
+        },
+        {
+          "type": "text",
+          "text": "after"
+        }
+      ]
+    }
+  },
+  {
+    "test": "content_controls_use_first_content_child",
+    "input": {
+      "operation": "body",
+      "xml": "<body><sdt><sdtContent><p><r><t>first</t></r></p></sdtContent><sdtContent><p><r><t>second</t></r></p></sdtContent></sdt></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "first"
+        }
+      ]
+    }
+  },
+  {
+    "test": "alternate_chunks_keep_nullable_ids",
+    "input": {
+      "operation": "body",
+      "xml": "<body><altChunk><p/></altChunk></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "alternate_chunks_keep_nullable_ids",
+    "input": {
+      "operation": "body",
+      "xml": "<body><altChunk id=\"\"><p/></altChunk></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "alternate_chunks_keep_nullable_ids",
+    "input": {
+      "operation": "body",
+      "xml": "<body><altChunk id=\"rId1\"><p/></altChunk></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": "rId1"
+        }
+      ]
+    }
+  },
+  {
+    "test": "alternate_chunks_keep_nullable_ids",
+    "input": {
+      "operation": "body",
+      "xml": "<body><altChunk id=\"A&amp;B\"><p/></altChunk></body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "altChunk",
+          "children": [],
+          "id": "A&B"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_runs_keep_separate_identity",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><r><t>b</t></r><r><t>a</t></r><r><t>b</t></r></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            3,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "b"
+        },
+        {
+          "type": "run",
+          "children": [
+            4
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "a"
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "b"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_ignores_unknown_and_non_elements",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p>outside<unknown><r><t>hidden</t></r></unknown><t>not run</t><!--c--><r/></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [],
+          "parent": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_content_controls_keep_hidden_parents",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><r><t>before</t></r><sdt><sdtContent><r><t>inside1</t></r><r><t>inside2</t></r><sdt><sdtContent><r><t>nested</t></r></sdtContent></sdt></sdtContent></sdt><r><t>after</t></r></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            3,
+            6,
+            8,
+            11
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "before"
+        },
+        {
+          "type": "run",
+          "children": [
+            4
+          ],
+          "parent": 5
+        },
+        {
+          "type": "text",
+          "text": "inside1"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            3,
+            6,
+            8
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            7
+          ],
+          "parent": 5
+        },
+        {
+          "type": "text",
+          "text": "inside2"
+        },
+        {
+          "type": "run",
+          "children": [
+            9
+          ],
+          "parent": 10
+        },
+        {
+          "type": "text",
+          "text": "nested"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            8
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            12
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "after"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_content_controls_handle_absence",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><sdt/></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_content_controls_handle_absence",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><sdt><sdtContent/></sdt></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "change_wrappers_keep_kind_children_and_parents",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><ins><r><t>one</t></r><r><delText>two</delText></r></ins></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "inserted",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "one"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 4
+        },
+        {
+          "type": "deletedText",
+          "text": "two"
+        }
+      ]
+    }
+  },
+  {
+    "test": "empty_change_wrappers_are_retained",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><ins/></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "inserted",
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "change_wrappers_keep_kind_children_and_parents",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><del><r><t>one</t></r><r><delText>two</delText></r></del></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "deleted",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "one"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 4
+        },
+        {
+          "type": "deletedText",
+          "text": "two"
+        }
+      ]
+    }
+  },
+  {
+    "test": "empty_change_wrappers_are_retained",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><del/></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "deleted",
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "nested_changes_and_controls_preserve_structure",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><ins><r><t>outer</t></r><del><sdt><sdtContent><r><delText>inner</delText></r></sdtContent></sdt></del></ins></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "inserted",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "outer"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            2,
+            5
+          ]
+        },
+        {
+          "type": "deleted",
+          "children": [
+            6
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            7
+          ],
+          "parent": 8
+        },
+        {
+          "type": "deletedText",
+          "text": "inner"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            6
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_text_keeps_whitespace_entities_and_cdata",
+    "input": {
+      "operation": "run",
+      "xml": "<r><t xml:space=\"preserve\"> \tA&amp;B<![CDATA[<x>]]>&#x1F600;\r\n </t><t>﻿</t><delText>gone &lt;x&gt;</delText><t><x>nested</x>tail</t></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": " \tA&B<x>😀\n "
+        },
+        {
+          "type": "text",
+          "text": "﻿"
+        },
+        {
+          "type": "deletedText",
+          "text": "gone <x>"
+        },
+        {
+          "type": "text",
+          "text": "nestedtail"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_empty_text_nodes_remain_distinct",
+    "input": {
+      "operation": "run",
+      "xml": "<r><t/><t></t><delText/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "text",
+          "text": ""
+        },
+        {
+          "type": "deletedText",
+          "text": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_ignores_unknown_and_outside_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r>outside<unknown><t>hidden</t></unknown><r><t>nested run</t></r><!--c--><softHyphen/><t>visible</t></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "visible"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "textWrapping"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br type=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "textWrapping"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br type=\"textWrapping\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "textWrapping"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br type=\"page\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "page"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br type=\"column\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "column"
+        }
+      ]
+    }
+  },
+  {
+    "test": "breaks_apply_only_the_empty_type_default",
+    "input": {
+      "operation": "run",
+      "xml": "<r><br type=\"custom\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "break",
+          "break": "custom"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_markers_and_references_keep_order",
+    "input": {
+      "operation": "run",
+      "xml": "<r><noBreakHyphen/><tab/><br type=\"page\"/><lastRenderedPageBreak type=\"ignored\"/><footnoteReference id=\"b\"/><endnoteReference id=\"a\"/><tab/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "parent": null
+        },
+        {
+          "type": "noBreakHyphen"
+        },
+        {
+          "type": "tab"
+        },
+        {
+          "type": "break",
+          "break": "page"
+        },
+        {
+          "type": "break",
+          "break": "lastRenderedPageBreak"
+        },
+        {
+          "type": "footnoteReference",
+          "id": "b"
+        },
+        {
+          "type": "endnoteReference",
+          "id": "a"
+        },
+        {
+          "type": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><footnoteReference/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "footnoteReference",
+          "id": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><footnoteReference id=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "footnoteReference",
+          "id": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><footnoteReference id=\"-1\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "footnoteReference",
+          "id": "-1"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><footnoteReference id=\"0\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "footnoteReference",
+          "id": "0"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><footnoteReference id=\"A&amp;B\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "footnoteReference",
+          "id": "A&B"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><endnoteReference/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "endnoteReference",
+          "id": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><endnoteReference id=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "endnoteReference",
+          "id": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><endnoteReference id=\"-1\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "endnoteReference",
+          "id": "-1"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><endnoteReference id=\"0\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "endnoteReference",
+          "id": "0"
+        }
+      ]
+    }
+  },
+  {
+    "test": "note_references_keep_string_identity",
+    "input": {
+      "operation": "run",
+      "xml": "<r><endnoteReference id=\"A&amp;B\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "endnoteReference",
+          "id": "A&B"
+        }
+      ]
+    }
+  },
+  {
+    "test": "simple_fields_keep_instruction_and_flags",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    },
+    "also": [
+      "field_flags_use_shared_boolean_tokens"
+    ]
+  },
+  {
+    "test": "simple_fields_keep_instruction_and_flags",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple instr=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": "",
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "simple_fields_keep_instruction_and_flags",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple instr=\" DATE &amp; TIME \" lock=\"1\" dirty=\"off\"><t>not parsed</t></fldSimple></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": " DATE & TIME ",
+          "lock": true,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"\" dirty=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"1\" dirty=\"1\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": true,
+          "dirty": true,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"0\" dirty=\"0\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"on\" dirty=\"on\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": true,
+          "dirty": true,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"off\" dirty=\"off\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"true\" dirty=\"true\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": true,
+          "dirty": true,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"false\" dirty=\"false\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"TRUE\" dirty=\"TRUE\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"yes\" dirty=\"yes\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\" true \" dirty=\" true \"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": false,
+          "children": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    },
+    "also": [
+      "complex_fields_keep_open_character_type"
+    ]
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"\" dirty=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"1\" dirty=\"1\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": true,
+          "dirty": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"0\" dirty=\"0\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"on\" dirty=\"on\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": true,
+          "dirty": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"off\" dirty=\"off\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"true\" dirty=\"true\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": true,
+          "dirty": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"false\" dirty=\"false\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"TRUE\" dirty=\"TRUE\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\"yes\" dirty=\"yes\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_use_shared_boolean_tokens",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar lock=\" true \" dirty=\" true \"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_flags_are_selected_independently",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldSimple lock=\"true\" dirty=\"false\"/><fldSimple lock=\"false\" dirty=\"true\"/><fldChar lock=\"true\" dirty=\"false\"/><fldChar lock=\"false\" dirty=\"true\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": true,
+          "dirty": false,
+          "children": []
+        },
+        {
+          "type": "simpleField",
+          "instruction": null,
+          "lock": false,
+          "dirty": true,
+          "children": []
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": true,
+          "dirty": false
+        },
+        {
+          "type": "complexField",
+          "charType": null,
+          "lock": false,
+          "dirty": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "complex_fields_keep_open_character_type",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar fldCharType=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": "",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "complex_fields_keep_open_character_type",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar fldCharType=\"begin\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": "begin",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "complex_fields_keep_open_character_type",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar fldCharType=\"separate\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": "separate",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "complex_fields_keep_open_character_type",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar fldCharType=\"end\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": "end",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "complex_fields_keep_open_character_type",
+    "input": {
+      "operation": "run",
+      "xml": "<r><fldChar fldCharType=\"custom\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "complexField",
+          "charType": "custom",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "instruction_and_complex_fields_mark_the_run",
+    "input": {
+      "operation": "run",
+      "xml": "<r><instrText/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "instruction",
+          "text": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "instruction_and_complex_fields_mark_the_run",
+    "input": {
+      "operation": "run",
+      "xml": "<r><instrText xml:space=\"preserve\"> MERGEFIELD  A&amp;B </instrText><t>result</t></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "instruction",
+          "text": " MERGEFIELD  A&B "
+        },
+        {
+          "type": "text",
+          "text": "result"
+        }
+      ]
+    }
+  },
+  {
+    "test": "instruction_and_complex_fields_mark_the_run",
+    "input": {
+      "operation": "run",
+      "xml": "<r><t>before</t><fldChar fldCharType=\"begin\"/><instrText>PAGE</instrText><fldChar fldCharType=\"end\"/><t>after</t></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "before"
+        },
+        {
+          "type": "complexField",
+          "charType": "begin",
+          "lock": false,
+          "dirty": false
+        },
+        {
+          "type": "instruction",
+          "text": "PAGE"
+        },
+        {
+          "type": "complexField",
+          "charType": "end",
+          "lock": false,
+          "dirty": false
+        },
+        {
+          "type": "text",
+          "text": "after"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": null,
+          "char": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"\" char=\"\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "",
+          "char": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"Arial\" char=\"F020\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "Arial",
+          "char": "F020"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"Times New Roman\" char=\"0061\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "'Times New Roman'",
+          "char": "0061"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"'Times New Roman'\" char=\"A&amp;B\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "'Times New Roman'",
+          "char": "A&B"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"a﻿b\" char=\"-1\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "'a﻿b'",
+          "char": "-1"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"ab\" char=\"custom\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "ab",
+          "char": "custom"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_local_names_accept_namespace_aliases",
+    "input": {
+      "operation": "run",
+      "xml": "<x:r xmlns:x=\"urn:x\" xmlns:y=\"urn:y\"><y:t>alias</y:t><x:br y:type=\"page\"/><x:footnoteReference y:id=\"7\"/><x:sym y:font=\"A B\" y:char=\"0041\"/></x:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "alias"
+        },
+        {
+          "type": "break",
+          "break": "page"
+        },
+        {
+          "type": "footnoteReference",
+          "id": "7"
+        },
+        {
+          "type": "symbol",
+          "font": "'A B'",
+          "char": "0041"
+        }
+      ]
+    }
+  },
+  {
+    "test": "body_and_paragraph_local_names_ignore_prefix",
+    "input": {
+      "operation": "body",
+      "xml": "<x:body xmlns:x=\"urn:x\" xmlns:y=\"urn:y\"><y:p><x:r><y:t>kept</y:t></x:r></y:p></x:body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_properties_keep_raw_slots_without_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"urn:w\" xmlns:q=\"urn:q\"><w:pPr><q:pStyle w:val=\"first\"/></w:pPr><w:r><w:t>kept</w:t></w:r><w:pPr><w:pStyle w:val=\"last\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ],
+      "property_slots": [
+        {
+          "context": "paragraph",
+          "xml": {
+            "local_name": "pPr",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "pStyle",
+                "namespace": "urn:q",
+                "attributes": [
+                  {
+                    "local_name": "val",
+                    "namespace": "urn:w",
+                    "value": "first"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "context": "paragraph",
+          "xml": {
+            "local_name": "pPr",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "pStyle",
+                "namespace": "urn:w",
+                "attributes": [
+                  {
+                    "local_name": "val",
+                    "namespace": "urn:w",
+                    "value": "last"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_properties_keep_raw_slots_without_defaults",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"urn:w\"><w:rPr><w:rStyle w:val=\"first\"/></w:rPr><w:t>kept</w:t><w:rPr><w:rStyle w:val=\"last\"/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ],
+      "property_slots": [
+        {
+          "context": "run",
+          "xml": {
+            "local_name": "rPr",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "rStyle",
+                "namespace": "urn:w",
+                "attributes": [
+                  {
+                    "local_name": "val",
+                    "namespace": "urn:w",
+                    "value": "first"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "context": "run",
+          "xml": {
+            "local_name": "rPr",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "rStyle",
+                "namespace": "urn:w",
+                "attributes": [
+                  {
+                    "local_name": "val",
+                    "namespace": "urn:w",
+                    "value": "last"
+                  }
+                ],
+                "children": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "body_foreign_branches_remain_owned",
+    "input": {
+      "operation": "body",
+      "xml": "<w:body xmlns:w=\"urn:w\"><w:tbl><w:tr><w:tc><w:p><w:r><w:t>table text</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p/></w:body>"
+    },
+    "expected": {
+      "foreign_slots": [
+        {
+          "context": "body",
+          "name": "tbl",
+          "kind": "table",
+          "xml": {
+            "local_name": "tbl",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "tr",
+                "namespace": "urn:w",
+                "attributes": [],
+                "children": [
+                  {
+                    "local_name": "tc",
+                    "namespace": "urn:w",
+                    "attributes": [],
+                    "children": [
+                      {
+                        "local_name": "p",
+                        "namespace": "urn:w",
+                        "attributes": [],
+                        "children": [
+                          {
+                            "local_name": "r",
+                            "namespace": "urn:w",
+                            "attributes": [],
+                            "children": [
+                              {
+                                "local_name": "t",
+                                "namespace": "urn:w",
+                                "attributes": [],
+                                "children": [
+                                  "table text"
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_foreign_branches_remain_owned",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"urn:w\"><w:hyperlink w:id=\"h\"><w:r><w:t>link</w:t></w:r></w:hyperlink><w:smartTag w:uri=\"urn:s\" w:element=\"tag\"><w:r/></w:smartTag><w:bookmarkStart w:id=\"0\" w:name=\"name\"/><w:bookmarkEnd w:id=\"0\"/><w:commentRangeStart w:id=\"4\"/><w:commentRangeEnd w:id=\"4\"/><w:oMath/><w:oMathPara/></w:p>"
+    },
+    "expected": {
+      "foreign_slots": [
+        {
+          "context": "paragraph",
+          "name": "hyperlink",
+          "kind": "hyperlink",
+          "xml": {
+            "local_name": "hyperlink",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "h"
+              }
+            ],
+            "children": [
+              {
+                "local_name": "r",
+                "namespace": "urn:w",
+                "attributes": [],
+                "children": [
+                  {
+                    "local_name": "t",
+                    "namespace": "urn:w",
+                    "attributes": [],
+                    "children": [
+                      "link"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "smartTag",
+          "kind": "smartTag",
+          "xml": {
+            "local_name": "smartTag",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "uri",
+                "namespace": "urn:w",
+                "value": "urn:s"
+              },
+              {
+                "local_name": "element",
+                "namespace": "urn:w",
+                "value": "tag"
+              }
+            ],
+            "children": [
+              {
+                "local_name": "r",
+                "namespace": "urn:w",
+                "attributes": [],
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "bookmarkStart",
+          "kind": "bookmarkStart",
+          "xml": {
+            "local_name": "bookmarkStart",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "0"
+              },
+              {
+                "local_name": "name",
+                "namespace": "urn:w",
+                "value": "name"
+              }
+            ],
+            "children": []
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "bookmarkEnd",
+          "kind": "bookmarkEnd",
+          "xml": {
+            "local_name": "bookmarkEnd",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "0"
+              }
+            ],
+            "children": []
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "commentRangeStart",
+          "kind": "commentRangeStart",
+          "xml": {
+            "local_name": "commentRangeStart",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "4"
+              }
+            ],
+            "children": []
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "commentRangeEnd",
+          "kind": "commentRangeEnd",
+          "xml": {
+            "local_name": "commentRangeEnd",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "4"
+              }
+            ],
+            "children": []
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "oMath",
+          "kind": "mmlMath",
+          "xml": {
+            "local_name": "oMath",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": []
+          }
+        },
+        {
+          "context": "paragraph",
+          "name": "oMathPara",
+          "kind": "mmlMathParagraph",
+          "xml": {
+            "local_name": "oMathPara",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": []
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_foreign_branches_remain_owned",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"urn:w\" xmlns:a=\"urn:a\"><w:commentReference w:id=\"3\"/><w:drawing><a:inline/></w:drawing><w:pict><v:rect xmlns:v=\"urn:v\"/></w:pict></w:r>"
+    },
+    "expected": {
+      "foreign_slots": [
+        {
+          "context": "run",
+          "name": "commentReference",
+          "kind": "commentReference",
+          "xml": {
+            "local_name": "commentReference",
+            "namespace": "urn:w",
+            "attributes": [
+              {
+                "local_name": "id",
+                "namespace": "urn:w",
+                "value": "3"
+              }
+            ],
+            "children": []
+          }
+        },
+        {
+          "context": "run",
+          "name": "drawing",
+          "kind": "drawing",
+          "xml": {
+            "local_name": "drawing",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "inline",
+                "namespace": "urn:a",
+                "attributes": [],
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "context": "run",
+          "name": "pict",
+          "kind": "vmlPicture",
+          "xml": {
+            "local_name": "pict",
+            "namespace": "urn:w",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "rect",
+                "namespace": "urn:v",
+                "attributes": [],
+                "children": []
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "alternate_content_is_retained_for_drawing_parser",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"urn:w\" xmlns:mc=\"urn:mc\"><mc:AlternateContent><mc:Choice Requires=\"w\"><w:t>choice</w:t></mc:Choice><mc:Fallback><w:tab/></mc:Fallback></mc:AlternateContent></w:r>"
+    },
+    "expected": {
+      "foreign_slots": [
+        {
+          "context": "run",
+          "name": "AlternateContent",
+          "kind": null,
+          "xml": {
+            "local_name": "AlternateContent",
+            "namespace": "urn:mc",
+            "attributes": [],
+            "children": [
+              {
+                "local_name": "Choice",
+                "namespace": "urn:mc",
+                "attributes": [
+                  {
+                    "local_name": "Requires",
+                    "namespace": null,
+                    "value": "w"
+                  }
+                ],
+                "children": [
+                  {
+                    "local_name": "t",
+                    "namespace": "urn:w",
+                    "attributes": [],
+                    "children": [
+                      "choice"
+                    ]
+                  }
+                ]
+              },
+              {
+                "local_name": "Fallback",
+                "namespace": "urn:mc",
+                "attributes": [],
+                "children": [
+                  {
+                    "local_name": "tab",
+                    "namespace": "urn:w",
+                    "attributes": [],
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "malformed_xml_fails_before_tree_publication",
+    "input": {
+      "operation": "run",
+      "xml": "<r>"
+    },
+    "expected": {
+      "error_kind": "Xml"
+    }
+  },
+  {
+    "test": "malformed_xml_fails_before_tree_publication",
+    "input": {
+      "operation": "run",
+      "xml": "<p><r></p>"
+    },
+    "expected": {
+      "error_kind": "Xml"
+    }
+  },
+  {
+    "test": "malformed_xml_fails_before_tree_publication",
+    "input": {
+      "operation": "run",
+      "xml": "<body><p/></body><extra/>"
+    },
+    "expected": {
+      "error_kind": "Xml"
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_visible_result",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:r><w:t>Page </w:t></w:r><w:fldSimple w:instr=\"PAGE\" w:dirty=\"true\"><w:r><w:t>7</w:t></w:r></w:fldSimple><w:r><w:t> done</w:t></w:r></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            3,
+            6
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "Page "
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            4
+          ],
+          "instruction": "PAGE",
+          "lock": false,
+          "dirty": true
+        },
+        {
+          "type": "run",
+          "children": [
+            5
+          ],
+          "parent": 3
+        },
+        {
+          "type": "text",
+          "text": "7"
+        },
+        {
+          "type": "run",
+          "children": [
+            7
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": " done"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_nested_results",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><fldSimple instr=\"DATE\" lock=\"true\"><r><t>today </t></r><fldSimple instr=\"TIME\"><r><t>noon</t></r></fldSimple></fldSimple></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            2,
+            4
+          ],
+          "instruction": "DATE",
+          "lock": true,
+          "dirty": false
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 1
+        },
+        {
+          "type": "text",
+          "text": "today "
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            5
+          ],
+          "instruction": "TIME",
+          "lock": false,
+          "dirty": false
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "parent": 4
+        },
+        {
+          "type": "text",
+          "text": "noon"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_visible_result",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><fldSimple/></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "simpleField",
+          "children": [],
+          "instruction": null,
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_visible_result",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><fldSimple instr=\"\" lock=\"off\" dirty=\"on\"><r><t/></r></fldSimple></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            2
+          ],
+          "instruction": "",
+          "lock": false,
+          "dirty": true
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 1
+        },
+        {
+          "type": "text",
+          "text": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_visible_result",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><ins><fldSimple instr=\"PAGE\"><r><t>1</t></r></fldSimple></ins></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "inserted",
+          "children": [
+            2
+          ]
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            3
+          ],
+          "instruction": "PAGE",
+          "lock": false,
+          "dirty": false
+        },
+        {
+          "type": "run",
+          "children": [
+            4
+          ],
+          "parent": 2
+        },
+        {
+          "type": "text",
+          "text": "1"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_simple_fields_preserve_visible_result",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<p><sdt><sdtContent><fldSimple instr=\"PAGE\"><r><t>2</t></r></fldSimple></sdtContent></sdt></p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "simpleField",
+          "children": [
+            2
+          ],
+          "instruction": "PAGE",
+          "lock": false,
+          "dirty": false
+        },
+        {
+          "type": "run",
+          "children": [
+            3
+          ],
+          "parent": 1
+        },
+        {
+          "type": "text",
+          "text": "2"
+        }
+      ]
+    }
+  },
+  {
+    "test": "symbols_keep_font_and_hex_text",
+    "input": {
+      "operation": "run",
+      "xml": "<r><sym font=\"0xProto\" char=\"0041\"/></r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "symbol",
+          "font": "\"0xProto\"",
+          "char": "0041"
+        }
+      ]
+    }
+  }
+]

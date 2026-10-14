@@ -1,0 +1,667 @@
+[
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": null
+    },
+    "expected": null
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": ""
+    },
+    "expected": ""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A"
+    },
+    "expected": "A"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\tB"
+    },
+    "expected": "'A\tB'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB"
+    },
+    "expected": "\"A\\a B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\rB"
+    },
+    "expected": "\"A\\d B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A﻿B"
+    },
+    "expected": "'A﻿B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "AB"
+    },
+    "expected": "AB"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A"
+    },
+    "expected": " A"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A "
+    },
+    "expected": "A "
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A "
+    },
+    "expected": " A "
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "  "
+    },
+    "expected": "\"  \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "'A B'"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "\"A B\""
+    },
+    "expected": "\"A B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "'A B"
+    },
+    "expected": "'A B"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\""
+    },
+    "expected": "\"A B\\\"\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A ' B"
+    },
+    "expected": "\"A ' B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\nC"
+    },
+    "expected": "\"A B\\a C\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB C"
+    },
+    "expected": "\"A\\a B C\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A​B"
+    },
+    "expected": "A​B"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B"
+    },
+    "expected": "'A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A　B"
+    },
+    "expected": "'A　B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A᠎B"
+    },
+    "expected": "A᠎B"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "\nA B"
+    },
+    "expected": "\"\\a A B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\n"
+    },
+    "expected": "\"A B\\a \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\n\n"
+    },
+    "expected": "\"A B\\a \\a \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\n\n\n"
+    },
+    "expected": "A B\n\n\n"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "\nA\nB\n"
+    },
+    "expected": "\"\\a A\\a B\\a \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "\rA B"
+    },
+    "expected": "\"\\d A B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\r"
+    },
+    "expected": "\"A B\\d \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\r\r"
+    },
+    "expected": "\"A B\\d \\d \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\r\r\r"
+    },
+    "expected": "A B\r\r\r"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "\rA\rB\r"
+    },
+    "expected": "\"\\d A\\d B\\d \""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A B"
+    },
+    "expected": "' A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B "
+    },
+    "expected": "'A B '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B  "
+    },
+    "expected": "'A B  '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B   "
+    },
+    "expected": "A B   "
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A B "
+    },
+    "expected": "' A B '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A B"
+    },
+    "expected": "' A B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B "
+    },
+    "expected": "'A B '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B  "
+    },
+    "expected": "'A B  '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B   "
+    },
+    "expected": "A B   "
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": " A B "
+    },
+    "expected": "' A B '"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB\nC"
+    },
+    "expected": "A\nB\nC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB\rC"
+    },
+    "expected": "A\nB\rC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB C"
+    },
+    "expected": "A\nB C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\nB C"
+    },
+    "expected": "A\nB C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\rB\nC"
+    },
+    "expected": "A\rB\nC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\rB\rC"
+    },
+    "expected": "A\rB\rC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\rB C"
+    },
+    "expected": "A\rB C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\rB C"
+    },
+    "expected": "A\rB C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\nC"
+    },
+    "expected": "A B\nC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\rC"
+    },
+    "expected": "A B\rC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B C"
+    },
+    "expected": "A B C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B C"
+    },
+    "expected": "A B C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\nC"
+    },
+    "expected": "A B\nC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B\rC"
+    },
+    "expected": "A B\rC"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B C"
+    },
+    "expected": "A B C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A B C"
+    },
+    "expected": "A B C"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "0xProto"
+    },
+    "expected": "\"0xProto\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "2Face"
+    },
+    "expected": "\"2Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "-2Face"
+    },
+    "expected": "\"-2Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "-Face"
+    },
+    "expected": "-Face"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "--Face"
+    },
+    "expected": "--Face"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "_Face"
+    },
+    "expected": "_Face"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "Font/Face"
+    },
+    "expected": "\"Font/Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "Font+Face"
+    },
+    "expected": "\"Font+Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "Font.Face"
+    },
+    "expected": "\"Font.Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "Font#Face"
+    },
+    "expected": "\"Font#Face\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "O'Connor"
+    },
+    "expected": "\"O'Connor\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\"B"
+    },
+    "expected": "\"A\\\"B\""
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\\B"
+    },
+    "expected": "A\\B"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "A\\\\B"
+    },
+    "expected": "A\\\\B"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "'A\\' B'"
+    },
+    "expected": "'A\\' B'"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "Arial,serif"
+    },
+    "expected": "Arial,serif"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "var(--docx-minorHAnsi-font)"
+    },
+    "expected": "var(--docx-minorHAnsi-font)"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "inherit"
+    },
+    "expected": "inherit"
+  },
+  {
+    "test": "font_family_enclosure_uses_shared_whitespace",
+    "input": {
+      "font": "sans-serif"
+    },
+    "expected": "sans-serif"
+  }
+]

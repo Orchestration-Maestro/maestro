@@ -1,5 +1,6 @@
 //! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8,
-//! whitespace membership, UTF-16 lexical order, markup escaping, environment flag truth,
+//! whitespace membership, UTF-16 lexical order, markup escaping, CSS string serialization,
+//! environment flag truth,
 //! optional `collation` locale comparison and optional `number-format` locale-number presentation.
 //!
 //! ```
@@ -14,6 +15,7 @@
 //! ```
 #[cfg(feature = "collation")]
 pub mod collation;
+pub mod css;
 mod flags;
 mod lexical;
 pub mod markup;

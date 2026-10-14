@@ -3,7 +3,9 @@ mod document;
 pub use document::common::{LengthUsage, convert_boolean, convert_length};
 mod parser;
 pub(crate) use parser::xml_parser::decode_text;
-pub use parser::xml_parser::{XmlAttribute, XmlElement, XmlParser, parse_xml_string};
+pub use parser::xml_parser::{
+    OwnedXmlElement, XmlAttribute, XmlElement, XmlParser, parse_xml_string,
+};
 
 /// Failure opening an archive or one of its XML parts.
 #[derive(Debug)]
@@ -54,3 +56,10 @@ impl Default for Options {
         }
     }
 }
+
+mod document_parser;
+pub use document::dom::{
+    DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData, OpenXmlElementTree,
+    UnparsedKind,
+};
+pub use document_parser::{parse_body_elements, parse_paragraph, parse_run};
