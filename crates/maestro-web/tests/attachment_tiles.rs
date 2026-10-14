@@ -268,7 +268,7 @@ fn tile_wide_caption_is_elided_inside_padded_bounds() {
     );
 }
 #[test]
-fn tile_badge_and_remove_keep_visible_brand_boundaries() {
+fn tile_remove_keeps_visible_brand_boundary() {
     let record = attachment();
     record.borrow_mut().mime_type = "application/pdf".into();
     record.borrow_mut().preview = Some("pdf".into());
@@ -279,5 +279,63 @@ fn tile_badge_and_remove_keep_visible_brand_boundaries() {
     let p = frame.pack.presentation(frame.mode).unwrap();
     let border = egui::Color32::from_hex(p.colors["border"]).unwrap();
     assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Circle(c) if c.radius.to_bits() == 10_f32.to_bits() && c.stroke.color == border && c.stroke.width.to_bits() == 1_f32.to_bits())));
-    assert!(frame.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.rect.height().to_bits() == 19_f32.to_bits() && r.corner_radius.sw == 8 && r.corner_radius.se == 8 && r.corner_radius.nw == 0)));
+}
+#[test]
+fn tile_badge_tessellation_shares_tile_contour_in_both_packs() {
+    for pack in ["packs/signal.json", "brand.json"] {
+        let record = attachment();
+        record.borrow_mut().mime_type = "application/pdf".into();
+        record.borrow_mut().preview = Some("pdf".into());
+        let host = Rc::new(Host::default());
+        let mut tile = AttachmentTile::new(record, host.clone());
+        let mut frame = Frame {
+            pack: maestro_theme::load_brand_pack(
+                &format!("{}/../../assets/brand/{pack}", env!("CARGO_MANIFEST_DIR")),
+                &maestro_theme::theme::NativeThemeOperations,
+            )
+            .unwrap(),
+            ..Frame::default()
+        };
+        frame.tile(&mut tile, vec![]).unwrap();
+        let background = egui::Color32::from_hex(
+            frame.pack.presentation(frame.mode).unwrap().colors["background"],
+        )
+        .unwrap();
+        let badge = host.surfaces.borrow().last().unwrap().occluders[0];
+        let actual = frame
+            .shapes
+            .iter()
+            .find(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.fill == background))
+            .unwrap()
+            .clone();
+        let mut outline = frame
+            .shapes
+            .iter()
+            .find_map(|s| match &s.shape {
+                egui::Shape::Rect(r) if r.rect.size() == egui::vec2(64., 64.) => Some(r.clone()),
+                _ => None,
+            })
+            .unwrap();
+        outline.stroke = egui::Stroke::NONE;
+        outline.fill = background;
+        let expected = egui::epaint::ClippedShape {
+            clip_rect: badge,
+            shape: egui::Shape::Rect(outline),
+        };
+        let actual = frame.ctx.tessellate(vec![actual], 1.);
+        let expected = frame.ctx.tessellate(vec![expected], 1.);
+        assert_eq!(actual.len(), 1, "{pack}");
+        assert_eq!(expected.len(), 1, "{pack}");
+        let clip = actual[0].clip_rect;
+        let egui::epaint::Primitive::Mesh(actual) = &actual[0].primitive else {
+            panic!("badge must tessellate to triangles");
+        };
+        let egui::epaint::Primitive::Mesh(expected) = &expected[0].primitive else {
+            panic!("tile must tessellate to triangles");
+        };
+        assert!(!actual.indices.is_empty());
+        assert_eq!(actual.indices, expected.indices, "{pack}");
+        assert_eq!(actual.vertices, expected.vertices, "{pack}");
+        assert_eq!(clip, badge, "badge region: {pack}");
+    }
 }

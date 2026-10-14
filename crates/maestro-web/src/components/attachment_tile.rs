@@ -77,7 +77,7 @@ impl AttachmentTile {
         if let Some(source) = preview {
             if let Some(badge) = badge {
                 occluders.push(badge);
-                pdf_badge(ui, badge, i, p)?;
+                pdf_badge(ui, rect, badge, i, p)?;
             }
             self.host.present(
                 AttachmentSurface {
@@ -214,19 +214,18 @@ fn fallback(
 /// Paint the badge above the image with rounded lower corners.
 fn pdf_badge<F: ?Sized>(
     ui: &egui::Ui,
+    tile: egui::Rect,
     badge: egui::Rect,
     i: &I18n<F>,
     p: &BrandPresentation<'_>,
 ) -> Result<(), AttachmentUiError> {
-    ui.painter().rect_filled(
-        badge,
-        egui::CornerRadius {
-            nw: 0,
-            ne: 0,
-            ..egui::CornerRadius::from(points(p.radii["panel"]))
-        },
-        color(p, "background")?,
-    );
+    ui.painter()
+        .with_clip_rect(badge.intersect(ui.clip_rect()))
+        .rect_filled(
+            tile,
+            egui::CornerRadius::from(points(p.radii["panel"])),
+            color(p, "background")?,
+        );
     ui.painter().text(
         badge.center(),
         egui::Align2::CENTER_CENTER,
