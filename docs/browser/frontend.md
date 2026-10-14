@@ -57,6 +57,10 @@ Application launch and browser interaction remain separate delivery work.
 
 ## Attachments and browser messages
 
+[Attachment tiles and overlays](attachments.md) provide retained browser previews,
+text selection, original-byte downloads and the replaceable content host.
+
+
 The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 `ArtifactMessage`, `convert_attachments`, `default_convert_to_llm`,
 `is_user_message_with_attachments` and `is_artifact_message`. Input enums and

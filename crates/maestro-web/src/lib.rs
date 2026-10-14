@@ -1,5 +1,10 @@
-//! Browser-facing localization, display formatting and SVG glyphs.
+//! Browser-facing attachment previews, localization, formatting and SVG glyphs.
 
+pub mod browser;
+pub mod components;
+pub mod dialogs;
+pub use components::attachment_tile::AttachmentTile;
+pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod icons;
 pub mod utils;
 pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};

@@ -43,6 +43,11 @@ host) out of the traversal: the unifier lists none of them, and the test host ma
 build its own copies of shared dependencies. Keep that exclusion; `verify`
 honours it.
 
+The same traversal exclusion also leaves egui out, so the web library's dev-only
+`default_fonts` feature cannot be promoted into production through the unifier.
+Production egui remains defaults-off; native attachment tests use genuine
+fallback fonts. See [browser libraries](libraries/browser-frontend.md).
+
 Regenerate after changing a dependency, its features or `Cargo.lock`:
 
 ```sh

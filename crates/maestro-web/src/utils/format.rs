@@ -1,5 +1,5 @@
 //! Numeric display text for browser consumers.
-use super::i18n::{I18n, I18nError, TranslationValue};
+use super::i18n::{I18n, I18nError};
 use maestro_app::{ModelCost, browser::strip_decimal};
 
 /// Render a currency amount using four-place fixed number formatting.
@@ -20,10 +20,7 @@ pub fn format_model_cost<F: ?Sized>(
     let input = if input.is_nan() { 0.0 } else { input };
     let output = if output.is_nan() { 0.0 } else { output };
     if input == 0.0 && output == 0.0 {
-        return match i18n.i18n("Free", None)? {
-            TranslationValue::Text(text) => Ok(text),
-            _ => Err(I18nError::NotText("Free".into())),
-        };
+        return i18n.text("Free");
     }
     Ok(format!("${}/${}", model_price(input), model_price(output)))
 }

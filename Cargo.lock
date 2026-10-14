@@ -1448,6 +1448,7 @@ dependencies = [
  "ahash",
  "ecolor",
  "emath",
+ "epaint_default_fonts",
  "font-types",
  "harfrust",
  "log",
@@ -1461,6 +1462,12 @@ dependencies = [
  "unicode-segmentation",
  "vello_cpu",
 ]
+
+[[package]]
+name = "epaint_default_fonts"
+version = "0.36.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "773fa9c96dd0dbef887e39d0ed6177f141cce4d68e6041df77570aa3702dfa13"
 
 [[package]]
 name = "equivalent"
@@ -2832,7 +2839,6 @@ dependencies = [
 name = "maestro-dependencies"
 version = "0.1.0"
 dependencies = [
- "ahash",
  "base64 0.23.1",
  "bitflags 2.13.2",
  "bytemuck",
@@ -2840,7 +2846,6 @@ dependencies = [
  "chrono",
  "crc32fast",
  "digest 0.11.3",
- "either",
  "form_urlencoded",
  "futures-channel",
  "futures-core",
@@ -2862,7 +2867,6 @@ dependencies = [
  "mio",
  "num-integer",
  "num-traits",
- "once_cell",
  "percent-encoding",
  "potential_utf",
  "proc-macro2",
