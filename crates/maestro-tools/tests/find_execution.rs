@@ -534,14 +534,17 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
     let test = "find_acquisition_is_silent_and_abort_prevents_launch";
     let root = read_support::TempDir::new();
     if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
-        assert_silent_child(read_support::isolated_os_output(
+        assert_silent_child(
             test,
-            "no-path",
-            &[
-                ("PATH", Some(root.0.as_os_str())),
-                ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new("0"))),
-            ],
-        ));
+            read_support::isolated_os_output(
+                test,
+                "no-path",
+                &[
+                    ("PATH", Some(root.0.as_os_str())),
+                    ("MAESTRO_OFFLINE", Some(std::ffi::OsStr::new("0"))),
+                ],
+            ),
+        );
         let sock = root.0.join("probe.sock");
         find_support::executable(
             &root,
@@ -551,14 +554,17 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
                 serde_json::json!(sock.to_str().unwrap())
             ),
         );
-        assert_silent_child(read_support::isolated_os_output(
+        assert_silent_child(
             test,
-            "probe",
-            &[
-                ("PATH", Some(root.0.as_os_str())),
-                ("MAESTRO_FIND_PROBE", Some(root.0.as_os_str())),
-            ],
-        ));
+            read_support::isolated_os_output(
+                test,
+                "probe",
+                &[
+                    ("PATH", Some(root.0.as_os_str())),
+                    ("MAESTRO_FIND_PROBE", Some(root.0.as_os_str())),
+                ],
+            ),
+        );
         return;
     }
     read_support::run(async {
@@ -572,13 +578,17 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
 }
 /// Ignore only harness lines, not the successful child's acquisition output.
 #[cfg(unix)]
-fn assert_silent_child(output: std::process::Output) {
+fn assert_silent_child(test: &str, output: std::process::Output) {
+    let success = format!(
+        "test {} ... ok",
+        crate::child_process::selector(test).unwrap()
+    );
     assert!(output.stderr.is_empty(), "{:?}", output.stderr);
     let stdout = String::from_utf8(output.stdout).unwrap();
     for line in stdout.lines().filter(|line| !line.is_empty()) {
         assert!(
             line == "running 1 test"
-                || line == "test find_acquisition_is_silent_and_abort_prevents_launch ... ok"
+                || line == success
                 || line.starts_with("test result: ok. 1 passed; 0 failed;"),
             "unexpected child output: {line}"
         );
