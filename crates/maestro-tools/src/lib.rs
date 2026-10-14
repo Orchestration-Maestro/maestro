@@ -53,8 +53,8 @@ pub mod write;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use edit::{
-    EditOperations, EditToolDetails, EditToolInput, EditToolOptions, create_edit_tool,
-    create_edit_tool_definition,
+    EditOperations, EditRenderState, EditToolDetails, EditToolInput, EditToolOptions,
+    create_edit_tool, create_edit_tool_definition,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use file_mutation_queue::with_file_mutation_queue;

@@ -2,6 +2,9 @@
 
 mod execute;
 mod prepare;
+mod render;
+
+pub use render::EditRenderState;
 
 use crate::{
     file_mutation_queue::with_file_mutation_queue,
@@ -50,7 +53,7 @@ pub struct EditToolOptions {
     pub operations: Option<Arc<dyn EditOperations>>,
 }
 
-/// Build an edit definition with argument preparation and no render callbacks.
+/// Build an edit definition with argument preparation and retained preview renderers.
 ///
 /// Empty lists fail before path resolution. Successful resolution enters the
 /// [file mutation queue](crate::file_mutation_queue) before the future is polled.
@@ -58,7 +61,7 @@ pub struct EditToolOptions {
 pub fn create_edit_tool_definition<C: 'static>(
     cwd: String,
     options: EditToolOptions,
-) -> ToolDefinition<C, EditToolInput, EditToolDetails> {
+) -> ToolDefinition<C, EditToolInput, EditToolDetails, EditRenderState> {
     let operations = options
         .operations
         .unwrap_or_else(|| Arc::new(NativeEditOperations));
@@ -103,8 +106,8 @@ pub fn create_edit_tool_definition<C: 'static>(
             let key = absolute.clone();
             with_file_mutation_queue(&key, move || edit_file(operations, absolute, input, signal))
         }),
-        render_call: None,
-        render_result: None,
+        render_call: Some(std::rc::Rc::new(render::render_call)),
+        render_result: Some(std::rc::Rc::new(render::render_result)),
     }
 }
 

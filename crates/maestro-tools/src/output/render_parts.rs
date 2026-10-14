@@ -6,7 +6,7 @@ use crate::{
 };
 use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
-use maestro_tui::{Text, tui::ComponentHandle};
+use maestro_tui::{Component, Text, tui::ComponentHandle};
 use std::{any::Any, rc::Rc};
 
 /// Format a line number or count the way the model has always seen it.
@@ -54,4 +54,10 @@ pub(crate) fn expand_hint(
     let more = paint(theme, &ThemeColor::Muted, &format!("\n... ({counts},"))?;
     let hint = themed(key_hint(EXPAND, "to expand", live_theme))?;
     Ok(format!("{more} {hint})"))
+}
+
+/// Share a component as its concrete type when it matches.
+pub(crate) fn downcast<T: Any>(handle: &ComponentHandle) -> Option<Rc<T>> {
+    let any: Rc<dyn Any> = Rc::<dyn Component>::clone(handle);
+    any.downcast::<T>().ok()
 }

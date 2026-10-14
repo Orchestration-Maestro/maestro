@@ -83,6 +83,11 @@ pub fn ms(value: u64) -> Duration {
 }
 
 impl ManualRuntime {
+    /// Take submitted futures to await them in a controlled order.
+    pub fn take_futures(&self) -> Vec<maestro_tui::tui::LocalFuture> {
+        std::mem::take(&mut self.state.borrow_mut().futures)
+    }
+
     /// Creates a host at time zero with an empty environment.
     pub fn new() -> Self {
         Self::default()

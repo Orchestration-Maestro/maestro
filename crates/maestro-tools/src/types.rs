@@ -44,8 +44,10 @@ pub struct ToolRenderContext<'a, S = Value> {
     pub args: &'a Value,
     /// Stable id of the tool call.
     pub tool_call_id: String,
-    /// Requests a redraw of the row.
+    /// Requests a redraw of the row; must not strongly retain its owning writer or runtime.
     pub invalidate: Rc<dyn Fn()>,
+    /// The caller's terminal runtime, which owns submitted preview futures.
+    pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
     /// Component this renderer returned for the row last time.
     pub last_component: Option<ComponentHandle>,
     /// State shared by both renderers across redraws.

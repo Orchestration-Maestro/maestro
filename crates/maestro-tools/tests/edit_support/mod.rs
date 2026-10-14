@@ -84,7 +84,7 @@ use maestro_tools::{
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 /// A typed edit definition.
-pub type Tool = ToolDefinition<(), EditToolInput, EditToolDetails>;
+pub type Tool = ToolDefinition<(), EditToolInput, EditToolDetails, maestro_tools::EditRenderState>;
 /// File stages for a supplied edit adapter.
 pub struct Operations {
     /// Shared scripted behavior, including pending-future drop witnesses.

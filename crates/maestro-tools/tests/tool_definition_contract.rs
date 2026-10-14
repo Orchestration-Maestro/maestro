@@ -464,6 +464,7 @@ fn row_context<'a>(
     ToolRenderContext {
         args,
         tool_call_id: "stable".into(),
+        runtime: Rc::new(display_support::manual_runtime::ManualRuntime::default()),
         invalidate: Rc::new(move || *counter.borrow_mut() += 1),
         last_component: None,
         state: Rc::clone(state),
