@@ -388,8 +388,18 @@ fn common(wire: &Wire) -> TestResult<(StreamOptions, bundled::Requests)> {
         .map(|headers| serde_json::from_value(serde_json::to_value(headers)?))
         .transpose()?;
     let on_payload: Option<OnPayload> = wire.hook.as_ref().map(|_| {
-        let hook: OnPayload =
-            Arc::new(|payload, _| Box::pin(std::future::ready(Ok(cache_marker(payload)))));
+        let hook: OnPayload = Arc::new(
+            |maestro_models::PayloadHookInput {
+                 payload,
+                 signal: hook_signal,
+             },
+             _| {
+                Box::pin(std::future::ready(Ok(maestro_models::PayloadHookInput {
+                    payload: cache_marker(payload),
+                    signal: hook_signal,
+                })))
+            },
+        );
         hook
     });
     Ok((

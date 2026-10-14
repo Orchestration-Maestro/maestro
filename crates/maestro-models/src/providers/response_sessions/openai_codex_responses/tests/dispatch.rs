@@ -781,7 +781,12 @@ fn hook_observations(
     let payload_seen = sender.clone();
     options.common.on_payload = Some(Arc::new(move |_, _| {
         payload_seen.send(("payload", String::new())).unwrap();
-        Box::pin(async move { Ok(serde_json::from_str(edited).unwrap()) })
+        Box::pin(async move {
+            Ok(crate::PayloadHookInput {
+                payload: serde_json::from_str(edited).unwrap(),
+                signal: None,
+            })
+        })
     }));
     let response_seen = sender.clone();
     options.common.on_response = Some(Arc::new(move |_, _| {
@@ -820,10 +825,21 @@ fn assert_default_context(sent: &[serde_json::Value]) {
 /// Edit only the body-mismatch row before preparation.
 fn edit_matrix_body(options: &mut super::super::OpenAICodexResponsesOptions, state: &str) {
     if state == "body" {
-        options.common.on_payload = Some(Arc::new(|mut body, _| {
-            body["changed"] = serde_json::json!(true);
-            Box::pin(async { Ok(body) })
-        }));
+        options.common.on_payload = Some(Arc::new(
+            |crate::PayloadHookInput {
+                 payload: mut body,
+                 signal: hook_signal,
+             },
+             _| {
+                body["changed"] = serde_json::json!(true);
+                Box::pin(async {
+                    Ok(crate::PayloadHookInput {
+                        payload: body,
+                        signal: hook_signal,
+                    })
+                })
+            },
+        ));
     }
 }
 
@@ -841,10 +857,10 @@ async fn cached_hook_failure() {
     }));
     let hooks = Arc::new(AtomicUsize::new(0));
     let count = Arc::clone(&hooks);
-    options.common.on_payload = Some(Arc::new(move |mut body, _| {
+    options.common.on_payload = Some(Arc::new(move |mut input, _| {
         count.fetch_add(1, Ordering::SeqCst);
-        body["ordered"] = serde_json::json!([2, 1, 2]);
-        Box::pin(async { Ok(body) })
+        input.payload["ordered"] = serde_json::json!([2, 1, 2]);
+        Box::pin(async { Ok(input) })
     }));
     let peer = tokio::spawn(cached_failure_peer(listener));
     let first =

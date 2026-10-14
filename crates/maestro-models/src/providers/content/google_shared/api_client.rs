@@ -1,4 +1,4 @@
-//! Pure transport preparation for content-generation requests.
+//! Content-generation transport preparation and one-attempt response admission.
 
 use indexmap::IndexMap;
 use serde_json::Value;
@@ -188,4 +188,160 @@ fn stream_query(url: &mut url::Url) {
     if !replaced {
         query.append_pair("alt", "sse");
     }
+}
+
+impl ApiClient {
+    /// Send once and consume a failing status before exposing successful response items.
+    pub(in crate::providers::content) async fn dispatch(
+        &self,
+        request: HttpRequest,
+        fetch: crate::Fetch,
+    ) -> Result<
+        impl futures_core::Stream<Item = Result<String, DiagnosticErrorInfo>> + Unpin,
+        crate::providers::http::RequestFailure,
+    > {
+        use crate::providers::http::{RequestFailure, SseMessages, decode_utf8};
+        use futures_util::StreamExt;
+        let mut response = fetch(request)
+            .await
+            .map_err(|error| RequestFailure::new(error.to_string()))?;
+        if !(200..300).contains(&response.status) {
+            let mut bytes = Vec::new();
+            while let Some(chunk) = response.body.next().await {
+                bytes.extend(chunk.map_err(|error| RequestFailure::new(error.to_string()))?);
+            }
+            let text = decode_utf8(&bytes);
+            let value = if response
+                .headers
+                .get("content-type")
+                .is_some_and(|text| text.contains("application/json"))
+            {
+                crate::providers::json_text::raw_json(&text)
+                    .and_then(crate::providers::json_text::json_value)
+                    .map_err(|error| RequestFailure::new(error.to_string()))?
+            } else {
+                serde_json::json!({"error": {"message": text, "code": response.status, "status": response.status_text}})
+            };
+            return Err(RequestFailure::new(
+                maestro_json::compact_json(&value)
+                    .map_err(|error| RequestFailure::new(error.to_string()))?,
+            ));
+        }
+        let source = ContentSource {
+            missing: matches!(response.status, 204 | 205),
+            body: response.body,
+            decoder: SseMessages::data_segments(),
+            pending: std::collections::VecDeque::new(),
+            ended: false,
+        };
+        Ok(Box::pin(futures_util::stream::unfold(
+            source,
+            ContentSource::next,
+        )))
+    }
+}
+
+/// Ordered response-item source retaining pending frames before a later failure.
+struct ContentSource {
+    /// Transport body.
+    body: crate::HttpBody,
+    /// Shared byte-framing owner.
+    decoder: crate::providers::http::SseMessages,
+    /// Completed frames waiting for reduction.
+    pending: std::collections::VecDeque<Result<String, DiagnosticErrorInfo>>,
+    /// Whether the transport source has ended.
+    ended: bool,
+    /// Whether the successful status has no response body.
+    missing: bool,
+}
+
+impl ContentSource {
+    /// Deliver pending items before reading or reporting the next source result.
+    async fn next(mut self) -> Option<(Result<String, DiagnosticErrorInfo>, Self)> {
+        use futures_util::StreamExt;
+        if self.missing {
+            self.ended = true;
+            self.missing = false;
+            self.pending
+                .push_back(Err(DiagnosticErrorInfo::error("Response body is empty")));
+        }
+        loop {
+            if let Some(item) = self.pending.pop_front() {
+                return Some((item, self));
+            }
+            if self.ended {
+                return None;
+            }
+            match self.body.next().await {
+                Some(Ok(bytes)) => self.pending.extend(
+                    self.decoder
+                        .push(&bytes)
+                        .into_iter()
+                        .filter_map(response_data),
+                ),
+                Some(Err(error)) => {
+                    self.ended = true;
+                    self.pending
+                        .push_back(Err(DiagnosticErrorInfo::error(error.to_string())));
+                }
+                None => {
+                    self.ended = true;
+                    let tail = self.decoder.segment_tail();
+                    let error = bare_error(&tail).unwrap_or(DiagnosticErrorInfo::error(
+                        "Incomplete JSON segment at the end",
+                    ));
+                    self.pending.extend(
+                        (!tail
+                            .trim_matches(maestro_text::is_whitespace_scalar)
+                            .is_empty())
+                        .then_some(Err(error)),
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// Select data or bare errors, normalizing null data roots to an empty response.
+fn response_data(
+    event: crate::providers::http::ServerSentEvent,
+) -> Option<Result<String, DiagnosticErrorInfo>> {
+    if !event.is_data {
+        return bare_error(&event.data).map(Err);
+    }
+    let data = event.data;
+    Some(Ok(
+        if crate::providers::json_text::raw_json(&data).is_ok_and(|raw| raw.get() == "null") {
+            "{}".to_owned()
+        } else {
+            data
+        },
+    ))
+}
+
+/// Classify a complete non-data segment or the residual tail as a bare provider error.
+fn bare_error(text: &str) -> Option<DiagnosticErrorInfo> {
+    let value = serde_json::from_str::<Value>(text).ok();
+    let code = value
+        .as_ref()
+        .and_then(|value| value.get("error"))
+        .and_then(|error| error.get("code"))
+        .and_then(|code| {
+            code.as_f64().or_else(|| {
+                code.as_str()?
+                    .trim_matches(maestro_text::is_whitespace_scalar)
+                    .parse()
+                    .ok()
+            })
+        });
+    if code.is_some_and(|code| (400.0..600.0).contains(&code))
+        && let Some(value) = value
+        && let Ok(body) = maestro_json::compact_json(&value)
+    {
+        let status = value["error"]["status"].as_str().unwrap_or("undefined");
+        return Some(DiagnosticErrorInfo::error(format!(
+            "got status: {status}. {body}"
+        )));
+    }
+    None
 }

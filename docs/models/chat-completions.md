@@ -104,9 +104,9 @@ with `long` retention they carry a one-hour lifetime where the compatibility sup
 `long` sends the `24h` retention and the session key only where the compatibility supports
 long caching; direct `OpenAI` URLs send the session key for any retention but `none`.
 
-`on_payload` receives the payload as JSON before it is sent (the temperature and token
+`on_payload` receives JSON in `PayloadHookInput::payload` (the temperature and token
 limit as floating-point numbers, or `null` when they are not finite) and returns the
-payload to send: the one it received, edited or not, or a new one. `on_response` receives
+selected record. See [hook records](../records.md) for the shared carrier. `on_response` receives
 the status and headers of the accepted response before the `start` update; it is not
 called for responses that are retried. Both hooks also receive the one model the request
 holds, shared and read-only. A hook error ends the stream with that error.

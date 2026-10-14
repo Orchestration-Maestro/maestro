@@ -198,7 +198,15 @@ pub(crate) async fn prepare_request(
     let account = extract_account_id(&key)?;
     let mut body = build_request_body(model, context, options)?;
     if let Some(hook) = &options.common.on_payload {
-        body = hook(body, Arc::clone(model)).await?;
+        body = hook(
+            crate::PayloadHookInput {
+                payload: body,
+                signal: None,
+            },
+            Arc::clone(model),
+        )
+        .await?
+        .payload;
     }
     Ok(PreparedRequest {
         body,

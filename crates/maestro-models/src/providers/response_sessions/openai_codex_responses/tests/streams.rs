@@ -1175,11 +1175,22 @@ fn configure_lifecycle(
 ) {
     use std::sync::{Arc, atomic::Ordering};
     let payloads = Arc::clone(observed);
-    options.common.on_payload = Some(Arc::new(move |mut body, _| {
-        payloads.payloads.fetch_add(1, Ordering::SeqCst);
-        body["marker"] = Value::from("replaced");
-        Box::pin(async { Ok(body) })
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  payload: mut body,
+                  signal: hook_signal,
+              },
+              _| {
+            payloads.payloads.fetch_add(1, Ordering::SeqCst);
+            body["marker"] = Value::from("replaced");
+            Box::pin(async {
+                Ok(crate::PayloadHookInput {
+                    payload: body,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     let hooks = Arc::clone(observed);
     let hook_scenario = scenario.to_owned();
     options.common.on_response = Some(Arc::new(move |_, _| {
@@ -1393,14 +1404,23 @@ async fn assert_preaborted_payload_await() {
     options.common.signal = Some(signal);
     let (release, receiver) = tokio::sync::oneshot::channel();
     let slot = Arc::new(Mutex::new(Some(receiver)));
-    options.common.on_payload = Some(Arc::new(move |mut body, _| {
-        let receiver = slot.lock().unwrap().take().unwrap();
-        Box::pin(async move {
-            receiver.await.unwrap();
-            body["awaited"] = Value::from("payload finished");
-            Ok(body)
-        })
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  payload: mut body,
+                  signal: hook_signal,
+              },
+              _| {
+            let receiver = slot.lock().unwrap().take().unwrap();
+            Box::pin(async move {
+                receiver.await.unwrap();
+                body["awaited"] = Value::from("payload finished");
+                Ok(crate::PayloadHookInput {
+                    payload: body,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     let future =
         super::super::request::prepare_request(&model, &context, &options, "maestro (browser)");
     futures_util::pin_mut!(future);

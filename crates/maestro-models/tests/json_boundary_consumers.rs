@@ -32,10 +32,21 @@ async fn run(
 ) -> TestResult<(String, Vec<bundled::Seen>)> {
     let protocol = &PROTOCOLS[2];
     let (fetch, requests) = bundled::fetch(bundled::text_body(protocol.api, "ok"));
-    let on_payload: OnPayload = Arc::new(move |payload, _| {
-        let edited = edit(payload);
-        Box::pin(async move { Ok(edited) })
-    });
+    let on_payload: OnPayload = Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  payload,
+                  signal: hook_signal,
+              },
+              _| {
+            let edited = edit(payload);
+            Box::pin(async move {
+                Ok(maestro_models::PayloadHookInput {
+                    payload: edited,
+                    signal: hook_signal,
+                })
+            })
+        },
+    );
     let common = StreamOptions {
         api_key: Some(bundled::api_key(protocol.api)),
         transport: Some(maestro_models::Transport::Sse),

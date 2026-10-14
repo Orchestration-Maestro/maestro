@@ -2,12 +2,12 @@
 use super::{MistralOptions, request};
 use crate::options::resolve_api_key;
 use crate::providers::{
-    assistant_output::{fail, initial_message},
+    assistant_output::{conclude, fail, initial_message},
     http::{RequestFailure, spawn_detached},
 };
 use crate::{
-    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, DoneReason,
-    Model, SimpleStreamOptions, StopReason,
+    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
+    SimpleStreamOptions,
 };
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
@@ -103,30 +103,5 @@ async fn produce(
         partial: Arc::clone(output),
     });
     super::sse::read(body, model, stream, output).await?;
-    if options
-        .common
-        .signal
-        .as_ref()
-        .is_some_and(crate::Cancellation::is_aborted)
-    {
-        return Err(aborted());
-    }
-    let reason = match output
-        .read()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .stop_reason
-    {
-        StopReason::Length => DoneReason::Length,
-        StopReason::ToolUse => DoneReason::ToolUse,
-        StopReason::Error | StopReason::Aborted => {
-            return Err(RequestFailure::new("An unknown error occurred"));
-        }
-        StopReason::Stop => DoneReason::Stop,
-    };
-    stream.push(AssistantMessageEvent::Done {
-        reason,
-        message: Arc::clone(output),
-    });
-    stream.end(None);
-    Ok(())
+    conclude(stream, output, options.common.signal.as_ref())
 }

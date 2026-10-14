@@ -2,6 +2,7 @@
 use super::raw_options;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::openai_completions as chat;
+use crate::providers::content::google as content;
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic as messages;
 use crate::providers::reasoning::mistral as conversation;
@@ -79,7 +80,7 @@ fn provider<T: 'static>(
 }
 
 /// The bundled protocols in registration order.
-pub(crate) fn built_in_providers() -> [ApiProvider; 7] {
+pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
     [
         provider(
             "anthropic-messages",
@@ -116,6 +117,12 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 7] {
             raw_options::response_sessions,
             sessions::stream_openai_codex_responses,
             stream_simple_openai_codex_responses,
+        ),
+        provider(
+            "google-generative-ai",
+            raw_options::google,
+            content::stream_google,
+            stream_simple_google,
         ),
         ApiProvider {
             api: "bedrock-converse-stream".into(),
@@ -270,4 +277,14 @@ fn selected_bedrock() -> BedrockProviderModule {
 pub fn set_bedrock_provider_module(module: BedrockProviderModule) {
     let retired = with_bedrock(|slot| slot.replace(module));
     drop(retired);
+}
+
+/// Start simple content generation, settling missing-key failures into the stream.
+#[must_use]
+pub fn stream_simple_google(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> AssistantMessageEventStream {
+    settle_simple(content::stream_simple_google, model, context, options)
 }

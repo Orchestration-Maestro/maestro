@@ -178,9 +178,9 @@ mod native {
     use super::events::Reducer;
     use super::proxy::Environment;
     use super::request::{payload, prepare};
+    use crate::providers::assistant_output::conclude;
     use crate::providers::assistant_output::{callback_failure, fail};
     use crate::providers::http::{Raced, RequestFailure, race};
-    use crate::providers::responses::openai_responses::conclude;
     use crate::{
         AssistantMessageEventStream, Cancellation, Context, Model, ProviderResponse,
         SharedAssistantMessage,
@@ -253,9 +253,16 @@ mod native {
         let signal = options.common.signal.as_ref();
         let mut input = payload(model, context, &options, &env)?;
         if let Some(hook) = &options.common.on_payload {
-            input = hook(input, Arc::clone(model))
-                .await
-                .map_err(callback_failure)?;
+            input = hook(
+                crate::PayloadHookInput {
+                    payload: input,
+                    signal: None,
+                },
+                Arc::clone(model),
+            )
+            .await
+            .map_err(callback_failure)?
+            .payload;
         }
         let prepared = prepare(input)?;
         let settings = Settings::resolve(model, &options, &env)?;

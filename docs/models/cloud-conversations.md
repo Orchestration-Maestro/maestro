@@ -155,10 +155,12 @@ a response that is not accepted.
 
 ## Hooks and results
 
-`on_payload` receives the request as the service input records spell it: `modelId`, `messages`,
+`on_payload` receives the request in `PayloadHookInput::payload` as the service input
+records spell it: `modelId`, `messages`,
 `system` when the prompt is nonempty, `inferenceConfig` (present, possibly empty) and
 `requestMetadata` when given, plus tool configuration and model-specific thinking fields when
-selected. The value it returns replaces the request as a whole. Before
+selected. The returned record's JSON replaces the request as a whole; see
+[hook records](../records.md). Before
 anything is sent, the model identifier is read for the route (one that is missing or not text
 fails at the route, whatever else is malformed), then the rest is selected into the service's
 input records: undeclared ordinary record members are dropped, `null` known record members and list or map
@@ -231,7 +233,7 @@ let options = BedrockOptions {
     common: StreamOptions {
         // Refuse the request after seeing it, so nothing is sent.
         on_payload: Some(Arc::new(move |payload, _| {
-            *recorder.lock().expect("lock") = Some(payload);
+            *recorder.lock().expect("lock") = Some(payload.payload);
             Box::pin(async {
                 Err(DiagnosticErrorInfo {
                     name: None,

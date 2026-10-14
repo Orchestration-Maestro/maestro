@@ -69,10 +69,7 @@ mod tests {
         signal.abort();
         assert!(base.signal.as_ref().unwrap().is_aborted());
         let (mut cx, shared) = (Context::from_waker(Waker::noop()), Arc::new(model(8.0)));
-        let mut payload = base.on_payload.unwrap()(serde_json::json!("kept"), shared.clone());
-        assert!(
-            matches!(payload.as_mut().poll(&mut cx), Poll::Ready(Ok(value)) if value == "kept")
-        );
+        assert_payload_hook(&base.on_payload.unwrap(), &mut cx, shared.clone());
         let mut response = base.on_response.unwrap()(ProviderResponse::default(), shared);
         assert!(matches!(
             response.as_mut().poll(&mut cx),
@@ -84,6 +81,20 @@ mod tests {
         assert_eq!(
             build_base_options(&model(8.0), Some(&options), None).max_tokens,
             Some(0.0)
+        );
+    }
+
+    /// Poll the forwarded hook and check its selected JSON value.
+    fn assert_payload_hook(hook: &OnPayload, cx: &mut Context<'_>, shared: Arc<Model>) {
+        let mut payload = hook(
+            maestro_models::PayloadHookInput {
+                payload: serde_json::json!("kept"),
+                signal: None,
+            },
+            shared,
+        );
+        assert!(
+            matches!(payload.as_mut().poll(cx), Poll::Ready(Ok(value)) if value.payload == "kept")
         );
     }
 

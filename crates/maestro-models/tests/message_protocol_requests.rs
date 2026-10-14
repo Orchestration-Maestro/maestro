@@ -438,21 +438,34 @@ fn keep_model(order: &Order, model: Arc<Model>) {
 /// A payload hook that notes its call and applies `action`.
 fn payload_hook(order: &Order, action: Payload) -> OnPayload {
     let order = Arc::clone(order);
-    Arc::new(move |mut payload, model| {
-        order.note("payload");
-        keep_model(&order, model);
-        let outcome = match &action {
-            Payload::Keep => Ok(payload),
-            Payload::Edit => {
-                payload["temperature"] = json!(0.25);
-                Ok(payload)
-            }
-            Payload::Replace => Ok(json!({"model": "replaced", "stream": false, "temperature": 9})),
-            Payload::Scalar => Ok(json!(7)),
-            Payload::Fail(message) => Err(messages::diagnostic(message)),
-        };
-        Box::pin(std::future::ready(outcome))
-    })
+    Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              model| {
+            order.note("payload");
+            keep_model(&order, model);
+            let outcome = match &action {
+                Payload::Keep => Ok(payload),
+                Payload::Edit => {
+                    payload["temperature"] = json!(0.25);
+                    Ok(payload)
+                }
+                Payload::Replace => {
+                    Ok(json!({"model": "replaced", "stream": false, "temperature": 9}))
+                }
+                Payload::Scalar => Ok(json!(7)),
+                Payload::Fail(message) => Err(messages::diagnostic(message)),
+            };
+            Box::pin(std::future::ready(outcome.map(|payload| {
+                maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                }
+            })))
+        },
+    )
 }
 
 /// A response hook that notes the status and a header it saw and may fail.

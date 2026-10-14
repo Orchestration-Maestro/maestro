@@ -90,8 +90,9 @@ holds it as text. `ToolChoice::Auto` and `None` are sent as `auto` and `none`, `
 description and the `properties` (default `{}`) and `required` (default `[]`) of its schema as
 an object schema; other schema members are not sent.
 
-`on_payload` receives the payload as JSON before it is sent and returns the payload to send:
-the one it received, edited or not, or a new one. `stream` is then set to `true`; a returned
+`on_payload` receives JSON in `PayloadHookInput::payload` and returns the selected record;
+its JSON may be kept, edited or replaced. See [hook records](../records.md) for the shared
+carrier. `stream` is then set to `true`; a returned
 value that is not an object becomes `{"stream": true}`. `on_response` receives the status and
 headers of the accepted response before the `start` update; it is not called for responses that
 are retried. Both hooks also receive the one model the request holds, shared and read-only. A

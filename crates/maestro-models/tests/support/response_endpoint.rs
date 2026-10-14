@@ -146,38 +146,49 @@ fn payload_hook(case: &Value, log: &Log) -> OnPayload {
         case["hook"].as_str().unwrap_or_default().to_owned(),
     );
     let replacement = case["payload"].clone();
-    Arc::new(move |mut payload, _| {
-        let label = if hook == "order" {
-            json!(
-                payload
-                    .as_object()
-                    .map(|payload| payload.keys().collect::<Vec<_>>())
-            )
-        } else {
-            json!("payload")
-        };
-        recorded
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(label);
-        let result = match hook.as_str() {
-            "payload_failure" => Err(failure("payload failed")),
-            "null" => Ok(Value::Null),
-            "array" => Ok(json!(["replacement", {"retained":true} ])),
-            "scalar" => Ok(replacement.clone()),
-            "nonstream" => {
-                payload["stream"] = json!(false);
-                Ok(payload)
-            }
-            "replace" => Ok(json!({"stream":true,"marker":"replacement"})),
-            "mutate" => {
-                payload["marker"] = json!("mutated");
-                Ok(payload)
-            }
-            _ => Ok(payload),
-        };
-        Box::pin(std::future::ready(result))
-    })
+    Arc::new(
+        move |maestro_models::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              _| {
+            let label = if hook == "order" {
+                json!(
+                    payload
+                        .as_object()
+                        .map(|payload| payload.keys().collect::<Vec<_>>())
+                )
+            } else {
+                json!("payload")
+            };
+            recorded
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .push(label);
+            let result = match hook.as_str() {
+                "payload_failure" => Err(failure("payload failed")),
+                "null" => Ok(Value::Null),
+                "array" => Ok(json!(["replacement", {"retained":true} ])),
+                "scalar" => Ok(replacement.clone()),
+                "nonstream" => {
+                    payload["stream"] = json!(false);
+                    Ok(payload)
+                }
+                "replace" => Ok(json!({"stream":true,"marker":"replacement"})),
+                "mutate" => {
+                    payload["marker"] = json!("mutated");
+                    Ok(payload)
+                }
+                _ => Ok(payload),
+            };
+            Box::pin(std::future::ready(result.map(|payload| {
+                maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                }
+            })))
+        },
+    )
 }
 /// Response hook records the response after endpoint preparation.
 fn response_hook(case: &Value, log: &Log, signal: Cancellation) -> OnResponse {

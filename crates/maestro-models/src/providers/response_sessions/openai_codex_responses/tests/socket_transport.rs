@@ -721,12 +721,23 @@ struct HookCounts {
 /// Count every hook; the payload hook also edits the retained request.
 fn count_hooks(options: &mut OpenAICodexResponsesOptions, counts: &Arc<HookCounts>) {
     let seen = Arc::clone(counts);
-    options.common.on_payload = Some(Arc::new(move |mut payload, _| {
-        seen.payloads.fetch_add(1, Ordering::SeqCst);
-        payload["store"] = json!(true);
-        payload["edited"] = json!("kept");
-        Box::pin(async move { Ok(payload) })
-    }));
+    options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              _| {
+            seen.payloads.fetch_add(1, Ordering::SeqCst);
+            payload["store"] = json!(true);
+            payload["edited"] = json!("kept");
+            Box::pin(async move {
+                Ok(crate::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     let seen = Arc::clone(counts);
     options.common.on_response = Some(Arc::new(move |_, _| {
         seen.responses.fetch_add(1, Ordering::SeqCst);

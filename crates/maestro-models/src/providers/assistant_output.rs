@@ -7,7 +7,8 @@ use crate::providers::http::RequestFailure;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation,
-    DiagnosticErrorInfo, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage, UsageCost,
+    DiagnosticErrorInfo, DoneReason, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage,
+    UsageCost,
 };
 
 /// The assistant message an invocation fills in, before any response arrives.
@@ -67,4 +68,33 @@ pub(crate) fn fail(
         error: Arc::clone(output),
     });
     stream.end(None);
+}
+
+/// Publish completion only after reduction and cancellation checks succeed.
+pub(crate) fn conclude(
+    events: &AssistantMessageEventStream,
+    output: &SharedAssistantMessage,
+    signal: Option<&Cancellation>,
+) -> Result<(), RequestFailure> {
+    if signal.is_some_and(Cancellation::is_aborted) {
+        return Err(RequestFailure::new("Request was aborted"));
+    }
+    let reason = match output
+        .read()
+        .unwrap_or_else(PoisonError::into_inner)
+        .stop_reason
+    {
+        StopReason::Stop => DoneReason::Stop,
+        StopReason::Length => DoneReason::Length,
+        StopReason::ToolUse => DoneReason::ToolUse,
+        StopReason::Error | StopReason::Aborted => {
+            return Err(RequestFailure::new("An unknown error occurred"));
+        }
+    };
+    events.push(AssistantMessageEvent::Done {
+        reason,
+        message: Arc::clone(output),
+    });
+    events.end(None);
+    Ok(())
 }

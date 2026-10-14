@@ -1,6 +1,4 @@
-//! Content-generation request preparation: raw parameters and simple-option selection.
-//!
-//! Neither operation sends a request; see the content-generation guide for the full flow.
+//! Public content-generation preparation and independently produced invocation.
 
 use std::borrow::Cow;
 
@@ -203,6 +201,7 @@ pub fn create_client(
     model: &Model,
     api_key: &str,
     options_headers: Option<&indexmap::IndexMap<String, String>>,
+    default_base_url: Option<String>,
 ) -> ApiClient {
     let mut headers = model.headers.clone().unwrap_or_default();
     if let Some(options) = options_headers {
@@ -214,7 +213,8 @@ pub fn create_client(
     }
     let (base_url, api_version) = if model.base_url.is_empty() {
         (
-            "https://generativelanguage.googleapis.com".to_owned(),
+            default_base_url
+                .unwrap_or_else(|| "https://generativelanguage.googleapis.com".to_owned()),
             "v1beta".to_owned(),
         )
     } else {
@@ -225,5 +225,164 @@ pub fn create_client(
         api_version,
         api_key: api_key.to_owned(),
         headers,
+    }
+}
+
+/// Start a raw content-generation invocation on the caller's runtime.
+///
+/// Setup and transport failures settle into the returned event stream.
+#[must_use]
+pub fn stream_google(
+    model: Model,
+    context: Context,
+    options: Option<GoogleOptions>,
+) -> crate::AssistantMessageEventStream {
+    use crate::providers::assistant_output::{fail, initial_message};
+    use crate::providers::http::{RequestFailure, spawn_detached};
+    use std::sync::{Arc, RwLock};
+    let options = options.unwrap_or_default();
+    let default_base_url = endpoint_default();
+    let key = resolve_api_key(
+        &model.provider,
+        options.common.api_key.as_deref().map(Cow::Borrowed),
+    );
+    let invocation = Invocation {
+        client: create_client(
+            &model,
+            key.as_deref().unwrap_or(""),
+            options.common.headers.as_ref(),
+            default_base_url,
+        ),
+        model: Arc::new(model),
+        context,
+    };
+    let events = crate::AssistantMessageEventStream::new();
+    let output = Arc::new(RwLock::new(initial_message(&invocation.model)));
+    let producer = events.clone();
+    let message = Arc::clone(&output);
+    if !spawn_detached(async move {
+        if let Err(error) = invoke(invocation, &options, &producer, &message).await {
+            fail(&producer, &message, options.common.signal.as_ref(), error);
+        }
+    }) {
+        fail(
+            &events,
+            &output,
+            None,
+            RequestFailure::new("Streaming requires a running Tokio runtime."),
+        );
+    }
+    events
+}
+
+/// Resolve simple settings before starting content generation.
+///
+/// # Errors
+/// Returns a diagnostic when no nonempty API key is available.
+pub fn stream_simple_google(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions>,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let options = options.unwrap_or_default();
+    let selected = build_simple_options(&model, Some(&options))?;
+    Ok(stream_google(model, context, Some(selected)))
+}
+
+/// Counter shared across independently produced invocations.
+static TOOL_CALL_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Prepare the selected payload and run its whole transport operation once.
+async fn invoke(
+    invocation: Invocation,
+    options: &GoogleOptions,
+    events: &crate::AssistantMessageEventStream,
+    output: &crate::SharedAssistantMessage,
+) -> Result<(), crate::providers::http::RequestFailure> {
+    use super::google_shared::{process_google_stream, project_content_request};
+    use crate::providers::assistant_output::conclude;
+    use crate::providers::http::{Raced, RequestFailure, race};
+    let model = invocation.model;
+    let client = invocation.client;
+    let params = build_params(&model, &invocation.context, Some(options))?;
+    let payload =
+        serde_json::to_value(params).map_err(|error| RequestFailure::new(error.to_string()))?;
+    let mut selected = crate::PayloadHookInput {
+        payload,
+        signal: options.common.signal.clone(),
+    };
+    if let Some(hook) = &options.common.on_payload {
+        selected = hook(selected, std::sync::Arc::clone(&model)).await?;
+    }
+    let signal = selected.signal.as_ref();
+    let mut payload = selected.payload;
+    let controls = payload
+        .get_mut("config")
+        .and_then(serde_json::Value::as_object_mut)
+        .and_then(|config| config.shift_remove("httpOptions"));
+    let projected = project_content_request(payload)?;
+    let mut prepared = client.prepare_request(projected, controls.as_ref())?;
+    if signal.is_some_and(crate::Cancellation::is_aborted) {
+        return Err(RequestFailure::new("Request aborted"));
+    }
+    let timeout = prepared
+        .timeout
+        .and_then(|ms| std::time::Duration::try_from_secs_f64(ms / 1000.0).ok());
+    let has_timeout_control = controls
+        .as_ref()
+        .and_then(|controls| controls.get("timeout"))
+        .and_then(serde_json::Value::as_f64)
+        .is_some_and(|value| value != 0.0);
+    let owned_signal = (signal.is_some() || has_timeout_control).then(crate::Cancellation::new);
+    prepared.request.signal = owned_signal.clone();
+    let fetch = options
+        .common
+        .fetch
+        .clone()
+        .unwrap_or_else(crate::default_fetch);
+    let work = async {
+        let body = client.dispatch(prepared.request, fetch).await?;
+        events.push(crate::AssistantMessageEvent::Start {
+            partial: std::sync::Arc::clone(output),
+        });
+        process_google_stream(body, output, events, &model, &TOOL_CALL_COUNTER).await?;
+        conclude(events, output, options.common.signal.as_ref())
+    };
+    match race(work, timeout, signal).await {
+        Raced::Done(result) => result,
+        Raced::Cancelled | Raced::TimedOut => {
+            if let Some(signal) = owned_signal {
+                signal.abort();
+            }
+            Err(RequestFailure::new("Request was aborted"))
+        }
+    }
+}
+
+/// Owned setup captured before asynchronous payload callbacks.
+struct Invocation {
+    /// Model identity shared with the hook.
+    model: std::sync::Arc<Model>,
+    /// Conversation to prepare.
+    context: Context,
+    /// Captured native client settings.
+    client: ApiClient,
+}
+
+/// Capture the public endpoint once, retaining the shared whitespace policy.
+fn endpoint_default() -> Option<String> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::env::var("GOOGLE_GEMINI_BASE_URL")
+            .ok()
+            .map(|text| {
+                text.trim_matches(maestro_text::is_whitespace_scalar)
+                    .to_owned()
+            })
+            .filter(|text| !text.is_empty())
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        None
     }
 }

@@ -662,10 +662,21 @@ async fn assert_shared_results(protocol: &Protocol, root: bool) -> TestResult {
         vec![bundled::text_body(protocol.api, "ab")]
     };
     let (fetch, requests) = bundled::fetch_chunks(chunks);
-    let edited: OnPayload = Arc::new(|mut payload, _| {
-        payload["marker"] = json!({"nested": ["edited", "edited"]});
-        Box::pin(async move { Ok(payload) })
-    });
+    let edited: OnPayload = Arc::new(
+        |maestro_models::PayloadHookInput {
+             mut payload,
+             signal: hook_signal,
+         },
+         _| {
+            payload["marker"] = json!({"nested": ["edited", "edited"]});
+            Box::pin(async move {
+                Ok(maestro_models::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                })
+            })
+        },
+    );
     let common = StreamOptions {
         api_key: Some(bundled::api_key(protocol.api)),
         transport: Some(maestro_models::Transport::Sse),

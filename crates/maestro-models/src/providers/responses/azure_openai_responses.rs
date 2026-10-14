@@ -1,14 +1,13 @@
 //! Cloud response deployment invocation.
 use super::openai_responses::source::{self, Prepared, Source};
-use super::openai_responses::{
-    OpenAIResponsesReasoningSummary, Reasoning, conclude, diagnostic, reasoning,
-};
+use super::openai_responses::{OpenAIResponsesReasoningSummary, Reasoning, diagnostic, reasoning};
 use super::openai_responses_shared::{
     messages::{convert_responses_messages, convert_responses_tools},
     process_responses_stream,
 };
 use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_api_key;
+use crate::providers::assistant_output::conclude;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::openai_completions::{copied, layer, scope_headers};
 use crate::providers::http::{
@@ -307,7 +306,15 @@ async fn send(
         layer(&mut headers, copied(authored));
     }
     if let Some(hook) = &options.common.on_payload {
-        payload = hook(payload, Arc::clone(model)).await?;
+        payload = hook(
+            crate::PayloadHookInput {
+                payload,
+                signal: None,
+            },
+            Arc::clone(model),
+        )
+        .await?
+        .payload;
     }
     let streaming = payload.get("stream").is_some_and(source::streaming);
     headers.insert("content-type".to_owned(), "application/json".to_owned());

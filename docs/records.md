@@ -15,8 +15,11 @@ callback's setup errors directly; a bundled callback settles its own as error st
 `complete` and `complete_simple` also invoke immediately, but return setup errors
 inside their futures. Options, hooks and cancellation signals reach the adapter
 unchanged; adapters own payload policy, credentials, I/O and provider defaults.
-A payload hook receives the submitted payload and returns the one to send, so it can
-keep, edit or replace it. When an adapter calls a response hook, it supplies status
+A payload hook receives `PayloadHookInput` and returns the selected record. Its `payload`
+field holds JSON parameters to keep, edit or replace; its optional `signal` field carries
+request cancellation for [content generation](models/content-generation.md#public-invocation).
+Other bundled adapters supply no hook signal and ignore the returned signal.
+When an adapter calls a response hook, it supplies status
 and headers before consuming the response body; provider-specific policy is documented
 on each provider page. Both receive the invocation's model, shared and read-only.
 

@@ -201,12 +201,23 @@ async fn editable(url: &str, session: &str) -> (Conversation, Arc<Mutex<Option<E
     let mut chat = Conversation::new(url, Some(session), None).await;
     let knob: Arc<Mutex<Option<Edit>>> = Arc::default();
     let read = Arc::clone(&knob);
-    chat.setup.options.common.on_payload = Some(Arc::new(move |mut payload, _| {
-        if let Some(edit) = *read.lock().unwrap() {
-            edit(&mut payload);
-        }
-        Box::pin(async move { Ok(payload) })
-    }));
+    chat.setup.options.common.on_payload = Some(Arc::new(
+        move |crate::PayloadHookInput {
+                  mut payload,
+                  signal: hook_signal,
+              },
+              _| {
+            if let Some(edit) = *read.lock().unwrap() {
+                edit(&mut payload);
+            }
+            Box::pin(async move {
+                Ok(crate::PayloadHookInput {
+                    payload,
+                    signal: hook_signal,
+                })
+            })
+        },
+    ));
     (chat, knob)
 }
 
