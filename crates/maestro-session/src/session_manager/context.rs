@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
 
 /// Read a property, failing only when its receiver is null or missing.
-pub(super) fn property<'a>(
+pub(crate) fn property<'a>(
     value: Option<&'a Value>,
     field: &str,
 ) -> Result<Option<&'a Value>, serde_json::Error> {
@@ -192,7 +192,7 @@ fn append_message(entry: &Value) -> Option<Value> {
     }
 }
 /// Capture generated message operands and convert their timestamp at projection.
-fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
+pub(crate) fn generated(entry: &Value, role: &str, fields: &[&str]) -> Value {
     let mut message = serde_json::Map::new();
     message.insert("role".into(), role.into());
     for field in fields {
