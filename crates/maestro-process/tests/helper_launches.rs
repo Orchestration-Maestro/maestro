@@ -33,6 +33,7 @@ sys.exit(int(sys.argv[1]))
             let output = spawn_sync(
                 &mut command,
                 SpawnSyncOptions::Capture {
+                    max_buffer_bytes: None,
                     stdout,
                     input,
                     timeout: None,
@@ -69,6 +70,7 @@ fn sync_input_and_output_progress_concurrently() {
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
+            max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: Some(&input),
             timeout: None,
@@ -144,6 +146,7 @@ s.close()
         spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: Some(&input),
                 timeout: None,
@@ -346,6 +349,7 @@ s.close(); os._exit(0)
         spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Discard,
                 input: Some(b"copied"),
                 timeout: None,

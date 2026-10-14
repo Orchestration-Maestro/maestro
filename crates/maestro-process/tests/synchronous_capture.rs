@@ -1,4 +1,5 @@
 //! Synchronous capture through the public native process interface.
+#![cfg(test)]
 #![cfg(unix)]
 use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::{os::unix::process::ExitStatusExt, time::Duration};
@@ -32,6 +33,7 @@ sys.exit(int(sys.argv[1]))
         let output = spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(Duration::from_secs(5)),
@@ -49,6 +51,11 @@ sys.exit(int(sys.argv[1]))
         assert!(output.stderr.is_empty());
         assert_eq!(output.status.code(), Some(code));
     }
+    assert_signal_status();
+}
+
+/// Checks that synchronous capture retains native signal status.
+fn assert_signal_status() {
     let mut signal = Command::new("python3");
     signal.args([
         "-c",
@@ -57,6 +64,7 @@ sys.exit(int(sys.argv[1]))
     let output = spawn_sync(
         &mut signal,
         SpawnSyncOptions::Capture {
+            max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: None,
             timeout: Some(Duration::from_secs(5)),
@@ -81,6 +89,7 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
                 spawn_sync(
                     &mut command,
                     SpawnSyncOptions::Capture {
+                        max_buffer_bytes: None,
                         stdout: OutputMode::Capture,
                         input: None,
                         timeout: Some(Duration::from_secs(5)),
@@ -111,6 +120,7 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
         let error = spawn_sync(
             &mut Command::new(&path),
             SpawnSyncOptions::Capture {
+                max_buffer_bytes: None,
                 stdout: OutputMode::Capture,
                 input: None,
                 timeout: Some(Duration::from_secs(5)),
@@ -128,6 +138,7 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     let output = spawn_sync(
         &mut command,
         SpawnSyncOptions::Capture {
+            max_buffer_bytes: None,
             stdout: OutputMode::Capture,
             input: None,
             timeout: Some(Duration::from_secs(5)),
@@ -137,4 +148,107 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     .unwrap();
     assert_eq!(output.status.code(), Some(7));
     assert_eq!(output.stdout, b"done");
+}
+
+/// Source-observed combined buffer boundaries.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct Boundary {
+    /// Bytes emitted to stdout.
+    stdout: usize,
+    /// Bytes emitted to stderr.
+    stderr: usize,
+    /// Selected combined limit, zero disabling it.
+    max_buffer: usize,
+    /// Whether collection completes normally.
+    ok: bool,
+}
+
+#[test]
+fn bounded_capture_counts_combined_output() {
+    let rows: Vec<Boundary> =
+        serde_json::from_str(include_str!("fixtures/capture_boundaries.json")).unwrap();
+    for Boundary {
+        stdout: out,
+        stderr: err,
+        max_buffer,
+        ok: succeeds,
+    } in rows
+    {
+        let limit = Some(max_buffer);
+        let mut command = Command::new("python3");
+        command.args([
+            "-c",
+            "import os,sys; os.write(1,b'x'*int(sys.argv[1])); os.write(2,b'y'*int(sys.argv[2]))",
+            &out.to_string(),
+            &err.to_string(),
+        ]);
+        let result = spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
+                stderr: OutputMode::Capture,
+                input: None,
+                timeout: None,
+                max_buffer_bytes: limit,
+            },
+        );
+        if succeeds {
+            let output = result.unwrap();
+            assert_eq!(output.stdout, vec![b'x'; out]);
+            assert_eq!(output.stderr, vec![b'y'; err]);
+        } else {
+            assert!(matches!(
+                result,
+                Err(maestro_process::SpawnSyncError::Wait(_))
+            ));
+        }
+    }
+}
+
+#[test]
+fn bounded_capture_reaps_overflowing_child() {
+    use std::{
+        io::{Read as _, Write as _},
+        net::TcpListener,
+    };
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let worker = std::thread::spawn(move || {
+        let mut command = Command::new("python3");
+        command.args(["-c", "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(sys.argv[1]))); s.sendall(str(os.getpid()).encode()+b'\\n'); s.recv(1); os.write(1,b'x'*100000); s.recv(1)", &port.to_string()]);
+        spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
+                stderr: OutputMode::Capture,
+                input: None,
+                timeout: None,
+                max_buffer_bytes: Some(16),
+            },
+        )
+    });
+    let (mut socket, _) = listener.accept().unwrap();
+    let mut pid = Vec::new();
+    loop {
+        let mut byte = [0];
+        socket.read_exact(&mut byte).unwrap();
+        if byte[0] == b'\n' {
+            break;
+        }
+        pid.push(byte[0]);
+    }
+    socket.write_all(b"g").unwrap();
+    assert!(matches!(
+        worker.join().unwrap(),
+        Err(maestro_process::SpawnSyncError::Wait(_))
+    ));
+    let pid = String::from_utf8(pid).unwrap().parse().unwrap();
+    assert_eq!(
+        rustix::process::test_kill_process(rustix::process::Pid::from_raw(pid).unwrap()),
+        Err(rustix::io::Errno::SRCH)
+    );
+    let mut rest = Vec::new();
+    let _ = socket.read_to_end(&mut rest);
+    assert!(rest.is_empty());
 }

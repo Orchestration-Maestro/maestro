@@ -419,6 +419,8 @@ pub enum SpawnSyncOptions<'a> {
         timeout: Option<Duration>,
         /// Whether stderr is captured or sent to the null device.
         stderr: OutputMode,
+        /// Combined captured byte limit; None and zero disable it.
+        max_buffer_bytes: Option<usize>,
     },
     /// Inherit all three descriptors and return status with empty captured streams.
     Inherit,
@@ -446,6 +448,55 @@ async fn complete(child: &mut CapturedChild, input: Option<&[u8]>) -> io::Result
         wait_for_child_process(child, WaitOptions::default(), std::future::pending(), None),
     )
     .await
+}
+
+/// Collects bounded output through the existing streaming wait and termination path.
+async fn complete_capture(
+    child: &mut CapturedChild,
+    input: Option<&[u8]>,
+    limit: Option<usize>,
+) -> io::Result<Output> {
+    let Some(limit) = limit else {
+        return complete(child, input).await;
+    };
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    let mut sender = Some(sender);
+    let mut stdout = Vec::new();
+    let mut stderr = Vec::new();
+    let mut exceeded = false;
+    let mut collect = |stream, bytes: &[u8]| {
+        if exceeded {
+            return;
+        }
+        if bytes.len() > limit - stdout.len() - stderr.len() {
+            exceeded = true;
+            if let Some(sender) = sender.take() {
+                let _ = sender.send(());
+            }
+        } else {
+            match stream {
+                OutputStream::Stdout => stdout.extend_from_slice(bytes),
+                OutputStream::Stderr => stderr.extend_from_slice(bytes),
+            }
+        }
+    };
+    let written = write_input(child.child.stdin.take(), input);
+    let stopped = async {
+        let _ = receiver.await;
+        Termination::Kill
+    };
+    let result = settle_input(
+        written,
+        wait_for_child_process(child, WaitOptions::default(), stopped, Some(&mut collect)),
+    )
+    .await;
+    let mut output = result?;
+    if exceeded {
+        return Err(io::Error::other("captured output exceeds byte limit"));
+    }
+    output.stdout = stdout;
+    output.stderr = stderr;
+    Ok(output)
 }
 
 /// Retains input failure until output collection settles.
@@ -494,9 +545,10 @@ async fn capture(
     command: &mut Command,
     options: SpawnSyncOptions<'_>,
 ) -> Result<Output, SpawnSyncError> {
-    let (descriptors, input, timeout) = match options {
+    let (descriptors, input, timeout, max_buffer_bytes) = match options {
         SpawnSyncOptions::Inherit => (
             [Stdio::inherit(), Stdio::inherit(), Stdio::inherit()],
+            None,
             None,
             None,
         ),
@@ -505,6 +557,7 @@ async fn capture(
             input,
             timeout,
             stderr,
+            max_buffer_bytes,
         } => (
             [
                 if input.is_some() {
@@ -525,6 +578,7 @@ async fn capture(
             ],
             input,
             timeout.filter(|duration| !duration.is_zero()),
+            max_buffer_bytes.filter(|limit| *limit != 0),
         ),
     };
     command.kill_on_drop(true);
@@ -534,7 +588,7 @@ async fn capture(
     tokio::select! {
         biased;
         () = fires(&mut deadline) => {}
-        result = complete(&mut child, input) => return result.map_err(SpawnSyncError::Wait),
+        result = complete_capture(&mut child, input, max_buffer_bytes) => return result.map_err(SpawnSyncError::Wait),
     }
     child.take_output();
     child

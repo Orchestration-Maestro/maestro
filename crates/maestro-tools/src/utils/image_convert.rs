@@ -55,13 +55,32 @@ pub(super) fn decode_image(data: &str) -> Option<RgbaImage> {
     let bytes = GeneralPurpose::new(&alphabet::STANDARD, config)
         .decode(normalized)
         .ok()?;
-    let image = image::load_from_memory(&bytes).ok()?.to_rgba8();
+    let image = decode_bytes(&bytes)?;
     Some(apply_exif_orientation(image, &bytes))
 }
 
 /// Encode RGBA pixels in the requested format as base64.
 pub(super) fn encode_image(image: &DynamicImage, format: ImageOutputFormat) -> Option<String> {
+    Some(STANDARD.encode(encode_bytes(image, format)?))
+}
+
+/// Converts raw image bytes to PNG without applying metadata orientation.
+#[must_use]
+pub fn convert_bytes_to_png(bytes: &[u8]) -> Option<Vec<u8>> {
+    encode_bytes(
+        &DynamicImage::ImageRgba8(decode_bytes(bytes)?),
+        ImageOutputFormat::Png,
+    )
+}
+
+/// Decodes raw pixels without metadata transformation.
+fn decode_bytes(bytes: &[u8]) -> Option<RgbaImage> {
+    Some(image::load_from_memory(bytes).ok()?.to_rgba8())
+}
+
+/// Encodes pixels into owned bytes.
+fn encode_bytes(image: &DynamicImage, format: ImageOutputFormat) -> Option<Vec<u8>> {
     let mut bytes = Cursor::new(Vec::new());
     image.write_to(&mut bytes, format).ok()?;
-    Some(STANDARD.encode(bytes.into_inner()))
+    Some(bytes.into_inner())
 }

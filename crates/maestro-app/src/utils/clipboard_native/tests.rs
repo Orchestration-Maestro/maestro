@@ -6,6 +6,12 @@ use std::cell::Cell;
 /// Admission marker that never opens a native clipboard.
 struct Module;
 impl ClipboardModule for Module {
+    fn has_image(&self) -> io::Result<bool> {
+        unreachable!("text operation must not probe images")
+    }
+    fn get_image_binary(&self) -> LocalBoxFuture<'_, io::Result<Option<Vec<u8>>>> {
+        unreachable!("text operation must not read images")
+    }
     fn set_text<'a>(&'a self, _: &'a str) -> LocalBoxFuture<'a, io::Result<()>> {
         unreachable!("admission must not write")
     }

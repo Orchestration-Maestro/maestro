@@ -289,12 +289,15 @@ cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
 with their feature owners. The shared launch contract includes synchronous capture
-with optional raw stdin and an optional caller-supplied timeout, inherited standard
+with optional raw stdin, an optional caller-supplied timeout and an optional
+combined captured-byte bound, inherited standard
 descriptors without a timeout, and background input transfer and direct-child
 reaping after acknowledged native startup. For capture and background launches,
 absent input uses the null device; present input closes its pipe after writing.
 None or zero disables the timeout; a selected timeout covers input transfer,
-child exit and captured pipe EOFs.
+child exit and captured pipe EOFs. None or zero also disables the byte bound;
+overflow stops collection and attempts to force-kill/reap the direct child through
+the same waiter, returning a wait failure.
 On expiry, it attempts to force-kill and reap the direct child if it is still running;
 native errors can prevent this. If the direct child has already exited, it closes
 unfinished pipe operations without signalling that child. It adds no general background

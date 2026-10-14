@@ -13,7 +13,7 @@ use std::{
     collections::BTreeMap,
     future::Future,
     io,
-    process::{ExitStatus, Output},
+    process::Output,
     task::{Context, Poll, Waker},
 };
 use tokio::{process::Command, sync::oneshot};
@@ -101,6 +101,12 @@ pub struct Effects<'a> {
     pub process_error: Cell<bool>,
 }
 impl ClipboardModule for Effects<'_> {
+    fn has_image(&self) -> io::Result<bool> {
+        unreachable!("text operation must not probe images")
+    }
+    fn get_image_binary(&self) -> LocalBoxFuture<'_, io::Result<Option<Vec<u8>>>> {
+        unreachable!("text operation must not read images")
+    }
     fn set_text<'a>(&'a self, text: &'a str) -> LocalBoxFuture<'a, io::Result<()>> {
         async move {
             self.trace.borrow_mut().push(json!(["native", text]));
@@ -147,6 +153,7 @@ impl ClipboardOperations for Effects<'_> {
         };
         assert_eq!(command.get_args().collect::<Vec<_>>(), expected_args);
         let SpawnSyncOptions::Capture {
+            max_buffer_bytes,
             stdout,
             input,
             timeout,
@@ -155,6 +162,7 @@ impl ClipboardOperations for Effects<'_> {
         else {
             panic!("capture required")
         };
+        assert!(max_buffer_bytes.is_none());
         assert_eq!(stdout, OutputMode::Discard);
         assert_eq!(stderr, OutputMode::Discard);
         let options = if name == "which wl-copy" {
@@ -207,18 +215,10 @@ impl ClipboardOperations for Effects<'_> {
         Ok(())
     }
 }
-/// Portable synthetic completed process status.
-#[cfg(unix)]
-fn status(success: bool) -> ExitStatus {
-    use std::os::unix::process::ExitStatusExt;
-    ExitStatus::from_raw(if success { 0 } else { 256 })
-}
-/// Portable synthetic completed process status.
-#[cfg(windows)]
-fn status(success: bool) -> ExitStatus {
-    use std::os::windows::process::ExitStatusExt;
-    ExitStatus::from_raw(u32::from(!success))
-}
+#[path = "clipboard_status.rs"]
+mod completed;
+use completed::status;
+
 /// Replays the exact rows assigned to one behavior through the root export.
 pub async fn replay(name: &str) {
     let corpus = corpus();

@@ -10,7 +10,7 @@ See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-
 
 ## Synchronous capture
 
-`spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stdout, stderr })`
+`spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stdout, stderr, max_buffer_bytes })`
 runs a caller-built Tokio command from synchronous code, including inside a
 running runtime. Supplied bytes are written unchanged then stdin closes; absent
 input selects the null device. `OutputMode` independently selects capture or the
@@ -22,6 +22,11 @@ it. Expiry closes unfinished pipe futures and force-kills/reaps the direct child
 unless cleanup fails. Descendants are not signalled. Native failures retain their
 `io::Error` sources through `SpawnSyncError`; input failures wait for completion
 unless a deadline wins.
+
+An optional `max_buffer_bytes` bounds combined captured stdout and stderr.
+`None` and zero disable it. Overflow stops collection and force-kills/reaps the
+direct child through the same waiter, returning `SpawnSyncError::Wait`; native
+cleanup failures can prevent reaping. Discarded streams do not consume the bound.
 
 `SpawnSyncOptions::Inherit` instead inherits all three descriptors, waits without
 a deadline, and returns the native status with empty captured streams. No shell is
