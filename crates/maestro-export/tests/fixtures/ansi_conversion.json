@@ -1,0 +1,4228 @@
+[
+  {
+    "id": "literal",
+    "test": "literal_markup_is_escaped_once",
+    "input": "<>&\"' &amp; 🦀\n\t",
+    "operation": "text",
+    "expected": "&lt;&gt;&amp;&quot;&#039; &amp;amp; 🦀\n\t"
+  },
+  {
+    "id": "empty",
+    "test": "empty_text_and_lines_have_distinct_wrappers",
+    "input": "",
+    "operation": "text",
+    "expected": ""
+  },
+  {
+    "id": "no_lines",
+    "test": "empty_text_and_lines_have_distinct_wrappers",
+    "input": [],
+    "operation": "lines",
+    "expected": ""
+  },
+  {
+    "id": "empty_line",
+    "test": "empty_text_and_lines_have_distinct_wrappers",
+    "input": [
+      ""
+    ],
+    "operation": "lines",
+    "expected": "<div class=\"ansi-line\">&nbsp;</div>"
+  },
+  {
+    "id": "foreground_0",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[30mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000000\">X</span>"
+  },
+  {
+    "id": "foreground_1",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[31mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\">X</span>"
+  },
+  {
+    "id": "foreground_2",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[32mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008000\">X</span>"
+  },
+  {
+    "id": "foreground_3",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[33mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#808000\">X</span>"
+  },
+  {
+    "id": "foreground_4",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[34mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000080\">X</span>"
+  },
+  {
+    "id": "foreground_5",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[35mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800080\">X</span>"
+  },
+  {
+    "id": "foreground_6",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[36mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008080\">X</span>"
+  },
+  {
+    "id": "foreground_7",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[37mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#c0c0c0\">X</span>"
+  },
+  {
+    "id": "background_0",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[40mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000000\">X</span>"
+  },
+  {
+    "id": "background_1",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[41mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#800000\">X</span>"
+  },
+  {
+    "id": "background_2",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[42mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008000\">X</span>"
+  },
+  {
+    "id": "background_3",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[43mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#808000\">X</span>"
+  },
+  {
+    "id": "background_4",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[44mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000080\">X</span>"
+  },
+  {
+    "id": "background_5",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[45mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#800080\">X</span>"
+  },
+  {
+    "id": "background_6",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[46mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008080\">X</span>"
+  },
+  {
+    "id": "background_7",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[47mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#c0c0c0\">X</span>"
+  },
+  {
+    "id": "bright_foreground_0",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[90mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#808080\">X</span>"
+  },
+  {
+    "id": "bright_foreground_1",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[91mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff0000\">X</span>"
+  },
+  {
+    "id": "bright_foreground_2",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[92mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ff00\">X</span>"
+  },
+  {
+    "id": "bright_foreground_3",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[93mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffff00\">X</span>"
+  },
+  {
+    "id": "bright_foreground_4",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[94mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0000ff\">X</span>"
+  },
+  {
+    "id": "bright_foreground_5",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[95mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "bright_foreground_6",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[96mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ffff\">X</span>"
+  },
+  {
+    "id": "bright_foreground_7",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[97mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffffff\">X</span>"
+  },
+  {
+    "id": "bright_background_0",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[100mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#808080\">X</span>"
+  },
+  {
+    "id": "bright_background_1",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[101mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff0000\">X</span>"
+  },
+  {
+    "id": "bright_background_2",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[102mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ff00\">X</span>"
+  },
+  {
+    "id": "bright_background_3",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[103mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffff00\">X</span>"
+  },
+  {
+    "id": "bright_background_4",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[104mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0000ff\">X</span>"
+  },
+  {
+    "id": "bright_background_5",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[105mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "bright_background_6",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[106mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ffff\">X</span>"
+  },
+  {
+    "id": "bright_background_7",
+    "test": "standard_and_bright_colors_share_the_palette",
+    "input": "\u001b[107mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffffff\">X</span>"
+  },
+  {
+    "id": "palette_38_0",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;0mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000000\">X</span>"
+  },
+  {
+    "id": "palette_38_1",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;1mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\">X</span>"
+  },
+  {
+    "id": "palette_38_2",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;2mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008000\">X</span>"
+  },
+  {
+    "id": "palette_38_3",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;3mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#808000\">X</span>"
+  },
+  {
+    "id": "palette_38_4",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;4mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000080\">X</span>"
+  },
+  {
+    "id": "palette_38_5",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;5mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800080\">X</span>"
+  },
+  {
+    "id": "palette_38_6",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;6mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008080\">X</span>"
+  },
+  {
+    "id": "palette_38_7",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;7mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#c0c0c0\">X</span>"
+  },
+  {
+    "id": "palette_38_8",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;8mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#808080\">X</span>"
+  },
+  {
+    "id": "palette_38_9",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;9mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff0000\">X</span>"
+  },
+  {
+    "id": "palette_38_10",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;10mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ff00\">X</span>"
+  },
+  {
+    "id": "palette_38_11",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;11mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffff00\">X</span>"
+  },
+  {
+    "id": "palette_38_12",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;12mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0000ff\">X</span>"
+  },
+  {
+    "id": "palette_38_13",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;13mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "palette_38_14",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;14mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ffff\">X</span>"
+  },
+  {
+    "id": "palette_38_15",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;15mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffffff\">X</span>"
+  },
+  {
+    "id": "palette_38_16",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;16mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000000\">X</span>"
+  },
+  {
+    "id": "palette_38_17",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;17mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00005f\">X</span>"
+  },
+  {
+    "id": "palette_38_18",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;18mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000087\">X</span>"
+  },
+  {
+    "id": "palette_38_19",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;19mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0000af\">X</span>"
+  },
+  {
+    "id": "palette_38_20",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;20mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0000d7\">X</span>"
+  },
+  {
+    "id": "palette_38_21",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;21mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0000ff\">X</span>"
+  },
+  {
+    "id": "palette_38_22",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;22mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005f00\">X</span>"
+  },
+  {
+    "id": "palette_38_23",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;23mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_24",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;24mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005f87\">X</span>"
+  },
+  {
+    "id": "palette_38_25",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;25mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005faf\">X</span>"
+  },
+  {
+    "id": "palette_38_26",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;26mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_27",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;27mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#005fff\">X</span>"
+  },
+  {
+    "id": "palette_38_28",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;28mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008700\">X</span>"
+  },
+  {
+    "id": "palette_38_29",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;29mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00875f\">X</span>"
+  },
+  {
+    "id": "palette_38_30",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;30mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#008787\">X</span>"
+  },
+  {
+    "id": "palette_38_31",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;31mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0087af\">X</span>"
+  },
+  {
+    "id": "palette_38_32",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;32mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0087d7\">X</span>"
+  },
+  {
+    "id": "palette_38_33",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;33mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#0087ff\">X</span>"
+  },
+  {
+    "id": "palette_38_34",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;34mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00af00\">X</span>"
+  },
+  {
+    "id": "palette_38_35",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;35mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00af5f\">X</span>"
+  },
+  {
+    "id": "palette_38_36",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;36mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00af87\">X</span>"
+  },
+  {
+    "id": "palette_38_37",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;37mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00afaf\">X</span>"
+  },
+  {
+    "id": "palette_38_38",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;38mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00afd7\">X</span>"
+  },
+  {
+    "id": "palette_38_39",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;39mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00afff\">X</span>"
+  },
+  {
+    "id": "palette_38_40",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;40mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d700\">X</span>"
+  },
+  {
+    "id": "palette_38_41",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;41mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d75f\">X</span>"
+  },
+  {
+    "id": "palette_38_42",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;42mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d787\">X</span>"
+  },
+  {
+    "id": "palette_38_43",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;43mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d7af\">X</span>"
+  },
+  {
+    "id": "palette_38_44",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;44mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_45",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;45mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00d7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_46",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;46mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ff00\">X</span>"
+  },
+  {
+    "id": "palette_38_47",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;47mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_48",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;48mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ff87\">X</span>"
+  },
+  {
+    "id": "palette_38_49",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;49mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_50",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;50mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_51",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;51mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#00ffff\">X</span>"
+  },
+  {
+    "id": "palette_38_52",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;52mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f0000\">X</span>"
+  },
+  {
+    "id": "palette_38_53",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;53mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f005f\">X</span>"
+  },
+  {
+    "id": "palette_38_54",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;54mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f0087\">X</span>"
+  },
+  {
+    "id": "palette_38_55",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;55mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f00af\">X</span>"
+  },
+  {
+    "id": "palette_38_56",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;56mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f00d7\">X</span>"
+  },
+  {
+    "id": "palette_38_57",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;57mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f00ff\">X</span>"
+  },
+  {
+    "id": "palette_38_58",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;58mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5f00\">X</span>"
+  },
+  {
+    "id": "palette_38_59",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;59mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_60",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;60mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5f87\">X</span>"
+  },
+  {
+    "id": "palette_38_61",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;61mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5faf\">X</span>"
+  },
+  {
+    "id": "palette_38_62",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;62mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_63",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;63mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f5fff\">X</span>"
+  },
+  {
+    "id": "palette_38_64",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;64mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f8700\">X</span>"
+  },
+  {
+    "id": "palette_38_65",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;65mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f875f\">X</span>"
+  },
+  {
+    "id": "palette_38_66",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;66mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f8787\">X</span>"
+  },
+  {
+    "id": "palette_38_67",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;67mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f87af\">X</span>"
+  },
+  {
+    "id": "palette_38_68",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;68mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f87d7\">X</span>"
+  },
+  {
+    "id": "palette_38_69",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;69mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5f87ff\">X</span>"
+  },
+  {
+    "id": "palette_38_70",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;70mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5faf00\">X</span>"
+  },
+  {
+    "id": "palette_38_71",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;71mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5faf5f\">X</span>"
+  },
+  {
+    "id": "palette_38_72",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;72mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5faf87\">X</span>"
+  },
+  {
+    "id": "palette_38_73",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;73mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fafaf\">X</span>"
+  },
+  {
+    "id": "palette_38_74",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;74mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fafd7\">X</span>"
+  },
+  {
+    "id": "palette_38_75",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;75mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fafff\">X</span>"
+  },
+  {
+    "id": "palette_38_76",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;76mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd700\">X</span>"
+  },
+  {
+    "id": "palette_38_77",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;77mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd75f\">X</span>"
+  },
+  {
+    "id": "palette_38_78",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;78mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd787\">X</span>"
+  },
+  {
+    "id": "palette_38_79",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;79mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd7af\">X</span>"
+  },
+  {
+    "id": "palette_38_80",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;80mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_81",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;81mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fd7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_82",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;82mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fff00\">X</span>"
+  },
+  {
+    "id": "palette_38_83",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;83mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_84",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;84mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fff87\">X</span>"
+  },
+  {
+    "id": "palette_38_85",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;85mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_86",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;86mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_87",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;87mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#5fffff\">X</span>"
+  },
+  {
+    "id": "palette_38_88",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;88mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#870000\">X</span>"
+  },
+  {
+    "id": "palette_38_89",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;89mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87005f\">X</span>"
+  },
+  {
+    "id": "palette_38_90",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;90mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#870087\">X</span>"
+  },
+  {
+    "id": "palette_38_91",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;91mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8700af\">X</span>"
+  },
+  {
+    "id": "palette_38_92",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;92mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8700d7\">X</span>"
+  },
+  {
+    "id": "palette_38_93",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;93mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8700ff\">X</span>"
+  },
+  {
+    "id": "palette_38_94",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;94mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875f00\">X</span>"
+  },
+  {
+    "id": "palette_38_95",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;95mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_96",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;96mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875f87\">X</span>"
+  },
+  {
+    "id": "palette_38_97",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;97mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875faf\">X</span>"
+  },
+  {
+    "id": "palette_38_98",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;98mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_99",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;99mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#875fff\">X</span>"
+  },
+  {
+    "id": "palette_38_100",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;100mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#878700\">X</span>"
+  },
+  {
+    "id": "palette_38_101",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;101mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87875f\">X</span>"
+  },
+  {
+    "id": "palette_38_102",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;102mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#878787\">X</span>"
+  },
+  {
+    "id": "palette_38_103",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;103mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8787af\">X</span>"
+  },
+  {
+    "id": "palette_38_104",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;104mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8787d7\">X</span>"
+  },
+  {
+    "id": "palette_38_105",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;105mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8787ff\">X</span>"
+  },
+  {
+    "id": "palette_38_106",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;106mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87af00\">X</span>"
+  },
+  {
+    "id": "palette_38_107",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;107mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87af5f\">X</span>"
+  },
+  {
+    "id": "palette_38_108",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;108mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87af87\">X</span>"
+  },
+  {
+    "id": "palette_38_109",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;109mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87afaf\">X</span>"
+  },
+  {
+    "id": "palette_38_110",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;110mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87afd7\">X</span>"
+  },
+  {
+    "id": "palette_38_111",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;111mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87afff\">X</span>"
+  },
+  {
+    "id": "palette_38_112",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;112mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d700\">X</span>"
+  },
+  {
+    "id": "palette_38_113",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;113mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d75f\">X</span>"
+  },
+  {
+    "id": "palette_38_114",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;114mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d787\">X</span>"
+  },
+  {
+    "id": "palette_38_115",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;115mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d7af\">X</span>"
+  },
+  {
+    "id": "palette_38_116",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;116mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_117",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;117mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87d7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_118",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;118mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ff00\">X</span>"
+  },
+  {
+    "id": "palette_38_119",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;119mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_120",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;120mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ff87\">X</span>"
+  },
+  {
+    "id": "palette_38_121",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;121mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_122",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;122mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_123",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;123mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#87ffff\">X</span>"
+  },
+  {
+    "id": "palette_38_124",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;124mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af0000\">X</span>"
+  },
+  {
+    "id": "palette_38_125",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;125mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af005f\">X</span>"
+  },
+  {
+    "id": "palette_38_126",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;126mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af0087\">X</span>"
+  },
+  {
+    "id": "palette_38_127",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;127mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af00af\">X</span>"
+  },
+  {
+    "id": "palette_38_128",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;128mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af00d7\">X</span>"
+  },
+  {
+    "id": "palette_38_129",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;129mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af00ff\">X</span>"
+  },
+  {
+    "id": "palette_38_130",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;130mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5f00\">X</span>"
+  },
+  {
+    "id": "palette_38_131",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;131mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_132",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;132mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5f87\">X</span>"
+  },
+  {
+    "id": "palette_38_133",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;133mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5faf\">X</span>"
+  },
+  {
+    "id": "palette_38_134",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;134mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_135",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;135mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af5fff\">X</span>"
+  },
+  {
+    "id": "palette_38_136",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;136mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af8700\">X</span>"
+  },
+  {
+    "id": "palette_38_137",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;137mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af875f\">X</span>"
+  },
+  {
+    "id": "palette_38_138",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;138mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af8787\">X</span>"
+  },
+  {
+    "id": "palette_38_139",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;139mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af87af\">X</span>"
+  },
+  {
+    "id": "palette_38_140",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;140mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af87d7\">X</span>"
+  },
+  {
+    "id": "palette_38_141",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;141mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#af87ff\">X</span>"
+  },
+  {
+    "id": "palette_38_142",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;142mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afaf00\">X</span>"
+  },
+  {
+    "id": "palette_38_143",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;143mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afaf5f\">X</span>"
+  },
+  {
+    "id": "palette_38_144",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;144mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afaf87\">X</span>"
+  },
+  {
+    "id": "palette_38_145",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;145mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afafaf\">X</span>"
+  },
+  {
+    "id": "palette_38_146",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;146mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afafd7\">X</span>"
+  },
+  {
+    "id": "palette_38_147",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;147mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afafff\">X</span>"
+  },
+  {
+    "id": "palette_38_148",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;148mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd700\">X</span>"
+  },
+  {
+    "id": "palette_38_149",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;149mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd75f\">X</span>"
+  },
+  {
+    "id": "palette_38_150",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;150mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd787\">X</span>"
+  },
+  {
+    "id": "palette_38_151",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;151mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd7af\">X</span>"
+  },
+  {
+    "id": "palette_38_152",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;152mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_153",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;153mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afd7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_154",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;154mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afff00\">X</span>"
+  },
+  {
+    "id": "palette_38_155",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;155mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_156",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;156mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afff87\">X</span>"
+  },
+  {
+    "id": "palette_38_157",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;157mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_158",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;158mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_159",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;159mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#afffff\">X</span>"
+  },
+  {
+    "id": "palette_38_160",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;160mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d70000\">X</span>"
+  },
+  {
+    "id": "palette_38_161",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;161mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7005f\">X</span>"
+  },
+  {
+    "id": "palette_38_162",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;162mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d70087\">X</span>"
+  },
+  {
+    "id": "palette_38_163",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;163mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d700af\">X</span>"
+  },
+  {
+    "id": "palette_38_164",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;164mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d700d7\">X</span>"
+  },
+  {
+    "id": "palette_38_165",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;165mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d700ff\">X</span>"
+  },
+  {
+    "id": "palette_38_166",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;166mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75f00\">X</span>"
+  },
+  {
+    "id": "palette_38_167",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;167mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_168",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;168mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75f87\">X</span>"
+  },
+  {
+    "id": "palette_38_169",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;169mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75faf\">X</span>"
+  },
+  {
+    "id": "palette_38_170",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;170mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_171",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;171mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d75fff\">X</span>"
+  },
+  {
+    "id": "palette_38_172",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;172mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d78700\">X</span>"
+  },
+  {
+    "id": "palette_38_173",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;173mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7875f\">X</span>"
+  },
+  {
+    "id": "palette_38_174",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;174mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d78787\">X</span>"
+  },
+  {
+    "id": "palette_38_175",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;175mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d787af\">X</span>"
+  },
+  {
+    "id": "palette_38_176",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;176mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d787d7\">X</span>"
+  },
+  {
+    "id": "palette_38_177",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;177mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d787ff\">X</span>"
+  },
+  {
+    "id": "palette_38_178",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;178mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7af00\">X</span>"
+  },
+  {
+    "id": "palette_38_179",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;179mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7af5f\">X</span>"
+  },
+  {
+    "id": "palette_38_180",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;180mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7af87\">X</span>"
+  },
+  {
+    "id": "palette_38_181",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;181mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7afaf\">X</span>"
+  },
+  {
+    "id": "palette_38_182",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;182mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7afd7\">X</span>"
+  },
+  {
+    "id": "palette_38_183",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;183mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7afff\">X</span>"
+  },
+  {
+    "id": "palette_38_184",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;184mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d700\">X</span>"
+  },
+  {
+    "id": "palette_38_185",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;185mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d75f\">X</span>"
+  },
+  {
+    "id": "palette_38_186",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;186mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d787\">X</span>"
+  },
+  {
+    "id": "palette_38_187",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;187mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d7af\">X</span>"
+  },
+  {
+    "id": "palette_38_188",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;188mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_189",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;189mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7d7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_190",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;190mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ff00\">X</span>"
+  },
+  {
+    "id": "palette_38_191",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;191mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_192",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;192mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ff87\">X</span>"
+  },
+  {
+    "id": "palette_38_193",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;193mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_194",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;194mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_195",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;195mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d7ffff\">X</span>"
+  },
+  {
+    "id": "palette_38_196",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;196mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff0000\">X</span>"
+  },
+  {
+    "id": "palette_38_197",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;197mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff005f\">X</span>"
+  },
+  {
+    "id": "palette_38_198",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;198mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff0087\">X</span>"
+  },
+  {
+    "id": "palette_38_199",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;199mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff00af\">X</span>"
+  },
+  {
+    "id": "palette_38_200",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;200mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff00d7\">X</span>"
+  },
+  {
+    "id": "palette_38_201",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;201mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "palette_38_202",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;202mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5f00\">X</span>"
+  },
+  {
+    "id": "palette_38_203",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;203mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5f5f\">X</span>"
+  },
+  {
+    "id": "palette_38_204",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;204mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5f87\">X</span>"
+  },
+  {
+    "id": "palette_38_205",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;205mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5faf\">X</span>"
+  },
+  {
+    "id": "palette_38_206",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;206mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5fd7\">X</span>"
+  },
+  {
+    "id": "palette_38_207",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;207mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff5fff\">X</span>"
+  },
+  {
+    "id": "palette_38_208",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;208mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff8700\">X</span>"
+  },
+  {
+    "id": "palette_38_209",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;209mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff875f\">X</span>"
+  },
+  {
+    "id": "palette_38_210",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;210mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff8787\">X</span>"
+  },
+  {
+    "id": "palette_38_211",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;211mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff87af\">X</span>"
+  },
+  {
+    "id": "palette_38_212",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;212mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff87d7\">X</span>"
+  },
+  {
+    "id": "palette_38_213",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;213mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ff87ff\">X</span>"
+  },
+  {
+    "id": "palette_38_214",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;214mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffaf00\">X</span>"
+  },
+  {
+    "id": "palette_38_215",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;215mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffaf5f\">X</span>"
+  },
+  {
+    "id": "palette_38_216",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;216mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffaf87\">X</span>"
+  },
+  {
+    "id": "palette_38_217",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;217mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffafaf\">X</span>"
+  },
+  {
+    "id": "palette_38_218",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;218mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffafd7\">X</span>"
+  },
+  {
+    "id": "palette_38_219",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;219mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffafff\">X</span>"
+  },
+  {
+    "id": "palette_38_220",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;220mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd700\">X</span>"
+  },
+  {
+    "id": "palette_38_221",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;221mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd75f\">X</span>"
+  },
+  {
+    "id": "palette_38_222",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;222mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd787\">X</span>"
+  },
+  {
+    "id": "palette_38_223",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;223mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd7af\">X</span>"
+  },
+  {
+    "id": "palette_38_224",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;224mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd7d7\">X</span>"
+  },
+  {
+    "id": "palette_38_225",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;225mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffd7ff\">X</span>"
+  },
+  {
+    "id": "palette_38_226",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;226mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffff00\">X</span>"
+  },
+  {
+    "id": "palette_38_227",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;227mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffff5f\">X</span>"
+  },
+  {
+    "id": "palette_38_228",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;228mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffff87\">X</span>"
+  },
+  {
+    "id": "palette_38_229",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;229mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffffaf\">X</span>"
+  },
+  {
+    "id": "palette_38_230",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;230mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffffd7\">X</span>"
+  },
+  {
+    "id": "palette_38_231",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;231mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#ffffff\">X</span>"
+  },
+  {
+    "id": "palette_38_232",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;232mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#080808\">X</span>"
+  },
+  {
+    "id": "palette_38_233",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;233mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#121212\">X</span>"
+  },
+  {
+    "id": "palette_38_234",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;234mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#1c1c1c\">X</span>"
+  },
+  {
+    "id": "palette_38_235",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;235mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#262626\">X</span>"
+  },
+  {
+    "id": "palette_38_236",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;236mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#303030\">X</span>"
+  },
+  {
+    "id": "palette_38_237",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;237mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#3a3a3a\">X</span>"
+  },
+  {
+    "id": "palette_38_238",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;238mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#444444\">X</span>"
+  },
+  {
+    "id": "palette_38_239",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;239mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#4e4e4e\">X</span>"
+  },
+  {
+    "id": "palette_38_240",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;240mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#585858\">X</span>"
+  },
+  {
+    "id": "palette_38_241",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;241mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#626262\">X</span>"
+  },
+  {
+    "id": "palette_38_242",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;242mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#6c6c6c\">X</span>"
+  },
+  {
+    "id": "palette_38_243",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;243mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#767676\">X</span>"
+  },
+  {
+    "id": "palette_38_244",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;244mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#808080\">X</span>"
+  },
+  {
+    "id": "palette_38_245",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;245mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#8a8a8a\">X</span>"
+  },
+  {
+    "id": "palette_38_246",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;246mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#949494\">X</span>"
+  },
+  {
+    "id": "palette_38_247",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;247mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#9e9e9e\">X</span>"
+  },
+  {
+    "id": "palette_38_248",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;248mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#a8a8a8\">X</span>"
+  },
+  {
+    "id": "palette_38_249",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;249mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#b2b2b2\">X</span>"
+  },
+  {
+    "id": "palette_38_250",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;250mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#bcbcbc\">X</span>"
+  },
+  {
+    "id": "palette_38_251",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;251mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#c6c6c6\">X</span>"
+  },
+  {
+    "id": "palette_38_252",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;252mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#d0d0d0\">X</span>"
+  },
+  {
+    "id": "palette_38_253",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;253mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#dadada\">X</span>"
+  },
+  {
+    "id": "palette_38_254",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;254mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#e4e4e4\">X</span>"
+  },
+  {
+    "id": "palette_38_255",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[38;5;255mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#eeeeee\">X</span>"
+  },
+  {
+    "id": "palette_48_0",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;0mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000000\">X</span>"
+  },
+  {
+    "id": "palette_48_1",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;1mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#800000\">X</span>"
+  },
+  {
+    "id": "palette_48_2",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;2mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008000\">X</span>"
+  },
+  {
+    "id": "palette_48_3",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;3mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#808000\">X</span>"
+  },
+  {
+    "id": "palette_48_4",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;4mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000080\">X</span>"
+  },
+  {
+    "id": "palette_48_5",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;5mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#800080\">X</span>"
+  },
+  {
+    "id": "palette_48_6",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;6mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008080\">X</span>"
+  },
+  {
+    "id": "palette_48_7",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;7mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#c0c0c0\">X</span>"
+  },
+  {
+    "id": "palette_48_8",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;8mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#808080\">X</span>"
+  },
+  {
+    "id": "palette_48_9",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;9mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff0000\">X</span>"
+  },
+  {
+    "id": "palette_48_10",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;10mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ff00\">X</span>"
+  },
+  {
+    "id": "palette_48_11",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;11mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffff00\">X</span>"
+  },
+  {
+    "id": "palette_48_12",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;12mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0000ff\">X</span>"
+  },
+  {
+    "id": "palette_48_13",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;13mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "palette_48_14",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;14mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ffff\">X</span>"
+  },
+  {
+    "id": "palette_48_15",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;15mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffffff\">X</span>"
+  },
+  {
+    "id": "palette_48_16",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;16mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000000\">X</span>"
+  },
+  {
+    "id": "palette_48_17",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;17mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00005f\">X</span>"
+  },
+  {
+    "id": "palette_48_18",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;18mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#000087\">X</span>"
+  },
+  {
+    "id": "palette_48_19",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;19mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0000af\">X</span>"
+  },
+  {
+    "id": "palette_48_20",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;20mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0000d7\">X</span>"
+  },
+  {
+    "id": "palette_48_21",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;21mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0000ff\">X</span>"
+  },
+  {
+    "id": "palette_48_22",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;22mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005f00\">X</span>"
+  },
+  {
+    "id": "palette_48_23",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;23mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_24",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;24mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005f87\">X</span>"
+  },
+  {
+    "id": "palette_48_25",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;25mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005faf\">X</span>"
+  },
+  {
+    "id": "palette_48_26",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;26mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_27",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;27mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#005fff\">X</span>"
+  },
+  {
+    "id": "palette_48_28",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;28mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008700\">X</span>"
+  },
+  {
+    "id": "palette_48_29",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;29mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00875f\">X</span>"
+  },
+  {
+    "id": "palette_48_30",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;30mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#008787\">X</span>"
+  },
+  {
+    "id": "palette_48_31",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;31mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0087af\">X</span>"
+  },
+  {
+    "id": "palette_48_32",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;32mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0087d7\">X</span>"
+  },
+  {
+    "id": "palette_48_33",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;33mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#0087ff\">X</span>"
+  },
+  {
+    "id": "palette_48_34",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;34mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00af00\">X</span>"
+  },
+  {
+    "id": "palette_48_35",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;35mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00af5f\">X</span>"
+  },
+  {
+    "id": "palette_48_36",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;36mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00af87\">X</span>"
+  },
+  {
+    "id": "palette_48_37",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;37mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00afaf\">X</span>"
+  },
+  {
+    "id": "palette_48_38",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;38mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00afd7\">X</span>"
+  },
+  {
+    "id": "palette_48_39",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;39mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00afff\">X</span>"
+  },
+  {
+    "id": "palette_48_40",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;40mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d700\">X</span>"
+  },
+  {
+    "id": "palette_48_41",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;41mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d75f\">X</span>"
+  },
+  {
+    "id": "palette_48_42",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;42mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d787\">X</span>"
+  },
+  {
+    "id": "palette_48_43",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;43mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d7af\">X</span>"
+  },
+  {
+    "id": "palette_48_44",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;44mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_45",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;45mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00d7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_46",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;46mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ff00\">X</span>"
+  },
+  {
+    "id": "palette_48_47",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;47mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_48",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;48mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ff87\">X</span>"
+  },
+  {
+    "id": "palette_48_49",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;49mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_50",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;50mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_51",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;51mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#00ffff\">X</span>"
+  },
+  {
+    "id": "palette_48_52",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;52mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f0000\">X</span>"
+  },
+  {
+    "id": "palette_48_53",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;53mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f005f\">X</span>"
+  },
+  {
+    "id": "palette_48_54",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;54mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f0087\">X</span>"
+  },
+  {
+    "id": "palette_48_55",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;55mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f00af\">X</span>"
+  },
+  {
+    "id": "palette_48_56",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;56mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f00d7\">X</span>"
+  },
+  {
+    "id": "palette_48_57",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;57mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f00ff\">X</span>"
+  },
+  {
+    "id": "palette_48_58",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;58mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5f00\">X</span>"
+  },
+  {
+    "id": "palette_48_59",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;59mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_60",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;60mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5f87\">X</span>"
+  },
+  {
+    "id": "palette_48_61",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;61mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5faf\">X</span>"
+  },
+  {
+    "id": "palette_48_62",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;62mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_63",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;63mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f5fff\">X</span>"
+  },
+  {
+    "id": "palette_48_64",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;64mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f8700\">X</span>"
+  },
+  {
+    "id": "palette_48_65",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;65mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f875f\">X</span>"
+  },
+  {
+    "id": "palette_48_66",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;66mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f8787\">X</span>"
+  },
+  {
+    "id": "palette_48_67",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;67mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f87af\">X</span>"
+  },
+  {
+    "id": "palette_48_68",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;68mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f87d7\">X</span>"
+  },
+  {
+    "id": "palette_48_69",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;69mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5f87ff\">X</span>"
+  },
+  {
+    "id": "palette_48_70",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;70mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5faf00\">X</span>"
+  },
+  {
+    "id": "palette_48_71",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;71mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5faf5f\">X</span>"
+  },
+  {
+    "id": "palette_48_72",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;72mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5faf87\">X</span>"
+  },
+  {
+    "id": "palette_48_73",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;73mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fafaf\">X</span>"
+  },
+  {
+    "id": "palette_48_74",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;74mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fafd7\">X</span>"
+  },
+  {
+    "id": "palette_48_75",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;75mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fafff\">X</span>"
+  },
+  {
+    "id": "palette_48_76",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;76mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd700\">X</span>"
+  },
+  {
+    "id": "palette_48_77",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;77mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd75f\">X</span>"
+  },
+  {
+    "id": "palette_48_78",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;78mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd787\">X</span>"
+  },
+  {
+    "id": "palette_48_79",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;79mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd7af\">X</span>"
+  },
+  {
+    "id": "palette_48_80",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;80mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_81",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;81mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fd7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_82",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;82mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fff00\">X</span>"
+  },
+  {
+    "id": "palette_48_83",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;83mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_84",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;84mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fff87\">X</span>"
+  },
+  {
+    "id": "palette_48_85",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;85mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_86",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;86mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_87",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;87mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#5fffff\">X</span>"
+  },
+  {
+    "id": "palette_48_88",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;88mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#870000\">X</span>"
+  },
+  {
+    "id": "palette_48_89",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;89mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87005f\">X</span>"
+  },
+  {
+    "id": "palette_48_90",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;90mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#870087\">X</span>"
+  },
+  {
+    "id": "palette_48_91",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;91mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8700af\">X</span>"
+  },
+  {
+    "id": "palette_48_92",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;92mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8700d7\">X</span>"
+  },
+  {
+    "id": "palette_48_93",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;93mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8700ff\">X</span>"
+  },
+  {
+    "id": "palette_48_94",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;94mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875f00\">X</span>"
+  },
+  {
+    "id": "palette_48_95",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;95mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_96",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;96mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875f87\">X</span>"
+  },
+  {
+    "id": "palette_48_97",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;97mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875faf\">X</span>"
+  },
+  {
+    "id": "palette_48_98",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;98mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_99",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;99mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#875fff\">X</span>"
+  },
+  {
+    "id": "palette_48_100",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;100mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#878700\">X</span>"
+  },
+  {
+    "id": "palette_48_101",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;101mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87875f\">X</span>"
+  },
+  {
+    "id": "palette_48_102",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;102mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#878787\">X</span>"
+  },
+  {
+    "id": "palette_48_103",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;103mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8787af\">X</span>"
+  },
+  {
+    "id": "palette_48_104",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;104mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8787d7\">X</span>"
+  },
+  {
+    "id": "palette_48_105",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;105mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8787ff\">X</span>"
+  },
+  {
+    "id": "palette_48_106",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;106mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87af00\">X</span>"
+  },
+  {
+    "id": "palette_48_107",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;107mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87af5f\">X</span>"
+  },
+  {
+    "id": "palette_48_108",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;108mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87af87\">X</span>"
+  },
+  {
+    "id": "palette_48_109",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;109mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87afaf\">X</span>"
+  },
+  {
+    "id": "palette_48_110",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;110mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87afd7\">X</span>"
+  },
+  {
+    "id": "palette_48_111",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;111mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87afff\">X</span>"
+  },
+  {
+    "id": "palette_48_112",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;112mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d700\">X</span>"
+  },
+  {
+    "id": "palette_48_113",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;113mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d75f\">X</span>"
+  },
+  {
+    "id": "palette_48_114",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;114mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d787\">X</span>"
+  },
+  {
+    "id": "palette_48_115",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;115mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d7af\">X</span>"
+  },
+  {
+    "id": "palette_48_116",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;116mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_117",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;117mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87d7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_118",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;118mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ff00\">X</span>"
+  },
+  {
+    "id": "palette_48_119",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;119mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_120",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;120mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ff87\">X</span>"
+  },
+  {
+    "id": "palette_48_121",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;121mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_122",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;122mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_123",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;123mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#87ffff\">X</span>"
+  },
+  {
+    "id": "palette_48_124",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;124mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af0000\">X</span>"
+  },
+  {
+    "id": "palette_48_125",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;125mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af005f\">X</span>"
+  },
+  {
+    "id": "palette_48_126",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;126mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af0087\">X</span>"
+  },
+  {
+    "id": "palette_48_127",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;127mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af00af\">X</span>"
+  },
+  {
+    "id": "palette_48_128",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;128mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af00d7\">X</span>"
+  },
+  {
+    "id": "palette_48_129",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;129mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af00ff\">X</span>"
+  },
+  {
+    "id": "palette_48_130",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;130mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5f00\">X</span>"
+  },
+  {
+    "id": "palette_48_131",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;131mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_132",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;132mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5f87\">X</span>"
+  },
+  {
+    "id": "palette_48_133",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;133mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5faf\">X</span>"
+  },
+  {
+    "id": "palette_48_134",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;134mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_135",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;135mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af5fff\">X</span>"
+  },
+  {
+    "id": "palette_48_136",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;136mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af8700\">X</span>"
+  },
+  {
+    "id": "palette_48_137",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;137mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af875f\">X</span>"
+  },
+  {
+    "id": "palette_48_138",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;138mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af8787\">X</span>"
+  },
+  {
+    "id": "palette_48_139",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;139mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af87af\">X</span>"
+  },
+  {
+    "id": "palette_48_140",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;140mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af87d7\">X</span>"
+  },
+  {
+    "id": "palette_48_141",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;141mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#af87ff\">X</span>"
+  },
+  {
+    "id": "palette_48_142",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;142mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afaf00\">X</span>"
+  },
+  {
+    "id": "palette_48_143",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;143mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afaf5f\">X</span>"
+  },
+  {
+    "id": "palette_48_144",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;144mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afaf87\">X</span>"
+  },
+  {
+    "id": "palette_48_145",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;145mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afafaf\">X</span>"
+  },
+  {
+    "id": "palette_48_146",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;146mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afafd7\">X</span>"
+  },
+  {
+    "id": "palette_48_147",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;147mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afafff\">X</span>"
+  },
+  {
+    "id": "palette_48_148",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;148mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd700\">X</span>"
+  },
+  {
+    "id": "palette_48_149",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;149mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd75f\">X</span>"
+  },
+  {
+    "id": "palette_48_150",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;150mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd787\">X</span>"
+  },
+  {
+    "id": "palette_48_151",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;151mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd7af\">X</span>"
+  },
+  {
+    "id": "palette_48_152",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;152mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_153",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;153mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afd7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_154",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;154mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afff00\">X</span>"
+  },
+  {
+    "id": "palette_48_155",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;155mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_156",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;156mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afff87\">X</span>"
+  },
+  {
+    "id": "palette_48_157",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;157mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_158",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;158mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_159",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;159mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#afffff\">X</span>"
+  },
+  {
+    "id": "palette_48_160",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;160mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d70000\">X</span>"
+  },
+  {
+    "id": "palette_48_161",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;161mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7005f\">X</span>"
+  },
+  {
+    "id": "palette_48_162",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;162mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d70087\">X</span>"
+  },
+  {
+    "id": "palette_48_163",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;163mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d700af\">X</span>"
+  },
+  {
+    "id": "palette_48_164",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;164mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d700d7\">X</span>"
+  },
+  {
+    "id": "palette_48_165",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;165mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d700ff\">X</span>"
+  },
+  {
+    "id": "palette_48_166",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;166mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75f00\">X</span>"
+  },
+  {
+    "id": "palette_48_167",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;167mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_168",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;168mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75f87\">X</span>"
+  },
+  {
+    "id": "palette_48_169",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;169mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75faf\">X</span>"
+  },
+  {
+    "id": "palette_48_170",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;170mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_171",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;171mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d75fff\">X</span>"
+  },
+  {
+    "id": "palette_48_172",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;172mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d78700\">X</span>"
+  },
+  {
+    "id": "palette_48_173",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;173mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7875f\">X</span>"
+  },
+  {
+    "id": "palette_48_174",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;174mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d78787\">X</span>"
+  },
+  {
+    "id": "palette_48_175",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;175mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d787af\">X</span>"
+  },
+  {
+    "id": "palette_48_176",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;176mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d787d7\">X</span>"
+  },
+  {
+    "id": "palette_48_177",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;177mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d787ff\">X</span>"
+  },
+  {
+    "id": "palette_48_178",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;178mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7af00\">X</span>"
+  },
+  {
+    "id": "palette_48_179",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;179mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7af5f\">X</span>"
+  },
+  {
+    "id": "palette_48_180",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;180mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7af87\">X</span>"
+  },
+  {
+    "id": "palette_48_181",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;181mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7afaf\">X</span>"
+  },
+  {
+    "id": "palette_48_182",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;182mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7afd7\">X</span>"
+  },
+  {
+    "id": "palette_48_183",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;183mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7afff\">X</span>"
+  },
+  {
+    "id": "palette_48_184",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;184mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d700\">X</span>"
+  },
+  {
+    "id": "palette_48_185",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;185mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d75f\">X</span>"
+  },
+  {
+    "id": "palette_48_186",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;186mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d787\">X</span>"
+  },
+  {
+    "id": "palette_48_187",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;187mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d7af\">X</span>"
+  },
+  {
+    "id": "palette_48_188",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;188mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_189",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;189mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7d7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_190",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;190mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ff00\">X</span>"
+  },
+  {
+    "id": "palette_48_191",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;191mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_192",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;192mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ff87\">X</span>"
+  },
+  {
+    "id": "palette_48_193",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;193mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_194",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;194mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_195",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;195mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d7ffff\">X</span>"
+  },
+  {
+    "id": "palette_48_196",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;196mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff0000\">X</span>"
+  },
+  {
+    "id": "palette_48_197",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;197mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff005f\">X</span>"
+  },
+  {
+    "id": "palette_48_198",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;198mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff0087\">X</span>"
+  },
+  {
+    "id": "palette_48_199",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;199mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff00af\">X</span>"
+  },
+  {
+    "id": "palette_48_200",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;200mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff00d7\">X</span>"
+  },
+  {
+    "id": "palette_48_201",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;201mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff00ff\">X</span>"
+  },
+  {
+    "id": "palette_48_202",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;202mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5f00\">X</span>"
+  },
+  {
+    "id": "palette_48_203",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;203mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5f5f\">X</span>"
+  },
+  {
+    "id": "palette_48_204",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;204mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5f87\">X</span>"
+  },
+  {
+    "id": "palette_48_205",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;205mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5faf\">X</span>"
+  },
+  {
+    "id": "palette_48_206",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;206mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5fd7\">X</span>"
+  },
+  {
+    "id": "palette_48_207",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;207mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff5fff\">X</span>"
+  },
+  {
+    "id": "palette_48_208",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;208mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff8700\">X</span>"
+  },
+  {
+    "id": "palette_48_209",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;209mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff875f\">X</span>"
+  },
+  {
+    "id": "palette_48_210",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;210mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff8787\">X</span>"
+  },
+  {
+    "id": "palette_48_211",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;211mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff87af\">X</span>"
+  },
+  {
+    "id": "palette_48_212",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;212mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff87d7\">X</span>"
+  },
+  {
+    "id": "palette_48_213",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;213mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ff87ff\">X</span>"
+  },
+  {
+    "id": "palette_48_214",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;214mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffaf00\">X</span>"
+  },
+  {
+    "id": "palette_48_215",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;215mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffaf5f\">X</span>"
+  },
+  {
+    "id": "palette_48_216",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;216mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffaf87\">X</span>"
+  },
+  {
+    "id": "palette_48_217",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;217mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffafaf\">X</span>"
+  },
+  {
+    "id": "palette_48_218",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;218mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffafd7\">X</span>"
+  },
+  {
+    "id": "palette_48_219",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;219mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffafff\">X</span>"
+  },
+  {
+    "id": "palette_48_220",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;220mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd700\">X</span>"
+  },
+  {
+    "id": "palette_48_221",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;221mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd75f\">X</span>"
+  },
+  {
+    "id": "palette_48_222",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;222mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd787\">X</span>"
+  },
+  {
+    "id": "palette_48_223",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;223mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd7af\">X</span>"
+  },
+  {
+    "id": "palette_48_224",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;224mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd7d7\">X</span>"
+  },
+  {
+    "id": "palette_48_225",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;225mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffd7ff\">X</span>"
+  },
+  {
+    "id": "palette_48_226",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;226mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffff00\">X</span>"
+  },
+  {
+    "id": "palette_48_227",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;227mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffff5f\">X</span>"
+  },
+  {
+    "id": "palette_48_228",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;228mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffff87\">X</span>"
+  },
+  {
+    "id": "palette_48_229",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;229mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffffaf\">X</span>"
+  },
+  {
+    "id": "palette_48_230",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;230mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffffd7\">X</span>"
+  },
+  {
+    "id": "palette_48_231",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;231mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#ffffff\">X</span>"
+  },
+  {
+    "id": "palette_48_232",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;232mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#080808\">X</span>"
+  },
+  {
+    "id": "palette_48_233",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;233mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#121212\">X</span>"
+  },
+  {
+    "id": "palette_48_234",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;234mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#1c1c1c\">X</span>"
+  },
+  {
+    "id": "palette_48_235",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;235mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#262626\">X</span>"
+  },
+  {
+    "id": "palette_48_236",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;236mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#303030\">X</span>"
+  },
+  {
+    "id": "palette_48_237",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;237mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#3a3a3a\">X</span>"
+  },
+  {
+    "id": "palette_48_238",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;238mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#444444\">X</span>"
+  },
+  {
+    "id": "palette_48_239",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;239mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#4e4e4e\">X</span>"
+  },
+  {
+    "id": "palette_48_240",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;240mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#585858\">X</span>"
+  },
+  {
+    "id": "palette_48_241",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;241mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#626262\">X</span>"
+  },
+  {
+    "id": "palette_48_242",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;242mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#6c6c6c\">X</span>"
+  },
+  {
+    "id": "palette_48_243",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;243mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#767676\">X</span>"
+  },
+  {
+    "id": "palette_48_244",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;244mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#808080\">X</span>"
+  },
+  {
+    "id": "palette_48_245",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;245mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#8a8a8a\">X</span>"
+  },
+  {
+    "id": "palette_48_246",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;246mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#949494\">X</span>"
+  },
+  {
+    "id": "palette_48_247",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;247mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#9e9e9e\">X</span>"
+  },
+  {
+    "id": "palette_48_248",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;248mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#a8a8a8\">X</span>"
+  },
+  {
+    "id": "palette_48_249",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;249mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#b2b2b2\">X</span>"
+  },
+  {
+    "id": "palette_48_250",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;250mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#bcbcbc\">X</span>"
+  },
+  {
+    "id": "palette_48_251",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;251mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#c6c6c6\">X</span>"
+  },
+  {
+    "id": "palette_48_252",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;252mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#d0d0d0\">X</span>"
+  },
+  {
+    "id": "palette_48_253",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;253mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#dadada\">X</span>"
+  },
+  {
+    "id": "palette_48_254",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;254mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#e4e4e4\">X</span>"
+  },
+  {
+    "id": "palette_48_255",
+    "test": "every_extended_palette_index_is_expanded",
+    "input": "\u001b[48;5;255mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#eeeeee\">X</span>"
+  },
+  {
+    "id": "extended_38_256",
+    "test": "out_of_palette_indices_keep_authored_expansion",
+    "input": "\u001b[38;5;256mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#f8f8f8\">X</span>"
+  },
+  {
+    "id": "extended_38_999",
+    "test": "out_of_palette_indices_keep_authored_expansion",
+    "input": "\u001b[38;5;999mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#1dfe1dfe1dfe\">X</span>"
+  },
+  {
+    "id": "extended_48_256",
+    "test": "out_of_palette_indices_keep_authored_expansion",
+    "input": "\u001b[48;5;256mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#f8f8f8\">X</span>"
+  },
+  {
+    "id": "extended_48_999",
+    "test": "out_of_palette_indices_keep_authored_expansion",
+    "input": "\u001b[48;5;999mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:#1dfe1dfe1dfe\">X</span>"
+  },
+  {
+    "id": "rgb_38_0_0_0",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[38;2;0;0;0mX",
+    "operation": "text",
+    "expected": "<span style=\"color:rgb(0,0,0)\">X</span>"
+  },
+  {
+    "id": "rgb_38_255_255_255",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[38;2;255;255;255mX",
+    "operation": "text",
+    "expected": "<span style=\"color:rgb(255,255,255)\">X</span>"
+  },
+  {
+    "id": "rgb_38_1_20_203",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[38;2;1;20;203mX",
+    "operation": "text",
+    "expected": "<span style=\"color:rgb(1,20,203)\">X</span>"
+  },
+  {
+    "id": "rgb_38_255_0_127",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[38;2;255;0;127mX",
+    "operation": "text",
+    "expected": "<span style=\"color:rgb(255,0,127)\">X</span>"
+  },
+  {
+    "id": "rgb_38_256_999_0",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[38;2;256;999;0mX",
+    "operation": "text",
+    "expected": "<span style=\"color:rgb(256,999,0)\">X</span>"
+  },
+  {
+    "id": "rgb_48_0_0_0",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[48;2;0;0;0mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(0,0,0)\">X</span>"
+  },
+  {
+    "id": "rgb_48_255_255_255",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[48;2;255;255;255mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(255,255,255)\">X</span>"
+  },
+  {
+    "id": "rgb_48_1_20_203",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[48;2;1;20;203mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(1,20,203)\">X</span>"
+  },
+  {
+    "id": "rgb_48_255_0_127",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[48;2;255;0;127mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(255,0,127)\">X</span>"
+  },
+  {
+    "id": "rgb_48_256_999_0",
+    "test": "rgb_components_keep_decimal_css",
+    "input": "\u001b[48;2;256;999;0mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(256,999,0)\">X</span>"
+  },
+  {
+    "id": "style_1",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[1mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_2",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[2mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_3",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[3mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_4",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[4mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_22",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[22mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_23",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[23mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_24",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[24mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic\">B</span>"
+  },
+  {
+    "id": "style_39",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[39mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_49",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[49mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span><span style=\"color:#800000;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">B</span>"
+  },
+  {
+    "id": "style_0",
+    "test": "styles_accumulate_and_reset_independently",
+    "input": "\u001b[31;44;1;2;3;4mA\u001b[0mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">A</span>B"
+  },
+  {
+    "id": "css_order",
+    "test": "style_properties_have_fixed_order",
+    "input": "\u001b[4;3;2;1;44;31mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000;background-color:#000080;font-weight:bold;opacity:0.6;font-style:italic;text-decoration:underline\">X</span>"
+  },
+  {
+    "id": "style_only",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[31m",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\"></span>"
+  },
+  {
+    "id": "repeat",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[31m\u001b[31m",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\"></span><span style=\"color:#800000\"></span>"
+  },
+  {
+    "id": "unknown_styled",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[31mA\u001b[999mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\">A</span><span style=\"color:#800000\">B</span>"
+  },
+  {
+    "id": "reset_only",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[0m",
+    "operation": "text",
+    "expected": ""
+  },
+  {
+    "id": "empty_sgr",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[31mA\u001b[mB",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\">A</span>B"
+  },
+  {
+    "id": "empty_param",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[31;;1mX",
+    "operation": "text",
+    "expected": "<span style=\"font-weight:bold\">X</span>"
+  },
+  {
+    "id": "leading_zero",
+    "test": "sgr_boundaries_keep_empty_spans_and_parameter_defaults",
+    "input": "\u001b[00031mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#800000\">X</span>"
+  },
+  {
+    "id": "incomplete_38",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38mX",
+    "operation": "text",
+    "expected": "X"
+  },
+  {
+    "id": "incomplete_48",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48mX",
+    "operation": "text",
+    "expected": "X"
+  },
+  {
+    "id": "incomplete_38;5",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38;5mX",
+    "operation": "text",
+    "expected": "X"
+  },
+  {
+    "id": "incomplete_48;5",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48;5mX",
+    "operation": "text",
+    "expected": "X"
+  },
+  {
+    "id": "incomplete_38;2;1",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38;2;1mX",
+    "operation": "text",
+    "expected": "<span style=\"font-weight:bold;opacity:0.6\">X</span>"
+  },
+  {
+    "id": "incomplete_48;2;4",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48;2;4mX",
+    "operation": "text",
+    "expected": "<span style=\"opacity:0.6;text-decoration:underline\">X</span>"
+  },
+  {
+    "id": "incomplete_38;2;1;2",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38;2;1;2mX",
+    "operation": "text",
+    "expected": "<span style=\"font-weight:bold;opacity:0.6\">X</span>"
+  },
+  {
+    "id": "incomplete_48;2;3;4",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48;2;3;4mX",
+    "operation": "text",
+    "expected": "<span style=\"opacity:0.6;font-style:italic;text-decoration:underline\">X</span>"
+  },
+  {
+    "id": "incomplete_38;9;1",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38;9;1mX",
+    "operation": "text",
+    "expected": "<span style=\"font-weight:bold\">X</span>"
+  },
+  {
+    "id": "incomplete_48;9;3",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48;9;3mX",
+    "operation": "text",
+    "expected": "<span style=\"font-style:italic\">X</span>"
+  },
+  {
+    "id": "incomplete_38;5;;1",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[38;5;;1mX",
+    "operation": "text",
+    "expected": "<span style=\"color:#000000;font-weight:bold\">X</span>"
+  },
+  {
+    "id": "incomplete_48;2;1;;3",
+    "test": "incomplete_colors_leave_remaining_codes_active",
+    "input": "\u001b[48;2;1;;3mX",
+    "operation": "text",
+    "expected": "<span style=\"background-color:rgb(1,0,3)\">X</span>"
+  },
+  {
+    "id": "unknown",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[7;8;9mX",
+    "operation": "text",
+    "expected": "X"
+  },
+  {
+    "id": "cursor",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[2J",
+    "operation": "text",
+    "expected": "\u001b[2J"
+  },
+  {
+    "id": "osc",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b]8;;https://example.test\u0007X\u001b]8;;\u0007",
+    "operation": "text",
+    "expected": "\u001b]8;;https://example.test\u0007X\u001b]8;;\u0007"
+  },
+  {
+    "id": "broken",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[31",
+    "operation": "text",
+    "expected": "\u001b[31"
+  },
+  {
+    "id": "colon",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[38:2:1:2:3mX",
+    "operation": "text",
+    "expected": "\u001b[38:2:1:2:3mX"
+  },
+  {
+    "id": "signed",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[-1mX",
+    "operation": "text",
+    "expected": "\u001b[-1mX"
+  },
+  {
+    "id": "space",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[ 31mX",
+    "operation": "text",
+    "expected": "\u001b[ 31mX"
+  },
+  {
+    "id": "unicode_digit",
+    "test": "only_ascii_digit_semicolon_sgr_is_consumed",
+    "input": "\u001b[٣١mX",
+    "operation": "text",
+    "expected": "\u001b[٣١mX"
+  },
+  {
+    "id": "adjacent",
+    "test": "two_lines_have_no_source_separator",
+    "input": [
+      "one",
+      "two"
+    ],
+    "operation": "lines",
+    "expected": "<div class=\"ansi-line\">one</div><div class=\"ansi-line\">two</div>"
+  },
+  {
+    "id": "spacing",
+    "test": "line_conversion_preserves_spacing_and_resets_style",
+    "input": [
+      "  a\tb  ",
+      "\u001b[31mone",
+      "two",
+      "",
+      "\u001b[31m",
+      "\u001b[0m"
+    ],
+    "operation": "lines",
+    "expected": "<div class=\"ansi-line\">  a\tb  </div><div class=\"ansi-line\"><span style=\"color:#800000\">one</span></div><div class=\"ansi-line\">two</div><div class=\"ansi-line\">&nbsp;</div><div class=\"ansi-line\"><span style=\"color:#800000\"></span></div><div class=\"ansi-line\">&nbsp;</div>"
+  }
+]

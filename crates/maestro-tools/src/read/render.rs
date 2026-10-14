@@ -1,4 +1,5 @@
 //! Terminal rendering of read calls and results.
+use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
 use super::ReadToolDetails;
 use crate::{
@@ -15,7 +16,6 @@ use crate::{
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::DiagnosticErrorInfo;
 use maestro_path::{Cwd, SEP, basename, dirname, relative, try_resolve};
 use maestro_theme::{Theme, ThemeColor, get_language_from_path, highlight_code};
@@ -67,7 +67,7 @@ fn docs_classification(
     absolute: &str,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<Option<Classification>> {
-    let readme_dir = dirname(&context.readme_path);
+    let readme_dir = dirname(&context.environment.readme_path);
     let process_cwd;
     let anchored =
         try_resolve(&[&readme_dir], &[]).is_ok() && try_resolve(&[absolute], &[]).is_ok();
@@ -163,10 +163,11 @@ fn format_compact_call(
 /// # Errors
 /// Returns a theme, home or path failure; the previous component is left unchanged.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let args = render_args(args);
     let classification = if context.expanded {
         None
     } else {
@@ -212,19 +213,23 @@ fn truncation_notice(details: Option<&ReadToolDetails>, theme: &Theme) -> Render
 
 /// The result text: a preview of the output, an overflow hint and the truncation notice.
 fn format_read_result(
-    result: &AgentToolResult<ReadToolDetails>,
+    result: &ToolRenderResultLike<'_, ReadToolDetails>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<String> {
-    let output = get_text_output(Some(result), context.show_images, &context.terminal_image)?;
-    let language = str(selected_path(context.args))
+    let output = get_text_output(
+        Some(result),
+        context.show_images,
+        &context.environment.terminal_image,
+    )?;
+    let language = str(selected_path(render_args(context.args)))
         .filter(|raw| !raw.is_empty())
         .and_then(get_language_from_path);
     let lines = match language {
         Some(language) => highlight_code(
-            &context.live_theme,
-            &*context.highlighter,
+            &context.environment.live_theme,
+            &*context.environment.highlighter,
             &replace_tabs(&output),
             Some(language),
         ),
@@ -246,9 +251,9 @@ fn format_read_result(
     let mut text = ["\n", &rows.join("\n")].concat();
     if lines.len() > shown {
         let counts = format!("{} more lines", lines.len() - shown);
-        text += &expand_hint(&counts, theme, &context.live_theme)?;
+        text += &expand_hint(&counts, theme, &context.environment.live_theme)?;
     }
-    Ok(text + &truncation_notice(result.details.as_ref(), theme)?)
+    Ok(text + &truncation_notice(result.details, theme)?)
 }
 
 /// Draw a read result, reusing the row's previous `Text`.
@@ -257,13 +262,14 @@ fn format_read_result(
 /// Returns a theme, home, path or escape-expression failure; the previous component is left
 /// unchanged.
 pub(super) fn render_result(
-    result: &AgentToolResult<ReadToolDetails>,
+    result: &ToolRenderResultLike<'_, ReadToolDetails>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
-    let hidden =
-        !options.expanded && !context.is_error && classify(context.args, context)?.is_some();
+    let hidden = !options.expanded
+        && !context.is_error
+        && classify(render_args(context.args), context)?.is_some();
     let text = if hidden {
         String::new()
     } else {

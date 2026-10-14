@@ -399,12 +399,12 @@ impl Env {
         state.set_theme_instance(Rc::clone(&theme)).unwrap();
         let live = state.theme();
         Self {
-            runtime: Rc::new(manual_runtime::ManualRuntime::default()),
             state,
             live,
             theme,
             highlighter,
             terminal: TerminalImage::new(|_| None, || 1),
+            runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         }
     }
 
@@ -495,10 +495,9 @@ pub fn context<'a, S: Default>(
         hyperlinks: true,
     });
     ToolRenderContext {
-        args,
+        args: Some(args),
         tool_call_id: "call".into(),
         invalidate: Rc::new(|| {}),
-        runtime: env.runtime.clone(),
         last_component: last,
         state: Rc::new(RefCell::new(S::default())),
         cwd: setup.cwd.clone(),
@@ -506,10 +505,13 @@ pub fn context<'a, S: Default>(
         expanded: setup.expanded,
         show_images: setup.show_images,
         is_error: setup.is_error,
-        readme_path: setup.readme.clone(),
-        live_theme: env.live.clone(),
-        highlighter: Rc::clone(&env.highlighter),
-        terminal_image: env.terminal.clone(),
+        environment: Rc::new(maestro_tools::ToolRenderEnvironment {
+            runtime: env.runtime.clone(),
+            readme_path: setup.readme.clone(),
+            live_theme: env.live.clone(),
+            highlighter: Rc::clone(&env.highlighter),
+            terminal_image: env.terminal.clone(),
+        }),
     }
 }
 
@@ -587,11 +589,16 @@ pub fn render_case(case: &Case) -> Vec<String> {
     let args = &case.input["args"];
     let ctx = context(args, &setup, &env, None);
     let row = if case.op == "call" {
-        (tool.render_call.as_ref().unwrap())(args, &env.theme, &ctx)
+        (tool.render_call.as_ref().unwrap())(Some(args), &env.theme, &ctx)
     } else {
         let result = read_result(&case.input["result"]);
         let options = options(&case.input["options"]);
-        (tool.render_result.as_ref().unwrap())(&result, options, &env.theme, &ctx)
+        (tool.render_result.as_ref().unwrap())(
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result),
+            options,
+            &env.theme,
+            &ctx,
+        )
     };
     row.unwrap().render(WIDTH)
 }

@@ -2920,6 +2920,8 @@ dependencies = [
  "maestro-session",
  "maestro-text",
  "maestro-theme",
+ "maestro-tools",
+ "maestro-tui",
  "serde",
  "serde_json",
 ]

@@ -1,4 +1,5 @@
 //! Terminal rendering of write calls and results.
+use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
 use super::highlight::{HighlightCache, language_of, rebuild, rows, update};
 use crate::{
@@ -11,7 +12,6 @@ use crate::{
     },
     types::{ToolRenderContext, ToolRenderResultOptions},
 };
-use maestro_agent::AgentToolResult;
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::{Theme, ThemeColor};
 use maestro_tui::{Component, Container, Text, tui::ComponentHandle};
@@ -105,7 +105,7 @@ fn format_preview(
             lines.len() - shown.len(),
             lines.len()
         );
-        text += &expand_hint(&counts, theme, &context.live_theme)?;
+        text += &expand_hint(&counts, theme, &context.environment.live_theme)?;
     }
     Ok(text)
 }
@@ -142,10 +142,11 @@ fn format_call(
 /// # Errors
 /// Returns a theme or home failure; the highlighting stays updated.
 pub(super) fn render_call(
-    args: &Value,
+    args: Option<&Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Rendered<ComponentHandle> {
+    let args = render_args(args);
     let component = call_component(context.last_component.as_ref());
     let raw_path = str(selected_path(args)).unwrap_or_default();
     let previous = component.cache.take();
@@ -165,7 +166,7 @@ pub(super) fn render_call(
 /// # Errors
 /// Returns a theme failure; the previous component is left unchanged.
 pub(super) fn render_result(
-    result: &AgentToolResult<()>,
+    result: &ToolRenderResultLike<'_, ()>,
     _options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,

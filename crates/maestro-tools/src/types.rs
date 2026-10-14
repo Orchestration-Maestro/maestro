@@ -1,4 +1,5 @@
 //! Tool definitions: the executable declaration plus prompt and render capabilities.
+use crate::output::render_utils::ToolRenderResultLike;
 
 use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
@@ -38,16 +39,30 @@ pub struct ToolRenderPhase {
     pub is_partial: bool,
 }
 
+/// Existing host effects supplied to tool renderers.
+pub struct ToolRenderEnvironment {
+    /// The caller's terminal runtime, which owns submitted preview futures.
+    pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
+    /// Absolute path of the documentation README, supplied by the application.
+    pub readme_path: String,
+    /// The published theme, read when a renderer styles text outside its `Theme` argument.
+    pub live_theme: LiveTheme,
+    /// Classifies code for explicit highlighting.
+    pub highlighter: Rc<dyn SyntaxHighlighter>,
+    /// Image support of the terminal showing the row.
+    pub terminal_image: TerminalImage,
+}
+
 /// Shared state a row hands to both of a tool's renderers.
 pub struct ToolRenderContext<'a, S = Value> {
     /// Arguments as the model supplied them so far, borrowed for this call only.
-    pub args: &'a Value,
+    pub args: Option<&'a Value>,
     /// Stable id of the tool call.
     pub tool_call_id: String,
     /// Requests a redraw of the row; must not strongly retain its owning writer or runtime.
     pub invalidate: Rc<dyn Fn()>,
-    /// The caller's terminal runtime, which owns submitted preview futures.
-    pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
+    /// Existing host effects used by rendering.
+    pub environment: Rc<ToolRenderEnvironment>,
     /// Component this renderer returned for the row last time.
     pub last_component: Option<ComponentHandle>,
     /// State shared by both renderers across redraws.
@@ -62,20 +77,12 @@ pub struct ToolRenderContext<'a, S = Value> {
     pub show_images: bool,
     /// Whether the result is an error.
     pub is_error: bool,
-    /// Absolute path of the documentation README, supplied by the application.
-    pub readme_path: String,
-    /// The published theme, read when a renderer styles text outside its `Theme` argument.
-    pub live_theme: LiveTheme,
-    /// Classifies code for explicit highlighting.
-    pub highlighter: Rc<dyn SyntaxHighlighter>,
-    /// Image support of the terminal showing the row.
-    pub terminal_image: TerminalImage,
 }
 
 /// Draws a tool call from its borrowed arguments, or reports why it cannot.
 pub type ToolRenderCall<S> = Rc<
     dyn Fn(
-        &Value,
+        Option<&Value>,
         &Theme,
         &ToolRenderContext<'_, S>,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
@@ -84,7 +91,7 @@ pub type ToolRenderCall<S> = Rc<
 /// Draws a tool result, or reports why it cannot.
 pub type ToolRenderResult<D, S> = Rc<
     dyn Fn(
-        &AgentToolResult<D>,
+        &ToolRenderResultLike<'_, D>,
         ToolRenderResultOptions,
         &Theme,
         &ToolRenderContext<'_, S>,

@@ -9,6 +9,8 @@ pub enum EscapeMode {
     XmlAttribute,
     /// Apostrophe as a decimal numeric character reference.
     HtmlDecimal,
+    /// Apostrophe as a zero-padded decimal numeric character reference.
+    HtmlDecimalPadded,
     /// Apostrophe as a hexadecimal numeric character reference.
     HtmlHex,
 }
@@ -32,6 +34,7 @@ pub fn escape_into(text: &str, out: &mut String, mode: EscapeMode) {
             '\'' => out.push_str(match mode {
                 EscapeMode::Xml | EscapeMode::XmlAttribute => "&apos;",
                 EscapeMode::HtmlDecimal => "&#39;",
+                EscapeMode::HtmlDecimalPadded => "&#039;",
                 EscapeMode::HtmlHex => "&#x27;",
             }),
             '\t' if mode == EscapeMode::XmlAttribute => out.push_str("&#9;"),

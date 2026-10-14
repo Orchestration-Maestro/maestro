@@ -158,11 +158,11 @@ executable declaration plus prompt text, a render-shell choice and optional call
 and result renderers. The caller context `C`, parameters `P`, details `D` and
 renderer state `S` are generic, so the type names no application context. The
 renderer records carry one call's state. `ToolRenderContext` borrows that call's raw
-argument value (rendering runs before schema validation, so it is independent of the typed
+argument value, preserving missing versus explicit null (rendering runs before schema validation, so it is independent of the typed
 execution parameters `P`) and holds the stable call id, invalidation, previous component,
 shared row state, working directory, the execution, partial, expanded, image and error flags,
-and the display inputs the application supplies: the absolute README path, the published
-theme, the syntax highlighter and the terminal's image support. `ToolRenderResultOptions`
+and a shared `ToolRenderEnvironment`: the runtime, absolute README path, published
+theme, syntax highlighter and terminal image support. `ToolRenderResultOptions`
 carries the result's own expanded and partial flags. Both renderers return the drawn
 component or the failure that kept them from drawing; building a context or calling a
 renderer is the caller's job.
@@ -181,7 +181,9 @@ callbacks must be `Send + Sync`.
 ## Display helpers
 
 [`output::render_utils`](../crates/maestro-tools/src/output/render_utils.rs) holds the
-display strings tool renderers share. `str` returns a borrowed string, an empty string for
+display strings tool renderers share. `ToolRenderResultLike` borrows ordered content
+and optional typed details; its optional error observation is supplied by the rendering
+host. Conversion from an execution result borrows its fields without supplying an error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows
 the home directory as `~` for a path equal to it or below it and leaves a sibling whose
 name merely starts with the home path unchanged; it reads the home directory through

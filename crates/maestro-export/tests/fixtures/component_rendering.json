@@ -1,0 +1,5317 @@
+[
+  {
+    "id": "padding_regression",
+    "test": "result_padding_keeps_red_one_and_plain_two",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [
+            "",
+            "\u001b[31mone\u001b[0m",
+            "two",
+            ""
+          ],
+          "expanded": [
+            "",
+            "\u001b[31mone\u001b[0m",
+            "two",
+            ""
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\"><span style=\"color:#800000\">one</span></div><div class=\"ansi-line\">two</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "width_omitted",
+    "test": "width_defaults_only_when_omitted",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {}
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "width_0",
+    "test": "width_defaults_only_when_omitted",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {}
+        },
+        {
+          "op": "result"
+        }
+      ],
+      "width": 0
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 0
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 0
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "width_7",
+    "test": "width_defaults_only_when_omitted",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {}
+        },
+        {
+          "op": "result"
+        }
+      ],
+      "width": 7
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 7
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 7
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 7
+        }
+      ]
+    }
+  },
+  {
+    "id": "width_103",
+    "test": "width_defaults_only_when_omitted",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {}
+        },
+        {
+          "op": "result"
+        }
+      ],
+      "width": 103
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 103
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 103
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 103
+        }
+      ]
+    }
+  },
+  {
+    "id": "input_flags",
+    "test": "call_and_result_forward_inputs_and_flags",
+    "input": {
+      "cwd": "/other",
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "details": {
+            "x": 2
+          },
+          "is_error": true
+        },
+        {
+          "op": "result",
+          "details": null,
+          "is_error": false
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/other",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/other",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": true,
+          "content": {
+            "presence": "present",
+            "value": [
+              {
+                "type": "text",
+                "text": "hello"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              }
+            ]
+          },
+          "details": {
+            "presence": "present",
+            "value": {
+              "x": 2
+            }
+          },
+          "result_error": true,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/other",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": true,
+          "content": {
+            "presence": "present",
+            "value": [
+              {
+                "type": "text",
+                "text": "hello"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              }
+            ]
+          },
+          "details": {
+            "presence": "present",
+            "value": {
+              "x": 2
+            }
+          },
+          "result_error": true,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "expanded-3",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/other",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "present",
+            "value": null
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-4",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-4",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/other",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "present",
+            "value": null
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-5",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "missing_null",
+    "test": "arguments_preserve_absence_null_and_replacement",
+    "input": {
+      "steps": [
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "args": null
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "args": {
+            "value": 2
+          }
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": null
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": null
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-3",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": null
+          },
+          "last": "expanded-2",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-4",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": null
+          },
+          "last": "collapsed-4",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-5",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "value": 2
+            }
+          },
+          "last": "call-3",
+          "same_state": true,
+          "count_before": 5,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "value": 2
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-6",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 5
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "value": 2
+            }
+          },
+          "last": "expanded-5",
+          "same_state": true,
+          "count_before": 6,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-7",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "value": 2
+            }
+          },
+          "last": "collapsed-7",
+          "same_state": true,
+          "count_before": 7,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-8",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 6
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "call-6",
+          "same_state": true,
+          "count_before": 8,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "missing"
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-9",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 7
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "expanded-8",
+          "same_state": true,
+          "count_before": 9,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-10",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-10",
+          "same_state": true,
+          "count_before": 10,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-11",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "identities",
+    "test": "state_and_component_slots_are_independent_per_call",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "id": "a",
+          "args": {}
+        },
+        {
+          "op": "call",
+          "id": "b",
+          "args": {}
+        },
+        {
+          "op": "result",
+          "id": "a"
+        },
+        {
+          "op": "call",
+          "id": "a",
+          "args": {
+            "again": true
+          },
+          "reuse": true
+        },
+        {
+          "op": "mutate",
+          "id": "a",
+          "count": 40
+        },
+        {
+          "op": "result",
+          "id": "a",
+          "reuse": true
+        },
+        {
+          "op": "result",
+          "id": "b"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": "mutated"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "call_callback",
+          "id": "b",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "call_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {
+              "again": true
+            }
+          },
+          "last": "call-1",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "again": true
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 5
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {
+              "again": true
+            }
+          },
+          "last": "expanded-4",
+          "same_state": true,
+          "count_before": 40,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "a",
+          "args": {
+            "presence": "present",
+            "value": {
+              "again": true
+            }
+          },
+          "last": "expanded-4",
+          "same_state": true,
+          "count_before": 41,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 6
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "b",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-8",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "b",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-8",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-9",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "lookup_dynamic",
+    "test": "lookup_is_live_and_absent_callbacks_return_none",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "lookup": "missing",
+          "args": {
+            "retained": 1
+          }
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "lookup": "result_only",
+          "args": {
+            "retained": 2
+          }
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "result",
+          "lookup": "call_only"
+        },
+        {
+          "op": "result",
+          "lookup": "missing"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "missing"
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "retained": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "retained": 1
+            }
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "retained": 2
+            }
+          },
+          "last": "expanded-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "retained": 2
+            }
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 5
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 6
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_lookup",
+    "test": "call_failures_preserve_prior_mutations",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "old": 1
+          }
+        },
+        {
+          "op": "call",
+          "args": {
+            "new": 2
+          },
+          "fail": "lookup"
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "args": {
+            "next": 3
+          }
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "last": "call-1",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-4",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_call_callback",
+    "test": "call_failures_preserve_prior_mutations",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "old": 1
+          }
+        },
+        {
+          "op": "call",
+          "args": {
+            "new": 2
+          },
+          "fail": "call_callback"
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "args": {
+            "next": 3
+          }
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": "call-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "last": "call-1",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-4",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_call_render",
+    "test": "call_failures_preserve_prior_mutations",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "old": 1
+          }
+        },
+        {
+          "op": "call",
+          "args": {
+            "new": 2
+          },
+          "fail": "call_render"
+        },
+        {
+          "op": "result"
+        },
+        {
+          "op": "call",
+          "args": {
+            "next": 3
+          }
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        },
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "old": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": "call-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "new": 2
+            }
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 4
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "last": "call-2",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "next": 3
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-5",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_lookup_result",
+    "test": "result_failures_stop_at_the_reached_phase",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "fail": "lookup"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_collapsed_callback_result",
+    "test": "result_failures_stop_at_the_reached_phase",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "fail": "collapsed_callback"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_collapsed_render_result",
+    "test": "result_failures_stop_at_the_reached_phase",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "fail": "collapsed_render"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_expanded_callback_result",
+    "test": "result_failures_stop_at_the_reached_phase",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "fail": "expanded_callback"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "fault_expanded_render_result",
+    "test": "result_failures_stop_at_the_reached_phase",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "fail": "expanded_render"
+        },
+        {
+          "op": "result"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "missing"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "expanded-3",
+          "same_state": true,
+          "count_before": 3,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-4",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": "collapsed-4",
+          "same_state": true,
+          "count_before": 4,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-5",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_empty",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [],
+          "expanded": []
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "expanded": ""
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_equal",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [
+            "same"
+          ],
+          "expanded": [
+            "same"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">same</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_different",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [
+            "small"
+          ],
+          "expanded": [
+            "large"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">small</div>",
+            "expanded": "<div class=\"ansi-line\">large</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_collapsed_empty",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [],
+          "expanded": [
+            "large"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">large</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_expanded_empty",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [
+            "small"
+          ],
+          "expanded": []
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">small</div>",
+            "expanded": ""
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "output_only_spacing",
+    "test": "result_output_omission_depends_on_converted_html",
+    "input": {
+      "steps": [
+        {
+          "op": "result",
+          "collapsed": [
+            "",
+            " \t",
+            "\u001b[31m﻿"
+          ],
+          "expanded": [
+            "\u001b[0m",
+            ""
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": {
+            "expanded": ""
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-1",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "missing"
+          },
+          "last": "collapsed-1",
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-2",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "trim_edges",
+    "test": "result_edge_trimming_uses_sgr_and_shared_whitespace",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {},
+          "call": [
+            "﻿",
+            "\u001b[31m \t\u001b[0m",
+            "a",
+            "",
+            "\t",
+            "b",
+            "﻿"
+          ]
+        },
+        {
+          "op": "result",
+          "collapsed": [
+            "﻿",
+            "\u001b[31m \t\u001b[0m",
+            "a",
+            "",
+            "\t",
+            "b",
+            "﻿"
+          ],
+          "expanded": [
+            "﻿",
+            "\u001b[31m \t\u001b[0m",
+            "a",
+            "",
+            "\t",
+            "b",
+            "﻿"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">﻿</div><div class=\"ansi-line\"><span style=\"color:#800000\"> \t</span></div><div class=\"ansi-line\">a</div><div class=\"ansi-line\">&nbsp;</div><div class=\"ansi-line\">\t</div><div class=\"ansi-line\">b</div><div class=\"ansi-line\">﻿</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">a</div><div class=\"ansi-line\">&nbsp;</div><div class=\"ansi-line\">\t</div><div class=\"ansi-line\">b</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "trim_next_line",
+    "test": "result_edge_trimming_uses_sgr_and_shared_whitespace",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {},
+          "call": [
+            "",
+            "a",
+            ""
+          ]
+        },
+        {
+          "op": "result",
+          "collapsed": [
+            "",
+            "a",
+            ""
+          ],
+          "expanded": [
+            "",
+            "a",
+            ""
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\"></div><div class=\"ansi-line\">a</div><div class=\"ansi-line\"></div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\"></div><div class=\"ansi-line\">a</div><div class=\"ansi-line\"></div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "trim_non_sgr",
+    "test": "result_edge_trimming_uses_sgr_and_shared_whitespace",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {},
+          "call": [
+            "\u001b[2J",
+            "a",
+            "\u001b]8;;x\u0007"
+          ]
+        },
+        {
+          "op": "result",
+          "collapsed": [
+            "\u001b[2J",
+            "a",
+            "\u001b]8;;x\u0007"
+          ],
+          "expanded": [
+            "\u001b[2J",
+            "a",
+            "\u001b]8;;x\u0007"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">\u001b[2J</div><div class=\"ansi-line\">a</div><div class=\"ansi-line\">\u001b]8;;x\u0007</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">\u001b[2J</div><div class=\"ansi-line\">a</div><div class=\"ansi-line\">\u001b]8;;x\u0007</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "trim_style_only",
+    "test": "result_edge_trimming_uses_sgr_and_shared_whitespace",
+    "input": {
+      "steps": [
+        {
+          "op": "call",
+          "args": {},
+          "call": [
+            "\u001b[31m",
+            "a",
+            "\u001b[0m"
+          ]
+        },
+        {
+          "op": "result",
+          "collapsed": [
+            "\u001b[31m",
+            "a",
+            "\u001b[0m"
+          ],
+          "expanded": [
+            "\u001b[31m",
+            "a",
+            "\u001b[0m"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\"><span style=\"color:#800000\"></span></div><div class=\"ansi-line\">a</div><div class=\"ansi-line\">&nbsp;</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "expanded": "<div class=\"ansi-line\">a</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 2
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-2",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-2",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-3",
+          "width": 100
+        }
+      ]
+    }
+  },
+  {
+    "id": "reentry",
+    "test": "callback_reentry_does_not_hold_row_borrows",
+    "input": {
+      "reenter": true,
+      "steps": [
+        {
+          "op": "call",
+          "args": {
+            "x": 1
+          }
+        },
+        {
+          "op": "result",
+          "id": "nested"
+        }
+      ]
+    },
+    "expected": {
+      "outputs": [
+        {
+          "presence": "present",
+          "value": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "presence": "present",
+          "value": {
+            "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+            "expanded": "<div class=\"ansi-line\">expanded</div>"
+          }
+        }
+      ],
+      "events": [
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 1
+        },
+        {
+          "phase": "lookup",
+          "name": "inner",
+          "count": 2
+        },
+        {
+          "phase": "call_callback",
+          "id": "nested",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {}
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-1",
+          "width": 100
+        },
+        {
+          "phase": "nested_output",
+          "output": "<div class=\"ansi-line\">call</div>"
+        },
+        {
+          "phase": "call_callback",
+          "id": "id",
+          "args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 0,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": true,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "direct_args": {
+            "presence": "present",
+            "value": {
+              "x": 1
+            }
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "call_render",
+          "component": "call-2",
+          "width": 100
+        },
+        {
+          "phase": "lookup",
+          "name": "custom",
+          "count": 3
+        },
+        {
+          "phase": "collapsed_callback",
+          "id": "nested",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": null,
+          "same_state": true,
+          "count_before": 1,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": false,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": false,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "collapsed_render",
+          "component": "collapsed-3",
+          "width": 100
+        },
+        {
+          "phase": "expanded_callback",
+          "id": "nested",
+          "args": {
+            "presence": "present",
+            "value": {}
+          },
+          "last": "collapsed-3",
+          "same_state": true,
+          "count_before": 2,
+          "cwd": "/work",
+          "execution_started": true,
+          "args_complete": true,
+          "is_partial": false,
+          "expanded": true,
+          "show_images": false,
+          "is_error": false,
+          "content": {
+            "presence": "present",
+            "value": []
+          },
+          "details": {
+            "presence": "missing"
+          },
+          "result_error": false,
+          "options": {
+            "expanded": true,
+            "isPartial": false
+          },
+          "same_theme": true
+        },
+        {
+          "phase": "expanded_render",
+          "component": "expanded-4",
+          "width": 100
+        }
+      ]
+    }
+  }
+]

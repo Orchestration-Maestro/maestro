@@ -105,15 +105,23 @@ const BASIC: [&str; 16] = [
 fn hex(value: ColorValue) -> String {
     match value {
         ColorValue::String(color) => color,
-        ColorValue::Index(index @ 0..=15) => BASIC[usize::from(index)].to_owned(),
-        ColorValue::Index(index @ 16..=231) => {
+        ColorValue::Index(index) => ansi256_to_hex(u32::from(index)),
+    }
+}
+
+/// Expand an ANSI palette index, retaining authored extended grayscale arithmetic.
+#[must_use]
+pub fn ansi256_to_hex(index: u32) -> String {
+    match index {
+        0..=15 => BASIC[index as usize].to_owned(),
+        16..=231 => {
             let cube = index - 16;
-            let level = |n: u8| if n == 0 { 0 } else { 55 + n * 40 };
+            let level = |n: u32| if n == 0 { 0 } else { 55 + n * 40 };
             let [r, g, b] = [cube / 36, cube % 36 / 6, cube % 6].map(level);
             format!("#{r:02x}{g:02x}{b:02x}")
         }
-        ColorValue::Index(index) => {
-            let gray = 8 + (index - 232) * 10;
+        _ => {
+            let gray = 8 + (u64::from(index) - 232) * 10;
             format!("#{gray:02x}{gray:02x}{gray:02x}")
         }
     }

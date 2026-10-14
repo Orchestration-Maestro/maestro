@@ -59,7 +59,7 @@ fn draw_call(
     last: Option<ComponentHandle>,
 ) -> ComponentHandle {
     let ctx = context(args, setup, env, last);
-    (tool().render_call.unwrap())(args, &env.theme, &ctx).unwrap()
+    (tool().render_call.unwrap())(Some(args), &env.theme, &ctx).unwrap()
 }
 
 /// Draw a result, reusing `last`.
@@ -74,7 +74,13 @@ fn draw_result(
         expanded: false,
         is_partial: false,
     };
-    (tool().render_result.unwrap())(result, options, &env.theme, &ctx).unwrap()
+    (tool().render_result.unwrap())(
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
+        options,
+        &env.theme,
+        &ctx,
+    )
+    .unwrap()
 }
 
 /// The rows the toolkit lays out for `text`.
@@ -410,7 +416,7 @@ fn write_preview_callbacks_never_mutate_files() {
             &env,
             None,
         );
-        (tool.render_call.as_ref().unwrap())(&args, &env.theme, &ctx).unwrap();
+        (tool.render_call.as_ref().unwrap())(Some(&args), &env.theme, &ctx).unwrap();
     }
     let mut failing = settled(setup(false));
     failing.is_error = true;
@@ -420,7 +426,9 @@ fn write_preview_callbacks_never_mutate_files() {
         is_partial: false,
     };
     (tool.render_result.as_ref().unwrap())(
-        &result_of(vec![text_block("denied")]),
+        &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result_of(vec![
+            text_block("denied"),
+        ])),
         options,
         &env.theme,
         &ctx,

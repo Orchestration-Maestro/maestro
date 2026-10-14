@@ -717,3 +717,30 @@ fn editor_contracts_keep_required_input_and_optional_hooks() {
     assert_bare_editor();
     assert_editor_callbacks_may_reenter_their_editor();
 }
+
+#[test]
+fn fallible_components_keep_infallible_defaults() {
+    struct DefaultComponent(Cell<usize>);
+    impl Component for DefaultComponent {
+        fn render(&self, width: usize) -> Vec<String> {
+            self.0.set(self.0.get() + 1);
+            vec![width.to_string()]
+        }
+    }
+    struct Fallible;
+    impl Component for Fallible {
+        fn render(&self, _: usize) -> Vec<String> {
+            Vec::new()
+        }
+        fn try_render(&self, _: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+            Err(io::Error::other("render failed").into())
+        }
+    }
+    let default = DefaultComponent(Cell::new(0));
+    assert_eq!(default.try_render(7).unwrap(), ["7"]);
+    assert_eq!(default.0.get(), 1);
+    assert_eq!(
+        Fallible.try_render(7).unwrap_err().to_string(),
+        "render failed"
+    );
+}

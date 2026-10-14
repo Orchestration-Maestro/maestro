@@ -1,6 +1,7 @@
 //! Pure selection, formatting and layout witnesses from the rendering oracle.
 
 use super::*;
+use maestro_agent::AgentToolResult;
 #[path = "../../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
 #[allow(dead_code)] // shared host exposes operations unused by pure witnesses
 mod manual_runtime;
@@ -26,10 +27,9 @@ fn live(theme: Rc<Theme>) -> LiveTheme {
 /// A context with incomplete arguments so corpus layout performs no I/O.
 fn context(args: &Value, theme: Rc<Theme>) -> ToolRenderContext<'_, EditRenderState> {
     ToolRenderContext {
-        args,
+        args: Some(args),
         tool_call_id: "call".into(),
         invalidate: Rc::new(|| {}),
-        runtime: Rc::new(manual_runtime::ManualRuntime::default()),
         last_component: None,
         state: Rc::new(RefCell::new(EditRenderState::default())),
         cwd: "/work".into(),
@@ -41,10 +41,13 @@ fn context(args: &Value, theme: Rc<Theme>) -> ToolRenderContext<'_, EditRenderSt
         expanded: false,
         show_images: true,
         is_error: false,
-        readme_path: String::new(),
-        live_theme: live(theme),
-        highlighter: Rc::new(SyntectHighlighter::new().unwrap()),
-        terminal_image: maestro_tui::TerminalImage::default(),
+        environment: Rc::new(crate::ToolRenderEnvironment {
+            runtime: Rc::new(manual_runtime::ManualRuntime::default()),
+            readme_path: String::new(),
+            live_theme: live(theme),
+            highlighter: Rc::new(SyntectHighlighter::new().unwrap()),
+            terminal_image: maestro_tui::TerminalImage::default(),
+        }),
     }
 }
 /// Decode exactly the generated preview record or caught error record.
@@ -131,7 +134,9 @@ fn result_cases(name: &str) {
             json!(
                 format_result(
                     preview(&case.input["preview"]).as_ref(),
-                    &result(&case.input["result"]),
+                    &crate::output::render_utils::ToolRenderResultLike::from(&result(
+                        &case.input["result"]
+                    )),
                     &theme,
                     &ctx
                 )
@@ -179,7 +184,7 @@ fn box_cases(name: &str) {
         let ctx = context(&case.input["args"], Rc::clone(&theme));
         let call = call_component(&ctx);
         call.state.borrow_mut().preview = preview(&case.input["preview"]);
-        build_call(&call, ctx.args, &theme, &ctx).unwrap();
+        build_call(&call, ctx.args.unwrap(), &theme, &ctx).unwrap();
         assert_eq!(
             json!(call.render(usize::try_from(case.input["width"].as_u64().unwrap()).unwrap())),
             case.expected

@@ -416,7 +416,7 @@ fn render_definition(
         execution_mode: None,
         execute: Arc::new(|_, _, _, _, _| Box::pin(async { Err(failure("unused")) })),
         render_call: Some(Rc::new(|args, _, context| {
-            if args["fail"] == json!(true) {
+            if args.unwrap()["fail"] == json!(true) {
                 return Err(failure("call failed"));
             }
             *context.state.borrow_mut() += 1;
@@ -426,7 +426,7 @@ fn render_definition(
         render_result: Some(Rc::new(move |_, options, _, context| {
             *context.state.borrow_mut() += 1;
             seen.borrow_mut().push(Observed {
-                args: context.args.clone(),
+                args: context.args.cloned().unwrap(),
                 calls: *context.state.borrow(),
                 id: context.tool_call_id.clone(),
                 options: (options.expanded, options.is_partial),
@@ -439,7 +439,7 @@ fn render_definition(
                     context.is_error,
                 ],
                 cwd: context.cwd.clone(),
-                readme: context.readme_path.clone(),
+                readme: context.environment.readme_path.clone(),
             });
             Ok(context.last_component.clone().unwrap())
         })),
@@ -462,9 +462,8 @@ fn row_context<'a>(
         Rc::new(NativeThemeOperations),
     );
     ToolRenderContext {
-        args,
+        args: Some(args),
         tool_call_id: "stable".into(),
-        runtime: Rc::new(display_support::manual_runtime::ManualRuntime::default()),
         invalidate: Rc::new(move || *counter.borrow_mut() += 1),
         last_component: None,
         state: Rc::clone(state),
@@ -477,10 +476,13 @@ fn row_context<'a>(
         expanded: flags[3],
         show_images: flags[4],
         is_error: flags[5],
-        readme_path: "/opt/maestro/README.md".into(),
-        live_theme: themes.theme(),
-        highlighter: Rc::new(NoLanguages),
-        terminal_image: TerminalImage::default(),
+        environment: Rc::new(maestro_tools::ToolRenderEnvironment {
+            runtime: Rc::new(display_support::manual_runtime::ManualRuntime::default()),
+            readme_path: "/opt/maestro/README.md".into(),
+            live_theme: themes.theme(),
+            highlighter: Rc::new(NoLanguages),
+            terminal_image: TerminalImage::default(),
+        }),
     }
 }
 
@@ -497,7 +499,7 @@ fn assert_failure_and_typed_execution(
         &Rc::new(RefCell::new(0)),
         invalidations,
     );
-    let error = (tool.render_call.as_ref().unwrap())(&failing, theme, &context)
+    let error = (tool.render_call.as_ref().unwrap())(Some(&failing), theme, &context)
         .err()
         .unwrap();
     assert_eq!(error.message, "call failed");
@@ -533,18 +535,23 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
         let state = Rc::new(RefCell::new(0));
         let mut context = row_context(flags, &first, &state, &invalidations);
         let row: ComponentHandle =
-            (tool.render_call.as_ref().unwrap())(&first, &theme, &context).unwrap();
+            (tool.render_call.as_ref().unwrap())(Some(&first), &theme, &context).unwrap();
         context.last_component = Some(Rc::clone(&row));
         let options = ToolRenderResultOptions {
             expanded: !flags[3],
             is_partial: !flags[2],
         };
         let later = ToolRenderContext {
-            args: &second,
+            args: Some(&second),
             ..context
         };
-        let again =
-            (tool.render_result.as_ref().unwrap())(&empty, options, &theme, &later).unwrap();
+        let again = (tool.render_result.as_ref().unwrap())(
+            &maestro_tools::output::render_utils::ToolRenderResultLike::from(&empty),
+            options,
+            &theme,
+            &later,
+        )
+        .unwrap();
         assert!(Rc::ptr_eq(&row, &again));
         assert_eq!(*state.borrow(), 2);
         let last = observed
@@ -559,4 +566,64 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
         && seen.readme == "/opt/maestro/README.md"
         && seen.calls == 2));
     assert_failure_and_typed_execution(&tool, &theme, &invalidations);
+}
+
+#[test]
+fn tool_context_preserves_missing_arguments_and_environment_handles() {
+    let env =
+        display_support::Env::with(Rc::new(display_support::bare_theme()), Rc::new(NoLanguages));
+    let args = Value::Null;
+    let setup = display_support::Setup {
+        readme: "/opt/maestro/README.md".into(),
+        bindings: Vec::new(),
+        expanded: false,
+        cwd: "/work".into(),
+        images: None,
+        show_images: false,
+        is_error: false,
+        phase: ToolRenderPhase {
+            execution_started: true,
+            args_complete: true,
+            is_partial: false,
+        },
+        shift: 0,
+    };
+    let mut context = display_support::context::<Value>(&args, &setup, &env, None);
+    let expected = Rc::clone(&context.environment);
+    let selected = Rc::clone(&env.theme);
+    let observations = Rc::new(RefCell::new(Vec::new()));
+    let seen = Rc::clone(&observations);
+    let callback: maestro_tools::ToolRenderCall<Value> = Rc::new(move |args, _, context| {
+        seen.borrow_mut()
+            .push((args.is_some(), context.args.is_some()));
+        assert!(Rc::ptr_eq(&expected, &context.environment));
+        assert!(Rc::ptr_eq(&expected.runtime, &context.environment.runtime));
+        assert!(Rc::ptr_eq(
+            &expected.highlighter,
+            &context.environment.highlighter
+        ));
+        assert!(Rc::ptr_eq(
+            &selected,
+            &context.environment.live_theme.get().unwrap()
+        ));
+        assert_eq!(context.environment.readme_path, "/opt/maestro/README.md");
+        context
+            .environment
+            .terminal_image
+            .set_capabilities(maestro_tui::TerminalCapabilities {
+                images: Some(maestro_tui::ImageProtocol::Kitty),
+                true_color: true,
+                hyperlinks: true,
+            });
+        Ok(Rc::new(Row))
+    });
+    assert!(context.args.is_some_and(Value::is_null));
+    callback(Some(&args), &env.theme, &context).unwrap();
+    context.args = None;
+    callback(None, &env.theme, &context).unwrap();
+    assert_eq!(*observations.borrow(), [(true, true), (false, false)]);
+    assert_eq!(
+        env.terminal.get_capabilities().images,
+        Some(maestro_tui::ImageProtocol::Kitty)
+    );
 }
