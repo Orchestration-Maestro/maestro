@@ -106,3 +106,61 @@ fn calendar(day: i32) -> Option<(i32, u32, u32, u32)> {
         }
     }
 }
+
+/// Calendar captured by the first date-producing field.
+#[cfg(test)]
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum Calendar {
+    /// Standard spreadsheet calendar.
+    Gregorian,
+    /// Tabular Thursday-epoch calendar.
+    Hijri,
+}
+
+/// Reuse serial normalization before projecting alternate calendar fields.
+#[cfg(test)]
+pub(super) fn parse_date_code_with_calendar(
+    value: f64,
+    date1904: bool,
+    mode: Calendar,
+) -> Option<DateCode> {
+    let mut date = parse_date_code(value, date1904)?;
+    if mode == Calendar::Hijri {
+        fix_hijri(&mut date, date1904)?;
+    }
+    Some(date)
+}
+
+/// Convert date-only observations while retaining explicit synthetic days.
+#[cfg(test)]
+fn fix_hijri(date: &mut DateCode, date1904: bool) -> Option<()> {
+    if !date1904 && matches!(date.serial_day, 0 | 60) {
+        (date.year, date.month, date.day) = if date.serial_day == 0 {
+            (1317, 8, 29)
+        } else {
+            (1317, 10, 29)
+        };
+        return Some(());
+    }
+    let gregorian = NaiveDate::from_ymd_opt(date.year, date.month, date.day)?;
+    let epoch = NaiveDate::from_ymd_opt(622, 7, 18)?;
+    let days = gregorian.signed_duration_since(epoch).num_days();
+    let mut year = i32::try_from((30 * days + 10646) / 10631).ok()?;
+    let start = |year: i32| 354 * i64::from(year - 1) + (3 + 11 * i64::from(year)) / 30;
+    if days < start(year) {
+        year -= 1;
+    }
+    let mut remaining = days - start(year);
+    let mut month = 1;
+    while month < 12 {
+        let length = if month % 2 == 1 { 30 } else { 29 };
+        if remaining < length {
+            break;
+        }
+        remaining -= length;
+        month += 1;
+    }
+    (date.year, date.month, date.day) = (year, month, u32::try_from(remaining + 1).ok()?);
+    date.weekday = gregorian.weekday().num_days_from_sunday();
+    Some(())
+}

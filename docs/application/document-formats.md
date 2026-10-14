@@ -31,13 +31,23 @@ formatting. These operations have no I/O and do not render a workbook preview.
   Grouped decimal rounding carries into the integer field; engineering rounding
   preserves displacement and mantissa carry. Decimal fields with `0`/`#` integer placeholders retain finite
   integral values without lossy scaling. Zero fixed denominators fail.
-  `FormatError` distinguishes unsupported number patterns from invalid date fields;
+  `FormatError` distinguishes unsupported number patterns, invalid date fields,
+  unclosed quoted literals, unclosed bracket blocks and unrecognized characters;
   callers need not parse its display text.
+- `is_date` reports whether a pattern contains calendar or clock fields. It skips
+  quoted/escaped literals and numeric runs, recognizes General case-insensitively,
+  and detects calendar markers, meridiem and elapsed fields. This is tolerant
+  recognition, not validation of syntax or field widths.
 
 The [numeric/calendar library inventory](../libraries/spreadsheet-formats.md)
 documents the underlying primitives. Custom format evaluation, mutable format
 loading, date-valued General input and alternate calendars are not exposed by
-this scalar interface.
+this scalar interface. The internal selected-section evaluator reuses the scalar
+writers for literals, numeric masks, fractions and clock/calendar fields. Its
+private implementation is test-gated until the full-format consumer is wired;
+it is not a public formatting operation. The internal alternate projection uses
+a tabular Thursday-epoch calendar, preserving the standard serial sentinels.
+Midnight carry retains both the effective epoch and the first captured calendar.
 
 ## Word package reader
 

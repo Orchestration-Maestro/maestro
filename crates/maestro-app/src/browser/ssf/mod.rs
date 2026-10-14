@@ -2,8 +2,13 @@
 
 use std::collections::BTreeMap;
 
+mod chkcond;
+mod eval_fmt;
 mod general;
+mod is_date;
+pub use is_date::is_date;
 mod parse_date_code;
+mod split_fmt;
 mod write_date;
 mod write_num;
 pub use general::{GeneralValue, general};
@@ -157,6 +162,12 @@ pub enum FormatError {
     InvalidDateFormat(DateToken),
     /// The numeric pattern is unsupported.
     UnsupportedNumberFormat,
+    /// A quoted literal has no closing quote.
+    UnterminatedString,
+    /// A bracketed format block has no closing bracket.
+    UnterminatedBlock,
+    /// A scalar is not part of the admitted format grammar.
+    UnrecognizedCharacter(char),
 }
 
 impl std::fmt::Display for FormatError {
@@ -164,8 +175,14 @@ impl std::fmt::Display for FormatError {
         match self {
             Self::InvalidDateFormat(kind) => write!(formatter, "invalid date format for {kind:?}"),
             Self::UnsupportedNumberFormat => formatter.write_str("unsupported number format"),
+            Self::UnterminatedString => formatter.write_str("unterminated string"),
+            Self::UnterminatedBlock => formatter.write_str("unterminated bracket block"),
+            Self::UnrecognizedCharacter(c) => write!(formatter, "unrecognized character {c}"),
         }
     }
 }
 
 impl std::error::Error for FormatError {}
+
+#[cfg(test)]
+mod tests;

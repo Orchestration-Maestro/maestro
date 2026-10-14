@@ -145,3 +145,10 @@ fn small_number(value: f64, width: usize) -> String {
         precision(value, 6, true)
     }
 }
+
+/// Recognize seven ASCII General letters at a scanner-provided byte offset.
+pub(super) fn is_general(format: &str, start: usize) -> bool {
+    format
+        .get(start..start.saturating_add(7))
+        .is_some_and(|s| s.eq_ignore_ascii_case("General"))
+}
