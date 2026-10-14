@@ -61,3 +61,19 @@ standalone XML parsing takes this policy explicitly.
 The same namespace exposes boolean and length conversion for property parsers.
 See the [document-format library inventory](../libraries/document-formats.md)
 for the native archive, XML and URL implementations.
+
+## Owned Word element tree
+
+`maestro_app::browser::docx_preview::{parse_body_elements, parse_paragraph,
+parse_run}` parse an `OwnedXmlElement` selection into an `OpenXmlElementTree`.
+Ordered arena positions preserve separate runs and their paragraph or simple-field
+parents, including hidden paragraphs used by content controls and change wrappers.
+Text, breaks, tabs, symbols, note references and field metadata remain typed;
+paragraph-level simple fields retain their result runs without evaluating fields.
+Symbol font-family values preserve valid CSS spellings and quote invalid names.
+
+Raw property elements and recognized foreign branches retain shared complete XML
+source with selected byte ranges, preserving ancestor namespaces. These slots do
+not yet interpret formatting, tables, links, bookmarks, drawings, math or comments.
+The tree is a partial semantic parser, not a rendered preview or attachment-text
+extractor. Package loading remains separate from element parsing.

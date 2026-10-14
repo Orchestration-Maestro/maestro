@@ -1,6 +1,7 @@
 //! Native borrowed XML views for Word parts.
 use super::super::document::common::{float_prefix, integer_prefix};
 use super::super::{DocxError, LengthUsage, convert_boolean, convert_length};
+use std::{ops::Range, sync::Arc};
 
 /// Parsed XML borrowing its supplied source text.
 pub struct XmlParser<'input> {
@@ -209,4 +210,63 @@ pub(crate) fn decode_text(text: &str) -> String {
     let fragment = format!("<t>{}</t>", text.replace('\r', "&#13;"));
     parse_xml_string(&fragment, false)
         .map_or_else(|_| text.to_owned(), |xml| xml.root().text_content())
+}
+
+/// Selected element retaining its complete admitted XML source.
+#[derive(Debug, Clone)]
+pub struct OwnedXmlElement {
+    /// Shared complete part source, including ancestor namespaces.
+    source: Arc<str>,
+    /// Element byte range within that source.
+    range: Range<usize>,
+}
+impl OwnedXmlElement {
+    /// Capture a borrowed element and its admitted source together.
+    #[must_use]
+    pub fn new(element: XmlElement<'_, '_>) -> Self {
+        Self {
+            source: Arc::from(element.node.document().input_text()),
+            range: element.source_range(),
+        }
+    }
+    /// Return the complete admitted source, not a standalone fragment.
+    #[must_use]
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+    /// Return the selected element's byte range within [`Self::source`].
+    #[must_use]
+    pub fn source_range(&self) -> Range<usize> {
+        self.range.clone()
+    }
+    /// Retain another element from the same parsed source allocation.
+    pub(crate) fn slice(&self, element: XmlElement<'_, '_>) -> Self {
+        Self {
+            source: Arc::clone(&self.source),
+            range: element.source_range(),
+        }
+    }
+}
+impl XmlElement<'_, '_> {
+    /// Return the element's byte range in the parser's admitted source.
+    #[must_use]
+    pub fn source_range(&self) -> Range<usize> {
+        self.node.range()
+    }
+}
+impl<'input> XmlParser<'input> {
+    /// Locate an owned selection in its reparsed complete source.
+    pub(crate) fn selected(
+        &self,
+        input: &OwnedXmlElement,
+    ) -> Result<XmlElement<'_, 'input>, DocxError> {
+        self.document
+            .descendants()
+            .find(|node| node.is_element() && node.range() == input.range)
+            .map(|node| XmlElement { node })
+            .ok_or_else(|| DocxError::Xml {
+                path: None,
+                message: "Selected XML element is missing".into(),
+            })
+    }
 }
