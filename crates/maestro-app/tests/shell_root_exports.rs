@@ -2,7 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-use maestro_app::{BashOperations, create_local_bash_operations, get_shell_config};
+use maestro_app::{
+    BashOperations, create_bash_tool_definition, create_local_bash_operations, get_shell_config,
+};
 use std::sync::Arc;
 
 #[test]
@@ -131,4 +133,49 @@ fn bash_rendering_exports_share_the_domain_owners() {
     assert_eq!(result.visual_lines, ["b   ", "c   "]);
     assert_eq!(result.skipped_count, 1);
     let _: maestro_tools::VisualTruncateResult = result;
+}
+
+#[test]
+fn renderer_bindings_are_available_from_application_root() {
+    use maestro_app::{
+        EditRenderState, ToolDef, ToolDefinition, ToolRenderCall, ToolRenderContext,
+        ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultCallback,
+        ToolRenderResultLike, ToolRenderResultOptions, ToolRenderShell, ToolRendererBinding,
+        ToolRendererState, get_text_output,
+    };
+    let state = ToolRendererState::default();
+    assert_eq!(
+        *state.state::<serde_json::Value>().borrow(),
+        serde_json::json!({})
+    );
+    let _native = state.state::<EditRenderState>();
+    let binding: ToolRendererBinding = ToolDef::Bash(create_bash_tool_definition::<()>(
+        "/work".into(),
+        "/unused".into(),
+        maestro_app::BashToolOptions::default(),
+    ))
+    .renderer_binding()
+    .unwrap();
+    assert!(binding.render_call.is_some() && binding.render_result.is_some());
+    let _: Option<ToolDef> = None;
+    let _: Option<ToolDefinition> = None;
+    let _: Option<ToolRenderCall<ToolRendererState>> = binding.render_call;
+    let _: Option<ToolRenderResult<serde_json::Value, ToolRendererState>> = None;
+    let _: Option<ToolRenderResultCallback<serde_json::Value, ToolRendererState>> =
+        binding.render_result;
+    let _: Option<ToolRenderContext<'_, ToolRendererState>> = None;
+    let _: Option<ToolRenderEnvironment> = None;
+    let _: Option<ToolRenderPhase> = None;
+    let _: Option<ToolRenderResultOptions> = None;
+    let _: Option<ToolRenderShell> = binding.render_shell;
+    let result = ToolRenderResultLike::<serde_json::Value> {
+        content: &[],
+        details: None,
+        terminate: None,
+        is_error: None,
+    };
+    assert_eq!(
+        get_text_output(Some(&result), false, &maestro_tui::TerminalImage::default()).unwrap(),
+        ""
+    );
 }

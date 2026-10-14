@@ -15,6 +15,15 @@ pub use maestro_tools::{
     create_local_bash_operations, utils::shell::get_shell_config,
 };
 
+pub use maestro_tools::output::render_utils::{ToolRenderResultLike, get_text_output};
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{EditRenderState, ToolDef};
+pub use maestro_tools::{
+    ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
+    ToolRenderResult, ToolRenderResultCallback, ToolRenderResultOptions, ToolRenderShell,
+    ToolRendererBinding, ToolRendererState,
+};
+
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
 pub use maestro_json::is_truthy;

@@ -3,7 +3,7 @@ use crate::output::render_utils::ToolRenderResultLike;
 use crate::{
     output::{
         render_parts::{expand_hint, float, num, paint},
-        render_utils::get_text_output,
+        render_utils::{TruncationView, get_text_output},
         truncate::{
             DEFAULT_MAX_BYTES, TruncationOptions, TruncationResult, format_size, truncate_head,
         },
@@ -21,7 +21,7 @@ pub(super) struct ListingView<'a> {
     /// Reported count, if any.
     pub(super) count: Option<f64>,
     /// Reported byte selection, if any.
-    pub(super) truncation: Option<&'a TruncationResult>,
+    pub(super) truncation: Option<TruncationView<'a>>,
     /// Count unit in the warning.
     pub(super) noun: &'static str,
     /// Rows shown before expansion.
@@ -62,14 +62,14 @@ pub(super) fn select_listing(
 /// The warning line for a listing cut by the entry limit or the byte limit, empty otherwise.
 fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
     let entries = view.count.filter(|limit| *limit != 0.0 && !limit.is_nan());
-    let bytes = view.truncation.filter(|cut| cut.truncated);
+    let bytes = view.truncation;
     if entries.is_none() && bytes.is_none() && view.trailing_warning.is_none() {
         return Ok(String::new());
     }
     let warnings: Vec<String> = entries
         .map(|limit| format!("{} {} limit", num(limit), view.noun))
         .into_iter()
-        .chain(bytes.map(|cut| format!("{} limit", format_size(float(cut.max_bytes)))))
+        .chain(bytes.map(|cut| format!("{} limit", format_size(cut.max_bytes()))))
         .chain(view.trailing_warning.map(str::to_owned))
         .collect();
     let notice = format!("[Truncated: {}]", warnings.join(", "));

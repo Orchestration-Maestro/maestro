@@ -60,6 +60,24 @@ pub enum ToolDef<C = ()> {
     Ls(ToolDefinition<C, LsToolInput, LsToolDetails>),
 }
 
+impl<C> ToolDef<C> {
+    /// Project factory renderers without decoding their execution records.
+    ///
+    /// # Errors
+    /// Rejects a substituted typed result slot; use the custom binding constructor instead.
+    pub fn renderer_binding(&self) -> Result<crate::ToolRendererBinding, DiagnosticErrorInfo> {
+        match self {
+            Self::Read(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Bash(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Edit(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Write(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Grep(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Find(tool) => crate::ToolRendererBinding::from_raw(tool),
+            Self::Ls(tool) => crate::ToolRendererBinding::from_raw(tool),
+        }
+    }
+}
+
 /// The built-in tool identities; custom executable names remain unrestricted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ToolName {

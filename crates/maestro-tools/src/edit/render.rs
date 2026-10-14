@@ -1,13 +1,12 @@
 //! Retained edit previews on the caller's terminal runtime.
 use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
-use super::EditToolDetails;
 use crate::{
     diff::{RenderDiffOptions, render_diff},
     edit_diff::{Edit, EditDiffError, EditDiffResult, compute_edits_diff},
     output::{
-        render_parts::{downcast, paint, themed},
-        render_utils::{path_display, selected_path},
+        render_parts::{downcast, float, paint, themed},
+        render_utils::{number, path_display, selected_path},
     },
     types::{ToolRenderContext, ToolRenderResultOptions},
     utils::diagnostics::diagnostic,
@@ -21,7 +20,15 @@ use std::{cell::RefCell, rc::Rc};
 /// Fallible rendering output.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
 /// A read-only preview or its caught failure.
-type EditPreview = Result<EditDiffResult, EditDiffError>;
+type EditPreview = Result<PreviewDetails, EditDiffError>;
+/// Display metadata retains numeric identity independently of native execution indices.
+#[derive(PartialEq)]
+struct PreviewDetails {
+    /// Numbered diff text.
+    diff: String,
+    /// Optional source-provided line identity.
+    first_changed_line: Option<f64>,
+}
 
 /// Retained call component shared by the edit definition's renderers.
 #[derive(Default)]
@@ -242,7 +249,11 @@ fn admit_preview(
 }
 
 /// Publish only to the outstanding request, releasing state before invalidation.
-fn publish(component: &EditCallRenderComponent, request: &Rc<()>, preview: EditPreview) -> bool {
+fn publish(
+    component: &EditCallRenderComponent,
+    request: &Rc<()>,
+    preview: Result<EditDiffResult, EditDiffError>,
+) -> bool {
     let mut state = component.state.borrow_mut();
     if !state
         .request
@@ -251,7 +262,13 @@ fn publish(component: &EditCallRenderComponent, request: &Rc<()>, preview: EditP
     {
         return false;
     }
-    set_preview(&mut state, preview);
+    set_preview(
+        &mut state,
+        preview.map(|preview| PreviewDetails {
+            diff: preview.diff,
+            first_changed_line: preview.first_changed_line.map(float),
+        }),
+    );
     true
 }
 
@@ -271,7 +288,7 @@ pub(super) fn render_call(
 /// Emit distinct result text only; ordinary successful execution text is hidden.
 fn format_result(
     preview: Option<&EditPreview>,
-    result: &ToolRenderResultLike<'_, EditToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     theme: &Theme,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> Rendered<Option<String>> {
@@ -299,20 +316,21 @@ fn format_result(
     }
     let Some(details) = result
         .details
-        .as_ref()
-        .filter(|details| !details.diff.is_empty())
+        .and_then(|details| details.get("diff"))
+        .and_then(Value::as_str)
+        .filter(|diff| !diff.is_empty())
     else {
         return Ok(None);
     };
     if preview.is_some_and(|preview| {
         preview
             .as_ref()
-            .is_ok_and(|preview| preview.diff == details.diff)
+            .is_ok_and(|preview| preview.diff == details)
     }) {
         return Ok(None);
     }
     themed(render_diff(
-        &details.diff,
+        details,
         &RenderDiffOptions::default(),
         &context.environment.live_theme,
     ))
@@ -322,7 +340,7 @@ fn format_result(
 /// Revoke pending work and install successful result details on an existing call.
 fn settle(
     component: &Rc<EditCallRenderComponent>,
-    result: &ToolRenderResultLike<'_, EditToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     context: &ToolRenderContext<'_, EditRenderState>,
 ) -> bool {
     let input = preview_input(render_args(context.args));
@@ -331,13 +349,16 @@ fn settle(
     state.settled = true;
     let mut changed = false;
     if !context.is_error
-        && let Some(details) = &result.details
+        && let Some(diff) = result
+            .details
+            .and_then(|details| details.get("diff"))
+            .and_then(Value::as_str)
     {
         changed = set_preview(
             &mut state,
-            Ok(EditDiffResult {
-                diff: details.diff.clone(),
-                first_changed_line: details.first_changed_line,
+            Ok(PreviewDetails {
+                diff: diff.to_owned(),
+                first_changed_line: number(result.details, "firstChangedLine"),
             }),
         );
         state.input = input;
@@ -349,7 +370,7 @@ fn settle(
 
 /// Render a result, reusing the detached result slot and rebuilding a retained call if changed.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, EditToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_, EditRenderState>,

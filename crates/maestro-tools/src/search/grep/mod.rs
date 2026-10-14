@@ -82,7 +82,7 @@ pub fn create_grep_tool_definition<C: Send + 'static>(
         execute: Arc::new(move |_id, input, signal, _update, _context| {
             let searcher = Arc::clone(&searcher);
             Box::pin(async move { searcher.search(input, signal).await })
-        }), render_call: Some(Rc::new(render::render_call)), render_result: Some(Rc::new(render::render_result)),
+        }), render_call: Some(Rc::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
     }
 }
 /// Build the executable content search with no caller context.

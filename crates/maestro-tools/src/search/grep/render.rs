@@ -1,8 +1,6 @@
 //! Content-search call text and shared listing previews.
-use super::{
-    super::listing::{ListingView, render_listing},
-    GrepToolDetails,
-};
+use super::super::listing::{ListingView, render_listing};
+use crate::output::render_utils::{TruncationView, flag, number};
 use crate::{
     output::{
         render_parts::{into_text, limit_label, paint, themed},
@@ -51,21 +49,18 @@ pub(super) fn render_call(
 }
 /// Render result options through the shared preview and warning owner.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, GrepToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let details = result.details;
     let view = ListingView {
-        count: details.and_then(|d| d.match_limit_reached),
-        truncation: details.and_then(|d| d.truncation.as_ref()),
+        count: number(details, "matchLimitReached"),
+        truncation: TruncationView::selected(details),
         noun: "matches",
         preview_lines: 15,
-        trailing_warning: details
-            .and_then(|d| d.lines_truncated)
-            .filter(|v| *v)
-            .map(|_| "some lines truncated"),
+        trailing_warning: flag(details, "linesTruncated").then_some("some lines truncated"),
     };
     let text = render_listing(result, options, theme, context, view)?;
     Ok(into_text(context.last_component.as_ref(), text))

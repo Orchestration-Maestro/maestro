@@ -27,6 +27,7 @@ fn live(theme: Rc<Theme>) -> LiveTheme {
 /// A context with incomplete arguments so corpus layout performs no I/O.
 fn context(args: &Value, theme: Rc<Theme>) -> ToolRenderContext<'_, EditRenderState> {
     ToolRenderContext {
+        renderer_state: None,
         args: Some(args),
         tool_call_id: "call".into(),
         invalidate: Rc::new(|| {}),
@@ -60,9 +61,9 @@ fn preview(value: &Value) -> Option<EditPreview> {
         Err(EditDiffError { error: error.error })
     } else {
         let details: support::Details = serde_json::from_value(value.clone()).unwrap();
-        Ok(EditDiffResult {
+        Ok(PreviewDetails {
             diff: details.diff,
-            first_changed_line: details.first_changed_line,
+            first_changed_line: details.first_changed_line.map(float),
         })
     })
 }
@@ -70,20 +71,26 @@ fn preview(value: &Value) -> Option<EditPreview> {
 fn preview_json(preview: Option<&EditPreview>) -> Value {
     match preview {
         None => Value::Null,
-        Some(Ok(details)) => serde_json::to_value(details).unwrap(),
+        Some(Ok(details)) => {
+            let mut value = json!({"diff":details.diff});
+            if let Some(line) = details.first_changed_line {
+                value["firstChangedLine"] =
+                    serde_json::from_str(&crate::output::render_utils::num(line)).unwrap();
+            }
+            value
+        }
         Some(Err(error)) => json!({"error": error.error}),
     }
 }
 /// Convert a recorded result using the existing content boundary.
-fn result(value: &Value) -> AgentToolResult<EditToolDetails> {
+fn result(value: &Value) -> AgentToolResult<Value> {
     let record: support::ResultRecord = serde_json::from_value(value.clone()).unwrap();
     AgentToolResult {
         terminate: None,
         content: record.content,
-        details: record.details.map(|details| EditDiffResult {
-            diff: details.diff,
-            first_changed_line: details.first_changed_line,
-        }),
+        details: record.details.map(
+            |details| json!({"diff":details.diff,"firstChangedLine":details.first_changed_line}),
+        ),
     }
 }
 
@@ -199,4 +206,49 @@ fn edit_box_layout_keeps_padding_and_preview_spacing() {
 #[test]
 fn edit_box_layout_wraps_through_existing_widgets() {
     box_cases("edit_box_layout_wraps_through_existing_widgets");
+}
+
+/// One exact numeric-identity query from the source helper.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IdentityCase {
+    /// Two supplied JSON spellings, including signed zero.
+    input: IdentityInput,
+    /// Whether the preview needs rebuilding.
+    expected: bool,
+}
+/// Lexical inputs preserve the original signed-zero observation.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct IdentityInput {
+    /// Previously published preview.
+    current_json: String,
+    /// Incoming preview.
+    incoming_json: String,
+}
+/// Select the same display-only fields as result settlement.
+fn selected_preview(text: &str) -> PreviewDetails {
+    let value: Value = serde_json::from_str(text).unwrap();
+    PreviewDetails {
+        diff: value["diff"].as_str().unwrap().to_owned(),
+        first_changed_line: value.get("firstChangedLine").and_then(Value::as_f64),
+    }
+}
+#[test]
+fn edit_preview_keeps_fractional_line_identity() {
+    let cases: Vec<IdentityCase> = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/edit-preview-identity.json"
+    ))
+    .unwrap();
+    assert_eq!(cases.len(), 4);
+    for case in cases {
+        let mut state = PreviewState {
+            preview: Some(Ok(selected_preview(&case.input.current_json))),
+            ..PreviewState::default()
+        };
+        assert_eq!(
+            set_preview(&mut state, Ok(selected_preview(&case.input.incoming_json))),
+            case.expected
+        );
+    }
 }

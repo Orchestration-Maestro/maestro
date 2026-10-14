@@ -125,7 +125,7 @@ pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
             }
         }),
         render_call: Some(Rc::new(render::render_call)),
-        render_result: Some(Rc::new(render::render_result)),
+        render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
     }
 }
 

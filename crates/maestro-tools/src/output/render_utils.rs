@@ -254,3 +254,43 @@ pub fn format_read_line_range(args: &Value) -> String {
     let tail = end.map_or_else(String::new, |end| format!("-{}", num(end)));
     format!(":{}{tail}", num(start))
 }
+
+/// Borrow only an admitted numeric renderer field.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn number(details: Option<&Value>, key: &str) -> Option<f64> {
+    details?.get(key)?.as_f64()
+}
+/// Select a boolean before applying the shared JSON truth rule.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn flag(details: Option<&Value>, key: &str) -> bool {
+    details
+        .and_then(|details| details.get(key))
+        .filter(|value| value.is_boolean())
+        .is_some_and(maestro_json::is_truthy)
+}
+/// Numeric text for a renderer field, preserving absent-field spelling.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn number_text(details: Option<&Value>, key: &str) -> String {
+    number(details, key).map_or_else(|| "undefined".to_owned(), num)
+}
+/// Sparse borrowed truncation metadata; execution records remain independent.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Clone, Copy)]
+pub(crate) struct TruncationView<'a>(pub(crate) &'a Value);
+#[cfg(not(target_arch = "wasm32"))]
+impl<'a> TruncationView<'a> {
+    /// Select only active truncation, ignoring unread fields.
+    pub(crate) fn selected(details: Option<&'a Value>) -> Option<Self> {
+        let cut = details?.get("truncation")?;
+        flag(Some(cut), "truncated").then_some(Self(cut))
+    }
+    /// Existing default byte budget, without narrowing supplied numeric values.
+    pub(crate) fn max_bytes(self) -> f64 {
+        number(Some(self.0), "maxBytes")
+            .unwrap_or(crate::output::render_parts::float(crate::DEFAULT_MAX_BYTES))
+    }
+    /// Whether the line limit selected the output.
+    pub(crate) fn by_lines(self) -> bool {
+        self.0.get("truncatedBy").and_then(Value::as_str) == Some("lines")
+    }
+}

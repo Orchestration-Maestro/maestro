@@ -62,3 +62,24 @@ Delegated behavior is documented in [read and definitions](tools-read.md),
 [file search](tools-search.md). Existing whole-file write and truncation helpers
 are also named re-exports from `maestro_tools::tools`; they remain owned by their
 individual modules.
+
+## Renderer projections
+
+[`ToolRendererBinding`](../crates/maestro-tools/src/renderer_binding.rs) clones only
+renderer handles and shell policy, never executable definitions. Custom definitions
+use `from_definition`; native `ToolDef::renderer_binding` projects factory raw slots.
+Each row supplies a `ToolRendererState`: the same concrete state type shares its
+handle across call/result slots and wrappers, while different types coexist.
+JSON state starts as `{}`; other state types use `Default`.
+
+The single result slot is `ToolRenderResult::Typed` or `Raw`. `invoke_native`
+serializes present details only for raw callbacks; `invoke_raw` decodes present
+details only for typed callbacks. Missing details never invoke conversion, and
+present null stays present. Builtins select only rendered JSON fields, accepting
+sparse metadata without changing execution records. Invalid selected field types
+use that field's absent fallback; unknown fields stay unread.
+
+A wrapper can borrow the existing map through `ToolRenderContext::renderer_state`,
+select a native state handle, release the map borrow and use `with_state` to
+delegate. This preserves the row's arguments, host effects and previous component.
+The application root re-exports these renderer types for frontends.

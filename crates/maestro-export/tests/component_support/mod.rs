@@ -247,7 +247,6 @@ fn observe(config: &Config) -> Value {
             cwd: config.cwd.as_deref().unwrap_or("/work"),
             width: config.width,
             environment: environment(),
-            create_state: || json!({}),
         }));
     *renderer_slot.borrow_mut() = Some(Rc::downgrade(&renderer));
     outputs(config, &*renderer, &observations)
@@ -280,24 +279,26 @@ fn observed_tool(observations: &Rc<Observations>, theme: &Rc<Theme>) -> Rc<ToolD
     }));
     let seen = Rc::clone(observations);
     let supplied = Rc::clone(theme);
-    tool.render_result = Some(Rc::new(move |result, options, theme, ctx| {
-        let phase = if options.expanded {
-            "expanded"
-        } else {
-            "collapsed"
-        };
-        let mut event = context(&seen, ctx, &format!("{phase}_callback"));
-        event["content"] = presence(Some(&serde_json::to_value(result.content).unwrap()));
-        event["details"] = presence(result.details);
-        event["result_error"] = json!(result.is_error.unwrap());
-        event["options"] = json!({"expanded":options.expanded,"isPartial":options.is_partial});
-        event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
-        seen.events.borrow_mut().push(event);
-        if seen.step.borrow()["fail"] == format!("{phase}_callback") {
-            return Err(failure());
-        }
-        Ok(component(&seen, phase, ctx))
-    }));
+    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
+        move |result, options, theme, ctx| {
+            let phase = if options.expanded {
+                "expanded"
+            } else {
+                "collapsed"
+            };
+            let mut event = context(&seen, ctx, &format!("{phase}_callback"));
+            event["content"] = presence(Some(&serde_json::to_value(result.content).unwrap()));
+            event["details"] = presence(result.details);
+            event["result_error"] = json!(result.is_error.unwrap());
+            event["options"] = json!({"expanded":options.expanded,"isPartial":options.is_partial});
+            event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
+            seen.events.borrow_mut().push(event);
+            if seen.step.borrow()["fail"] == format!("{phase}_callback") {
+                return Err(failure());
+            }
+            Ok(component(&seen, phase, ctx))
+        },
+    )));
     Rc::new(tool)
 }
 

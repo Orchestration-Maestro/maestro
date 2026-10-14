@@ -1,8 +1,8 @@
 //! Terminal rendering of ls calls and results.
 use crate::output::render_utils::{ToolRenderResultLike, render_args};
+use crate::output::render_utils::{TruncationView, number};
 
 use super::super::listing::{ListingView, render_listing};
-use super::LsToolDetails;
 use crate::{
     output::{
         render_parts::{into_text, limit_label, paint, themed},
@@ -58,7 +58,7 @@ pub(super) fn render_call(
 /// # Errors
 /// Returns a theme or escape-expression failure; the previous component is left unchanged.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, LsToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
@@ -69,8 +69,8 @@ pub(super) fn render_result(
         theme,
         context,
         ListingView {
-            count: result.details.and_then(|d| d.entry_limit_reached),
-            truncation: result.details.and_then(|d| d.truncation.as_ref()),
+            count: number(result.details, "entryLimitReached"),
+            truncation: TruncationView::selected(result.details),
             noun: "entries",
             preview_lines: 20,
             trailing_warning: None,

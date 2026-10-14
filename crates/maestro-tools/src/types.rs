@@ -1,5 +1,6 @@
 //! Tool definitions: the executable declaration plus prompt and render capabilities.
-use crate::output::render_utils::ToolRenderResultLike;
+use crate::renderer_state::ToolRendererState;
+pub use crate::result_renderer::{ToolRenderResult, ToolRenderResultCallback};
 
 use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
@@ -67,6 +68,8 @@ pub struct ToolRenderContext<'a, S = Value> {
     pub last_component: Option<ComponentHandle>,
     /// State shared by both renderers across redraws.
     pub state: Rc<RefCell<S>>,
+    /// Borrowed typed-state owner for native or custom callback delegation.
+    pub renderer_state: Option<&'a ToolRendererState>,
     /// Working directory of the session.
     pub cwd: String,
     /// Execution progress of the row.
@@ -79,20 +82,36 @@ pub struct ToolRenderContext<'a, S = Value> {
     pub is_error: bool,
 }
 
+impl<S> ToolRenderContext<'_, S> {
+    /// Borrow the existing row owner when the host supplies one.
+    #[must_use]
+    pub fn renderer_state(&self) -> Option<&ToolRendererState> {
+        self.renderer_state
+    }
+    /// Preserve the supplied context, selecting only another typed state handle.
+    #[must_use]
+    pub fn with_state<T>(&self, state: Rc<RefCell<T>>) -> ToolRenderContext<'_, T> {
+        ToolRenderContext {
+            args: self.args,
+            tool_call_id: self.tool_call_id.clone(),
+            invalidate: Rc::clone(&self.invalidate),
+            environment: Rc::clone(&self.environment),
+            last_component: self.last_component.clone(),
+            state,
+            renderer_state: self.renderer_state,
+            cwd: self.cwd.clone(),
+            phase: self.phase,
+            expanded: self.expanded,
+            show_images: self.show_images,
+            is_error: self.is_error,
+        }
+    }
+}
+
 /// Draws a tool call from its borrowed arguments, or reports why it cannot.
 pub type ToolRenderCall<S> = Rc<
     dyn Fn(
         Option<&Value>,
-        &Theme,
-        &ToolRenderContext<'_, S>,
-    ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
->;
-
-/// Draws a tool result, or reports why it cannot.
-pub type ToolRenderResult<D, S> = Rc<
-    dyn Fn(
-        &ToolRenderResultLike<'_, D>,
-        ToolRenderResultOptions,
         &Theme,
         &ToolRenderContext<'_, S>,
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>,

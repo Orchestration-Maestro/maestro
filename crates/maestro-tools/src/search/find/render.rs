@@ -1,9 +1,7 @@
 //! Terminal call text and shared listing previews.
-use super::{
-    super::listing::{ListingView, render_listing},
-    FindToolDetails,
-};
+use super::super::listing::{ListingView, render_listing};
 use crate::output::render_utils::{ToolRenderResultLike, render_args};
+use crate::output::render_utils::{TruncationView, number};
 use crate::{
     output::{
         render_parts::{into_text, limit_label, paint, themed},
@@ -49,14 +47,14 @@ pub(super) fn render_call(
 }
 /// Render a result through the listing preview owner.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, FindToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
 ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
     let view = ListingView {
-        count: result.details.and_then(|d| d.result_limit_reached),
-        truncation: result.details.and_then(|d| d.truncation.as_ref()),
+        count: number(result.details, "resultLimitReached"),
+        truncation: TruncationView::selected(result.details),
         noun: "results",
         preview_lines: 20,
         trailing_warning: None,
