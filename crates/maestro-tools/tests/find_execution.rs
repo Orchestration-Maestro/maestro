@@ -1,10 +1,7 @@
 //! File finding through the public tool definition.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod display_support;
-mod find_support;
-mod ls_support;
-mod read_support;
+use crate::{display_support, find_support, read_support};
 use maestro_tools::{FindToolOptions, ToolsManager, create_find_tool_definition};
 use std::sync::Arc;
 #[test]

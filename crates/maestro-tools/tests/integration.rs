@@ -28,6 +28,10 @@ mod edit_rendering;
 mod edit_snapshot_matching;
 mod edit_support;
 mod exif_orientation_behavior;
+mod find_execution;
+mod find_rendering;
+#[cfg(not(target_arch = "wasm32"))]
+mod find_support;
 mod image_mime_detection;
 mod image_preparation;
 mod local_shell_execution;
@@ -48,6 +52,7 @@ mod shell_tree_cleanup;
 mod streamed_output;
 mod support;
 mod tool_definition_contract;
+mod tool_record_views;
 mod truncation_behavior;
 mod write_behavior;
 mod write_rendering;

@@ -1,10 +1,7 @@
 //! File-search rendering through the public definition callbacks.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod display_support;
-mod find_support;
-mod ls_support;
-mod read_support;
+use crate::find_support;
 
 #[test]
 fn find_call_renderer_handles_argument_presence_and_styles() {
