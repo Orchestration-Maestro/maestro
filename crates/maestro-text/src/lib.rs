@@ -1,4 +1,4 @@
-//! Text primitives shared by Maestro crates: streaming UTF-8, whitespace membership, UTF-16
+//! Text primitives shared by Maestro crates: streaming and BOM-aware lossy UTF-8, whitespace membership, UTF-16
 //! lexical order, markup escaping, environment flag truth and, with the `collation` feature, locale comparison.
 //!
 //! ```
@@ -19,7 +19,7 @@ pub mod markup;
 mod newlines;
 pub mod utf8;
 mod whitespace;
-pub use utf8::Utf8Stream;
+pub use utf8::{Utf8Stream, decode_utf8};
 
 pub use flags::is_truthy_env_flag;
 pub use lexical::utf16_order;

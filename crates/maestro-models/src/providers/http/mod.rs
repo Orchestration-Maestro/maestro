@@ -7,7 +7,6 @@ mod line_decoder;
 mod retry;
 mod runtime;
 mod server_sent_events;
-mod text;
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -25,12 +24,12 @@ pub(crate) use failure::{
     stream_failure,
 };
 pub(crate) use headers::{client_pairs, edge_whitespace, layer_request_headers, normalize_request};
+pub(crate) use maestro_text::decode_utf8;
 pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
 pub use runtime::{Raced, race};
 pub(crate) use server_sent_events::{ServerSentEvent, SseMessages};
-pub(crate) use text::decode_utf8;
 
 /// One HTTP attempt: method, final URL, lowercase headers and body bytes.
 #[derive(Clone)]

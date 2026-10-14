@@ -4,9 +4,9 @@ use crate::{
     AgentContext, AgentLoopConfig, AgentLoopOptions, run_agent_loop, run_agent_loop_continue,
 };
 use maestro_models::{
-    BoxFuture, Cancellation, DiagnosticErrorInfo, EventStream, ImageContent, Message,
-    ModelThinkingLevel, ProviderObjects, SimpleStreamOptions, StreamOptions, TextContent,
-    UserBlock, UserContent, UserMessage, timestamp_now,
+    BoxFuture, Cancellation, DiagnosticErrorInfo, EventStream, ImageContent, ModelThinkingLevel,
+    ProviderObjects, SimpleStreamOptions, StreamOptions, TextContent, UserBlock, UserContent,
+    UserMessage, timestamp_now,
 };
 use std::sync::{Arc, RwLock};
 #[cfg(not(target_arch = "wasm32"))]
@@ -307,12 +307,7 @@ pub(super) fn default_converter<C: CustomAgentMessages>() -> crate::ConvertToLlm
     Arc::new(|history| {
         let messages = read(&history)
             .iter()
-            .filter_map(|entry| match entry {
-                AgentMessage::User(value) => Some(Message::User(read(value).clone())),
-                AgentMessage::Assistant(value) => Some(Message::Assistant(read(value).clone())),
-                AgentMessage::ToolResult(value) => Some(Message::ToolResult(read(value).clone())),
-                AgentMessage::Custom(_) => None,
-            })
+            .filter_map(AgentMessage::to_message)
             .collect();
         Box::pin(std::future::ready(Ok(messages)))
     })

@@ -1,7 +1,7 @@
 # Browser utility libraries
 
 The `maestro-web` utility library has exactly two internal dependencies:
-`maestro-app` supplies existing numeric records and markup escaping;
+`maestro-app` supplies existing numeric records, markup escaping and attachment policy;
 `maestro-theme` supplies caller-resolved presentation. It introduces no runtime,
 font bundle or application launcher.
 
@@ -47,3 +47,10 @@ translation data uses MIT. Their full texts are retained in
 [third-party notices](../../THIRD-PARTY-NOTICES.md).
 
 See [browser utility use](../browser/frontend.md) for the delivered API boundary.
+
+Application attachment loading reuses already-landed native libraries: serde
+1.0.229 (derive, MIT), base64 0.23.1 (defaults off/std, MIT), rand 0.10.3
+(defaults, MIT), ryu-js 1.0.3 (Apache-2.0) and futures-util 0.3.34
+(defaults off/std/sink, MIT). The existing model Fetch port owns HTTP transport;
+there is no second client or document parser dependency. The application uses
+the already-allowed agent dependency for standard-message projection.

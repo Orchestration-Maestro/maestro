@@ -842,3 +842,15 @@ assert_eq!(*trace.lock().unwrap(), ["steering", "turn_end", "stop"]);
 # faux.unregister();
 # });
 ```
+
+## Message projection
+
+`AgentMessage::to_message` returns an owned user, assistant or tool-result snapshot,
+or `None` for custom entries. The default agent converter uses this operation.
+The shared handle remains available for later edits; the returned model record is
+an independent snapshot. Poisoned read locks recover their retained values.
+
+`CustomAgentMessages::role` is a read-only accessor called under the message's
+read lock. It must not access that same lock or call back into the agent.
+Browser attachment records and conversion live in the
+[application](../application/browser-attachments.md).

@@ -20,6 +20,8 @@ pub enum QueueMode {
 /// A caller-defined message role with a typed payload.
 pub trait CustomAgentMessages {
     /// The custom message's role.
+    ///
+    /// Called while reading the message: do not access its own lock or call back into the agent.
     fn role(&self) -> &str;
 }
 impl CustomAgentMessages for Infallible {
@@ -37,6 +39,20 @@ pub enum AgentMessage<C: CustomAgentMessages = Infallible> {
     ToolResult(Arc<RwLock<ToolResultMessage>>),
     /// Caller-defined input.
     Custom(Arc<RwLock<C>>),
+}
+impl<C: CustomAgentMessages> AgentMessage<C> {
+    /// Return an owned snapshot of a standard model message, or `None` for custom input.
+    #[must_use]
+    pub fn to_message(&self) -> Option<maestro_models::Message> {
+        use crate::agent::read;
+        use maestro_models::Message;
+        match self {
+            Self::User(value) => Some(Message::User(read(value).clone())),
+            Self::Assistant(value) => Some(Message::Assistant(read(value).clone())),
+            Self::ToolResult(value) => Some(Message::ToolResult(read(value).clone())),
+            Self::Custom(_) => None,
+        }
+    }
 }
 impl<C: CustomAgentMessages> Clone for AgentMessage<C> {
     fn clone(&self) -> Self {

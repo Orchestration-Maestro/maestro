@@ -1,6 +1,6 @@
 //! Splits a byte stream into lines at `\r\n`, `\r` and `\n`, whatever the chunk boundaries.
 
-use super::text::decode_utf8;
+use maestro_text::decode_utf8;
 
 /// Collects bytes and returns each completed line as text.
 /// A carriage return completes its line immediately; one following line feed is skipped.

@@ -2536,7 +2536,10 @@ dependencies = [
 name = "maestro-app"
 version = "0.1.0"
 dependencies = [
+ "base64",
  "chrono",
+ "futures-util",
+ "maestro-agent",
  "maestro-json",
  "maestro-models",
  "maestro-path",
@@ -2547,6 +2550,7 @@ dependencies = [
  "maestro-tui",
  "maestro-watch",
  "num-traits",
+ "rand 0.10.3",
  "rustix",
  "ryu-js",
  "serde",

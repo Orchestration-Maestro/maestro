@@ -1,0 +1,155 @@
+//! Browser conversation records and model projection.
+use crate::browser::utils::attachment_utils::{Attachment, AttachmentType};
+use crate::{ImageContent, Message, TextContent, UserBlock, UserContent};
+use maestro_agent::{AgentMessage, CustomAgentMessages as CustomMessage};
+
+/// Convert images and nonempty document text into ordered model blocks.
+#[must_use]
+pub fn convert_attachments(attachments: &[Attachment]) -> Vec<UserBlock> {
+    attachments
+        .iter()
+        .filter_map(|attachment| match attachment.r#type {
+            AttachmentType::Image => Some(UserBlock::Image(ImageContent {
+                data: attachment.content.clone(),
+                mime_type: attachment.mime_type.clone(),
+            })),
+            AttachmentType::Document => attachment
+                .extracted_text
+                .as_ref()
+                .filter(|text| !text.is_empty())
+                .map(|text| {
+                    UserBlock::Text(TextContent {
+                        text: format!("\n\n[Document: {}]\n{text}", attachment.file_name),
+                        text_signature: None,
+                    })
+                }),
+        })
+        .collect()
+}
+
+/// Browser user input with optional attachments.
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(tag = "role", rename = "user-with-attachments")]
+pub struct UserMessageWithAttachments {
+    /// Text or existing model blocks.
+    pub content: UserContent,
+    /// Recorded milliseconds.
+    pub timestamp: f64,
+    /// Optional original attachments.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Vec<Attachment>>,
+}
+impl CustomMessage for UserMessageWithAttachments {
+    fn role(&self) -> &'static str {
+        "user-with-attachments"
+    }
+}
+/// Artifact edit classification.
+#[derive(Clone, Copy, Debug, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ArtifactAction {
+    /// Create an artifact.
+    Create,
+    /// Update an artifact.
+    Update,
+    /// Delete an artifact.
+    Delete,
+}
+/// Browser artifact history entry, excluded from model input.
+#[derive(Clone, Debug, serde::Serialize)]
+#[serde(tag = "role", rename = "artifact")]
+pub struct ArtifactMessage {
+    /// Edit classification.
+    pub action: ArtifactAction,
+    /// Authored filename.
+    pub filename: String,
+    /// Optional artifact data.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    /// Optional display title.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    /// Recorded timestamp spelling.
+    pub timestamp: String,
+}
+impl CustomMessage for ArtifactMessage {
+    fn role(&self) -> &'static str {
+        "artifact"
+    }
+}
+
+/// Browser records with an open caller-defined message branch.
+pub enum CustomAgentMessages<C: CustomMessage = std::convert::Infallible> {
+    /// User input with attachments.
+    UserWithAttachments(UserMessageWithAttachments),
+    /// Artifact history.
+    Artifact(ArtifactMessage),
+    /// Caller-defined entry.
+    Other(C),
+}
+impl<C: CustomMessage> CustomMessage for CustomAgentMessages<C> {
+    fn role(&self) -> &str {
+        match self {
+            Self::UserWithAttachments(value) => value.role(),
+            Self::Artifact(value) => value.role(),
+            Self::Other(value) => value.role(),
+        }
+    }
+}
+/// Compare the exact attachment-user role.
+#[must_use]
+pub fn is_user_message_with_attachments<C: CustomMessage>(message: &AgentMessage<C>) -> bool {
+    has_role(message, "user-with-attachments")
+}
+/// Compare the exact artifact role.
+#[must_use]
+pub fn is_artifact_message<C: CustomMessage>(message: &AgentMessage<C>) -> bool {
+    has_role(message, "artifact")
+}
+/// Inspect custom role accessors without caching the value.
+fn has_role<C: CustomMessage>(message: &AgentMessage<C>, role: &str) -> bool {
+    match message {
+        AgentMessage::Custom(value) => {
+            value
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .role()
+                == role
+        }
+        _ => false,
+    }
+}
+/// Expand browser users and snapshot standard messages in input order.
+#[must_use]
+pub fn default_convert_to_llm<C: CustomMessage>(
+    messages: &[AgentMessage<CustomAgentMessages<C>>],
+) -> Vec<Message> {
+    messages
+        .iter()
+        .filter_map(|message| {
+            let AgentMessage::Custom(value) = message else {
+                return message.to_message();
+            };
+            let value = value
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let CustomAgentMessages::UserWithAttachments(user) = &*value {
+                let mut content = match &user.content {
+                    UserContent::Text(text) => vec![UserBlock::Text(TextContent {
+                        text: text.clone(),
+                        text_signature: None,
+                    })],
+                    UserContent::Blocks(blocks) => blocks.clone(),
+                };
+                if let Some(attachments) = &user.attachments {
+                    content.extend(convert_attachments(attachments));
+                }
+                return Some(Message::User(maestro_models::UserMessage {
+                    content: UserContent::Blocks(content),
+                    timestamp: user.timestamp,
+                }));
+            }
+            None
+        })
+        .collect()
+}
