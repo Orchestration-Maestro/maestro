@@ -1,12 +1,12 @@
 //! Retained shell call and result rendering.
-use super::BashToolDetails;
 use crate::{
     ToolRenderContext, ToolRenderResultOptions,
     output::{
-        render_parts::{
-            downcast, expand_hint, float, into_text, num, paint, plain_expand_hint, themed,
+        render_parts::{downcast, expand_hint, into_text, num, paint, plain_expand_hint, themed},
+        render_utils::{
+            ToolRenderResultLike, TruncationView, get_text_output, invalid_arg_text, number_text,
+            render_args, str,
         },
-        render_utils::{ToolRenderResultLike, get_text_output, invalid_arg_text, render_args, str},
         visual_truncate::{VisualTruncateResult, truncate_to_visual_lines},
     },
 };
@@ -111,7 +111,7 @@ fn timing(
 }
 /// Draw the first captured duration through the existing text component.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, BashToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     _theme: &Theme,
     context: &ToolRenderContext<'_, BashRenderState>,
@@ -231,32 +231,30 @@ impl Component for VisualTail {
 }
 
 /// Artifact identity precedes active truncation, independently of body presence.
-fn metadata(details: Option<&BashToolDetails>) -> Option<String> {
-    use crate::output::truncate::{TruncationBy, format_size};
+fn metadata(details: Option<&Value>) -> Option<String> {
+    use crate::output::truncate::format_size;
     let details = details?;
     let mut warnings = Vec::new();
     if let Some(path) = details
-        .full_output_path
-        .as_deref()
+        .get("fullOutputPath")
+        .and_then(Value::as_str)
         .filter(|path| !path.is_empty())
     {
         warnings.push(format!("Full output: {path}"));
     }
-    if let Some(truncation) = details
-        .truncation
-        .as_ref()
-        .filter(|truncation| truncation.truncated)
-    {
-        warnings.push(match truncation.truncated_by {
-            Some(TruncationBy::Lines) => format!(
+    if let Some(truncation) = TruncationView::selected(Some(details)) {
+        warnings.push(if truncation.by_lines() {
+            format!(
                 "Truncated: showing {} of {} lines",
-                truncation.output_lines, truncation.total_lines
-            ),
-            _ => format!(
+                number_text(Some(truncation.0), "outputLines"),
+                number_text(Some(truncation.0), "totalLines")
+            )
+        } else {
+            format!(
                 "Truncated: {} lines shown ({} limit)",
-                truncation.output_lines,
-                format_size(float(truncation.max_bytes))
-            ),
+                number_text(Some(truncation.0), "outputLines"),
+                format_size(truncation.max_bytes())
+            )
         });
     }
     (!warnings.is_empty()).then(|| format!("[{}]", warnings.join(". ")))

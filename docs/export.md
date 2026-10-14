@@ -78,7 +78,8 @@ not brand roles.
 
 `create_tool_html_renderer` implements the existing `ToolHtmlRenderer` contract
 through [tools-owned definitions](tools-read.md#tool-definitions). Supply live lookup,
-theme, cwd, host environment and a typed empty-state initializer. Width defaults
+theme, cwd and host environment. Each call ID owns a `ToolRendererState`;
+custom state uses `Default`, and JSON state starts as an empty object. Width defaults
 to 100 only when omitted. The adapter retains arguments, shared mutable state and
 independent call/result component slots per call ID. Missing arguments stay missing.
 It executes no tool.
@@ -92,3 +93,9 @@ blank lines remain. Expanded output stays present even when empty; collapsed out
 is included only when nonempty and different. Ordinary lookup, callback, component
 and typed-input failures return absence without rolling back earlier mutations.
 Direct user-supplied renderer errors still propagate through the serializer.
+
+Result callbacks retain one `ToolRenderResult` slot. Typed callbacks decode present
+details once and share that value across collapsed and expanded phases; raw callbacks
+borrow persisted JSON directly, so sparse builtin metadata does not require decoding
+an execution record. Both phases use the same per-ID typed state owner, available via
+`ToolRenderContext::renderer_state` for native delegation with `with_state`.

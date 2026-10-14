@@ -90,7 +90,8 @@ impl Row {
     ) -> ComponentHandle {
         let mut ctx = self.context(args, last);
         ctx.is_error = error;
-        (self.tool.render_result.as_ref().unwrap())(
+        crate::display_support::native(
+            self.tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
             ToolRenderResultOptions {
                 expanded: false,
@@ -317,7 +318,8 @@ fn edit_settled_result_rejects_late_preview() {
                 let mut ctx = row.context(&input, None);
                 ctx.is_error = error;
                 ctx.phase.is_partial = partial;
-                (row.tool.render_result.as_ref().unwrap())(
+                crate::display_support::native(
+                    row.tool.render_result.as_ref().unwrap(),
                     &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(diff)),
                     ToolRenderResultOptions {
                         expanded: false,
@@ -546,7 +548,8 @@ fn edit_result_without_call_renders_detached_output() {
             expanded: case.input["options"]["expanded"].as_bool().unwrap(),
             is_partial: case.input["options"]["isPartial"].as_bool().unwrap(),
         };
-        let out = (row.tool.render_result.as_ref().unwrap())(
+        let out = crate::display_support::native(
+            row.tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&recorded_result(
                 &case.input["result"],
             )),
@@ -633,7 +636,8 @@ fn supplied_theme_routes() {
                 .join("\n")
                 .contains(case.expected["title"].as_str().unwrap())
         );
-        let out = (row.tool.render_result.as_ref().unwrap())(
+        let out = crate::display_support::native(
+            row.tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&recorded_result(
                 &case.input["result"],
             )),

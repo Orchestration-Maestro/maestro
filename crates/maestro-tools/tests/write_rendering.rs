@@ -74,7 +74,8 @@ fn draw_result(
         expanded: false,
         is_partial: false,
     };
-    (tool().render_result.unwrap())(
+    crate::display_support::native(
+        &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
         options,
         &env.theme,
@@ -425,7 +426,8 @@ fn write_preview_callbacks_never_mutate_files() {
         expanded: false,
         is_partial: false,
     };
-    (tool.render_result.as_ref().unwrap())(
+    crate::display_support::native(
+        tool.render_result.as_ref().unwrap(),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result_of(vec![
             text_block("denied"),
         ])),

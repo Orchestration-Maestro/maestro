@@ -423,26 +423,28 @@ fn render_definition(
             (context.invalidate)();
             Ok(Rc::new(Row))
         })),
-        render_result: Some(Rc::new(move |_, options, _, context| {
-            *context.state.borrow_mut() += 1;
-            seen.borrow_mut().push(Observed {
-                args: context.args.cloned().unwrap(),
-                calls: *context.state.borrow(),
-                id: context.tool_call_id.clone(),
-                options: (options.expanded, options.is_partial),
-                flags: [
-                    context.phase.execution_started,
-                    context.phase.args_complete,
-                    context.phase.is_partial,
-                    context.expanded,
-                    context.show_images,
-                    context.is_error,
-                ],
-                cwd: context.cwd.clone(),
-                readme: context.environment.readme_path.clone(),
-            });
-            Ok(context.last_component.clone().unwrap())
-        })),
+        render_result: Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
+            move |_, options, _, context| {
+                *context.state.borrow_mut() += 1;
+                seen.borrow_mut().push(Observed {
+                    args: context.args.cloned().unwrap(),
+                    calls: *context.state.borrow(),
+                    id: context.tool_call_id.clone(),
+                    options: (options.expanded, options.is_partial),
+                    flags: [
+                        context.phase.execution_started,
+                        context.phase.args_complete,
+                        context.phase.is_partial,
+                        context.expanded,
+                        context.show_images,
+                        context.is_error,
+                    ],
+                    cwd: context.cwd.clone(),
+                    readme: context.environment.readme_path.clone(),
+                });
+                Ok(context.last_component.clone().unwrap())
+            },
+        ))),
     }
 }
 
@@ -462,6 +464,7 @@ fn row_context<'a>(
         Rc::new(NativeThemeOperations),
     );
     ToolRenderContext {
+        renderer_state: None,
         args: Some(args),
         tool_call_id: "stable".into(),
         invalidate: Rc::new(move || *counter.borrow_mut() += 1),
@@ -542,10 +545,12 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
             is_partial: !flags[2],
         };
         let later = ToolRenderContext {
+            renderer_state: None,
             args: Some(&second),
             ..context
         };
-        let again = (tool.render_result.as_ref().unwrap())(
+        let again = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&empty),
             options,
             &theme,

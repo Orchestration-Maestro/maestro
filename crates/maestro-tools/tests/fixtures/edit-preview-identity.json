@@ -1,0 +1,30 @@
+[
+  {
+    "input": {
+      "currentJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":0}",
+      "incomingJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":1.25}"
+    },
+    "expected": true
+  },
+  {
+    "input": {
+      "currentJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":1.25}",
+      "incomingJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":1.25}"
+    },
+    "expected": false
+  },
+  {
+    "input": {
+      "currentJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":1.25}",
+      "incomingJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":1.5}"
+    },
+    "expected": true
+  },
+  {
+    "input": {
+      "currentJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":-0.0}",
+      "incomingJson": "{\"diff\":\"+1 after\",\"firstChangedLine\":0}"
+    },
+    "expected": false
+  }
+]

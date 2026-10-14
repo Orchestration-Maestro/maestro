@@ -3258,6 +3258,7 @@ dependencies = [
  "kamadak-exif",
  "maestro-agent",
  "maestro-dependencies",
+ "maestro-json",
  "maestro-models",
  "maestro-path",
  "maestro-process",

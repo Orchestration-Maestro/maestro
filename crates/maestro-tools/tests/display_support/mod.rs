@@ -520,6 +520,7 @@ pub fn context<'a, S: Default>(
         hyperlinks: true,
     });
     ToolRenderContext {
+        renderer_state: None,
         args: Some(args),
         tool_call_id: "call".into(),
         invalidate: Rc::new(|| {}),
@@ -618,7 +619,8 @@ pub fn render_case(case: &Case) -> Vec<String> {
     } else {
         let result = read_result(&case.input["result"]);
         let options = options(&case.input["options"]);
-        (tool.render_result.as_ref().unwrap())(
+        crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result),
             options,
             &env.theme,
@@ -683,4 +685,18 @@ pub fn shipped_theme(name: &str, mode: Option<ColorMode>) -> Rc<Theme> {
         env!("CARGO_MANIFEST_DIR")
     );
     Rc::new(maestro_theme::load_theme_from_path(&path, mode, &NativeThemeOperations).unwrap())
+}
+
+/// Invoke a native callback with conversion only at its raw boundary.
+pub fn native<D: serde::Serialize, S>(
+    callback: &maestro_tools::ToolRenderResult<D, S>,
+    result: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, D>,
+    options: ToolRenderResultOptions,
+    theme: &Theme,
+    context: &ToolRenderContext<'_, S>,
+) -> Result<ComponentHandle, maestro_models::DiagnosticErrorInfo> {
+    callback.invoke_native((result, options), theme, context, |details| {
+        serde_json::to_value(details)
+            .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))
+    })
 }

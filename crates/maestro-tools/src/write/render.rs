@@ -166,7 +166,7 @@ pub(super) fn render_call(
 /// # Errors
 /// Returns a theme failure; the previous component is left unchanged.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, ()>,
+    result: &ToolRenderResultLike<'_, Value>,
     _options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,

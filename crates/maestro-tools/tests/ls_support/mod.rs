@@ -728,7 +728,7 @@ fn tool() -> maestro_tools::ToolDefinition<(), LsToolInput, LsToolDetails> {
 }
 
 /// Render a recorded call or result and return its rows.
-pub fn render_case_as<D>(
+pub fn render_case_as<D: serde::Serialize>(
     case: &Case,
     keys: &[String],
     tool: maestro_tools::ToolDefinition<(), impl Send, D>,
@@ -752,7 +752,8 @@ pub fn render_case_as<D>(
     };
     let args = Value::Null;
     let ctx = context(&args, &setup, &env, None);
-    let row = (tool.render_result.unwrap())(
+    let row = crate::display_support::native(
+        &(tool.render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&result(&input.result)),
         options,
         &env.theme,
@@ -801,7 +802,7 @@ struct SlotInput {
 }
 
 /// Render the replacement for a slot over `previous`.
-pub fn render_slot_as<D>(
+pub fn render_slot_as<D: serde::Serialize>(
     input: (
         maestro_tools::ToolDefinition<(), impl Send, D>,
         &AgentToolResult<D>,
@@ -823,7 +824,8 @@ pub fn render_slot_as<D>(
             is_partial: false,
         };
         let ctx = context(&Value::Null, &setup, env, Some(Rc::clone(previous)));
-        (tool.render_result.unwrap())(
+        crate::display_support::native(
+            &(tool.render_result.unwrap()),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(result),
             options,
             theme,
@@ -833,7 +835,7 @@ pub fn render_slot_as<D>(
 }
 
 /// Run a recorded reuse case: the replacement is the same component and shows the new text.
-pub fn check_reuse_as<D>(
+pub fn check_reuse_as<D: serde::Serialize>(
     case: &Case,
     keys: &[String],
     tool: maestro_tools::ToolDefinition<(), impl Send, D>,
@@ -865,7 +867,7 @@ pub fn check_reuse_as<D>(
 }
 
 /// Run a recorded theme-error case: the renderer fails and the previous component keeps its text.
-pub fn check_theme_error_as<D>(
+pub fn check_theme_error_as<D: serde::Serialize>(
     case: &Case,
     keys: &[String],
     tool: maestro_tools::ToolDefinition<(), impl Send, D>,

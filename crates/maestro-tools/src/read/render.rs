@@ -1,16 +1,16 @@
 //! Terminal rendering of read calls and results.
 use crate::output::render_utils::{ToolRenderResultLike, render_args};
 
-use super::ReadToolDetails;
 use crate::{
     keybinding_hints::{EXPAND, key_text},
     output::{
         render_parts::{expand_hint, float, into_text, paint},
         render_utils::{
-            PREVIEW_LINES, format_read_line_range, get_text_output, path_display, replace_tabs,
-            selected_path, str, without_trailing_empty,
+            PREVIEW_LINES, TruncationView, flag, format_read_line_range, get_text_output, num,
+            number, number_text, path_display, replace_tabs, selected_path, str,
+            without_trailing_empty,
         },
-        truncate::{TruncationBy, format_size},
+        truncate::format_size,
     },
     path_utils::resolve_read_path,
     types::{ToolRenderContext, ToolRenderResultOptions},
@@ -181,28 +181,27 @@ pub(super) fn render_call(
 }
 
 /// The warning line for a truncated read, empty when nothing was cut.
-fn truncation_notice(details: Option<&ReadToolDetails>, theme: &Theme) -> Rendered<String> {
-    let Some(cut) = details
-        .and_then(|details| details.truncation.as_ref())
-        .filter(|cut| cut.truncated)
-    else {
+fn truncation_notice(details: Option<&Value>, theme: &Theme) -> Rendered<String> {
+    let Some(cut) = TruncationView::selected(details) else {
         return Ok(String::new());
     };
-    let notice = if cut.first_line_exceeds_limit {
+    let notice = if flag(Some(cut.0), "firstLineExceedsLimit") {
         format!(
             "[First line exceeds {} limit]",
-            format_size(float(cut.max_bytes))
+            format_size(cut.max_bytes())
         )
-    } else if matches!(cut.truncated_by, Some(TruncationBy::Lines)) {
+    } else if cut.by_lines() {
         format!(
             "[Truncated: showing {} of {} lines ({} line limit)]",
-            cut.output_lines, cut.total_lines, cut.max_lines
+            number_text(Some(cut.0), "outputLines"),
+            number_text(Some(cut.0), "totalLines"),
+            num(number(Some(cut.0), "maxLines").unwrap_or(float(crate::DEFAULT_MAX_LINES)))
         )
     } else {
         format!(
             "[Truncated: {} lines shown ({} limit)]",
-            cut.output_lines,
-            format_size(float(cut.max_bytes))
+            number_text(Some(cut.0), "outputLines"),
+            format_size(cut.max_bytes())
         )
     };
     Ok(format!(
@@ -213,7 +212,7 @@ fn truncation_notice(details: Option<&ReadToolDetails>, theme: &Theme) -> Render
 
 /// The result text: a preview of the output, an overflow hint and the truncation notice.
 fn format_read_result(
-    result: &ToolRenderResultLike<'_, ReadToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,
@@ -262,7 +261,7 @@ fn format_read_result(
 /// Returns a theme, home, path or escape-expression failure; the previous component is left
 /// unchanged.
 pub(super) fn render_result(
-    result: &ToolRenderResultLike<'_, ReadToolDetails>,
+    result: &ToolRenderResultLike<'_, Value>,
     options: ToolRenderResultOptions,
     theme: &Theme,
     context: &ToolRenderContext<'_>,

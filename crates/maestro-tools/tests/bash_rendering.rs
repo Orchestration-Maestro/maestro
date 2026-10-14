@@ -146,7 +146,8 @@ fn bash_elapsed_uses_one_decimal_seconds() {
         {
             result.unwrap();
         }
-        let row = tool.render_result.as_ref().unwrap()(
+        let row = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&maestro_agent::AgentToolResult {
                 content: vec![],
                 details: None,
@@ -304,7 +305,8 @@ fn result_case(case: &Case) -> Vec<String> {
     }
     if let Some(end) = input.state.ended_at {
         advance(&env, end);
-        tool.render_result.as_ref().unwrap()(
+        crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&empty()),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
@@ -316,7 +318,8 @@ fn result_case(case: &Case) -> Vec<String> {
         .unwrap();
     }
     advance(&env, input.now.unwrap_or(10000));
-    let row = tool.render_result.as_ref().unwrap()(
+    let row = crate::display_support::native(
+        tool.render_result.as_ref().unwrap(),
         &ToolRenderResultLike::from(&input.result.native()),
         maestro_tools::ToolRenderResultOptions {
             expanded: input.expanded,
@@ -464,7 +467,8 @@ fn timeline_case(case: Case) {
                 observed_end.get_or_insert(env.runtime.millis());
             }
             ctx.last_component = result.clone();
-            let next = tool.render_result.as_ref().unwrap()(
+            let next = crate::display_support::native(
+                tool.render_result.as_ref().unwrap(),
                 &ToolRenderResultLike::from(&record.native()),
                 maestro_tools::ToolRenderResultOptions {
                     expanded: false,
@@ -585,7 +589,8 @@ fn bash_result_cache_tracks_content_width_and_expansion() {
                 .map(|(text, expanded)| (text.as_str(), *expanded))
                 != Some((input.text.as_str(), input.expanded))
             {
-                let next = tool.render_result.as_ref().unwrap()(
+                let next = crate::display_support::native(
+                    tool.render_result.as_ref().unwrap(),
                     &ToolRenderResultLike::from(&text_result(&input.text)),
                     maestro_tools::ToolRenderResultOptions {
                         expanded: input.expanded,
@@ -641,7 +646,8 @@ fn bash_renderers_read_the_published_theme() {
             serde_json::to_value(replacement.render(30)).unwrap(),
             case.expected["replacement"]
         );
-        let result = tool.render_result.as_ref().unwrap()(
+        let result = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&text_result("live")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
@@ -704,12 +710,14 @@ fn bash_renderers_reuse_matching_components() {
         let render = tool.render_result.as_ref().unwrap();
         let old = text_result("old");
         let old = ToolRenderResultLike::from(&old);
-        let first = render(&old, options, &env.theme, &ctx).unwrap();
+        let first =
+            crate::display_support::native(render, &old, options, &env.theme, &ctx).unwrap();
         assert!(!Rc::ptr_eq(ctx.last_component.as_ref().unwrap(), &first));
         ctx.last_component = Some(Rc::clone(&first));
         let new = text_result("new");
         let new = ToolRenderResultLike::from(&new);
-        let second = render(&new, options, &env.theme, &ctx).unwrap();
+        let second =
+            crate::display_support::native(render, &new, options, &env.theme, &ctx).unwrap();
         assert_eq!(
             Value::Bool(Rc::ptr_eq(&first, &second)),
             case.expected["resultSame"]
@@ -733,7 +741,8 @@ fn bash_expand_hint_changes_on_retained_render() {
         let args = serde_json::json!({});
         let ctx = display::context(&args, &setup, &env, None);
         let tool = definition();
-        let row = tool.render_result.as_ref().unwrap()(
+        let row = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&text_result("1\n2\n3\n4\n5\n6")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
@@ -807,7 +816,8 @@ fn bash_dropped_row_releases_refresh() {
         });
         let tool = definition();
         let call = tool.render_call.as_ref().unwrap()(Some(&args), &env.theme, &ctx).unwrap();
-        let row = tool.render_result.as_ref().unwrap()(
+        let row = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&text_result("running")),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,
@@ -892,7 +902,8 @@ fn bash_default_themes_keep_role_colors() {
                 },
             )),
         });
-        let row = tool.render_result.as_ref().unwrap()(
+        let row = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&result),
             maestro_tools::ToolRenderResultOptions {
                 expanded: false,

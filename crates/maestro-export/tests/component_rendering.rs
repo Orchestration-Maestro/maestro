@@ -63,7 +63,6 @@ fn typed_definitions_keep_custom_state_and_details() {
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
-        create_state: State::default,
     });
     let content = json!([]);
     let details = json!({"label":"typed"});
@@ -133,18 +132,20 @@ fn typed_definition(
 ) -> maestro_tools::ToolDefinition<u32, Parameters, Details, State> {
     let saved = Rc::clone(states);
     let mut tool = component_support::definition::<u32, Parameters, Details, State>();
-    tool.render_result = Some(Rc::new(move |result, options, _, ctx| {
-        saved.borrow_mut().push(Rc::clone(&ctx.state));
-        let mut state = ctx.state.borrow_mut();
-        state.count += 1;
-        let text = format!(
-            "{}:{}:{}",
-            result.details.unwrap().label,
-            state.count,
-            options.expanded
-        );
-        Ok(Rc::new(Line(text)) as ComponentHandle)
-    }));
+    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
+        move |result, options, _, ctx| {
+            saved.borrow_mut().push(Rc::clone(&ctx.state));
+            let mut state = ctx.state.borrow_mut();
+            state.count += 1;
+            let text = format!(
+                "{}:{}:{}",
+                result.details.unwrap().label,
+                state.count,
+                options.expanded
+            );
+            Ok(Rc::new(Line(text)) as ComponentHandle)
+        },
+    )));
     tool
 }
 
@@ -183,11 +184,13 @@ fn assert_nested_failure(padded: bool, failing_phase: usize) {
         Ok(nest(Rc::new(Fallible(failing_phase == 0)), padded))
     }));
     let seen = Rc::clone(&reached);
-    tool.render_result = Some(Rc::new(move |_, options, _, _| {
-        seen.set(seen.get() + 1);
-        let phase = if options.expanded { 2 } else { 1 };
-        Ok(nest(Rc::new(Fallible(failing_phase == phase)), padded))
-    }));
+    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
+        move |_, options, _, _| {
+            seen.set(seen.get() + 1);
+            let phase = if options.expanded { 2 } else { 1 };
+            Ok(nest(Rc::new(Fallible(failing_phase == phase)), padded))
+        },
+    )));
     let tool = Rc::new(tool);
     let theme = component_support::theme();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
@@ -196,7 +199,6 @@ fn assert_nested_failure(padded: bool, failing_phase: usize) {
         cwd: "/work",
         width: None,
         environment: component_support::environment(),
-        create_state: || serde_json::json!({}),
     });
     if failing_phase == 0 {
         assert!(
@@ -237,4 +239,258 @@ impl Component for Fallible {
             Ok(vec!["rendered".into()])
         }
     }
+}
+
+/// Details whose decoding creates a distinguishable identity shared by both render phases.
+struct Decoded {
+    token: Rc<()>,
+}
+thread_local! {
+    static DECODES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+impl<'de> Deserialize<'de> for Decoded {
+    fn deserialize<D: serde::Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
+        let _ = serde_json::Value::deserialize(decoder)?;
+        DECODES.with(|count| count.set(count.get() + 1));
+        Ok(Self { token: Rc::new(()) })
+    }
+}
+#[test]
+fn export_typed_details_decode_once_and_share_both_phases() {
+    use maestro_export::{
+        ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
+    };
+    DECODES.with(|count| count.set(0));
+    let tokens = Rc::new(RefCell::new(Vec::new()));
+    let seen = Rc::clone(&tokens);
+    let mut tool = component_support::definition::<(), (), Decoded, serde_json::Value>();
+    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
+        move |result, options, _, _| {
+            seen.borrow_mut()
+                .push(Rc::clone(&result.details.unwrap().token));
+            Ok(Rc::new(Line(format!("phase:{}", options.expanded))))
+        },
+    )));
+    let tool = Rc::new(tool);
+    let theme = component_support::theme();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        theme: &theme,
+        cwd: "/work",
+        width: None,
+        environment: component_support::environment(),
+    });
+    let details = serde_json::json!({"arbitrary":true});
+    let output = renderer
+        .render_result(
+            "id",
+            "custom",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&details),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert!(output.collapsed.unwrap().contains("phase:false"));
+    assert!(output.expanded.unwrap().contains("phase:true"));
+    assert_eq!(DECODES.with(std::cell::Cell::get), 1);
+    let tokens = tokens.borrow();
+    assert!(Rc::ptr_eq(&tokens[0], &tokens[1]));
+}
+
+#[test]
+fn export_raw_details_do_not_decode_typed_records() {
+    use maestro_export::{
+        ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
+    };
+    use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
+    let theme = Rc::new(
+        Theme::new(
+            [ThemeColor::ToolOutput, ThemeColor::Warning]
+                .into_iter()
+                .map(|color| (color, ColorValue::Index(2))),
+            [],
+            ColorMode::Color256,
+            ThemeOptions::default(),
+        )
+        .unwrap(),
+    );
+    let environment = component_support::environment();
+    let tool = Rc::new(maestro_tools::create_read_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::ReadToolOptions::default(),
+    ));
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        theme: &theme,
+        cwd: "/work",
+        width: Some(100),
+        environment,
+    });
+    renderer
+        .render_call("id", "read", Some(&serde_json::json!({"path":"notes.txt"})))
+        .unwrap();
+    let details = serde_json::json!({"truncation":{"truncated":true,"truncatedBy":"lines","outputLines":2,"totalLines":3,"maxLines":2}});
+    let output = renderer
+        .render_result(
+            "id",
+            "read",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&details),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert!(
+        output
+            .expanded
+            .unwrap()
+            .contains("Truncated: showing 2 of 3 lines (2 line limit)")
+    );
+}
+
+#[test]
+fn export_wrapped_native_edit_keeps_shared_row_state() {
+    use maestro_export::{
+        ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
+    };
+    let states = Rc::new(RefCell::new(Vec::new()));
+    let tool = wrapped_edit(&states);
+    let tool = Rc::new(tool);
+    let (theme, environment) = native_environment();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        theme: &theme,
+        cwd: "/work",
+        width: Some(80),
+        environment: Rc::clone(&environment),
+    });
+    let args = serde_json::json!({"path":"notes.txt"});
+    renderer
+        .render_call("first", "edit", Some(&args))
+        .unwrap()
+        .unwrap();
+    let details = serde_json::json!({"diff":"+1 persisted","firstChangedLine":1.25});
+    let output = renderer
+        .render_result(
+            "first",
+            "edit",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&details),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(output.expanded.as_deref(), Some(""));
+    let settled = renderer
+        .render_call("first", "edit", Some(&args))
+        .unwrap()
+        .unwrap();
+    assert!(settled.contains("persisted"));
+    let other = renderer
+        .render_call("second", "edit", Some(&args))
+        .unwrap()
+        .unwrap();
+    assert!(!other.contains("persisted"));
+    renderer
+        .render_result(
+            "second",
+            "edit",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&details),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    let states = states.borrow();
+    assert!(Rc::ptr_eq(&states[0], &states[1]));
+    assert!(!Rc::ptr_eq(&states[0], &states[2]));
+}
+
+/// A custom state wrapper delegates both slots to the native edit state owner.
+fn wrapped_edit(
+    states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
+) -> maestro_tools::ToolDefinition<(), (), serde_json::Value, u32> {
+    use maestro_tools::{EditRenderState, ToolRenderResult};
+    let tool = maestro_tools::create_edit_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let native_call = tool.render_call.unwrap();
+    let ToolRenderResult::Raw(native_result) = tool.render_result.unwrap() else {
+        panic!("raw native callback")
+    };
+    let mut tool = component_support::definition::<(), (), serde_json::Value, u32>();
+    let seen = Rc::clone(states);
+    tool.render_call = Some(Rc::new(move |args, theme, row| {
+        *row.state.borrow_mut() += 1;
+        let state = row.renderer_state().unwrap().state::<EditRenderState>();
+        native_call(args, theme, &row.with_state(state))
+    }));
+    tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
+        move |result, options, theme, row| {
+            assert_eq!(*row.state.borrow(), 1);
+            let state = row.renderer_state().unwrap().state::<EditRenderState>();
+            seen.borrow_mut().push(Rc::clone(&state));
+            native_result(result, options, theme, &row.with_state(state))
+        },
+    )));
+    tool
+}
+
+/// Publish colors consumed by real native edit callbacks.
+fn native_environment() -> (
+    Rc<maestro_theme::Theme>,
+    Rc<maestro_tools::ToolRenderEnvironment>,
+) {
+    let theme = Rc::new(
+        maestro_theme::Theme::new(
+            [
+                "toolTitle",
+                "accent",
+                "toolOutput",
+                "toolDiffAdded",
+                "toolDiffRemoved",
+                "toolDiffContext",
+                "error",
+            ]
+            .into_iter()
+            .map(|key| {
+                (
+                    maestro_theme::ThemeColor::Named(key.into()),
+                    maestro_theme::ColorValue::Index(2),
+                )
+            }),
+            ["toolPendingBg", "toolSuccessBg", "toolErrorBg"]
+                .into_iter()
+                .map(|key| {
+                    (
+                        maestro_theme::ThemeBg::Named(key.into()),
+                        maestro_theme::ColorValue::Index(0),
+                    )
+                }),
+            maestro_theme::ColorMode::Color256,
+            maestro_theme::ThemeOptions::default(),
+        )
+        .unwrap(),
+    );
+    let state = maestro_theme::ThemeState::new(
+        maestro_theme::ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        },
+        Rc::new(maestro_theme::NativeThemeOperations),
+    );
+    state.set_theme_instance(Rc::clone(&theme)).unwrap();
+    let mut environment = component_support::environment();
+    Rc::get_mut(&mut environment).unwrap().live_theme = state.theme();
+    (theme, environment)
 }

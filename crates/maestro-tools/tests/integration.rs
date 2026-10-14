@@ -67,3 +67,7 @@ mod write_support;
 mod visual_tail;
 
 mod bash_rendering;
+
+mod renderer_projection;
+
+mod renderer_projection_support;

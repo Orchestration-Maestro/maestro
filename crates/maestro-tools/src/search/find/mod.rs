@@ -78,7 +78,7 @@ pub fn create_find_tool_definition<C: Send + 'static>(
         execute: Arc::new(move |_id, input, signal, _update, _context| {
             let finder = Arc::clone(&finder);
             Box::pin(async move { finder.find(input, signal).await })
-        }), render_call: Some(Rc::new(render::render_call)), render_result: Some(Rc::new(render::render_result)),
+        }), render_call: Some(Rc::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
     }
 }
 /// Build the executable file search with no caller context.

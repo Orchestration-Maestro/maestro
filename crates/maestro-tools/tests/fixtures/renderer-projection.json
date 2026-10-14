@@ -1,0 +1,3399 @@
+{
+  "palette": {
+    "toolOutput": 2,
+    "error": 4,
+    "warning": 5,
+    "toolDiffAdded": 11
+  },
+  "cases": [
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": null,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {},
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "unread": {
+            "malformed": [
+              "deep",
+              {
+                "content": 12
+              }
+            ]
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": 17,
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": [],
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": false
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 2
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 lines shown (50.0KB limit)]\u001b[39m                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: showing 2 of 3 lines (2000 line limit)]\u001b[39m                             "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3,
+            "maxLines": 2,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: showing 2 of 3 lines (2 line limit)]\u001b[39m                                "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "bytes",
+            "outputLines": 2,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 lines shown (2.0KB limit)]\u001b[39m                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "firstLineExceedsLimit": true,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[First line exceeds 1.0KB limit]\u001b[39m                                                "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 0,
+            "totalLines": 0,
+            "maxLines": 0,
+            "maxBytes": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 0 lines shown (0B limit)]\u001b[39m                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": false
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 2
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: 2 lines shown (50.0KB limit)]\u001b[39m                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: showing 2 of 3 lines]\u001b[39m                                               "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3,
+            "maxLines": 2,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: showing 2 of 3 lines]\u001b[39m                                               "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "bytes",
+            "outputLines": 2,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: 2 lines shown (2.0KB limit)]\u001b[39m                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "firstLineExceedsLimit": true,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: undefined lines shown (1.0KB limit)]\u001b[39m                                "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 0,
+            "totalLines": 0,
+            "maxLines": 0,
+            "maxBytes": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Truncated: 0 lines shown (0B limit)]\u001b[39m                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": false
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 2
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3,
+            "maxLines": 2,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "bytes",
+            "outputLines": 2,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "firstLineExceedsLimit": true,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 0,
+            "totalLines": 0,
+            "maxLines": 0,
+            "maxBytes": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 0B limit]\u001b[39m                                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": false
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 2
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3,
+            "maxLines": 2,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "bytes",
+            "outputLines": 2,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "firstLineExceedsLimit": true,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 0,
+            "totalLines": 0,
+            "maxLines": 0,
+            "maxBytes": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 0B limit]\u001b[39m                                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": false
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 2
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 50.0KB limit]\u001b[39m                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3,
+            "maxLines": 2,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "bytes",
+            "outputLines": 2,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "firstLineExceedsLimit": true,
+            "maxBytes": 1024
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.0KB limit]\u001b[39m                                                        "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "truncation": {
+            "truncated": true,
+            "outputLines": 0,
+            "totalLines": 0,
+            "maxLines": 0,
+            "maxBytes": 0
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 0B limit]\u001b[39m                                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": 0
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": -1
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: -1 matches limit]\u001b[39m                                                   "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": 2
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 matches limit]\u001b[39m                                                    "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": 1.25
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.25 matches limit]\u001b[39m                                                 "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "matchLimitReached": 2,
+          "truncation": {
+            "truncated": true,
+            "maxBytes": 2048
+          },
+          "linesTruncated": true
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 matches limit, 2.0KB limit, some lines truncated]\u001b[39m                 "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": 0
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": -1
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: -1 results limit]\u001b[39m                                                   "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": 2
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 results limit]\u001b[39m                                                    "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": 1.25
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.25 results limit]\u001b[39m                                                 "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {
+          "resultLimitReached": 2,
+          "truncation": {
+            "truncated": true,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 results limit, 2.0KB limit]\u001b[39m                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": 0
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": -1
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: -1 entries limit]\u001b[39m                                                   "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": 2
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 entries limit]\u001b[39m                                                    "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": 1.25
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 1.25 entries limit]\u001b[39m                                                 "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {
+          "entryLimitReached": 2,
+          "truncation": {
+            "truncated": true,
+            "maxBytes": 2048
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: 2 entries limit, 2.0KB limit]\u001b[39m                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "fullOutputPath": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "fullOutputPath": ""
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "fullOutputPath": "/tmp/full-output.txt"
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Full output: /tmp/full-output.txt]\u001b[39m                                             "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {
+          "fullOutputPath": "/tmp/full-output.txt",
+          "truncation": {
+            "truncated": true,
+            "truncatedBy": "lines",
+            "outputLines": 2,
+            "totalLines": 3
+          }
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "                                                                                ",
+          "\u001b[38;5;5m[Full output: /tmp/full-output.txt. Truncated: showing 2 of 3 lines]\u001b[39m            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "linesTruncated": false
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "linesTruncated": true
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            ",
+          "\u001b[38;5;5m[Truncated: some lines truncated]\u001b[39m                                               "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {
+          "linesTruncated": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": ""
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after"
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;11m+1 after\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after",
+          "firstChangedLine": 1
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;11m+1 after\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after",
+          "firstChangedLine": null
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;11m+1 after\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after",
+          "firstChangedLine": 0
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;11m+1 after\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after",
+          "firstChangedLine": 1.25
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;11m+1 after\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 after"
+        },
+        "options": {
+          "expanded": false,
+          "isPartial": false
+        },
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "",
+          " \u001b[38;5;4mbody\u001b[39m                                                                           "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "read",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "write",
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "edit",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": []
+      }
+    },
+    {
+      "input": {
+        "tool": "bash",
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "grep",
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "find",
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    },
+    {
+      "input": {
+        "tool": "ls",
+        "details": {},
+        "options": {
+          "expanded": true,
+          "isPartial": false
+        },
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "body"
+          }
+        ]
+      },
+      "expected": {
+        "rows": [
+          "                                                                                ",
+          "\u001b[38;5;2mbody\u001b[39m                                                                            "
+        ]
+      }
+    }
+  ]
+}

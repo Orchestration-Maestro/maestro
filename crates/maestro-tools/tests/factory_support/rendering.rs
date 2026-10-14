@@ -8,8 +8,10 @@ use serde_json::json;
 use std::sync::Arc;
 
 /// Compare the actual call/result components without erasing their state types.
-fn compare<P, D, S>(selected: &ToolDefinition<(), P, D, S>, original: &ToolDefinition<(), P, D, S>)
-where
+fn compare<P, D: serde::Serialize, S>(
+    selected: &ToolDefinition<(), P, D, S>,
+    original: &ToolDefinition<(), P, D, S>,
+) where
     S: Default,
 {
     let args = super::execution::arguments(&selected.definition.name);
@@ -35,7 +37,8 @@ where
             details: None,
             terminate: None,
         };
-        let component = (tool.render_result.as_ref().unwrap())(
+        let component = crate::display_support::native(
+            tool.render_result.as_ref().unwrap(),
             &ToolRenderResultLike::from(&result),
             ToolRenderResultOptions {
                 expanded: true,

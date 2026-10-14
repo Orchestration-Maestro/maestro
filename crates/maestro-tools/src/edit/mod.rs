@@ -107,7 +107,7 @@ pub fn create_edit_tool_definition<C: 'static>(
             with_file_mutation_queue(&key, move || edit_file(operations, absolute, input, signal))
         }),
         render_call: Some(std::rc::Rc::new(render::render_call)),
-        render_result: Some(std::rc::Rc::new(render::render_result)),
+        render_result: Some(crate::ToolRenderResult::Raw(std::rc::Rc::new(render::render_result))),
     }
 }
 

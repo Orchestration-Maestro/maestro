@@ -133,7 +133,8 @@ fn read_preview_limits_count_logical_lines_before_wrapping() {
         .collect();
     let setup = Setup::from(&json!({"readme": "/opt/maestro/README.md", "bindings": ["ctrl+o"]}));
     let ctx = context(&args, &setup, &env, None);
-    let row = (tool().render_result.unwrap())(
+    let row = crate::display_support::native(
+        &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
             &lines.join("\n"),
         )),
@@ -215,7 +216,8 @@ fn read_highlighting_uses_only_selected_filename_language() {
             Rc::clone(&probe) as Rc<dyn SyntaxHighlighter>,
         );
         let ctx = context(&args, &setup(), &env, None);
-        let row_component = (tool().render_result.unwrap())(
+        let row_component = crate::display_support::native(
+            &(tool().render_result.unwrap()),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result("a\tb")),
             settled(true),
             &env.theme,
@@ -245,7 +247,8 @@ fn read_highlighting_reads_the_current_published_theme() {
     let args = json!({"path": "main.rs"});
     let render = |env: &Env| {
         let ctx = context(&args, &setup(), env, None);
-        (tool().render_result.unwrap())(
+        crate::display_support::native(
+            &(tool().render_result.unwrap()),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
                 "fn main() {}",
             )),
@@ -300,7 +303,8 @@ fn native_row(
     theme: &Rc<maestro_theme::Theme>,
 ) -> String {
     let ctx = context(args, &setup(), env, None);
-    (tool().render_result.unwrap())(
+    crate::display_support::native(
+        &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(code)),
         settled(true),
         theme,
@@ -393,7 +397,8 @@ fn read_renderers_reuse_the_supplied_text_slot() {
         let returned = if case.input["slot"] == "call" {
             (tool().render_call.unwrap())(Some(&ctx_args), &env.theme, &ctx).unwrap()
         } else {
-            (tool().render_result.unwrap())(
+            crate::display_support::native(
+                &(tool().render_result.unwrap()),
                 &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
                     "after",
                 )),
@@ -469,7 +474,8 @@ fn classified_results_avoid_unused_display_dependencies() {
         None,
     );
     for case in cases("classified_results_avoid_unused_display_dependencies") {
-        let hidden = (tool().render_result.as_ref().unwrap())(
+        let hidden = crate::display_support::native(
+            tool().render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
                 "secret",
             )),
@@ -486,7 +492,8 @@ fn classified_results_avoid_unused_display_dependencies() {
         .map(|n| format!("line {n}"))
         .collect::<Vec<_>>()
         .join("\n");
-    let error = (tool().render_result.unwrap())(
+    let error = crate::display_support::native(
+        &(tool().render_result.unwrap()),
         &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(&overflow)),
         settled(false),
         &env.theme,
@@ -692,7 +699,8 @@ fn read_results_without_process_directory(env: &Env) {
         setup.expanded = false;
         setup.readme = readme.to_owned();
         let ctx = context(&args, &setup, env, None);
-        (tool().render_result.as_ref().unwrap())(
+        crate::display_support::native(
+            tool().render_result.as_ref().unwrap(),
             &maestro_tools::output::render_utils::ToolRenderResultLike::from(&text_result(
                 "served",
             )),

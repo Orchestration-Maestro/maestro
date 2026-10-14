@@ -165,7 +165,9 @@ and a shared `ToolRenderEnvironment`: the runtime, absolute README path, publish
 theme, syntax highlighter and terminal image support. `ToolRenderResultOptions`
 carries the result's own expanded and partial flags. Both renderers return the drawn
 component or the failure that kept them from drawing; building a context or calling a
-renderer is the caller's job.
+renderer is the caller's job. Result callbacks occupy one typed/raw slot; see
+[renderer projections](tools.md#renderer-projections) for persisted details and
+shared typed state delegation.
 
 [`wrap_tool_definition`](../crates/maestro-tools/src/tool_definition_wrapper.rs)
 turns a definition into an `AgentTool`. Once the arguments decode (rejected
@@ -182,7 +184,7 @@ callbacks must be `Send + Sync`.
 
 [`output::render_utils`](../crates/maestro-tools/src/output/render_utils.rs) holds the
 display strings tool renderers share. `ToolRenderResultLike` borrows ordered content
-and optional typed details, preserving an executed result's optional termination hint.
+and optional typed or raw JSON details, preserving an executed result's optional termination hint.
 Its optional error observation is supplied by the rendering host. Conversion from an
 execution result supplies no error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows

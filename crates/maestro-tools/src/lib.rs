@@ -48,12 +48,17 @@ pub mod path_utils;
 pub mod process;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod read;
+pub mod renderer_binding;
+pub mod renderer_state;
+pub mod result_renderer;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod search;
 pub mod tool_definition_wrapper;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod tools;
 pub mod types;
+pub use renderer_binding::ToolRendererBinding;
+pub use renderer_state::ToolRendererState;
 #[cfg(not(target_arch = "wasm32"))]
 pub use tools::{
     ALL_TOOL_NAMES, Tool, ToolDef, ToolName, ToolsOptions, create_all_tool_definitions,
@@ -108,8 +113,8 @@ pub use tool_definition_wrapper::{
 };
 pub use types::{
     ExecuteToolDefinition, ToolContextFactory, ToolDefinition, ToolRenderCall, ToolRenderContext,
-    ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultOptions,
-    ToolRenderShell, define_tool,
+    ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultCallback,
+    ToolRenderResultOptions, ToolRenderShell, define_tool,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use write::{

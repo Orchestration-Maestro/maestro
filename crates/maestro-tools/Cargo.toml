@@ -9,6 +9,7 @@ repository.workspace = true
 [dependencies]
 maestro-tool = { path = "../maestro-tool" }
 maestro-text = { path = "../maestro-text" }
+maestro-json = { path = "../maestro-json" }
 serde.workspace = true
 ryu-js.workspace = true
 num-traits.workspace = true

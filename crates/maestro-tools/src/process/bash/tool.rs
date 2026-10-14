@@ -103,7 +103,7 @@ pub fn create_bash_tool_definition<C: 'static>(
             Box::pin(super::execute::run(operations, context, input.timeout, signal, update))
         }),
         render_call: Some(std::rc::Rc::new(super::render::render_call)),
-        render_result: Some(std::rc::Rc::new(super::render::render_result)),
+        render_result: Some(crate::ToolRenderResult::Raw(std::rc::Rc::new(super::render::render_result))),
     }
 }
 
