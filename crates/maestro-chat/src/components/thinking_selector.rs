@@ -27,21 +27,7 @@ impl ThinkingSelectorComponent {
             .position(move |level| *level == current_level);
         let items: Vec<_> = available_levels
             .into_iter()
-            .map(|level| {
-                let (name, description) = match level {
-                    ThinkingLevel::Off => ("off", "No reasoning"),
-                    ThinkingLevel::Minimal => ("minimal", "Very brief reasoning (~1k tokens)"),
-                    ThinkingLevel::Low => ("low", "Light reasoning (~2k tokens)"),
-                    ThinkingLevel::Medium => ("medium", "Moderate reasoning (~8k tokens)"),
-                    ThinkingLevel::High => ("high", "Deep reasoning (~16k tokens)"),
-                    ThinkingLevel::Xhigh => ("xhigh", "Maximum reasoning (~32k tokens)"),
-                };
-                SelectItem {
-                    value: name.into(),
-                    label: name.into(),
-                    description: Some(description.into()),
-                }
-            })
+            .map(|level| thinking_item(&level))
             .collect();
         let count = items.len();
         let (container, select_list) = bordered_select_list(items, count, theme);
@@ -72,5 +58,26 @@ impl Component for ThinkingSelectorComponent {
     }
     fn invalidate(&self) {
         self.container.invalidate();
+    }
+}
+
+/// The single name and description owner for reasoning levels.
+pub(super) fn thinking_text(level: &ThinkingLevel) -> (&'static str, &'static str) {
+    match level {
+        ThinkingLevel::Off => ("off", "No reasoning"),
+        ThinkingLevel::Minimal => ("minimal", "Very brief reasoning (~1k tokens)"),
+        ThinkingLevel::Low => ("low", "Light reasoning (~2k tokens)"),
+        ThinkingLevel::Medium => ("medium", "Moderate reasoning (~8k tokens)"),
+        ThinkingLevel::High => ("high", "Deep reasoning (~16k tokens)"),
+        ThinkingLevel::Xhigh => ("xhigh", "Maximum reasoning (~32k tokens)"),
+    }
+}
+/// Builds one reasoning choice from the shared text mapping.
+pub(super) fn thinking_item(level: &ThinkingLevel) -> SelectItem {
+    let (name, description) = thinking_text(level);
+    SelectItem {
+        value: name.into(),
+        label: name.into(),
+        description: Some(description.into()),
     }
 }

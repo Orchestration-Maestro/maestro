@@ -55,6 +55,10 @@ pub use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
     InMemoryAuthStorageBackend, OAuthCredential,
 };
+pub use maestro_models::Transport;
+pub use maestro_settings::{
+    DoubleEscapeAction, MessageDeliveryMode, TransportSetting, TreeFilterMode, WarningSettings,
+};
 #[cfg(not(target_arch = "wasm32"))]
 pub use utils::clipboard::{copy_to_clipboard, copy_to_clipboard_with};
 

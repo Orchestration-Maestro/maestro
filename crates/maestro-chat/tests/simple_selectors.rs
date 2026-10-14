@@ -1,5 +1,7 @@
 //! Public selector behavior against recorded terminal rows.
 #![cfg(test)]
+#[path = "support/keybindings.rs"]
+mod keybindings;
 #[allow(
     dead_code,
     reason = "Shared host exposes controls used by other components."
@@ -10,6 +12,7 @@ mod manual_runtime;
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
 mod simple_selector_support;
+use keybindings::bindings;
 use maestro_app::ThinkingLevel;
 use maestro_chat::ThinkingSelectorComponent;
 use maestro_tui::Component;

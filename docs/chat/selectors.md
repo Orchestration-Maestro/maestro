@@ -132,3 +132,38 @@ Container. Direct Input edits refilter only on subsequent picker dispatch.
 The inherited Container child editing interface remains available. Borders use
 the live theme, while help and list Text children retain the styling of their last
 owning update. The [toolkit](../terminal/components.md) owns wrapping and cursors.
+
+## Session and behaviour settings
+
+`SettingsSelectorComponent::new` takes a `SettingsConfig`, `SettingsCallbacks`
+and `LiveTheme`. Boolean policies are grouped into `SessionSettings`
+(auto-compact and quiet startup) and `BehaviorSettings` (hidden thinking,
+collapsed changelog and install telemetry). Other fields use the existing
+`maestro_app` setting, transport and thinking types, with supplied available
+thinking levels and theme names. Configuration supplies state; the panel does
+not persist it.
+
+Render the outer component and route input/focus to `get_settings_list()`.
+This returns the same retained `SettingsList` handle, independently of the
+`Container` chrome. The searchable main view shows at most ten rows in this
+order: auto-compact, steering mode, follow-up mode, transport, hidden thinking,
+collapsed changelog, quiet startup, install telemetry, double-escape action,
+tree filter, warnings, thinking level and theme. The toolkit owns
+[settings search and list rendering](../terminal/components.md).
+
+Cyclic rows report only their typed change callback. Unknown stored delivery,
+transport and double-escape spellings remain visible until activation chooses
+the first available value. Thinking choices retain supplied order and duplicates;
+confirmation notifies before returning to the main view, while cancellation
+leaves the value unchanged. Theme navigation optionally previews; cancellation
+restores the theme committed when that submenu opened. Confirmation notifies
+once before returning, without an extra preview. Empty option lists cannot
+confirm but can cancel.
+
+The warnings submenu commits each toggle before notifying with an owned
+`WarningSettings` snapshot. Unknown warning members keep their values and order;
+missing or null extra-usage preferences display enabled. Closing keeps toggles,
+and reopening reads the latest state. Callback invocation holds no warning-state
+borrow. List and border colors read the live palette; settings cursors and
+submenu heading/help styling are captured when constructed. All input follows
+live configurable keybindings.

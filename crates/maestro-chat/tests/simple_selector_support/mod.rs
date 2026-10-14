@@ -464,52 +464,7 @@ pub struct Frames {
     /// Ordered frames.
     pub frames: Vec<Frame>,
 }
-/// Process-wide admission for the active keybinding manager transaction.
-static ADMISSION: std::sync::Mutex<()> = std::sync::Mutex::new(());
-/// Restores the active manager before releasing admission.
-pub struct BindingsGuard {
-    /// Original active handle.
-    original: maestro_tui::KeybindingsManager,
-    /// Spans construction, all input, restoration and cleanup.
-    _guard: std::sync::MutexGuard<'static, ()>,
-}
-impl Drop for BindingsGuard {
-    fn drop(&mut self) {
-        maestro_tui::set_keybindings(self.original.clone());
-    }
-}
-/// Admit one complete selector transaction involving global keybindings.
-pub fn bindings_guard() -> BindingsGuard {
-    let guard = ADMISSION
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    BindingsGuard {
-        original: maestro_tui::get_keybindings(),
-        _guard: guard,
-    }
-}
-/// Publish replacement bindings for future input calls.
-pub fn bindings(keys: [&str; 4]) {
-    let overrides = [
-        "tui.select.up",
-        "tui.select.down",
-        "tui.select.confirm",
-        "tui.select.cancel",
-    ]
-    .into_iter()
-    .zip(keys)
-    .map(|(action, key)| {
-        (
-            action.into(),
-            Some(maestro_tui::KeybindingKeys::Single(key.into())),
-        )
-    })
-    .collect();
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides,
-    ));
-}
+pub use super::keybindings::bindings_guard;
 /// Cross-selector kind query.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
