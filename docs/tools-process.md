@@ -130,7 +130,7 @@ settlement flushes pending text; only nonempty final text adds a callback.
 
 Raw output above 51200 bytes creates a sanitized `maestro-bash-{id}.log` artifact
 in the native temporary directory. Retained output is a deque of whole cleaned chunks:
-oldest chunks are removed above 102400 UTF-8 bytes while more than one remains.
+oldest chunks are removed above 102400 UTF-16 code units while more than one remains.
 Final selection uses the shared default tail limits; final truncation can also create
 an artifact. `BashResult` returns the selected text, cancellation and truncation flags,
 the optional supplied numeric status and the optional artifact path, without tool notices.

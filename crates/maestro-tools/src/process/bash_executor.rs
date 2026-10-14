@@ -94,8 +94,8 @@ struct Output {
     raw_bytes: usize,
     /// Whole cleaned chunks in arrival order.
     chunks: VecDeque<String>,
-    /// Retained UTF-8 byte length.
-    bytes: usize,
+    /// Retained UTF-16 code-unit length.
+    units: usize,
     /// Artifact identity after creation.
     path: Option<String>,
     /// Synchronous writer, released at settlement.
@@ -125,7 +125,7 @@ impl Output {
         }
         Ok(())
     }
-    /// Spill before storing the crossing chunk, then evict whole oldest chunks by bytes.
+    /// Spill on raw overflow, then evict whole oldest chunks by UTF-16 units.
     fn store(
         &mut self,
         text: String,
@@ -137,11 +137,11 @@ impl Output {
         if let Some(writer) = &mut self.writer {
             writer.write_all(text.as_bytes())?;
         }
-        self.bytes += text.len();
+        self.units += text.encode_utf16().count();
         self.chunks.push_back(text);
-        while self.bytes > DEFAULT_MAX_BYTES * 2 && self.chunks.len() > 1 {
+        while self.units > DEFAULT_MAX_BYTES * 2 && self.chunks.len() > 1 {
             if let Some(oldest) = self.chunks.pop_front() {
-                self.bytes -= oldest.len();
+                self.units -= oldest.encode_utf16().count();
             }
         }
         if let Some(callback) = callback

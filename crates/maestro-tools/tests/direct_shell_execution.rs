@@ -314,8 +314,8 @@ fn direct_line_only_truncation_persists_complete_sanitized_output() {
 }
 
 #[test]
-fn direct_rolling_window_evicts_whole_chunks_at_byte_target() {
-    corpus("direct_rolling_window_evicts_whole_chunks_at_byte_target");
+fn direct_rolling_window_evicts_whole_chunks_at_unit_target() {
+    corpus("direct_rolling_window_evicts_whole_chunks_at_unit_target");
 }
 
 #[test]
@@ -324,8 +324,8 @@ fn direct_rolling_window_keeps_a_sole_oversized_chunk() {
 }
 
 #[test]
-fn direct_rolling_window_counts_utf8_bytes() {
-    corpus("direct_rolling_window_counts_utf8_bytes");
+fn direct_rolling_window_counts_utf16_units() {
+    corpus("direct_rolling_window_counts_utf16_units");
 }
 
 #[test]
@@ -690,4 +690,19 @@ fn direct_final_utf8_callback_can_cancel_success() {
 #[test]
 fn direct_final_escape_callback_can_cancel_success() {
     cancellation_from_final_chunk("1b5d303b7469746c65", "itle");
+}
+
+#[test]
+fn direct_invalid_prefix_tail_persists_complete_output() {
+    corpus("direct_invalid_prefix_tail_persists_complete_output");
+}
+
+#[test]
+fn direct_invalid_prefix_empty_persists_complete_output() {
+    corpus("direct_invalid_prefix_empty_persists_complete_output");
+}
+
+#[test]
+fn direct_invalid_prefix_cancel_persists_complete_output() {
+    corpus("direct_invalid_prefix_cancel_persists_complete_output");
 }
