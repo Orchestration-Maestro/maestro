@@ -1,0 +1,514 @@
+[
+  {
+    "name": "absent_proxy",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "empty_proxy",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "empty_base",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "https://proxy.example",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "direct_provider",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "openai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "https://proxy.example",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "openai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "oauth_mismatch",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "anthropic",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "sk-ant-api",
+    "proxyUrl": "https://proxy.example",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "anthropic",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "encoded",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "https://proxy.example",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://proxy.example/?url=https%3A%2F%2Fapi.example%2Fv1%3Fx%3D1%26y%3Dtwo%20words%23part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "all_ascii",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "https://proxy.example",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://proxy.example/?url=%00%01%02%03%04%05%06%07%08%09%0A%0B%0C%0D%0E%0F%10%11%12%13%14%15%16%17%18%19%1A%1B%1C%1D%1E%1F%20!%22%23%24%25%26'()*%2B%2C-.%2F0123456789%3A%3B%3C%3D%3E%3F%40ABCDEFGHIJKLMNOPQRSTUVWXYZ%5B%5C%5D%5E_%60abcdefghijklmnopqrstuvwxyz%7B%7C%7D~%7F",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "trailing_slash",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://api.example/v1?x=1&y=two words#part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "",
+    "proxyUrl": "https://proxy.example/",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://proxy.example//?url=https%3A%2F%2Fapi.example%2Fv1%3Fx%3D1%26y%3Dtwo%20words%23part",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  },
+  {
+    "name": "unicode_punctuation",
+    "model": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://example/é😀 !'()*~_-./:@+$,;=?&%#﻿",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    },
+    "key": "key",
+    "proxyUrl": "https://proxy.example/path?x=1",
+    "expected": {
+      "id": "m",
+      "name": "Model",
+      "api": "openai-completions",
+      "provider": "zai",
+      "baseUrl": "https://proxy.example/path?x=1/?url=https%3A%2F%2Fexample%2F%C3%A9%F0%9F%98%80%20!'()*~_-.%2F%3A%40%2B%24%2C%3B%3D%3F%26%25%23%EF%BB%BF",
+      "reasoning": true,
+      "input": [
+        "text",
+        "image"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 321,
+      "maxTokens": 123,
+      "headers": {
+        "x-test": "kept"
+      },
+      "compat": {
+        "supportsStore": false
+      }
+    }
+  }
+]

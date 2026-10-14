@@ -1,0 +1,62 @@
+[
+  {
+    "host": "",
+    "expected": "http://127.0.0.1:11434"
+  },
+  {
+    "host": "localhost",
+    "expected": "http://localhost:11434"
+  },
+  {
+    "host": "localhost:11435",
+    "expected": "http://localhost:11435"
+  },
+  {
+    "host": ":2234",
+    "expected": "http://127.0.0.1:2234"
+  },
+  {
+    "host": "http://localhost",
+    "expected": "http://localhost:80"
+  },
+  {
+    "host": "https://localhost",
+    "expected": "https://localhost:443"
+  },
+  {
+    "host": "http://localhost:80",
+    "expected": "http://localhost:80"
+  },
+  {
+    "host": "https://localhost:443",
+    "expected": "https://localhost:443"
+  },
+  {
+    "host": "http://localhost/root/",
+    "expected": "http://localhost:80/root"
+  },
+  {
+    "host": "http://localhost/root//",
+    "expected": "http://localhost:80/root/"
+  },
+  {
+    "host": "http://a:b@localhost/path?query=1#frag",
+    "expected": "http://a:b@localhost:80/path"
+  },
+  {
+    "host": "[::1]",
+    "expected": "http://[::1]:11434"
+  },
+  {
+    "host": "http://[::1]:11434/a",
+    "expected": "http://[::1]:11434/a"
+  },
+  {
+    "host": "not a host",
+    "expected": null
+  },
+  {
+    "host": "https://example.test/a/../b",
+    "expected": "https://example.test:443/b"
+  }
+]

@@ -30,10 +30,12 @@ pub use maestro_text::is_whitespace_scalar;
 pub use maestro_tools::process::exec::{ExecOptions, ExecResult, exec_command};
 pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, render_diff};
 
-pub use maestro_agent::{AgentMessage, CustomAgentMessages};
+pub use maestro_agent::{AgentMessage, CustomAgentMessages, StreamFn};
 pub use maestro_models::{
-    AssistantContent, AssistantMessage, Fetch, FetchError, ImageContent, Message,
-    SharedAssistantMessage, StopReason, TextContent, UserBlock, UserContent, default_fetch,
+    AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Context,
+    DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, ImageContent,
+    Message, Model, ModelInput, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
+    StopReason, TextContent, UserBlock, UserContent, default_fetch,
 };
 pub use maestro_session::messages::{BranchSummaryMessage, CompactionSummaryMessage};
 pub use maestro_text::number_format::LocaleNumberFormat;
