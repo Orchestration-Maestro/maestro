@@ -1,9 +1,8 @@
-# Compaction preparation
+# Compaction
 
-`maestro_session::compaction` prepares summary input from a supplied session branch,
-without requesting a model, mutating history or persisting entries. Its implemented
-items are also re-exported at the crate root. These synchronous operations are available
-on native and browser targets. Session traversal and storage remain with the
+`maestro_session::compaction` prepares summary input and generates history or split-turn
+summaries without mutating history or persisting entries. Its operations are also
+re-exported at the crate root and available on native and browser targets. Session traversal and storage remain with the
 [session manager](sessions/session_manager.md).
 
 ## Prepare a branch
@@ -79,5 +78,81 @@ and number spelling; assistant categories appear in thinking/text/tool order.
 Only tool-result text is clipped at 2000 Unicode scalar values with an omitted-character
 notice. User and assistant text remain complete; stored content is not rewritten.
 
-Summary generation, model requests and application compaction orchestration are not
-part of this preparation interface.
+## Generate a summary
+
+`generate_summary` accepts raw application messages, a supplied model, reserve tokens,
+an optional prior summary and `SummaryOptions`. It reads only summary-visible fields,
+using the [message projection](sessions/messages.md) formatting and the shared serializer
+above. It starts the registered model completion before returning an owned future;
+borrowed inputs need not outlive that future. A fresh request timestamp is used.
+
+Supply the API key explicitly (empty is retained), optional ordered headers and shared
+cancellation. Reasoning is omitted unless the model supports it and an enabled level
+is explicitly selected. No thinking level is chosen by default. Nonempty prior text
+selects update instructions; nonempty custom instructions add history focus. Whitespace
+counts as nonempty. The history budget is `floor(0.8 * reserve_tokens)`; prefix uses
+`floor(0.5 * reserve_tokens)`, without clamping here.
+
+`compact` consumes a borrowed preparation and returns `CompactionResult<CompactionDetails>`
+from [the entry owner](entry.md). For a split turn with a nonempty prefix, history and
+prefix requests start before either is awaited; an empty history uses `No prior history.`
+without a history request. Prefix instructions omit prior-summary and custom focus.
+The merged summary receives sorted file sections and present file details. The result
+retains the prepared ID and token count; saving it is a separate caller operation.
+
+Projection failures return JSON diagnostics before that request starts. Adapter setup
+errors retain their diagnostics. Error responses use `Summarization failed: ...` or
+`Turn prefix summarization failed: ...`, with `Unknown error` for absent/empty messages.
+Other outcomes, including abort, return available text blocks joined with newlines.
+A failed split observation does not cancel a producer-owned sibling. After generation,
+an empty retained ID fails with `First kept entry has no UUID - session may need migration`.
+Application compaction events, persistence and retry policy are separate operations.
+
+This controlled adapter makes no network request:
+
+```rust
+use maestro_models::{ApiProvider, AssistantMessage, AssistantMessageEventStream,
+    Model, StopReason};
+use maestro_session::{SummaryOptions, generate_summary};
+use serde_json::json;
+use std::sync::{Arc, RwLock};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let api = "controlled-summary-example";
+maestro_models::register_api_provider(ApiProvider {
+    api: api.into(),
+    stream: Arc::new(|_, _, _| unreachable!()),
+    stream_simple: Arc::new(|model, _, _| {
+        let response = AssistantMessage {
+            content: serde_json::from_value(json!([{"type":"text","text":"## Goal\nContinue work"}])).unwrap(),
+            api: model.api, provider: model.provider, model: model.id,
+            response_model: None, response_id: None, diagnostics: None,
+            usage: serde_json::from_value(json!({"input":0,"output":0,"cacheRead":0,
+                "cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,
+                "cacheRead":0,"cacheWrite":0,"total":0}})).unwrap(),
+            stop_reason: StopReason::Stop,
+            error_message: None, timestamp: maestro_models::timestamp_now(),
+        };
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(Arc::new(RwLock::new(response))));
+        Ok(stream)
+    }),
+}, Some(api.into()));
+let model: Model = serde_json::from_value(json!({
+    "id":"controlled", "name":"Controlled", "api":api, "provider":"controlled",
+    "baseUrl":"https://invalid.example", "reasoning":false, "input":["text"],
+    "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
+    "contextWindow":200000, "maxTokens":8192
+}))?;
+let options = SummaryOptions {
+    api_key: String::new(), headers: None, signal: None,
+    custom_instructions: None, thinking_level: None,
+};
+let summary = generate_summary(&[json!({"role":"user","content":"Continue work"})],
+    &model, 2000.0, None, &options).await?;
+maestro_models::unregister_api_providers(api);
+assert_eq!(summary, "## Goal\nContinue work");
+# Ok(())
+# }
+# tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(example()).unwrap();
+```

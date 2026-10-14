@@ -414,7 +414,7 @@ in its own part, as a message, and never replaces the other part or the handler'
 
 ### Session entries
 
-The guest re-exports its session and compaction preparation records from
+The guest re-exports its session, compaction preparation and result records from
 [the entry owner](../entry.md), specializing messages and opaque detail text.
 Every entry carries `id`, nullable `parentId` and a string `timestamp`; the guest
 interprets neither IDs nor timestamps. Typed null parent/leaf/ancestor IDs serialize

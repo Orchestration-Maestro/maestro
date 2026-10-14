@@ -11,24 +11,60 @@ use std::convert::Infallible;
 /// Format a recorded shell execution for model input.
 #[must_use]
 pub fn bash_execution_to_text(message: &BashExecutionMessage) -> String {
+    shell_text(&ShellText {
+        command: &message.command,
+        output: &message.output,
+        cancelled: message.cancelled,
+        truncated: message.truncated,
+        exit_code: match message.exit_code {
+            Presence::Present(code) => Some(code),
+            _ => None,
+        },
+        full_output_path: match &message.full_output_path {
+            Presence::Present(path) => Some(path),
+            _ => None,
+        },
+    })
+}
+/// Consumed shell fields shared by typed and historical projections.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ShellText<'a> {
+    /// Executed command.
+    command: &'a str,
+    /// Captured output.
+    output: &'a str,
+    /// Supplied status.
+    exit_code: Option<f64>,
+    /// Whether execution was cancelled.
+    #[serde(default)]
+    cancelled: bool,
+    /// Whether output was clipped.
+    #[serde(default)]
+    truncated: bool,
+    /// Path to the full output.
+    full_output_path: Option<&'a str>,
+}
+/// Format the selected shell fields, without reading execution metadata.
+fn shell_text(message: &ShellText<'_>) -> String {
     let mut text = format!("Ran `{}`\n", message.command);
     if message.output.is_empty() {
         text.push_str("(no output)");
     } else {
         text.push_str("```\n");
-        text.push_str(&message.output);
+        text.push_str(message.output);
         text.push_str("\n```");
     }
     if message.cancelled {
         text.push_str("\n\n(command cancelled)");
-    } else if let Presence::Present(code) = message.exit_code
+    } else if let Some(code) = message.exit_code
         && code != 0.0
     {
         text.push_str("\n\nCommand exited with code ");
         text.push_str(ryu_js::Buffer::new().format(code));
     }
     if message.truncated
-        && let Presence::Present(path) = &message.full_output_path
+        && let Some(path) = message.full_output_path
         && !path.is_empty()
     {
         text.push_str("\n\n[Output truncated. Full output: ");
@@ -179,17 +215,11 @@ fn project_custom<T, C>(message: &CustomAgentMessages<T, C>) -> Option<Message> 
             Some(user_message(message.content.clone(), message.timestamp))
         }
         CustomAgentMessages::BranchSummary(message) => Some(user_message(
-            UserContent::Text(format!(
-                "{BRANCH_SUMMARY_PREFIX}{}{BRANCH_SUMMARY_SUFFIX}",
-                message.summary
-            )),
+            UserContent::Text(summary_wrapper(&message.summary, true)),
             message.timestamp,
         )),
         CustomAgentMessages::CompactionSummary(message) => Some(user_message(
-            UserContent::Text(format!(
-                "{COMPACTION_SUMMARY_PREFIX}{}{COMPACTION_SUMMARY_SUFFIX}",
-                message.summary
-            )),
+            UserContent::Text(summary_wrapper(&message.summary, false)),
             message.timestamp,
         )),
         CustomAgentMessages::BashExecution(message)
@@ -209,4 +239,81 @@ fn read<T>(entry: &std::sync::RwLock<T>) -> std::sync::RwLockReadGuard<'_, T> {
     entry
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+/// Select only summary-visible fields from historical model messages.
+pub(crate) fn project_summary(
+    message: &serde_json::Value,
+) -> Result<Option<crate::compaction::utils::SummaryMessage<'_>>, serde_json::Error> {
+    use crate::compaction::utils::{SummaryBlock, SummaryMessage};
+    use serde::Deserialize;
+    let content = &message["content"];
+    Ok(match message["role"].as_str() {
+        Some("user" | "custom") => Some(SummaryMessage::User(match content.as_str() {
+            Some(text) => std::borrow::Cow::Borrowed(text),
+            None => std::borrow::Cow::Owned(summary_text(content)?),
+        })),
+        Some("toolResult") => Some(SummaryMessage::Tool(summary_text(content)?)),
+        Some("assistant") => {
+            let blocks = content.as_array().ok_or_else(|| {
+                <serde_json::Error as serde::de::Error>::custom("expected content array")
+            })?;
+            let selected = blocks
+                .iter()
+                .filter_map(|block| match block["type"].as_str() {
+                    Some("text") => {
+                        Some(<&str>::deserialize(&block["text"]).map(SummaryBlock::Text))
+                    }
+                    Some("thinking") => {
+                        Some(<&str>::deserialize(&block["thinking"]).map(SummaryBlock::Thinking))
+                    }
+                    Some("toolCall") => Some((|| {
+                        Ok(SummaryBlock::Tool(
+                            <&str>::deserialize(&block["name"])?,
+                            block["arguments"].as_object().ok_or_else(|| {
+                                <serde_json::Error as serde::de::Error>::custom(
+                                    "expected arguments object",
+                                )
+                            })?,
+                        ))
+                    })()),
+                    _ => None,
+                })
+                .collect::<Result<Vec<_>, serde_json::Error>>()?;
+            Some(SummaryMessage::Assistant(selected))
+        }
+        Some("branchSummary" | "compactionSummary") => Some(SummaryMessage::User(
+            std::borrow::Cow::Owned(summary_wrapper(
+                <&str>::deserialize(&message["summary"])?,
+                message["role"] == "branchSummary",
+            )),
+        )),
+        Some("bashExecution") if !maestro_json::is_truthy(&message["excludeFromContext"]) => {
+            Some(SummaryMessage::User(std::borrow::Cow::Owned(shell_text(
+                &ShellText::deserialize(message)?,
+            ))))
+        }
+        _ => None,
+    })
+}
+/// Concatenate only consumed text blocks, ignoring unknown content kinds.
+fn summary_text(content: &serde_json::Value) -> Result<String, serde_json::Error> {
+    use serde::Deserialize;
+    content
+        .as_array()
+        .ok_or_else(|| <serde_json::Error as serde::de::Error>::custom("expected content array"))?
+        .iter()
+        .filter(|block| block["type"] == "text")
+        .map(|block| <&str>::deserialize(&block["text"]))
+        .collect()
+}
+
+/// Wrap retained summaries identically for model and summary input.
+fn summary_wrapper(summary: &str, branch: bool) -> String {
+    let (prefix, suffix) = if branch {
+        (BRANCH_SUMMARY_PREFIX, BRANCH_SUMMARY_SUFFIX)
+    } else {
+        (COMPACTION_SUMMARY_PREFIX, COMPACTION_SUMMARY_SUFFIX)
+    };
+    format!("{prefix}{summary}{suffix}")
 }

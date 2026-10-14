@@ -58,3 +58,7 @@ pub type CompactionPreparation =
     maestro_entry::compaction::CompactionPreparation<serde_json::Value>;
 mod prepare;
 pub use prepare::prepare_compaction;
+mod generation;
+mod prompts;
+pub use generation::{SummaryOptions, compact, generate_summary};
+pub use maestro_entry::compaction::CompactionResult;
