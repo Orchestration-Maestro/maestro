@@ -222,9 +222,12 @@ semantics: object acceptance, canonical keys, truth, and compact and pretty text
 only on `maestro-request`: entry defines session interchange records and tool defines
 tool interchange records. `maestro-brand` is a core domain library below layer 0 that
 depends on text and JSON and projects a brand pack. These five owners are declared by
-policy; `maestro-text`, `maestro-json`, `maestro-entry` and `maestro-brand` exist, and the code
-`maestro-tool` will own moves in later extraction issues, which creates that crate. No `common`, `utils`, `shared-types` or
-background-runtime crate is added. `maestro-tools` may depend directly on `maestro-text`, the
+policy and exist. `maestro-tool` owns `ToolExecutionMode`, `AgentToolResult`,
+`ReadToolDetails`, `TruncationBy`, `TruncationResult` and `BashResult`; native and guest
+public paths specialize these declarations with their existing field types. Read-input
+admission remains separately owned by the native tools and guest authoring libraries.
+The shared omission predicate `Omittable` belongs to `maestro-request::presence`.
+No `common`, `utils`, `shared-types` or background-runtime crate is added. `maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 
 `maestro-request` defines shared message and model-request records: model
