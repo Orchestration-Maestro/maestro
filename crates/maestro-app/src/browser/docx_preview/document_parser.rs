@@ -1,4 +1,4 @@
-//! Word body and inline element framing.
+//! Word body framing and selected CSS property parsing.
 use super::{
     DocxError, DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData as Data,
     OpenXmlElementTree, OwnedXmlElement, UnparsedKind, XmlElement, XmlParser, parse_xml_string,
@@ -273,4 +273,37 @@ impl<'input> DocumentParser<'_, 'input> {
             element: self.input.slice(child),
         }
     }
+}
+
+mod values;
+mod xml_util;
+
+/// Update physical border sides from immediate children, retaining existing slots.
+pub fn parse_border_properties<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+    output: &mut indexmap::IndexMap<String, Option<String>>,
+) {
+    for child in xml.elements(element, None) {
+        let side = match child.local_name() {
+            "start" | "left" => "border-left",
+            "end" | "right" => "border-right",
+            "top" => "border-top",
+            "bottom" => "border-bottom",
+            _ => continue,
+        };
+        output.insert(side.into(), Some(values::value_of_border(xml, child)));
+    }
+}
+
+/// Return the selected element's background color when present.
+#[must_use]
+pub fn parse_background<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+) -> indexmap::IndexMap<String, Option<String>> {
+    xml_util::color_attr(xml, element, "color")
+        .map(|color| ("background-color".into(), Some(color)))
+        .into_iter()
+        .collect()
 }

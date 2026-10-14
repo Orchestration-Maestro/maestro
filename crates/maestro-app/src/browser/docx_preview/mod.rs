@@ -62,4 +62,6 @@ pub use document::dom::{
     DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData, OpenXmlElementTree,
     UnparsedKind,
 };
-pub use document_parser::{parse_body_elements, parse_paragraph, parse_run};
+pub use document_parser::{
+    parse_background, parse_body_elements, parse_border_properties, parse_paragraph, parse_run,
+};
