@@ -78,17 +78,22 @@ fn socks_handshake_deadline_ends_at_tunnel_establishment() {
             ));
             let mut future = connector.call(uri).boxed();
             ready(&received, &mut future).await;
-            tokio::time::advance(Duration::from_secs(31)).await;
-            if tunnel {
-                assert!(pending(&mut future).await);
-                drop(future);
-            } else {
-                let error = future.await.expect_err("handshake expires");
-                assert!(error.to_string().contains("SOCKS handshake deadline"));
-            }
+            tokio::time::advance(Duration::from_secs(29)).await;
+            assert!(pending(&mut future).await);
+            tokio::time::advance(Duration::from_secs(2)).await;
+            let outcome = future.as_mut().now_or_never();
+            drop(future);
             release.send(()).unwrap();
             server.finish().unwrap();
             end.recv().unwrap();
+            if tunnel {
+                assert!(outcome.is_none());
+            } else {
+                let error = outcome
+                    .expect("handshake must expire at the observed clock boundary")
+                    .expect_err("handshake expires");
+                assert!(error.to_string().contains("SOCKS handshake deadline"));
+            }
         }
     });
 }

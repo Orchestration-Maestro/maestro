@@ -40,10 +40,7 @@ impl SocksProxyAgent {
         let host = uri
             .host()
             .ok_or_else(|| io::Error::other("Missing destination host"))?;
-        let host = host
-            .strip_prefix('[')
-            .and_then(|host| host.strip_suffix(']'))
-            .unwrap_or(host);
+        let host = socket_host(host);
         let port = uri
             .port_u16()
             .unwrap_or(if uri.scheme_str() == Some("https") {
@@ -72,11 +69,7 @@ impl SocksProxyAgent {
         &self,
         target: tokio_socks::TargetAddr<'_>,
     ) -> io::Result<tokio::net::TcpStream> {
-        let host = self
-            .host
-            .strip_prefix('[')
-            .and_then(|host| host.strip_suffix(']'))
-            .unwrap_or(&self.host);
+        let host = socket_host(&self.host);
         let socket = tokio::net::TcpStream::connect((host, self.port)).await?;
         let stream = if self.user.is_empty() && self.password.is_empty() {
             tokio_socks::tcp::Socks5Stream::connect_with_socket(socket, target).await
@@ -95,6 +88,13 @@ impl SocksProxyAgent {
             .map(tokio_socks::tcp::Socks5Stream::into_inner)
             .map_err(io::Error::other)
     }
+}
+
+/// Remove URL brackets only for socket addressing.
+fn socket_host(host: &str) -> &str {
+    host.strip_prefix('[')
+        .and_then(|host| host.strip_suffix(']'))
+        .unwrap_or(host)
 }
 
 /// Decode one URI component strictly, without form-style plus replacement.
