@@ -1,0 +1,22 @@
+[package]
+name = "maestro-export"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+maestro-session = { path = "../maestro-session" }
+maestro-models = { path = "../maestro-models" }
+maestro-theme = { path = "../maestro-theme" }
+maestro-json = { path = "../maestro-json" }
+maestro-text = { path = "../maestro-text" }
+maestro-path = { path = "../maestro-path" }
+serde_json.workspace = true
+base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
+
+[dev-dependencies]
+serde.workspace = true
+
+[lints]
+workspace = true

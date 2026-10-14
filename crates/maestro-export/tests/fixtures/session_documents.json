@@ -1,0 +1,4556 @@
+{
+  "colors": [
+    {
+      "input": "#343541",
+      "expected": {
+        "pageBg": "rgb(36, 37, 46)",
+        "cardBg": "rgb(44, 45, 55)",
+        "infoBg": "rgb(72, 68, 65)"
+      }
+    },
+    {
+      "input": "#f0f0f0",
+      "expected": {
+        "pageBg": "rgb(230, 230, 230)",
+        "cardBg": "#f0f0f0",
+        "infoBg": "rgb(250, 245, 220)"
+      }
+    },
+    {
+      "input": "#ABCDEF",
+      "expected": {
+        "pageBg": "rgb(164, 197, 229)",
+        "cardBg": "#ABCDEF",
+        "infoBg": "rgb(181, 210, 219)"
+      }
+    },
+    {
+      "input": "#000000",
+      "expected": {
+        "pageBg": "rgb(0, 0, 0)",
+        "cardBg": "rgb(0, 0, 0)",
+        "infoBg": "rgb(20, 15, 0)"
+      }
+    },
+    {
+      "input": "#ffffff",
+      "expected": {
+        "pageBg": "rgb(245, 245, 245)",
+        "cardBg": "#ffffff",
+        "infoBg": "rgb(255, 255, 235)"
+      }
+    },
+    {
+      "input": "#abc",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#gggggg",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#aabbccdd",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "aabbcc",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#ffff10",
+      "expected": {
+        "pageBg": "rgb(245, 245, 15)",
+        "cardBg": "#ffff10",
+        "infoBg": "rgb(255, 255, 0)"
+      }
+    },
+    {
+      "input": "#FAFA05",
+      "expected": {
+        "pageBg": "rgb(240, 240, 5)",
+        "cardBg": "#FAFA05",
+        "infoBg": "rgb(255, 255, 0)"
+      }
+    },
+    {
+      "input": "#123456\n",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#123456\r",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#123456\r\n",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#123456 ",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#123456 ",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": " #123456",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#123456 ",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(0,0,0)",
+      "expected": {
+        "pageBg": "rgb(0, 0, 0)",
+        "cardBg": "rgb(0, 0, 0)",
+        "infoBg": "rgb(20, 15, 0)"
+      }
+    },
+    {
+      "input": "rgb(255, 255, 255)",
+      "expected": {
+        "pageBg": "rgb(245, 245, 245)",
+        "cardBg": "rgb(255, 255, 255)",
+        "infoBg": "rgb(255, 255, 235)"
+      }
+    },
+    {
+      "input": "rgb﻿(\t10 , 20,30\n)",
+      "expected": {
+        "pageBg": "rgb(7, 14, 21)",
+        "cardBg": "rgb(9, 17, 26)",
+        "infoBg": "rgb(30, 35, 30)"
+      }
+    },
+    {
+      "input": "rgb(10,20,30)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(300,1,999)",
+      "expected": {
+        "pageBg": "rgb(255, 1, 255)",
+        "cardBg": "rgb(300,1,999)",
+        "infoBg": "rgb(255, 6, 979)"
+      }
+    },
+    {
+      "input": "RGB(1,2,3)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(-1,2,3)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(1.5,2,3)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(1,2,3,4)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(1 2 3)",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "rgb(01,002,0003)",
+      "expected": {
+        "pageBg": "rgb(1, 1, 2)",
+        "cardBg": "rgb(1, 2, 3)",
+        "infoBg": "rgb(21, 17, 3)"
+      }
+    },
+    {
+      "input": "rgb(1,2,3)\n",
+      "expected": {
+        "pageBg": "rgb(24, 24, 30)",
+        "cardBg": "rgb(30, 30, 36)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#5ad373",
+      "expected": {
+        "pageBg": "rgb(63, 148, 81)",
+        "cardBg": "rgb(77, 179, 98)",
+        "infoBg": "rgb(110, 226, 115)"
+      }
+    },
+    {
+      "input": "#5acbdb",
+      "expected": {
+        "pageBg": "rgb(86, 195, 210)",
+        "cardBg": "#5acbdb",
+        "infoBg": "rgb(100, 208, 199)"
+      }
+    },
+    {
+      "input": "#010101",
+      "expected": {
+        "pageBg": "rgb(1, 1, 1)",
+        "cardBg": "rgb(1, 1, 1)",
+        "infoBg": "rgb(21, 16, 1)"
+      }
+    },
+    {
+      "input": "#020202",
+      "expected": {
+        "pageBg": "rgb(1, 1, 1)",
+        "cardBg": "rgb(2, 2, 2)",
+        "infoBg": "rgb(22, 17, 2)"
+      }
+    },
+    {
+      "input": "#030303",
+      "expected": {
+        "pageBg": "rgb(2, 2, 2)",
+        "cardBg": "rgb(3, 3, 3)",
+        "infoBg": "rgb(23, 18, 3)"
+      }
+    },
+    {
+      "input": "#040404",
+      "expected": {
+        "pageBg": "rgb(3, 3, 3)",
+        "cardBg": "rgb(3, 3, 3)",
+        "infoBg": "rgb(24, 19, 4)"
+      }
+    },
+    {
+      "input": "#050505",
+      "expected": {
+        "pageBg": "rgb(4, 4, 4)",
+        "cardBg": "rgb(4, 4, 4)",
+        "infoBg": "rgb(25, 20, 5)"
+      }
+    },
+    {
+      "input": "#060606",
+      "expected": {
+        "pageBg": "rgb(4, 4, 4)",
+        "cardBg": "rgb(5, 5, 5)",
+        "infoBg": "rgb(26, 21, 6)"
+      }
+    },
+    {
+      "input": "#070707",
+      "expected": {
+        "pageBg": "rgb(5, 5, 5)",
+        "cardBg": "rgb(6, 6, 6)",
+        "infoBg": "rgb(27, 22, 7)"
+      }
+    },
+    {
+      "input": "#080808",
+      "expected": {
+        "pageBg": "rgb(6, 6, 6)",
+        "cardBg": "rgb(7, 7, 7)",
+        "infoBg": "rgb(28, 23, 8)"
+      }
+    },
+    {
+      "input": "#090909",
+      "expected": {
+        "pageBg": "rgb(6, 6, 6)",
+        "cardBg": "rgb(8, 8, 8)",
+        "infoBg": "rgb(29, 24, 9)"
+      }
+    },
+    {
+      "input": "#0a0a0a",
+      "expected": {
+        "pageBg": "rgb(7, 7, 7)",
+        "cardBg": "rgb(9, 9, 9)",
+        "infoBg": "rgb(30, 25, 10)"
+      }
+    },
+    {
+      "input": "#0b0b0b",
+      "expected": {
+        "pageBg": "rgb(8, 8, 8)",
+        "cardBg": "rgb(9, 9, 9)",
+        "infoBg": "rgb(31, 26, 11)"
+      }
+    },
+    {
+      "input": "#0c0c0c",
+      "expected": {
+        "pageBg": "rgb(8, 8, 8)",
+        "cardBg": "rgb(10, 10, 10)",
+        "infoBg": "rgb(32, 27, 12)"
+      }
+    },
+    {
+      "input": "#0d0d0d",
+      "expected": {
+        "pageBg": "rgb(9, 9, 9)",
+        "cardBg": "rgb(11, 11, 11)",
+        "infoBg": "rgb(33, 28, 13)"
+      }
+    },
+    {
+      "input": "#0e0e0e",
+      "expected": {
+        "pageBg": "rgb(10, 10, 10)",
+        "cardBg": "rgb(12, 12, 12)",
+        "infoBg": "rgb(34, 29, 14)"
+      }
+    },
+    {
+      "input": "#0f0f0f",
+      "expected": {
+        "pageBg": "rgb(11, 11, 11)",
+        "cardBg": "rgb(13, 13, 13)",
+        "infoBg": "rgb(35, 30, 15)"
+      }
+    },
+    {
+      "input": "#101010",
+      "expected": {
+        "pageBg": "rgb(11, 11, 11)",
+        "cardBg": "rgb(14, 14, 14)",
+        "infoBg": "rgb(36, 31, 16)"
+      }
+    },
+    {
+      "input": "#111111",
+      "expected": {
+        "pageBg": "rgb(12, 12, 12)",
+        "cardBg": "rgb(14, 14, 14)",
+        "infoBg": "rgb(37, 32, 17)"
+      }
+    },
+    {
+      "input": "#121212",
+      "expected": {
+        "pageBg": "rgb(13, 13, 13)",
+        "cardBg": "rgb(15, 15, 15)",
+        "infoBg": "rgb(38, 33, 18)"
+      }
+    },
+    {
+      "input": "#131313",
+      "expected": {
+        "pageBg": "rgb(13, 13, 13)",
+        "cardBg": "rgb(16, 16, 16)",
+        "infoBg": "rgb(39, 34, 19)"
+      }
+    },
+    {
+      "input": "#141414",
+      "expected": {
+        "pageBg": "rgb(14, 14, 14)",
+        "cardBg": "rgb(17, 17, 17)",
+        "infoBg": "rgb(40, 35, 20)"
+      }
+    },
+    {
+      "input": "#151515",
+      "expected": {
+        "pageBg": "rgb(15, 15, 15)",
+        "cardBg": "rgb(18, 18, 18)",
+        "infoBg": "rgb(41, 36, 21)"
+      }
+    },
+    {
+      "input": "#161616",
+      "expected": {
+        "pageBg": "rgb(15, 15, 15)",
+        "cardBg": "rgb(19, 19, 19)",
+        "infoBg": "rgb(42, 37, 22)"
+      }
+    },
+    {
+      "input": "#171717",
+      "expected": {
+        "pageBg": "rgb(16, 16, 16)",
+        "cardBg": "rgb(20, 20, 20)",
+        "infoBg": "rgb(43, 38, 23)"
+      }
+    },
+    {
+      "input": "#181818",
+      "expected": {
+        "pageBg": "rgb(17, 17, 17)",
+        "cardBg": "rgb(20, 20, 20)",
+        "infoBg": "rgb(44, 39, 24)"
+      }
+    },
+    {
+      "input": "#191919",
+      "expected": {
+        "pageBg": "rgb(18, 18, 18)",
+        "cardBg": "rgb(21, 21, 21)",
+        "infoBg": "rgb(45, 40, 25)"
+      }
+    },
+    {
+      "input": "#1a1a1a",
+      "expected": {
+        "pageBg": "rgb(18, 18, 18)",
+        "cardBg": "rgb(22, 22, 22)",
+        "infoBg": "rgb(46, 41, 26)"
+      }
+    },
+    {
+      "input": "#1b1b1b",
+      "expected": {
+        "pageBg": "rgb(19, 19, 19)",
+        "cardBg": "rgb(23, 23, 23)",
+        "infoBg": "rgb(47, 42, 27)"
+      }
+    },
+    {
+      "input": "#1c1c1c",
+      "expected": {
+        "pageBg": "rgb(20, 20, 20)",
+        "cardBg": "rgb(24, 24, 24)",
+        "infoBg": "rgb(48, 43, 28)"
+      }
+    },
+    {
+      "input": "#1d1d1d",
+      "expected": {
+        "pageBg": "rgb(20, 20, 20)",
+        "cardBg": "rgb(25, 25, 25)",
+        "infoBg": "rgb(49, 44, 29)"
+      }
+    },
+    {
+      "input": "#1e1e1e",
+      "expected": {
+        "pageBg": "rgb(21, 21, 21)",
+        "cardBg": "rgb(26, 26, 26)",
+        "infoBg": "rgb(50, 45, 30)"
+      }
+    },
+    {
+      "input": "#1f1f1f",
+      "expected": {
+        "pageBg": "rgb(22, 22, 22)",
+        "cardBg": "rgb(26, 26, 26)",
+        "infoBg": "rgb(51, 46, 31)"
+      }
+    },
+    {
+      "input": "#202020",
+      "expected": {
+        "pageBg": "rgb(22, 22, 22)",
+        "cardBg": "rgb(27, 27, 27)",
+        "infoBg": "rgb(52, 47, 32)"
+      }
+    },
+    {
+      "input": "#212121",
+      "expected": {
+        "pageBg": "rgb(23, 23, 23)",
+        "cardBg": "rgb(28, 28, 28)",
+        "infoBg": "rgb(53, 48, 33)"
+      }
+    },
+    {
+      "input": "#222222",
+      "expected": {
+        "pageBg": "rgb(24, 24, 24)",
+        "cardBg": "rgb(29, 29, 29)",
+        "infoBg": "rgb(54, 49, 34)"
+      }
+    },
+    {
+      "input": "#232323",
+      "expected": {
+        "pageBg": "rgb(25, 25, 25)",
+        "cardBg": "rgb(30, 30, 30)",
+        "infoBg": "rgb(55, 50, 35)"
+      }
+    },
+    {
+      "input": "#242424",
+      "expected": {
+        "pageBg": "rgb(25, 25, 25)",
+        "cardBg": "rgb(31, 31, 31)",
+        "infoBg": "rgb(56, 51, 36)"
+      }
+    },
+    {
+      "input": "#252525",
+      "expected": {
+        "pageBg": "rgb(26, 26, 26)",
+        "cardBg": "rgb(31, 31, 31)",
+        "infoBg": "rgb(57, 52, 37)"
+      }
+    },
+    {
+      "input": "#262626",
+      "expected": {
+        "pageBg": "rgb(27, 27, 27)",
+        "cardBg": "rgb(32, 32, 32)",
+        "infoBg": "rgb(58, 53, 38)"
+      }
+    },
+    {
+      "input": "#272727",
+      "expected": {
+        "pageBg": "rgb(27, 27, 27)",
+        "cardBg": "rgb(33, 33, 33)",
+        "infoBg": "rgb(59, 54, 39)"
+      }
+    },
+    {
+      "input": "#282828",
+      "expected": {
+        "pageBg": "rgb(28, 28, 28)",
+        "cardBg": "rgb(34, 34, 34)",
+        "infoBg": "rgb(60, 55, 40)"
+      }
+    },
+    {
+      "input": "#292929",
+      "expected": {
+        "pageBg": "rgb(29, 29, 29)",
+        "cardBg": "rgb(35, 35, 35)",
+        "infoBg": "rgb(61, 56, 41)"
+      }
+    },
+    {
+      "input": "#2a2a2a",
+      "expected": {
+        "pageBg": "rgb(29, 29, 29)",
+        "cardBg": "rgb(36, 36, 36)",
+        "infoBg": "rgb(62, 57, 42)"
+      }
+    },
+    {
+      "input": "#2b2b2b",
+      "expected": {
+        "pageBg": "rgb(30, 30, 30)",
+        "cardBg": "rgb(37, 37, 37)",
+        "infoBg": "rgb(63, 58, 43)"
+      }
+    },
+    {
+      "input": "#2c2c2c",
+      "expected": {
+        "pageBg": "rgb(31, 31, 31)",
+        "cardBg": "rgb(37, 37, 37)",
+        "infoBg": "rgb(64, 59, 44)"
+      }
+    },
+    {
+      "input": "#2d2d2d",
+      "expected": {
+        "pageBg": "rgb(31, 31, 31)",
+        "cardBg": "rgb(38, 38, 38)",
+        "infoBg": "rgb(65, 60, 45)"
+      }
+    },
+    {
+      "input": "#2e2e2e",
+      "expected": {
+        "pageBg": "rgb(32, 32, 32)",
+        "cardBg": "rgb(39, 39, 39)",
+        "infoBg": "rgb(66, 61, 46)"
+      }
+    },
+    {
+      "input": "#2f2f2f",
+      "expected": {
+        "pageBg": "rgb(33, 33, 33)",
+        "cardBg": "rgb(40, 40, 40)",
+        "infoBg": "rgb(67, 62, 47)"
+      }
+    },
+    {
+      "input": "#303030",
+      "expected": {
+        "pageBg": "rgb(34, 34, 34)",
+        "cardBg": "rgb(41, 41, 41)",
+        "infoBg": "rgb(68, 63, 48)"
+      }
+    },
+    {
+      "input": "#313131",
+      "expected": {
+        "pageBg": "rgb(34, 34, 34)",
+        "cardBg": "rgb(42, 42, 42)",
+        "infoBg": "rgb(69, 64, 49)"
+      }
+    },
+    {
+      "input": "#323232",
+      "expected": {
+        "pageBg": "rgb(35, 35, 35)",
+        "cardBg": "rgb(43, 43, 43)",
+        "infoBg": "rgb(70, 65, 50)"
+      }
+    },
+    {
+      "input": "#333333",
+      "expected": {
+        "pageBg": "rgb(36, 36, 36)",
+        "cardBg": "rgb(43, 43, 43)",
+        "infoBg": "rgb(71, 66, 51)"
+      }
+    },
+    {
+      "input": "#343434",
+      "expected": {
+        "pageBg": "rgb(36, 36, 36)",
+        "cardBg": "rgb(44, 44, 44)",
+        "infoBg": "rgb(72, 67, 52)"
+      }
+    },
+    {
+      "input": "#353535",
+      "expected": {
+        "pageBg": "rgb(37, 37, 37)",
+        "cardBg": "rgb(45, 45, 45)",
+        "infoBg": "rgb(73, 68, 53)"
+      }
+    },
+    {
+      "input": "#363636",
+      "expected": {
+        "pageBg": "rgb(38, 38, 38)",
+        "cardBg": "rgb(46, 46, 46)",
+        "infoBg": "rgb(74, 69, 54)"
+      }
+    },
+    {
+      "input": "#373737",
+      "expected": {
+        "pageBg": "rgb(39, 39, 39)",
+        "cardBg": "rgb(47, 47, 47)",
+        "infoBg": "rgb(75, 70, 55)"
+      }
+    },
+    {
+      "input": "#383838",
+      "expected": {
+        "pageBg": "rgb(39, 39, 39)",
+        "cardBg": "rgb(48, 48, 48)",
+        "infoBg": "rgb(76, 71, 56)"
+      }
+    },
+    {
+      "input": "#393939",
+      "expected": {
+        "pageBg": "rgb(40, 40, 40)",
+        "cardBg": "rgb(48, 48, 48)",
+        "infoBg": "rgb(77, 72, 57)"
+      }
+    },
+    {
+      "input": "#3a3a3a",
+      "expected": {
+        "pageBg": "rgb(41, 41, 41)",
+        "cardBg": "rgb(49, 49, 49)",
+        "infoBg": "rgb(78, 73, 58)"
+      }
+    },
+    {
+      "input": "#3b3b3b",
+      "expected": {
+        "pageBg": "rgb(41, 41, 41)",
+        "cardBg": "rgb(50, 50, 50)",
+        "infoBg": "rgb(79, 74, 59)"
+      }
+    },
+    {
+      "input": "#3c3c3c",
+      "expected": {
+        "pageBg": "rgb(42, 42, 42)",
+        "cardBg": "rgb(51, 51, 51)",
+        "infoBg": "rgb(80, 75, 60)"
+      }
+    },
+    {
+      "input": "#3d3d3d",
+      "expected": {
+        "pageBg": "rgb(43, 43, 43)",
+        "cardBg": "rgb(52, 52, 52)",
+        "infoBg": "rgb(81, 76, 61)"
+      }
+    },
+    {
+      "input": "#3e3e3e",
+      "expected": {
+        "pageBg": "rgb(43, 43, 43)",
+        "cardBg": "rgb(53, 53, 53)",
+        "infoBg": "rgb(82, 77, 62)"
+      }
+    },
+    {
+      "input": "#3f3f3f",
+      "expected": {
+        "pageBg": "rgb(44, 44, 44)",
+        "cardBg": "rgb(54, 54, 54)",
+        "infoBg": "rgb(83, 78, 63)"
+      }
+    },
+    {
+      "input": "#404040",
+      "expected": {
+        "pageBg": "rgb(45, 45, 45)",
+        "cardBg": "rgb(54, 54, 54)",
+        "infoBg": "rgb(84, 79, 64)"
+      }
+    },
+    {
+      "input": "#414141",
+      "expected": {
+        "pageBg": "rgb(46, 46, 46)",
+        "cardBg": "rgb(55, 55, 55)",
+        "infoBg": "rgb(85, 80, 65)"
+      }
+    },
+    {
+      "input": "#424242",
+      "expected": {
+        "pageBg": "rgb(46, 46, 46)",
+        "cardBg": "rgb(56, 56, 56)",
+        "infoBg": "rgb(86, 81, 66)"
+      }
+    },
+    {
+      "input": "#434343",
+      "expected": {
+        "pageBg": "rgb(47, 47, 47)",
+        "cardBg": "rgb(57, 57, 57)",
+        "infoBg": "rgb(87, 82, 67)"
+      }
+    },
+    {
+      "input": "#444444",
+      "expected": {
+        "pageBg": "rgb(48, 48, 48)",
+        "cardBg": "rgb(58, 58, 58)",
+        "infoBg": "rgb(88, 83, 68)"
+      }
+    },
+    {
+      "input": "#454545",
+      "expected": {
+        "pageBg": "rgb(48, 48, 48)",
+        "cardBg": "rgb(59, 59, 59)",
+        "infoBg": "rgb(89, 84, 69)"
+      }
+    },
+    {
+      "input": "#464646",
+      "expected": {
+        "pageBg": "rgb(49, 49, 49)",
+        "cardBg": "rgb(60, 60, 60)",
+        "infoBg": "rgb(90, 85, 70)"
+      }
+    },
+    {
+      "input": "#474747",
+      "expected": {
+        "pageBg": "rgb(50, 50, 50)",
+        "cardBg": "rgb(60, 60, 60)",
+        "infoBg": "rgb(91, 86, 71)"
+      }
+    },
+    {
+      "input": "#484848",
+      "expected": {
+        "pageBg": "rgb(50, 50, 50)",
+        "cardBg": "rgb(61, 61, 61)",
+        "infoBg": "rgb(92, 87, 72)"
+      }
+    },
+    {
+      "input": "#494949",
+      "expected": {
+        "pageBg": "rgb(51, 51, 51)",
+        "cardBg": "rgb(62, 62, 62)",
+        "infoBg": "rgb(93, 88, 73)"
+      }
+    },
+    {
+      "input": "#4a4a4a",
+      "expected": {
+        "pageBg": "rgb(52, 52, 52)",
+        "cardBg": "rgb(63, 63, 63)",
+        "infoBg": "rgb(94, 89, 74)"
+      }
+    },
+    {
+      "input": "#4b4b4b",
+      "expected": {
+        "pageBg": "rgb(53, 53, 53)",
+        "cardBg": "rgb(64, 64, 64)",
+        "infoBg": "rgb(95, 90, 75)"
+      }
+    },
+    {
+      "input": "#4c4c4c",
+      "expected": {
+        "pageBg": "rgb(53, 53, 53)",
+        "cardBg": "rgb(65, 65, 65)",
+        "infoBg": "rgb(96, 91, 76)"
+      }
+    },
+    {
+      "input": "#4d4d4d",
+      "expected": {
+        "pageBg": "rgb(54, 54, 54)",
+        "cardBg": "rgb(65, 65, 65)",
+        "infoBg": "rgb(97, 92, 77)"
+      }
+    },
+    {
+      "input": "#4e4e4e",
+      "expected": {
+        "pageBg": "rgb(55, 55, 55)",
+        "cardBg": "rgb(66, 66, 66)",
+        "infoBg": "rgb(98, 93, 78)"
+      }
+    },
+    {
+      "input": "#4f4f4f",
+      "expected": {
+        "pageBg": "rgb(55, 55, 55)",
+        "cardBg": "rgb(67, 67, 67)",
+        "infoBg": "rgb(99, 94, 79)"
+      }
+    },
+    {
+      "input": "#505050",
+      "expected": {
+        "pageBg": "rgb(56, 56, 56)",
+        "cardBg": "rgb(68, 68, 68)",
+        "infoBg": "rgb(100, 95, 80)"
+      }
+    },
+    {
+      "input": "#515151",
+      "expected": {
+        "pageBg": "rgb(57, 57, 57)",
+        "cardBg": "rgb(69, 69, 69)",
+        "infoBg": "rgb(101, 96, 81)"
+      }
+    },
+    {
+      "input": "#525252",
+      "expected": {
+        "pageBg": "rgb(57, 57, 57)",
+        "cardBg": "rgb(70, 70, 70)",
+        "infoBg": "rgb(102, 97, 82)"
+      }
+    },
+    {
+      "input": "#535353",
+      "expected": {
+        "pageBg": "rgb(58, 58, 58)",
+        "cardBg": "rgb(71, 71, 71)",
+        "infoBg": "rgb(103, 98, 83)"
+      }
+    },
+    {
+      "input": "#545454",
+      "expected": {
+        "pageBg": "rgb(59, 59, 59)",
+        "cardBg": "rgb(71, 71, 71)",
+        "infoBg": "rgb(104, 99, 84)"
+      }
+    },
+    {
+      "input": "#555555",
+      "expected": {
+        "pageBg": "rgb(59, 59, 59)",
+        "cardBg": "rgb(72, 72, 72)",
+        "infoBg": "rgb(105, 100, 85)"
+      }
+    },
+    {
+      "input": "#565656",
+      "expected": {
+        "pageBg": "rgb(60, 60, 60)",
+        "cardBg": "rgb(73, 73, 73)",
+        "infoBg": "rgb(106, 101, 86)"
+      }
+    },
+    {
+      "input": "#575757",
+      "expected": {
+        "pageBg": "rgb(61, 61, 61)",
+        "cardBg": "rgb(74, 74, 74)",
+        "infoBg": "rgb(107, 102, 87)"
+      }
+    },
+    {
+      "input": "#585858",
+      "expected": {
+        "pageBg": "rgb(62, 62, 62)",
+        "cardBg": "rgb(75, 75, 75)",
+        "infoBg": "rgb(108, 103, 88)"
+      }
+    },
+    {
+      "input": "#595959",
+      "expected": {
+        "pageBg": "rgb(62, 62, 62)",
+        "cardBg": "rgb(76, 76, 76)",
+        "infoBg": "rgb(109, 104, 89)"
+      }
+    },
+    {
+      "input": "#5a5a5a",
+      "expected": {
+        "pageBg": "rgb(63, 63, 63)",
+        "cardBg": "rgb(77, 77, 77)",
+        "infoBg": "rgb(110, 105, 90)"
+      }
+    },
+    {
+      "input": "#5b5b5b",
+      "expected": {
+        "pageBg": "rgb(64, 64, 64)",
+        "cardBg": "rgb(77, 77, 77)",
+        "infoBg": "rgb(111, 106, 91)"
+      }
+    },
+    {
+      "input": "#5c5c5c",
+      "expected": {
+        "pageBg": "rgb(64, 64, 64)",
+        "cardBg": "rgb(78, 78, 78)",
+        "infoBg": "rgb(112, 107, 92)"
+      }
+    },
+    {
+      "input": "#5d5d5d",
+      "expected": {
+        "pageBg": "rgb(65, 65, 65)",
+        "cardBg": "rgb(79, 79, 79)",
+        "infoBg": "rgb(113, 108, 93)"
+      }
+    },
+    {
+      "input": "#5e5e5e",
+      "expected": {
+        "pageBg": "rgb(66, 66, 66)",
+        "cardBg": "rgb(80, 80, 80)",
+        "infoBg": "rgb(114, 109, 94)"
+      }
+    },
+    {
+      "input": "#5f5f5f",
+      "expected": {
+        "pageBg": "rgb(67, 67, 67)",
+        "cardBg": "rgb(81, 81, 81)",
+        "infoBg": "rgb(115, 110, 95)"
+      }
+    },
+    {
+      "input": "#606060",
+      "expected": {
+        "pageBg": "rgb(67, 67, 67)",
+        "cardBg": "rgb(82, 82, 82)",
+        "infoBg": "rgb(116, 111, 96)"
+      }
+    },
+    {
+      "input": "#616161",
+      "expected": {
+        "pageBg": "rgb(68, 68, 68)",
+        "cardBg": "rgb(82, 82, 82)",
+        "infoBg": "rgb(117, 112, 97)"
+      }
+    },
+    {
+      "input": "#626262",
+      "expected": {
+        "pageBg": "rgb(69, 69, 69)",
+        "cardBg": "rgb(83, 83, 83)",
+        "infoBg": "rgb(118, 113, 98)"
+      }
+    },
+    {
+      "input": "#636363",
+      "expected": {
+        "pageBg": "rgb(69, 69, 69)",
+        "cardBg": "rgb(84, 84, 84)",
+        "infoBg": "rgb(119, 114, 99)"
+      }
+    },
+    {
+      "input": "#646464",
+      "expected": {
+        "pageBg": "rgb(70, 70, 70)",
+        "cardBg": "rgb(85, 85, 85)",
+        "infoBg": "rgb(120, 115, 100)"
+      }
+    },
+    {
+      "input": "#656565",
+      "expected": {
+        "pageBg": "rgb(71, 71, 71)",
+        "cardBg": "rgb(86, 86, 86)",
+        "infoBg": "rgb(121, 116, 101)"
+      }
+    },
+    {
+      "input": "#666666",
+      "expected": {
+        "pageBg": "rgb(71, 71, 71)",
+        "cardBg": "rgb(87, 87, 87)",
+        "infoBg": "rgb(122, 117, 102)"
+      }
+    },
+    {
+      "input": "#676767",
+      "expected": {
+        "pageBg": "rgb(72, 72, 72)",
+        "cardBg": "rgb(88, 88, 88)",
+        "infoBg": "rgb(123, 118, 103)"
+      }
+    },
+    {
+      "input": "#686868",
+      "expected": {
+        "pageBg": "rgb(73, 73, 73)",
+        "cardBg": "rgb(88, 88, 88)",
+        "infoBg": "rgb(124, 119, 104)"
+      }
+    },
+    {
+      "input": "#696969",
+      "expected": {
+        "pageBg": "rgb(74, 74, 74)",
+        "cardBg": "rgb(89, 89, 89)",
+        "infoBg": "rgb(125, 120, 105)"
+      }
+    },
+    {
+      "input": "#6a6a6a",
+      "expected": {
+        "pageBg": "rgb(74, 74, 74)",
+        "cardBg": "rgb(90, 90, 90)",
+        "infoBg": "rgb(126, 121, 106)"
+      }
+    },
+    {
+      "input": "#6b6b6b",
+      "expected": {
+        "pageBg": "rgb(75, 75, 75)",
+        "cardBg": "rgb(91, 91, 91)",
+        "infoBg": "rgb(127, 122, 107)"
+      }
+    },
+    {
+      "input": "#6c6c6c",
+      "expected": {
+        "pageBg": "rgb(76, 76, 76)",
+        "cardBg": "rgb(92, 92, 92)",
+        "infoBg": "rgb(128, 123, 108)"
+      }
+    },
+    {
+      "input": "#6d6d6d",
+      "expected": {
+        "pageBg": "rgb(76, 76, 76)",
+        "cardBg": "rgb(93, 93, 93)",
+        "infoBg": "rgb(129, 124, 109)"
+      }
+    },
+    {
+      "input": "#6e6e6e",
+      "expected": {
+        "pageBg": "rgb(77, 77, 77)",
+        "cardBg": "rgb(94, 94, 94)",
+        "infoBg": "rgb(130, 125, 110)"
+      }
+    },
+    {
+      "input": "#6f6f6f",
+      "expected": {
+        "pageBg": "rgb(78, 78, 78)",
+        "cardBg": "rgb(94, 94, 94)",
+        "infoBg": "rgb(131, 126, 111)"
+      }
+    },
+    {
+      "input": "#707070",
+      "expected": {
+        "pageBg": "rgb(78, 78, 78)",
+        "cardBg": "rgb(95, 95, 95)",
+        "infoBg": "rgb(132, 127, 112)"
+      }
+    },
+    {
+      "input": "#717171",
+      "expected": {
+        "pageBg": "rgb(79, 79, 79)",
+        "cardBg": "rgb(96, 96, 96)",
+        "infoBg": "rgb(133, 128, 113)"
+      }
+    },
+    {
+      "input": "#727272",
+      "expected": {
+        "pageBg": "rgb(80, 80, 80)",
+        "cardBg": "rgb(97, 97, 97)",
+        "infoBg": "rgb(134, 129, 114)"
+      }
+    },
+    {
+      "input": "#737373",
+      "expected": {
+        "pageBg": "rgb(81, 81, 81)",
+        "cardBg": "rgb(98, 98, 98)",
+        "infoBg": "rgb(135, 130, 115)"
+      }
+    },
+    {
+      "input": "#747474",
+      "expected": {
+        "pageBg": "rgb(81, 81, 81)",
+        "cardBg": "rgb(99, 99, 99)",
+        "infoBg": "rgb(136, 131, 116)"
+      }
+    },
+    {
+      "input": "#757575",
+      "expected": {
+        "pageBg": "rgb(82, 82, 82)",
+        "cardBg": "rgb(99, 99, 99)",
+        "infoBg": "rgb(137, 132, 117)"
+      }
+    },
+    {
+      "input": "#767676",
+      "expected": {
+        "pageBg": "rgb(83, 83, 83)",
+        "cardBg": "rgb(100, 100, 100)",
+        "infoBg": "rgb(138, 133, 118)"
+      }
+    },
+    {
+      "input": "#777777",
+      "expected": {
+        "pageBg": "rgb(83, 83, 83)",
+        "cardBg": "rgb(101, 101, 101)",
+        "infoBg": "rgb(139, 134, 119)"
+      }
+    },
+    {
+      "input": "#787878",
+      "expected": {
+        "pageBg": "rgb(84, 84, 84)",
+        "cardBg": "rgb(102, 102, 102)",
+        "infoBg": "rgb(140, 135, 120)"
+      }
+    },
+    {
+      "input": "#797979",
+      "expected": {
+        "pageBg": "rgb(85, 85, 85)",
+        "cardBg": "rgb(103, 103, 103)",
+        "infoBg": "rgb(141, 136, 121)"
+      }
+    },
+    {
+      "input": "#7a7a7a",
+      "expected": {
+        "pageBg": "rgb(85, 85, 85)",
+        "cardBg": "rgb(104, 104, 104)",
+        "infoBg": "rgb(142, 137, 122)"
+      }
+    },
+    {
+      "input": "#7b7b7b",
+      "expected": {
+        "pageBg": "rgb(86, 86, 86)",
+        "cardBg": "rgb(105, 105, 105)",
+        "infoBg": "rgb(143, 138, 123)"
+      }
+    },
+    {
+      "input": "#7c7c7c",
+      "expected": {
+        "pageBg": "rgb(87, 87, 87)",
+        "cardBg": "rgb(105, 105, 105)",
+        "infoBg": "rgb(144, 139, 124)"
+      }
+    },
+    {
+      "input": "#7d7d7d",
+      "expected": {
+        "pageBg": "rgb(88, 88, 88)",
+        "cardBg": "rgb(106, 106, 106)",
+        "infoBg": "rgb(145, 140, 125)"
+      }
+    },
+    {
+      "input": "#7e7e7e",
+      "expected": {
+        "pageBg": "rgb(88, 88, 88)",
+        "cardBg": "rgb(107, 107, 107)",
+        "infoBg": "rgb(146, 141, 126)"
+      }
+    },
+    {
+      "input": "#7f7f7f",
+      "expected": {
+        "pageBg": "rgb(89, 89, 89)",
+        "cardBg": "rgb(108, 108, 108)",
+        "infoBg": "rgb(147, 142, 127)"
+      }
+    },
+    {
+      "input": "#808080",
+      "expected": {
+        "pageBg": "rgb(90, 90, 90)",
+        "cardBg": "rgb(109, 109, 109)",
+        "infoBg": "rgb(148, 143, 128)"
+      }
+    },
+    {
+      "input": "#818181",
+      "expected": {
+        "pageBg": "rgb(90, 90, 90)",
+        "cardBg": "rgb(110, 110, 110)",
+        "infoBg": "rgb(149, 144, 129)"
+      }
+    },
+    {
+      "input": "#828282",
+      "expected": {
+        "pageBg": "rgb(91, 91, 91)",
+        "cardBg": "rgb(111, 111, 111)",
+        "infoBg": "rgb(150, 145, 130)"
+      }
+    },
+    {
+      "input": "#838383",
+      "expected": {
+        "pageBg": "rgb(92, 92, 92)",
+        "cardBg": "rgb(111, 111, 111)",
+        "infoBg": "rgb(151, 146, 131)"
+      }
+    },
+    {
+      "input": "#848484",
+      "expected": {
+        "pageBg": "rgb(92, 92, 92)",
+        "cardBg": "rgb(112, 112, 112)",
+        "infoBg": "rgb(152, 147, 132)"
+      }
+    },
+    {
+      "input": "#858585",
+      "expected": {
+        "pageBg": "rgb(93, 93, 93)",
+        "cardBg": "rgb(113, 113, 113)",
+        "infoBg": "rgb(153, 148, 133)"
+      }
+    },
+    {
+      "input": "#868686",
+      "expected": {
+        "pageBg": "rgb(94, 94, 94)",
+        "cardBg": "rgb(114, 114, 114)",
+        "infoBg": "rgb(154, 149, 134)"
+      }
+    },
+    {
+      "input": "#878787",
+      "expected": {
+        "pageBg": "rgb(95, 95, 95)",
+        "cardBg": "rgb(115, 115, 115)",
+        "infoBg": "rgb(155, 150, 135)"
+      }
+    },
+    {
+      "input": "#888888",
+      "expected": {
+        "pageBg": "rgb(95, 95, 95)",
+        "cardBg": "rgb(116, 116, 116)",
+        "infoBg": "rgb(156, 151, 136)"
+      }
+    },
+    {
+      "input": "#898989",
+      "expected": {
+        "pageBg": "rgb(96, 96, 96)",
+        "cardBg": "rgb(116, 116, 116)",
+        "infoBg": "rgb(157, 152, 137)"
+      }
+    },
+    {
+      "input": "#8a8a8a",
+      "expected": {
+        "pageBg": "rgb(97, 97, 97)",
+        "cardBg": "rgb(117, 117, 117)",
+        "infoBg": "rgb(158, 153, 138)"
+      }
+    },
+    {
+      "input": "#8b8b8b",
+      "expected": {
+        "pageBg": "rgb(97, 97, 97)",
+        "cardBg": "rgb(118, 118, 118)",
+        "infoBg": "rgb(159, 154, 139)"
+      }
+    },
+    {
+      "input": "#8c8c8c",
+      "expected": {
+        "pageBg": "rgb(98, 98, 98)",
+        "cardBg": "rgb(119, 119, 119)",
+        "infoBg": "rgb(160, 155, 140)"
+      }
+    },
+    {
+      "input": "#8d8d8d",
+      "expected": {
+        "pageBg": "rgb(99, 99, 99)",
+        "cardBg": "rgb(120, 120, 120)",
+        "infoBg": "rgb(161, 156, 141)"
+      }
+    },
+    {
+      "input": "#8e8e8e",
+      "expected": {
+        "pageBg": "rgb(99, 99, 99)",
+        "cardBg": "rgb(121, 121, 121)",
+        "infoBg": "rgb(162, 157, 142)"
+      }
+    },
+    {
+      "input": "#8f8f8f",
+      "expected": {
+        "pageBg": "rgb(100, 100, 100)",
+        "cardBg": "rgb(122, 122, 122)",
+        "infoBg": "rgb(163, 158, 143)"
+      }
+    },
+    {
+      "input": "#909090",
+      "expected": {
+        "pageBg": "rgb(101, 101, 101)",
+        "cardBg": "rgb(122, 122, 122)",
+        "infoBg": "rgb(164, 159, 144)"
+      }
+    },
+    {
+      "input": "#919191",
+      "expected": {
+        "pageBg": "rgb(102, 102, 102)",
+        "cardBg": "rgb(123, 123, 123)",
+        "infoBg": "rgb(165, 160, 145)"
+      }
+    },
+    {
+      "input": "#929292",
+      "expected": {
+        "pageBg": "rgb(102, 102, 102)",
+        "cardBg": "rgb(124, 124, 124)",
+        "infoBg": "rgb(166, 161, 146)"
+      }
+    },
+    {
+      "input": "#939393",
+      "expected": {
+        "pageBg": "rgb(103, 103, 103)",
+        "cardBg": "rgb(125, 125, 125)",
+        "infoBg": "rgb(167, 162, 147)"
+      }
+    },
+    {
+      "input": "#949494",
+      "expected": {
+        "pageBg": "rgb(104, 104, 104)",
+        "cardBg": "rgb(126, 126, 126)",
+        "infoBg": "rgb(168, 163, 148)"
+      }
+    },
+    {
+      "input": "#959595",
+      "expected": {
+        "pageBg": "rgb(104, 104, 104)",
+        "cardBg": "rgb(127, 127, 127)",
+        "infoBg": "rgb(169, 164, 149)"
+      }
+    },
+    {
+      "input": "#969696",
+      "expected": {
+        "pageBg": "rgb(105, 105, 105)",
+        "cardBg": "rgb(128, 128, 128)",
+        "infoBg": "rgb(170, 165, 150)"
+      }
+    },
+    {
+      "input": "#979797",
+      "expected": {
+        "pageBg": "rgb(106, 106, 106)",
+        "cardBg": "rgb(128, 128, 128)",
+        "infoBg": "rgb(171, 166, 151)"
+      }
+    },
+    {
+      "input": "#989898",
+      "expected": {
+        "pageBg": "rgb(106, 106, 106)",
+        "cardBg": "rgb(129, 129, 129)",
+        "infoBg": "rgb(172, 167, 152)"
+      }
+    },
+    {
+      "input": "#999999",
+      "expected": {
+        "pageBg": "rgb(107, 107, 107)",
+        "cardBg": "rgb(130, 130, 130)",
+        "infoBg": "rgb(173, 168, 153)"
+      }
+    },
+    {
+      "input": "#9a9a9a",
+      "expected": {
+        "pageBg": "rgb(108, 108, 108)",
+        "cardBg": "rgb(131, 131, 131)",
+        "infoBg": "rgb(174, 169, 154)"
+      }
+    },
+    {
+      "input": "#9b9b9b",
+      "expected": {
+        "pageBg": "rgb(109, 109, 109)",
+        "cardBg": "rgb(132, 132, 132)",
+        "infoBg": "rgb(175, 170, 155)"
+      }
+    },
+    {
+      "input": "#9c9c9c",
+      "expected": {
+        "pageBg": "rgb(109, 109, 109)",
+        "cardBg": "rgb(133, 133, 133)",
+        "infoBg": "rgb(176, 171, 156)"
+      }
+    },
+    {
+      "input": "#9d9d9d",
+      "expected": {
+        "pageBg": "rgb(110, 110, 110)",
+        "cardBg": "rgb(133, 133, 133)",
+        "infoBg": "rgb(177, 172, 157)"
+      }
+    },
+    {
+      "input": "#9e9e9e",
+      "expected": {
+        "pageBg": "rgb(111, 111, 111)",
+        "cardBg": "rgb(134, 134, 134)",
+        "infoBg": "rgb(178, 173, 158)"
+      }
+    },
+    {
+      "input": "#9f9f9f",
+      "expected": {
+        "pageBg": "rgb(111, 111, 111)",
+        "cardBg": "rgb(135, 135, 135)",
+        "infoBg": "rgb(179, 174, 159)"
+      }
+    },
+    {
+      "input": "#a0a0a0",
+      "expected": {
+        "pageBg": "rgb(112, 112, 112)",
+        "cardBg": "rgb(136, 136, 136)",
+        "infoBg": "rgb(180, 175, 160)"
+      }
+    },
+    {
+      "input": "#a1a1a1",
+      "expected": {
+        "pageBg": "rgb(113, 113, 113)",
+        "cardBg": "rgb(137, 137, 137)",
+        "infoBg": "rgb(181, 176, 161)"
+      }
+    },
+    {
+      "input": "#a2a2a2",
+      "expected": {
+        "pageBg": "rgb(113, 113, 113)",
+        "cardBg": "rgb(138, 138, 138)",
+        "infoBg": "rgb(182, 177, 162)"
+      }
+    },
+    {
+      "input": "#a3a3a3",
+      "expected": {
+        "pageBg": "rgb(114, 114, 114)",
+        "cardBg": "rgb(139, 139, 139)",
+        "infoBg": "rgb(183, 178, 163)"
+      }
+    },
+    {
+      "input": "#a4a4a4",
+      "expected": {
+        "pageBg": "rgb(115, 115, 115)",
+        "cardBg": "rgb(139, 139, 139)",
+        "infoBg": "rgb(184, 179, 164)"
+      }
+    },
+    {
+      "input": "#a5a5a5",
+      "expected": {
+        "pageBg": "rgb(115, 115, 115)",
+        "cardBg": "rgb(140, 140, 140)",
+        "infoBg": "rgb(185, 180, 165)"
+      }
+    },
+    {
+      "input": "#a6a6a6",
+      "expected": {
+        "pageBg": "rgb(116, 116, 116)",
+        "cardBg": "rgb(141, 141, 141)",
+        "infoBg": "rgb(186, 181, 166)"
+      }
+    },
+    {
+      "input": "#a7a7a7",
+      "expected": {
+        "pageBg": "rgb(117, 117, 117)",
+        "cardBg": "rgb(142, 142, 142)",
+        "infoBg": "rgb(187, 182, 167)"
+      }
+    },
+    {
+      "input": "#a8a8a8",
+      "expected": {
+        "pageBg": "rgb(118, 118, 118)",
+        "cardBg": "rgb(143, 143, 143)",
+        "infoBg": "rgb(188, 183, 168)"
+      }
+    },
+    {
+      "input": "#a9a9a9",
+      "expected": {
+        "pageBg": "rgb(118, 118, 118)",
+        "cardBg": "rgb(144, 144, 144)",
+        "infoBg": "rgb(189, 184, 169)"
+      }
+    },
+    {
+      "input": "#aaaaaa",
+      "expected": {
+        "pageBg": "rgb(119, 119, 119)",
+        "cardBg": "rgb(145, 145, 145)",
+        "infoBg": "rgb(190, 185, 170)"
+      }
+    },
+    {
+      "input": "#ababab",
+      "expected": {
+        "pageBg": "rgb(120, 120, 120)",
+        "cardBg": "rgb(145, 145, 145)",
+        "infoBg": "rgb(191, 186, 171)"
+      }
+    },
+    {
+      "input": "#acacac",
+      "expected": {
+        "pageBg": "rgb(120, 120, 120)",
+        "cardBg": "rgb(146, 146, 146)",
+        "infoBg": "rgb(192, 187, 172)"
+      }
+    },
+    {
+      "input": "#adadad",
+      "expected": {
+        "pageBg": "rgb(121, 121, 121)",
+        "cardBg": "rgb(147, 147, 147)",
+        "infoBg": "rgb(193, 188, 173)"
+      }
+    },
+    {
+      "input": "#aeaeae",
+      "expected": {
+        "pageBg": "rgb(122, 122, 122)",
+        "cardBg": "rgb(148, 148, 148)",
+        "infoBg": "rgb(194, 189, 174)"
+      }
+    },
+    {
+      "input": "#afafaf",
+      "expected": {
+        "pageBg": "rgb(122, 122, 122)",
+        "cardBg": "rgb(149, 149, 149)",
+        "infoBg": "rgb(195, 190, 175)"
+      }
+    },
+    {
+      "input": "#b0b0b0",
+      "expected": {
+        "pageBg": "rgb(123, 123, 123)",
+        "cardBg": "rgb(150, 150, 150)",
+        "infoBg": "rgb(196, 191, 176)"
+      }
+    },
+    {
+      "input": "#b1b1b1",
+      "expected": {
+        "pageBg": "rgb(124, 124, 124)",
+        "cardBg": "rgb(150, 150, 150)",
+        "infoBg": "rgb(197, 192, 177)"
+      }
+    },
+    {
+      "input": "#b2b2b2",
+      "expected": {
+        "pageBg": "rgb(125, 125, 125)",
+        "cardBg": "rgb(151, 151, 151)",
+        "infoBg": "rgb(198, 193, 178)"
+      }
+    },
+    {
+      "input": "#b3b3b3",
+      "expected": {
+        "pageBg": "rgb(125, 125, 125)",
+        "cardBg": "rgb(152, 152, 152)",
+        "infoBg": "rgb(199, 194, 179)"
+      }
+    },
+    {
+      "input": "#b4b4b4",
+      "expected": {
+        "pageBg": "rgb(126, 126, 126)",
+        "cardBg": "rgb(153, 153, 153)",
+        "infoBg": "rgb(200, 195, 180)"
+      }
+    },
+    {
+      "input": "#b5b5b5",
+      "expected": {
+        "pageBg": "rgb(127, 127, 127)",
+        "cardBg": "rgb(154, 154, 154)",
+        "infoBg": "rgb(201, 196, 181)"
+      }
+    },
+    {
+      "input": "#b6b6b6",
+      "expected": {
+        "pageBg": "rgb(127, 127, 127)",
+        "cardBg": "rgb(155, 155, 155)",
+        "infoBg": "rgb(202, 197, 182)"
+      }
+    },
+    {
+      "input": "#b7b7b7",
+      "expected": {
+        "pageBg": "rgb(128, 128, 128)",
+        "cardBg": "rgb(156, 156, 156)",
+        "infoBg": "rgb(203, 198, 183)"
+      }
+    },
+    {
+      "input": "#b8b8b8",
+      "expected": {
+        "pageBg": "rgb(129, 129, 129)",
+        "cardBg": "rgb(156, 156, 156)",
+        "infoBg": "rgb(204, 199, 184)"
+      }
+    },
+    {
+      "input": "#b9b9b9",
+      "expected": {
+        "pageBg": "rgb(130, 130, 130)",
+        "cardBg": "rgb(157, 157, 157)",
+        "infoBg": "rgb(205, 200, 185)"
+      }
+    },
+    {
+      "input": "#bababa",
+      "expected": {
+        "pageBg": "rgb(130, 130, 130)",
+        "cardBg": "rgb(158, 158, 158)",
+        "infoBg": "rgb(206, 201, 186)"
+      }
+    },
+    {
+      "input": "#bbbbbb",
+      "expected": {
+        "pageBg": "rgb(131, 131, 131)",
+        "cardBg": "rgb(159, 159, 159)",
+        "infoBg": "rgb(207, 202, 187)"
+      }
+    },
+    {
+      "input": "#bcbcbc",
+      "expected": {
+        "pageBg": "rgb(180, 180, 180)",
+        "cardBg": "#bcbcbc",
+        "infoBg": "rgb(198, 193, 168)"
+      }
+    },
+    {
+      "input": "#bdbdbd",
+      "expected": {
+        "pageBg": "rgb(181, 181, 181)",
+        "cardBg": "#bdbdbd",
+        "infoBg": "rgb(199, 194, 169)"
+      }
+    },
+    {
+      "input": "#bebebe",
+      "expected": {
+        "pageBg": "rgb(182, 182, 182)",
+        "cardBg": "#bebebe",
+        "infoBg": "rgb(200, 195, 170)"
+      }
+    },
+    {
+      "input": "#bfbfbf",
+      "expected": {
+        "pageBg": "rgb(183, 183, 183)",
+        "cardBg": "#bfbfbf",
+        "infoBg": "rgb(201, 196, 171)"
+      }
+    },
+    {
+      "input": "#c0c0c0",
+      "expected": {
+        "pageBg": "rgb(184, 184, 184)",
+        "cardBg": "#c0c0c0",
+        "infoBg": "rgb(202, 197, 172)"
+      }
+    },
+    {
+      "input": "#c1c1c1",
+      "expected": {
+        "pageBg": "rgb(185, 185, 185)",
+        "cardBg": "#c1c1c1",
+        "infoBg": "rgb(203, 198, 173)"
+      }
+    },
+    {
+      "input": "#c2c2c2",
+      "expected": {
+        "pageBg": "rgb(186, 186, 186)",
+        "cardBg": "#c2c2c2",
+        "infoBg": "rgb(204, 199, 174)"
+      }
+    },
+    {
+      "input": "#c3c3c3",
+      "expected": {
+        "pageBg": "rgb(187, 187, 187)",
+        "cardBg": "#c3c3c3",
+        "infoBg": "rgb(205, 200, 175)"
+      }
+    },
+    {
+      "input": "#c4c4c4",
+      "expected": {
+        "pageBg": "rgb(188, 188, 188)",
+        "cardBg": "#c4c4c4",
+        "infoBg": "rgb(206, 201, 176)"
+      }
+    },
+    {
+      "input": "#c5c5c5",
+      "expected": {
+        "pageBg": "rgb(189, 189, 189)",
+        "cardBg": "#c5c5c5",
+        "infoBg": "rgb(207, 202, 177)"
+      }
+    },
+    {
+      "input": "#c6c6c6",
+      "expected": {
+        "pageBg": "rgb(190, 190, 190)",
+        "cardBg": "#c6c6c6",
+        "infoBg": "rgb(208, 203, 178)"
+      }
+    },
+    {
+      "input": "#c7c7c7",
+      "expected": {
+        "pageBg": "rgb(191, 191, 191)",
+        "cardBg": "#c7c7c7",
+        "infoBg": "rgb(209, 204, 179)"
+      }
+    },
+    {
+      "input": "#c8c8c8",
+      "expected": {
+        "pageBg": "rgb(192, 192, 192)",
+        "cardBg": "#c8c8c8",
+        "infoBg": "rgb(210, 205, 180)"
+      }
+    },
+    {
+      "input": "#c9c9c9",
+      "expected": {
+        "pageBg": "rgb(193, 193, 193)",
+        "cardBg": "#c9c9c9",
+        "infoBg": "rgb(211, 206, 181)"
+      }
+    },
+    {
+      "input": "#cacaca",
+      "expected": {
+        "pageBg": "rgb(194, 194, 194)",
+        "cardBg": "#cacaca",
+        "infoBg": "rgb(212, 207, 182)"
+      }
+    },
+    {
+      "input": "#cbcbcb",
+      "expected": {
+        "pageBg": "rgb(195, 195, 195)",
+        "cardBg": "#cbcbcb",
+        "infoBg": "rgb(213, 208, 183)"
+      }
+    },
+    {
+      "input": "#cccccc",
+      "expected": {
+        "pageBg": "rgb(196, 196, 196)",
+        "cardBg": "#cccccc",
+        "infoBg": "rgb(214, 209, 184)"
+      }
+    },
+    {
+      "input": "#cdcdcd",
+      "expected": {
+        "pageBg": "rgb(197, 197, 197)",
+        "cardBg": "#cdcdcd",
+        "infoBg": "rgb(215, 210, 185)"
+      }
+    },
+    {
+      "input": "#cecece",
+      "expected": {
+        "pageBg": "rgb(198, 198, 198)",
+        "cardBg": "#cecece",
+        "infoBg": "rgb(216, 211, 186)"
+      }
+    },
+    {
+      "input": "#cfcfcf",
+      "expected": {
+        "pageBg": "rgb(199, 199, 199)",
+        "cardBg": "#cfcfcf",
+        "infoBg": "rgb(217, 212, 187)"
+      }
+    },
+    {
+      "input": "#d0d0d0",
+      "expected": {
+        "pageBg": "rgb(200, 200, 200)",
+        "cardBg": "#d0d0d0",
+        "infoBg": "rgb(218, 213, 188)"
+      }
+    },
+    {
+      "input": "#d1d1d1",
+      "expected": {
+        "pageBg": "rgb(201, 201, 201)",
+        "cardBg": "#d1d1d1",
+        "infoBg": "rgb(219, 214, 189)"
+      }
+    },
+    {
+      "input": "#d2d2d2",
+      "expected": {
+        "pageBg": "rgb(202, 202, 202)",
+        "cardBg": "#d2d2d2",
+        "infoBg": "rgb(220, 215, 190)"
+      }
+    },
+    {
+      "input": "#d3d3d3",
+      "expected": {
+        "pageBg": "rgb(203, 203, 203)",
+        "cardBg": "#d3d3d3",
+        "infoBg": "rgb(221, 216, 191)"
+      }
+    },
+    {
+      "input": "#d4d4d4",
+      "expected": {
+        "pageBg": "rgb(204, 204, 204)",
+        "cardBg": "#d4d4d4",
+        "infoBg": "rgb(222, 217, 192)"
+      }
+    },
+    {
+      "input": "#d5d5d5",
+      "expected": {
+        "pageBg": "rgb(204, 204, 204)",
+        "cardBg": "#d5d5d5",
+        "infoBg": "rgb(223, 218, 193)"
+      }
+    },
+    {
+      "input": "#d6d6d6",
+      "expected": {
+        "pageBg": "rgb(205, 205, 205)",
+        "cardBg": "#d6d6d6",
+        "infoBg": "rgb(224, 219, 194)"
+      }
+    },
+    {
+      "input": "#d7d7d7",
+      "expected": {
+        "pageBg": "rgb(206, 206, 206)",
+        "cardBg": "#d7d7d7",
+        "infoBg": "rgb(225, 220, 195)"
+      }
+    },
+    {
+      "input": "#d8d8d8",
+      "expected": {
+        "pageBg": "rgb(207, 207, 207)",
+        "cardBg": "#d8d8d8",
+        "infoBg": "rgb(226, 221, 196)"
+      }
+    },
+    {
+      "input": "#d9d9d9",
+      "expected": {
+        "pageBg": "rgb(208, 208, 208)",
+        "cardBg": "#d9d9d9",
+        "infoBg": "rgb(227, 222, 197)"
+      }
+    },
+    {
+      "input": "#dadada",
+      "expected": {
+        "pageBg": "rgb(209, 209, 209)",
+        "cardBg": "#dadada",
+        "infoBg": "rgb(228, 223, 198)"
+      }
+    },
+    {
+      "input": "#dbdbdb",
+      "expected": {
+        "pageBg": "rgb(210, 210, 210)",
+        "cardBg": "#dbdbdb",
+        "infoBg": "rgb(229, 224, 199)"
+      }
+    },
+    {
+      "input": "#dcdcdc",
+      "expected": {
+        "pageBg": "rgb(211, 211, 211)",
+        "cardBg": "#dcdcdc",
+        "infoBg": "rgb(230, 225, 200)"
+      }
+    },
+    {
+      "input": "#dddddd",
+      "expected": {
+        "pageBg": "rgb(212, 212, 212)",
+        "cardBg": "#dddddd",
+        "infoBg": "rgb(231, 226, 201)"
+      }
+    },
+    {
+      "input": "#dedede",
+      "expected": {
+        "pageBg": "rgb(213, 213, 213)",
+        "cardBg": "#dedede",
+        "infoBg": "rgb(232, 227, 202)"
+      }
+    },
+    {
+      "input": "#dfdfdf",
+      "expected": {
+        "pageBg": "rgb(214, 214, 214)",
+        "cardBg": "#dfdfdf",
+        "infoBg": "rgb(233, 228, 203)"
+      }
+    },
+    {
+      "input": "#e0e0e0",
+      "expected": {
+        "pageBg": "rgb(215, 215, 215)",
+        "cardBg": "#e0e0e0",
+        "infoBg": "rgb(234, 229, 204)"
+      }
+    },
+    {
+      "input": "#e1e1e1",
+      "expected": {
+        "pageBg": "rgb(216, 216, 216)",
+        "cardBg": "#e1e1e1",
+        "infoBg": "rgb(235, 230, 205)"
+      }
+    },
+    {
+      "input": "#e2e2e2",
+      "expected": {
+        "pageBg": "rgb(217, 217, 217)",
+        "cardBg": "#e2e2e2",
+        "infoBg": "rgb(236, 231, 206)"
+      }
+    },
+    {
+      "input": "#e3e3e3",
+      "expected": {
+        "pageBg": "rgb(218, 218, 218)",
+        "cardBg": "#e3e3e3",
+        "infoBg": "rgb(237, 232, 207)"
+      }
+    },
+    {
+      "input": "#e4e4e4",
+      "expected": {
+        "pageBg": "rgb(219, 219, 219)",
+        "cardBg": "#e4e4e4",
+        "infoBg": "rgb(238, 233, 208)"
+      }
+    },
+    {
+      "input": "#e5e5e5",
+      "expected": {
+        "pageBg": "rgb(220, 220, 220)",
+        "cardBg": "#e5e5e5",
+        "infoBg": "rgb(239, 234, 209)"
+      }
+    },
+    {
+      "input": "#e6e6e6",
+      "expected": {
+        "pageBg": "rgb(221, 221, 221)",
+        "cardBg": "#e6e6e6",
+        "infoBg": "rgb(240, 235, 210)"
+      }
+    },
+    {
+      "input": "#e7e7e7",
+      "expected": {
+        "pageBg": "rgb(222, 222, 222)",
+        "cardBg": "#e7e7e7",
+        "infoBg": "rgb(241, 236, 211)"
+      }
+    },
+    {
+      "input": "#e8e8e8",
+      "expected": {
+        "pageBg": "rgb(223, 223, 223)",
+        "cardBg": "#e8e8e8",
+        "infoBg": "rgb(242, 237, 212)"
+      }
+    },
+    {
+      "input": "#e9e9e9",
+      "expected": {
+        "pageBg": "rgb(224, 224, 224)",
+        "cardBg": "#e9e9e9",
+        "infoBg": "rgb(243, 238, 213)"
+      }
+    },
+    {
+      "input": "#eaeaea",
+      "expected": {
+        "pageBg": "rgb(225, 225, 225)",
+        "cardBg": "#eaeaea",
+        "infoBg": "rgb(244, 239, 214)"
+      }
+    },
+    {
+      "input": "#ebebeb",
+      "expected": {
+        "pageBg": "rgb(226, 226, 226)",
+        "cardBg": "#ebebeb",
+        "infoBg": "rgb(245, 240, 215)"
+      }
+    },
+    {
+      "input": "#ececec",
+      "expected": {
+        "pageBg": "rgb(227, 227, 227)",
+        "cardBg": "#ececec",
+        "infoBg": "rgb(246, 241, 216)"
+      }
+    },
+    {
+      "input": "#ededed",
+      "expected": {
+        "pageBg": "rgb(228, 228, 228)",
+        "cardBg": "#ededed",
+        "infoBg": "rgb(247, 242, 217)"
+      }
+    },
+    {
+      "input": "#eeeeee",
+      "expected": {
+        "pageBg": "rgb(228, 228, 228)",
+        "cardBg": "#eeeeee",
+        "infoBg": "rgb(248, 243, 218)"
+      }
+    },
+    {
+      "input": "#efefef",
+      "expected": {
+        "pageBg": "rgb(229, 229, 229)",
+        "cardBg": "#efefef",
+        "infoBg": "rgb(249, 244, 219)"
+      }
+    },
+    {
+      "input": "#f1f1f1",
+      "expected": {
+        "pageBg": "rgb(231, 231, 231)",
+        "cardBg": "#f1f1f1",
+        "infoBg": "rgb(251, 246, 221)"
+      }
+    },
+    {
+      "input": "#f2f2f2",
+      "expected": {
+        "pageBg": "rgb(232, 232, 232)",
+        "cardBg": "#f2f2f2",
+        "infoBg": "rgb(252, 247, 222)"
+      }
+    },
+    {
+      "input": "#f3f3f3",
+      "expected": {
+        "pageBg": "rgb(233, 233, 233)",
+        "cardBg": "#f3f3f3",
+        "infoBg": "rgb(253, 248, 223)"
+      }
+    },
+    {
+      "input": "#f4f4f4",
+      "expected": {
+        "pageBg": "rgb(234, 234, 234)",
+        "cardBg": "#f4f4f4",
+        "infoBg": "rgb(254, 249, 224)"
+      }
+    },
+    {
+      "input": "#f5f5f5",
+      "expected": {
+        "pageBg": "rgb(235, 235, 235)",
+        "cardBg": "#f5f5f5",
+        "infoBg": "rgb(255, 250, 225)"
+      }
+    },
+    {
+      "input": "#f6f6f6",
+      "expected": {
+        "pageBg": "rgb(236, 236, 236)",
+        "cardBg": "#f6f6f6",
+        "infoBg": "rgb(255, 251, 226)"
+      }
+    },
+    {
+      "input": "#f7f7f7",
+      "expected": {
+        "pageBg": "rgb(237, 237, 237)",
+        "cardBg": "#f7f7f7",
+        "infoBg": "rgb(255, 252, 227)"
+      }
+    },
+    {
+      "input": "#f8f8f8",
+      "expected": {
+        "pageBg": "rgb(238, 238, 238)",
+        "cardBg": "#f8f8f8",
+        "infoBg": "rgb(255, 253, 228)"
+      }
+    },
+    {
+      "input": "#f9f9f9",
+      "expected": {
+        "pageBg": "rgb(239, 239, 239)",
+        "cardBg": "#f9f9f9",
+        "infoBg": "rgb(255, 254, 229)"
+      }
+    },
+    {
+      "input": "#fafafa",
+      "expected": {
+        "pageBg": "rgb(240, 240, 240)",
+        "cardBg": "#fafafa",
+        "infoBg": "rgb(255, 255, 230)"
+      }
+    },
+    {
+      "input": "#fbfbfb",
+      "expected": {
+        "pageBg": "rgb(241, 241, 241)",
+        "cardBg": "#fbfbfb",
+        "infoBg": "rgb(255, 255, 231)"
+      }
+    },
+    {
+      "input": "#fcfcfc",
+      "expected": {
+        "pageBg": "rgb(242, 242, 242)",
+        "cardBg": "#fcfcfc",
+        "infoBg": "rgb(255, 255, 232)"
+      }
+    },
+    {
+      "input": "#fdfdfd",
+      "expected": {
+        "pageBg": "rgb(243, 243, 243)",
+        "cardBg": "#fdfdfd",
+        "infoBg": "rgb(255, 255, 233)"
+      }
+    },
+    {
+      "input": "#fefefe",
+      "expected": {
+        "pageBg": "rgb(244, 244, 244)",
+        "cardBg": "#fefefe",
+        "infoBg": "rgb(255, 255, 234)"
+      }
+    }
+  ],
+  "records": [
+    {
+      "name": "selection",
+      "entries": [
+        {
+          "type": "custom",
+          "data": "untouched"
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "ignored",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": "plain"
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "not a call"
+              },
+              {
+                "type": "toolCall",
+                "id": "bash",
+                "name": "bash",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "read",
+                "name": "read",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "write",
+                "name": "write",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "edit",
+                "name": "edit",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "ls",
+                "name": "ls",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "grep",
+                "name": "grep",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "find",
+                "name": "find",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "custom",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "G",
+          "F",
+          "C"
+        ]
+      },
+      "expected": {
+        "json": "{\"grep\":{\"callHtml\":\"G\"},\"find\":{\"callHtml\":\"F\"},\"custom\":{\"callHtml\":\"C\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "grep",
+            "name": "grep",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "find",
+            "name": "find",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "custom",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "call_truth",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "none",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "empty",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "space",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "full",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          {
+            "absent": true
+          },
+          "",
+          " ",
+          "<b>C</b>"
+        ]
+      },
+      "expected": {
+        "json": "{\"space\":{\"callHtml\":\" \"},\"full\":{\"callHtml\":\"<b>C</b>\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "none",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "empty",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "space",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "full",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "existing_record_overrides_template",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "same",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "unrecorded",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "C"
+        ],
+        "result": [
+          {
+            "expanded": "E"
+          }
+        ]
+      },
+      "expected": {
+        "json": "{\"same\":{\"callHtml\":\"C\",\"resultHtmlExpanded\":\"E\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "same",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "results",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "none",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "orphan",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "image",
+                "data": "aW1hZ2U=",
+                "mimeType": "image/png"
+              }
+            ],
+            "details": {
+              "nested": {
+                "count": 2
+              },
+              "labels": [
+                "first",
+                "second"
+              ]
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "unnamed",
+            "content": []
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "err",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": null,
+            "isError": true
+          }
+        }
+      ],
+      "returns": {
+        "result": [
+          {
+            "expanded": "orphan"
+          },
+          {},
+          {
+            "collapsed": "",
+            "expanded": ""
+          }
+        ]
+      },
+      "expected": {
+        "json": "{\"orphan\":{\"resultHtmlExpanded\":\"orphan\"},\"unnamed\":{},\"err\":{\"resultHtmlCollapsed\":\"\",\"resultHtmlExpanded\":\"\"}}",
+        "calls": [
+          {
+            "kind": "result",
+            "id": "orphan",
+            "name": "custom",
+            "content": [
+              {
+                "type": "image",
+                "data": "aW1hZ2U=",
+                "mimeType": "image/png"
+              }
+            ],
+            "details": {
+              "nested": {
+                "count": 2
+              },
+              "labels": [
+                "first",
+                "second"
+              ]
+            },
+            "isError": false
+          },
+          {
+            "kind": "result",
+            "id": "unnamed",
+            "name": "",
+            "content": [],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          },
+          {
+            "kind": "result",
+            "id": "err",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": null,
+            "isError": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "call_replaces_result",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "same",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "same",
+                "name": "custom",
+                "arguments": {
+                  "n": 2
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "C1",
+          "C2"
+        ],
+        "result": [
+          {
+            "collapsed": "K",
+            "expanded": "E"
+          },
+          {
+            "expanded": "E2"
+          }
+        ]
+      },
+      "expected": {
+        "json": "{\"same\":{\"callHtml\":\"C2\"}}",
+        "calls": [
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          },
+          {
+            "kind": "call",
+            "id": "same",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          },
+          {
+            "kind": "call",
+            "id": "same",
+            "name": "custom",
+            "args": {
+              "n": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "result_clears_absent_fields",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "same",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "C"
+        ],
+        "result": [
+          {
+            "collapsed": "K",
+            "expanded": "E"
+          },
+          {}
+        ]
+      },
+      "expected": {
+        "json": "{\"same\":{\"callHtml\":\"C\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "same",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          },
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "absent_result_keeps_call",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "same",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "same",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "C"
+        ],
+        "result": [
+          {
+            "absent": true
+          }
+        ]
+      },
+      "expected": {
+        "json": "{\"same\":{\"callHtml\":\"C\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "same",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "result",
+            "id": "same",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "absence_and_null",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "a",
+                "name": "custom"
+              },
+              {
+                "type": "toolCall",
+                "id": "b",
+                "name": "custom",
+                "arguments": null
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "a",
+            "toolName": "custom",
+            "details": null,
+            "isError": null
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "b",
+            "toolName": "custom",
+            "content": null,
+            "isError": false
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "A",
+          "B"
+        ],
+        "result": [
+          {
+            "expanded": ""
+          },
+          {
+            "collapsed": ""
+          }
+        ]
+      },
+      "expected": {
+        "json": "{\"a\":{\"callHtml\":\"A\",\"resultHtmlExpanded\":\"\"},\"b\":{\"callHtml\":\"B\",\"resultHtmlCollapsed\":\"\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "a",
+            "name": "custom",
+            "args": {
+              "absent": true
+            }
+          },
+          {
+            "kind": "call",
+            "id": "b",
+            "name": "custom",
+            "args": null
+          },
+          {
+            "kind": "result",
+            "id": "a",
+            "name": "custom",
+            "content": {
+              "absent": true
+            },
+            "details": null,
+            "isError": false
+          },
+          {
+            "kind": "result",
+            "id": "b",
+            "name": "custom",
+            "content": null,
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "ordered_keys",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "b",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "10",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "2",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "a",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "01",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "4294967294",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "4294967295",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "b",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "B",
+          "TEN",
+          "TWO",
+          "A",
+          "ZEROONE",
+          "MAX",
+          "NOTINDEX",
+          "B2"
+        ]
+      },
+      "expected": {
+        "json": "{\"2\":{\"callHtml\":\"TWO\"},\"10\":{\"callHtml\":\"TEN\"},\"4294967294\":{\"callHtml\":\"MAX\"},\"b\":{\"callHtml\":\"B2\"},\"a\":{\"callHtml\":\"A\"},\"01\":{\"callHtml\":\"ZEROONE\"},\"4294967295\":{\"callHtml\":\"NOTINDEX\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "b",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "10",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "2",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "a",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "01",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "4294967294",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "4294967295",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "b",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "call_failure",
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "a",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "b",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          {
+            "throw": "call failed"
+          }
+        ]
+      },
+      "expected": {
+        "error": "call failed",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "a",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "result_failure",
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "a",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "b",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "result": [
+          {
+            "throw": "result failed"
+          }
+        ]
+      },
+      "expected": {
+        "error": "result failed",
+        "calls": [
+          {
+            "kind": "result",
+            "id": "a",
+            "name": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ],
+            "details": {
+              "absent": true
+            },
+            "isError": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "malformed_later_record",
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "a",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "message": null
+        }
+      ],
+      "returns": {
+        "call": [
+          "C"
+        ]
+      },
+      "expected": {
+        "error": "invalid-record",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "a",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "malformed_later_block",
+      "entries": [
+        {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "a",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              null
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "C"
+        ]
+      },
+      "expected": {
+        "error": "invalid-record",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "a",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "prototype_id_call",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "__proto__",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "constructor",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "toString",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "P",
+          "C",
+          "T"
+        ]
+      },
+      "expected": {
+        "json": "{\"__proto__\":{\"callHtml\":\"P\"},\"constructor\":{\"callHtml\":\"C\"},\"toString\":{\"callHtml\":\"T\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "__proto__",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "constructor",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          },
+          {
+            "kind": "call",
+            "id": "toString",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "prototype_id_result",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "__proto__",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "constructor",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "toString",
+            "toolName": "bash",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "result": []
+      },
+      "expected": {
+        "json": "{}",
+        "calls": []
+      }
+    },
+    {
+      "name": "empty_call_id_kept",
+      "entries": [
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "",
+                "name": "custom",
+                "arguments": {
+                  "n": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "message",
+          "id": "entry",
+          "parentId": null,
+          "timestamp": "2026-01-01T00:00:00Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "",
+            "toolName": "custom",
+            "content": [
+              {
+                "type": "text",
+                "text": "result"
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "call": [
+          "EMPTY"
+        ]
+      },
+      "expected": {
+        "json": "{\"\":{\"callHtml\":\"EMPTY\"}}",
+        "calls": [
+          {
+            "kind": "call",
+            "id": "",
+            "name": "custom",
+            "args": {
+              "n": 1
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "documents": [
+    {
+      "name": "empty",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "accent": "#010203",
+        "userMessageBg": "#343541"
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --accent: #010203;\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "unicode",
+      "data": {
+        "header": {
+          "id": "h",
+          "extra": null
+        },
+        "entries": [
+          {
+            "type": "custom",
+            "data": "</script> <b> $& $$ {{JS}} é😀\u0000  "
+          },
+          {
+            "type": "custom",
+            "data": {
+              "2": 3,
+              "10": 2,
+              "b": 1,
+              "01": 4
+            },
+            "numbers": [
+              1,
+              0,
+              1e+21,
+              1e-07,
+              5e-324
+            ]
+          }
+        ],
+        "leafId": null,
+        "systemPrompt": "",
+        "tools": []
+      },
+      "colors": {
+        "userMessageBg": "#f0f0f0"
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #f0f0f0;\n      --exportPageBg: rgb(230, 230, 230);\n      --exportCardBg: #f0f0f0;\n      --exportInfoBg: rgb(250, 245, 220);\n      --body-bg: rgb(230, 230, 230);\n      --container-bg: #f0f0f0;\n      --info-bg: rgb(250, 245, 220);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOnsiaWQiOiJoIiwiZXh0cmEiOm51bGx9LCJlbnRyaWVzIjpbeyJ0eXBlIjoiY3VzdG9tIiwiZGF0YSI6Ijwvc2NyaXB0PiA8Yj4gJCYgJCQge3tKU319IMOp8J+YgFx1MDAwMOKAqOKAqSJ9LHsidHlwZSI6ImN1c3RvbSIsImRhdGEiOnsiMiI6MywiMTAiOjIsImIiOjEsIjAxIjo0fSwibnVtYmVycyI6WzEsMCwxZSsyMSwxZS03LDVlLTMyNF19XSwibGVhZklkIjpudWxsLCJzeXN0ZW1Qcm9tcHQiOiIiLCJ0b29scyI6W119</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":{\"id\":\"h\",\"extra\":null},\"entries\":[{\"type\":\"custom\",\"data\":\"</script> <b> $& $$ {{JS}} é😀\\u0000  \"},{\"type\":\"custom\",\"data\":{\"2\":3,\"10\":2,\"b\":1,\"01\":4},\"numbers\":[1,0,1e+21,1e-7,5e-324]}],\"leafId\":null,\"systemPrompt\":\"\",\"tools\":[]}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "malformed",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#abc"
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #abc;\n      --exportPageBg: rgb(24, 24, 30);\n      --exportCardBg: rgb(30, 30, 36);\n      --exportInfoBg: rgb(60, 55, 40);\n      --body-bg: rgb(24, 24, 30);\n      --container-bg: rgb(30, 30, 36);\n      --info-bg: rgb(60, 55, 40);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "missing",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "accent": "#000001"
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --accent: #000001;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "empty_base",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": ""
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: ;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "page_only",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#343541"
+      },
+      "explicit": {
+        "pageBg": "#010101"
+      },
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: #010101;\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: #010101;\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "card_only",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#343541"
+      },
+      "explicit": {
+        "cardBg": "#020202"
+      },
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: #020202;\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: #020202;\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "info_only",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#343541"
+      },
+      "explicit": {
+        "infoBg": "#030303"
+      },
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: #030303;\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: #030303;\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "all",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#343541"
+      },
+      "explicit": {
+        "pageBg": "#010101",
+        "cardBg": "#020202",
+        "infoBg": "#030303"
+      },
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: #010101;\n      --exportCardBg: #020202;\n      --exportInfoBg: #030303;\n      --body-bg: #010101;\n      --container-bg: #020202;\n      --info-bg: #030303;\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "empty_explicit",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "userMessageBg": "#343541"
+      },
+      "explicit": {
+        "pageBg": "",
+        "cardBg": "",
+        "infoBg": ""
+      },
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: ;\n      --exportCardBg: ;\n      --exportInfoBg: ;\n      --body-bg: ;\n      --container-bg: ;\n      --info-bg: ;\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "name": "ordered",
+      "data": {
+        "header": null,
+        "entries": [],
+        "leafId": null
+      },
+      "colors": {
+        "2": "#333333",
+        "10": "#222222",
+        "b": "#111111",
+        "a": "#444444"
+      },
+      "explicit": {},
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --2: #333333;\n      --10: #222222;\n      --b: #111111;\n      --a: #444444;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "payload": "{\"header\":null,\"entries\":[],\"leafId\":null}",
+        "observations": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    }
+  ],
+  "names": [
+    {
+      "input": "plain",
+      "expected": "maestro-session-plain.html"
+    },
+    {
+      "input": "a.jsonl",
+      "expected": "maestro-session-a.html"
+    },
+    {
+      "input": "a.JSONL",
+      "expected": "maestro-session-a.JSONL.html"
+    },
+    {
+      "input": "a.jsonl.jsonl",
+      "expected": "maestro-session-a.jsonl.html"
+    },
+    {
+      "input": ".jsonl",
+      "expected": "maestro-session-.jsonl.html"
+    },
+    {
+      "input": "é 😀.jsonl",
+      "expected": "maestro-session-é 😀.html"
+    },
+    {
+      "input": "tree.jsonl",
+      "app_name": "Alternate",
+      "expected": "Alternate-session-tree.html"
+    }
+  ],
+  "states": [
+    {
+      "input": {
+        "absent": true
+      },
+      "expected": {}
+    },
+    {
+      "input": {},
+      "expected": {}
+    },
+    {
+      "input": {
+        "systemPrompt": ""
+      },
+      "expected": {
+        "systemPrompt": ""
+      }
+    },
+    {
+      "input": {
+        "tools": []
+      },
+      "expected": {
+        "tools": []
+      }
+    },
+    {
+      "input": {
+        "systemPrompt": "é😀",
+        "tools": [
+          {
+            "name": "b",
+            "description": "B",
+            "parameters": {
+              "type": "object",
+              "extra": null
+            }
+          },
+          {
+            "name": "a",
+            "description": "A",
+            "parameters": {
+              "2": 2,
+              "10": 1
+            }
+          },
+          {
+            "name": "b",
+            "description": "Again",
+            "parameters": null
+          }
+        ]
+      },
+      "expected": {
+        "systemPrompt": "é😀",
+        "tools": [
+          {
+            "name": "b",
+            "description": "B",
+            "parameters": {
+              "type": "object",
+              "extra": null
+            }
+          },
+          {
+            "name": "a",
+            "description": "A",
+            "parameters": {
+              "2": 2,
+              "10": 1
+            }
+          },
+          {
+            "name": "b",
+            "description": "Again",
+            "parameters": null
+          }
+        ]
+      }
+    }
+  ],
+  "options": [
+    {
+      "operation": "session",
+      "input": {
+        "absent": true
+      },
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "file",
+      "input": {
+        "absent": true
+      },
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "session",
+      "input": "",
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "file",
+      "input": "",
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "session",
+      "input": {},
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "file",
+      "input": {},
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "session",
+      "input": {
+        "outputPath": ""
+      },
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "file",
+      "input": {
+        "outputPath": ""
+      },
+      "expected": "maestro-session-tree.html"
+    },
+    {
+      "operation": "session",
+      "input": "named.html",
+      "expected": "named.html"
+    },
+    {
+      "operation": "file",
+      "input": "named.html",
+      "expected": "named.html"
+    },
+    {
+      "operation": "session",
+      "input": {
+        "outputPath": "./sub/../object.html"
+      },
+      "expected": "./sub/../object.html"
+    },
+    {
+      "operation": "file",
+      "input": {
+        "outputPath": "./sub/../object.html"
+      },
+      "expected": "./sub/../object.html"
+    }
+  ],
+  "observations": [
+    {
+      "resolved": [
+        {
+          "userMessageBg": "#000000"
+        },
+        {
+          "userMessageBg": "#ffffff"
+        }
+      ],
+      "explicit": [
+        {
+          "pageBg": "#111111"
+        },
+        {
+          "cardBg": "#222222"
+        }
+      ],
+      "expected": {
+        "html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #000000;\n      --exportPageBg: #111111;\n      --exportCardBg: rgb(0, 0, 0);\n      --exportInfoBg: rgb(20, 15, 0);\n      --body-bg: rgb(245, 245, 245);\n      --container-bg: #222222;\n      --info-bg: rgb(255, 255, 235);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\n/* application */\n  </script>\n</body>\n</html>\n",
+        "calls": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "resolved": [
+        {
+          "error": "first resolution failed"
+        }
+      ],
+      "explicit": [],
+      "expected": {
+        "error": "first resolution failed",
+        "calls": [
+          [
+            "resolved",
+            null
+          ]
+        ]
+      }
+    },
+    {
+      "resolved": [
+        {
+          "userMessageBg": "#000000"
+        },
+        {
+          "error": "second resolution failed"
+        }
+      ],
+      "explicit": [
+        {
+          "pageBg": "#111111"
+        }
+      ],
+      "expected": {
+        "error": "second resolution failed",
+        "calls": [
+          [
+            "resolved",
+            null
+          ],
+          [
+            "export",
+            null
+          ],
+          [
+            "resolved",
+            null
+          ]
+        ]
+      }
+    }
+  ],
+  "asset_failures": [
+    {
+      "asset": "template.html",
+      "expected": {
+        "kind": "ENOENT",
+        "themeCalls": []
+      }
+    },
+    {
+      "asset": "template.css",
+      "expected": {
+        "kind": "ENOENT",
+        "themeCalls": []
+      }
+    },
+    {
+      "asset": "template.js",
+      "expected": {
+        "kind": "ENOENT",
+        "themeCalls": []
+      }
+    },
+    {
+      "asset": "vendor/marked.min.js",
+      "expected": {
+        "kind": "ENOENT",
+        "themeCalls": []
+      }
+    },
+    {
+      "asset": "vendor/highlight.min.js",
+      "expected": {
+        "kind": "ENOENT",
+        "themeCalls": []
+      }
+    }
+  ],
+  "slot_shapes": [
+    {
+      "template": "prefix {{CSS}} middle {{CSS}} {{JS}} {{JS}} suffix",
+      "expected": "prefix :root {\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    } middle {{CSS}} /* application */ {{JS}} suffix"
+    },
+    {
+      "template": "no slots",
+      "expected": "no slots"
+    }
+  ],
+  "asset_utf8": {
+    "bytes": [
+      65,
+      255,
+      66,
+      192,
+      175,
+      67
+    ],
+    "expected": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOm51bGwsImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* markdown */</script>\n\n  <!-- highlight.js -->\n  <script>/* highlighting */</script>\n\n  <!-- Main application code -->\n  <script>\nA�B��C\n  </script>\n</body>\n</html>\n"
+  },
+  "literal_insertion": {
+    "assets": {
+      "template.html": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n{{CSS}}\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">{{SESSION_DATA}}</script>\n\n  <!-- Vendored libraries -->\n  <script>{{MARKED_JS}}</script>\n\n  <!-- highlight.js -->\n  <script>{{HIGHLIGHT_JS}}</script>\n\n  <!-- Main application code -->\n  <script>\n{{JS}}\n  </script>\n</body>\n</html>\n",
+      "template.css": ":root {\n      {{THEME_VARS}}\n      --body-bg: {{BODY_BG}};\n      --container-bg: {{CONTAINER_BG}};\n      --info-bg: {{INFO_BG}};\n    }\n/* {{JS}} $$ $& */",
+      "template.js": "/* $$ $& $` $' {{SESSION_DATA}} */",
+      "vendor/marked.min.js": "/* {{HIGHLIGHT_JS}} */",
+      "vendor/highlight.min.js": "/* {{CSS}} */"
+    },
+    "data": {
+      "header": {
+        "note": "</script> é😀 {{JS}} $&"
+      },
+      "entries": [],
+      "leafId": null
+    },
+    "colors": {
+      "accent": "#$&$$",
+      "userMessageBg": "#343541"
+    },
+    "expected": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Session Export</title>\n  <style>\n:root {\n      --accent: #$&$$;\n      --userMessageBg: #343541;\n      --exportPageBg: rgb(36, 37, 46);\n      --exportCardBg: rgb(44, 45, 55);\n      --exportInfoBg: rgb(72, 68, 65);\n      --body-bg: rgb(36, 37, 46);\n      --container-bg: rgb(44, 45, 55);\n      --info-bg: rgb(72, 68, 65);\n    }\n/* {{JS}} $$ $& */\n  </style>\n</head>\n<body>\n  <button id=\"hamburger\" title=\"Open sidebar\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"none\"><circle cx=\"6\" cy=\"6\" r=\"2.5\"/><circle cx=\"6\" cy=\"18\" r=\"2.5\"/><circle cx=\"18\" cy=\"12\" r=\"2.5\"/><rect x=\"5\" y=\"6\" width=\"2\" height=\"12\"/><path d=\"M6 12h10c1 0 2 0 2-2V8\"/></svg></button>\n  <div id=\"sidebar-overlay\"></div>\n  <div id=\"app\">\n    <aside id=\"sidebar\">\n      <div class=\"sidebar-header\">\n        <div class=\"sidebar-controls\">\n          <input type=\"text\" class=\"sidebar-search\" id=\"tree-search\" placeholder=\"Search...\">\n        </div>\n        <div class=\"sidebar-filters\">\n          <button class=\"filter-btn active\" data-filter=\"default\" title=\"Hide settings entries\">Default</button>\n          <button class=\"filter-btn\" data-filter=\"no-tools\" title=\"Default minus tool results\">No-tools</button>\n          <button class=\"filter-btn\" data-filter=\"user-only\" title=\"Only user messages\">User</button>\n          <button class=\"filter-btn\" data-filter=\"labeled-only\" title=\"Only labeled entries\">Labeled</button>\n          <button class=\"filter-btn\" data-filter=\"all\" title=\"Show everything\">All</button>\n          <button class=\"sidebar-close\" id=\"sidebar-close\" title=\"Close\">✕</button>\n        </div>\n      </div>\n      <div class=\"tree-container\" id=\"tree-container\"></div>\n      <div class=\"tree-status\" id=\"tree-status\"></div>\n    </aside>\n    <div id=\"sidebar-resizer\" role=\"separator\" aria-orientation=\"vertical\" aria-label=\"Resize session tree sidebar\"></div>\n    <main id=\"content\">\n      <div id=\"header-container\"></div>\n      <div id=\"messages\"></div>\n    </main>\n    <div id=\"image-modal\" class=\"image-modal\">\n      <img id=\"modal-image\" src=\"\" alt=\"\">\n    </div>\n  </div>\n\n  <script id=\"session-data\" type=\"application/json\">eyJoZWFkZXIiOnsibm90ZSI6Ijwvc2NyaXB0PiDDqfCfmIAge3tKU319ICQmIn0sImVudHJpZXMiOltdLCJsZWFmSWQiOm51bGx9</script>\n\n  <!-- Vendored libraries -->\n  <script>/* {{HIGHLIGHT_JS}} */</script>\n\n  <!-- highlight.js -->\n  <script>/* {{CSS}} */</script>\n\n  <!-- Main application code -->\n  <script>\n/* $$ $& $` $' {{SESSION_DATA}} */\n  </script>\n</body>\n</html>\n"
+  }
+}

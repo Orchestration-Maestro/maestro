@@ -115,8 +115,8 @@ These commands do not generate a viewer or regenerate assets. Missing inputs fai
 already copied groups and unrelated destination files remain. `app-build` compiles
 before library copying. `build-binary` compiles toolkit, models, agent, application
 and executable in that order before standalone copying. The browser's bundle
-build is owned by #113; the export consumer is owned by
-[#192](https://github.com/Orchestration-Maestro/maestro/issues/192).
+build is owned by #113; [session serialization](export.md) accepts a supplied
+viewer bundle rather than building it.
 
 ## Debugging
 
