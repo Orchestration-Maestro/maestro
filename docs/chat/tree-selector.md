@@ -60,7 +60,9 @@ malformed text or a missing matched tool-argument receiver returns `InvalidData`
 theme failures are propagated. Tool results resolve the last matching call from
 all ordered assistant rows, including hidden rows. Path summaries read the supplied
 runtime's nonempty HOME, then USERPROFILE, at each render and shorten a raw prefix.
-Rendering performs no filesystem or scheduling operations.
+Tool argument fields use their tool defaults for falsy values. Truthy strings
+render unchanged; other truthy values render as compact JSON. Entry text remains
+strictly string-valued. Rendering performs no filesystem or scheduling operations.
 
 The supplied live theme is read on every render. `styles_enabled` controls bold
 selection and italic empty titles; colors remain theme-owned. `invalidate()` is a

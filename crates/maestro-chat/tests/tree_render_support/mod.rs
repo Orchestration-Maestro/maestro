@@ -216,6 +216,26 @@ fn replay(case: &Case) {
         input.ops.len() + 1
     );
 }
+/// Decode corpus cases after checking their input ownership.
+fn cases(raw: serde_json::Value) -> Vec<Case> {
+    let mut inputs = HashSet::new();
+    for case in raw.as_array().unwrap() {
+        assert!(
+            inputs.insert(compact_json(&case["input"]).unwrap()),
+            "duplicate complete input"
+        );
+    }
+    serde_json::from_value(raw).unwrap()
+}
+/// Exercise the same corpus boundary with a renamed duplicate.
+pub fn reject_renamed_duplicate() {
+    let mut raw: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("../fixtures/tree-rendering.json")).unwrap();
+    let mut duplicate = raw[0].clone();
+    duplicate["case"] = serde_json::json!("renamed-duplicate");
+    raw.push(duplicate);
+    cases(serde_json::Value::Array(raw));
+}
 /// Replay exactly one group; reject duplicate and unowned cases.
 pub fn group(name: &str) {
     let _guard = registry::REGISTRY
@@ -223,13 +243,13 @@ pub fn group(name: &str) {
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let _restore = registry::Restore(get_keybindings());
     set_keybindings(KeybindingsManager::new(KEYBINDINGS.clone(), vec![]));
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/tree-rendering.json")).unwrap();
+    let cases =
+        cases(serde_json::from_str(include_str!("../fixtures/tree-rendering.json")).unwrap());
     let keys: HashSet<_> = cases.iter().map(|c| (&c.test, &c.name)).collect();
     assert_eq!(keys.len(), cases.len());
     let tests = include_str!("../tree_rendering.rs");
     let groups: HashSet<_> = cases.iter().map(|case| &case.test).collect();
-    assert_eq!(groups.len(), 29);
+    assert_eq!(groups.len(), 30);
     for group in groups {
         assert!(tests.contains(&format!("fn {group}()")));
     }

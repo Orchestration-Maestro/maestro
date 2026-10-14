@@ -331,7 +331,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -392,7 +391,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -407,7 +405,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -422,7 +419,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -487,7 +483,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -503,7 +498,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -519,7 +513,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -534,7 +527,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -547,7 +539,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -560,7 +551,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -575,7 +565,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -709,7 +698,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -725,7 +713,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -741,7 +728,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -756,7 +742,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -769,7 +754,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -782,7 +766,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -797,7 +780,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -810,7 +792,6 @@
             "type": "message",
             "id": "h",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -825,7 +806,6 @@
             "type": "message",
             "id": "i",
             "parentId": "h",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -903,7 +883,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -919,7 +898,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -935,7 +913,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -950,7 +927,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -963,7 +939,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -976,7 +951,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -991,7 +965,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1064,7 +1037,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1080,7 +1052,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1096,7 +1067,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1111,7 +1081,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1124,7 +1093,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1137,7 +1105,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1152,7 +1119,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1225,7 +1191,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1241,7 +1206,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1257,7 +1221,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1272,7 +1235,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1285,7 +1247,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1298,7 +1259,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1313,7 +1273,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1386,7 +1345,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1402,7 +1360,6 @@
             "type": "model_change",
             "id": "m",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "modelId": "model"
           },
           "children": [
@@ -1414,7 +1371,6 @@
             "type": "message",
             "id": "b",
             "parentId": "m",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1427,7 +1383,6 @@
             "type": "message",
             "id": "c",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1601,7 +1556,6 @@
             "type": "model_change",
             "id": "m",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "modelId": "model"
           },
           "children": [
@@ -1614,7 +1568,6 @@
             "type": "message",
             "id": "a",
             "parentId": "m",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1627,7 +1580,6 @@
             "type": "message",
             "id": "b",
             "parentId": "m",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1733,7 +1685,6 @@
             "type": "message",
             "id": "a",
             "parentId": "missing",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1746,7 +1697,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1810,7 +1760,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1826,7 +1775,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1842,7 +1790,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1857,7 +1804,6 @@
             "type": "message",
             "id": "d",
             "parentId": "c",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1870,7 +1816,6 @@
             "type": "message",
             "id": "e",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1883,7 +1828,6 @@
             "type": "message",
             "id": "f",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1898,7 +1842,6 @@
             "type": "message",
             "id": "g",
             "parentId": "f",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -1971,7 +1914,6 @@
             "type": "message",
             "id": "dup",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "first"
@@ -1984,7 +1926,6 @@
             "type": "message",
             "id": "dup",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "second"
@@ -2069,7 +2010,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2130,7 +2070,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2191,7 +2130,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2252,7 +2190,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2265,7 +2202,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2278,7 +2214,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2291,7 +2226,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2355,7 +2289,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2368,7 +2301,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2381,7 +2313,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2394,7 +2325,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2458,7 +2388,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2471,7 +2400,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2484,7 +2412,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2497,7 +2424,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2561,7 +2487,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2574,7 +2499,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2587,7 +2511,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2600,7 +2523,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2670,7 +2592,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2683,7 +2604,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2696,7 +2616,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2709,7 +2628,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2779,7 +2697,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2792,7 +2709,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2805,7 +2721,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2818,7 +2733,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2888,7 +2802,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -2901,7 +2814,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -2914,7 +2826,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -2927,7 +2838,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -2997,7 +2907,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3010,7 +2919,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3023,7 +2931,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3036,7 +2943,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3106,7 +3012,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3119,7 +3024,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3132,7 +3036,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3145,7 +3048,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3215,7 +3117,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3228,7 +3129,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3241,7 +3141,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3254,7 +3153,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3267,7 +3165,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3332,7 +3229,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3345,7 +3241,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3358,7 +3253,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3371,7 +3265,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3384,7 +3277,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3449,7 +3341,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3462,7 +3353,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3475,7 +3365,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3488,7 +3377,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3501,7 +3389,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3566,7 +3453,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3579,7 +3465,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3592,7 +3477,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3605,7 +3489,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3618,7 +3501,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3689,7 +3571,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3702,7 +3583,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3715,7 +3595,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3728,7 +3607,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3741,7 +3619,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3812,7 +3689,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3825,7 +3701,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3838,7 +3713,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3851,7 +3725,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3864,7 +3737,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -3935,7 +3807,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -3948,7 +3819,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -3961,7 +3831,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -3974,7 +3843,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -3987,7 +3855,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4060,7 +3927,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4073,7 +3939,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4086,7 +3951,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4099,7 +3963,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4112,7 +3975,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4185,7 +4047,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4198,7 +4059,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4211,7 +4071,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4224,7 +4083,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4237,7 +4095,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4310,7 +4167,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4323,7 +4179,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4336,7 +4191,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4349,7 +4203,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4362,7 +4215,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4375,7 +4227,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -4441,7 +4292,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4454,7 +4304,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4467,7 +4316,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4480,7 +4328,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4493,7 +4340,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4506,7 +4352,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -4572,7 +4417,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4585,7 +4429,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4598,7 +4441,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4611,7 +4453,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4624,7 +4465,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4637,7 +4477,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -4703,7 +4542,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4716,7 +4554,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4729,7 +4566,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4742,7 +4578,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4755,7 +4590,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4768,7 +4602,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -4840,7 +4673,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4853,7 +4685,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -4866,7 +4697,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -4879,7 +4709,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -4892,7 +4721,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -4905,7 +4733,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -4977,7 +4804,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -4990,7 +4816,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5003,7 +4828,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5016,7 +4840,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5029,7 +4852,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5042,7 +4864,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5114,7 +4935,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5127,7 +4947,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5140,7 +4959,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5153,7 +4971,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5166,7 +4983,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5179,7 +4995,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5253,7 +5068,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5266,7 +5080,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5279,7 +5092,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5292,7 +5104,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5305,7 +5116,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5318,7 +5128,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5392,7 +5201,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5405,7 +5213,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5418,7 +5225,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5431,7 +5237,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5444,7 +5249,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5457,7 +5261,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5531,7 +5334,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5544,7 +5346,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5557,7 +5358,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5570,7 +5370,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5583,7 +5382,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5596,7 +5394,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5609,7 +5406,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -5622,7 +5418,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -5635,7 +5430,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -5648,7 +5442,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -5661,7 +5454,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -5732,7 +5524,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5745,7 +5536,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5758,7 +5548,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5771,7 +5560,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5784,7 +5572,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5797,7 +5584,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -5810,7 +5596,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -5823,7 +5608,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -5836,7 +5620,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -5849,7 +5632,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -5862,7 +5644,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -5933,7 +5714,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -5946,7 +5726,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -5959,7 +5738,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -5972,7 +5750,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -5985,7 +5762,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -5998,7 +5774,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -6011,7 +5786,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -6024,7 +5798,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -6037,7 +5810,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -6050,7 +5822,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -6063,7 +5834,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -6134,7 +5904,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -6147,7 +5916,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -6160,7 +5928,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -6173,7 +5940,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -6186,7 +5952,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -6199,7 +5964,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -6212,7 +5976,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -6225,7 +5988,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -6238,7 +6000,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -6251,7 +6012,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -6264,7 +6024,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -6341,7 +6100,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -6354,7 +6112,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -6367,7 +6124,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -6380,7 +6136,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -6393,7 +6148,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -6406,7 +6160,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -6419,7 +6172,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -6432,7 +6184,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -6445,7 +6196,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -6458,7 +6208,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -6471,7 +6220,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -6548,7 +6296,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -6561,7 +6308,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -6574,7 +6320,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -6587,7 +6332,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -6600,7 +6344,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -6613,7 +6356,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -6626,7 +6368,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -6639,7 +6380,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -6652,7 +6392,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -6665,7 +6404,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -6678,7 +6416,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -6755,7 +6492,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -6768,7 +6504,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -6781,7 +6516,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -6794,7 +6528,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -6807,7 +6540,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -6820,7 +6552,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -6833,7 +6564,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -6846,7 +6576,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -6859,7 +6588,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -6872,7 +6600,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -6885,7 +6612,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -6964,7 +6690,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -6977,7 +6702,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -6990,7 +6714,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -7003,7 +6726,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -7016,7 +6738,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -7029,7 +6750,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -7042,7 +6762,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -7055,7 +6774,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -7068,7 +6786,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -7081,7 +6798,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -7094,7 +6810,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -7173,7 +6888,6 @@
             "type": "message",
             "id": "0",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 0"
@@ -7186,7 +6900,6 @@
             "type": "message",
             "id": "1",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 1"
@@ -7199,7 +6912,6 @@
             "type": "message",
             "id": "2",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 2"
@@ -7212,7 +6924,6 @@
             "type": "message",
             "id": "3",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 3"
@@ -7225,7 +6936,6 @@
             "type": "message",
             "id": "4",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 4"
@@ -7238,7 +6948,6 @@
             "type": "message",
             "id": "5",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 5"
@@ -7251,7 +6960,6 @@
             "type": "message",
             "id": "6",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 6"
@@ -7264,7 +6972,6 @@
             "type": "message",
             "id": "7",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 7"
@@ -7277,7 +6984,6 @@
             "type": "message",
             "id": "8",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 8"
@@ -7290,7 +6996,6 @@
             "type": "message",
             "id": "9",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 9"
@@ -7303,7 +7008,6 @@
             "type": "message",
             "id": "10",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "row 10"
@@ -7382,7 +7086,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -7395,7 +7098,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7480,7 +7182,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": " \t\n﻿text\tend\n "
@@ -7493,7 +7194,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7578,7 +7278,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": " x "
@@ -7591,7 +7290,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7676,7 +7374,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "​x​"
@@ -7689,7 +7386,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7774,7 +7470,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "\r x\ry\r"
@@ -7787,7 +7482,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7872,7 +7566,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": " ﻿\t\n"
@@ -7885,7 +7578,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -7970,7 +7662,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "😀é界"
@@ -7983,7 +7674,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8068,7 +7758,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": null
@@ -8081,7 +7770,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8166,7 +7854,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": []
@@ -8179,7 +7866,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8264,7 +7950,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": {}
@@ -8277,7 +7962,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8362,7 +8046,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": [
@@ -8395,7 +8078,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8480,7 +8162,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": [
@@ -8502,7 +8183,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8587,7 +8267,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
@@ -8600,7 +8279,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8685,7 +8363,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -8698,7 +8375,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8783,7 +8459,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -8796,7 +8471,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8881,7 +8555,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -8894,7 +8567,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -8979,7 +8651,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "                                                                                                                                                                                                        lost"
@@ -8992,7 +8663,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -9077,7 +8747,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9091,7 +8760,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9176,7 +8844,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9191,7 +8858,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9276,7 +8942,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9291,7 +8956,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9376,7 +9040,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9391,7 +9054,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9476,7 +9138,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9490,7 +9151,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9575,7 +9235,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9590,7 +9249,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9675,7 +9333,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -9690,7 +9347,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9775,7 +9431,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -9795,7 +9450,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9880,7 +9534,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -9899,7 +9552,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -9984,7 +9636,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "bashExecution",
               "content": "hello",
@@ -9998,7 +9649,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10083,7 +9733,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "extension-role",
               "content": "hello",
@@ -10097,7 +9746,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10192,7 +9840,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10299,7 +9946,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10394,7 +10040,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10479,7 +10124,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 0
           },
           "children": []
@@ -10489,7 +10133,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10574,7 +10217,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 499
           },
           "children": []
@@ -10584,7 +10226,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10669,7 +10310,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 500
           },
           "children": []
@@ -10679,7 +10319,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10764,7 +10403,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 999
           },
           "children": []
@@ -10774,7 +10412,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10859,7 +10496,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 1499
           },
           "children": []
@@ -10869,7 +10505,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -10954,7 +10589,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 1500
           },
           "children": []
@@ -10964,7 +10598,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11049,7 +10682,6 @@
             "type": "compaction",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "tokensBefore": 2500
           },
           "children": []
@@ -11059,7 +10691,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11144,7 +10775,6 @@
             "type": "branch_summary",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "summary": " a\nb\t "
           },
           "children": []
@@ -11154,7 +10784,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11239,7 +10868,6 @@
             "type": "model_change",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "modelId": "model-x"
           },
           "children": []
@@ -11249,7 +10877,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11334,7 +10961,6 @@
             "type": "thinking_level_change",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "thinkingLevel": "high"
           },
           "children": []
@@ -11344,7 +10970,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11429,7 +11054,6 @@
             "type": "custom",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "customType": "state"
           },
           "children": []
@@ -11439,7 +11063,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11523,8 +11146,7 @@
           "entry": {
             "type": "label",
             "id": "a",
-            "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z"
+            "parentId": null
           },
           "children": []
         },
@@ -11533,7 +11155,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11618,7 +11239,6 @@
             "type": "label",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "label": null
           },
           "children": []
@@ -11628,7 +11248,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11713,7 +11332,6 @@
             "type": "label",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "label": ""
           },
           "children": []
@@ -11723,7 +11341,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11808,7 +11425,6 @@
             "type": "label",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "label": "mark"
           },
           "children": []
@@ -11818,7 +11434,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11902,8 +11517,7 @@
           "entry": {
             "type": "session_info",
             "id": "a",
-            "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z"
+            "parentId": null
           },
           "children": []
         },
@@ -11912,7 +11526,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -11997,7 +11610,6 @@
             "type": "session_info",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "name": null
           },
           "children": []
@@ -12007,7 +11619,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -12092,7 +11703,6 @@
             "type": "session_info",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "name": ""
           },
           "children": []
@@ -12102,7 +11712,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -12187,7 +11796,6 @@
             "type": "session_info",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "name": "Session"
           },
           "children": []
@@ -12197,7 +11805,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -12281,8 +11888,7 @@
           "entry": {
             "type": "future_entry",
             "id": "a",
-            "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z"
+            "parentId": null
           },
           "children": []
         },
@@ -12291,7 +11897,6 @@
             "type": "message",
             "id": "sentinel",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "other"
@@ -12376,7 +11981,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -12438,7 +12042,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -12500,7 +12103,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -12562,7 +12164,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -12587,7 +12188,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -12650,7 +12250,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -12675,7 +12274,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -12738,7 +12336,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -12763,7 +12360,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -12826,7 +12422,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -12851,7 +12446,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -12914,7 +12508,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -12939,7 +12532,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13002,7 +12594,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13027,7 +12618,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13090,7 +12680,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13115,7 +12704,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13178,7 +12766,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13203,7 +12790,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13266,7 +12852,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13289,7 +12874,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13352,7 +12936,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13379,7 +12962,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13442,7 +13024,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13469,7 +13050,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13532,7 +13112,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13555,7 +13134,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13618,7 +13196,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13645,7 +13222,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13708,7 +13284,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13735,7 +13310,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13798,7 +13372,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13821,7 +13394,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13884,7 +13456,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -13911,7 +13482,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -13974,7 +13544,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14001,7 +13570,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14064,7 +13632,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14087,7 +13654,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14150,7 +13716,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14177,7 +13742,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14240,7 +13804,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14267,7 +13830,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14330,7 +13892,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14353,7 +13914,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14416,7 +13976,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14443,7 +14002,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14506,7 +14064,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14533,7 +14090,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14596,7 +14152,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14619,7 +14174,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14682,7 +14236,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14709,7 +14262,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14772,7 +14324,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14799,7 +14350,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14862,7 +14412,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14887,7 +14436,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -14950,7 +14498,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -14976,7 +14523,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15039,7 +14585,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15065,7 +14610,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15128,7 +14672,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15154,7 +14697,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15217,7 +14759,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15243,7 +14784,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15306,7 +14846,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15332,7 +14871,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15395,7 +14933,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15422,7 +14959,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15485,7 +15021,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15512,7 +15047,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15575,7 +15109,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15602,7 +15135,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15665,7 +15197,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15692,7 +15223,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15755,7 +15285,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15781,7 +15310,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15844,7 +15372,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15871,7 +15398,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -15934,7 +15460,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -15961,7 +15486,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16024,7 +15548,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16051,7 +15574,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16114,7 +15636,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16141,7 +15662,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16204,7 +15724,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16230,7 +15749,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16293,7 +15811,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16320,7 +15837,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16383,7 +15899,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16410,7 +15925,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16473,7 +15987,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16500,7 +16013,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16563,7 +16075,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16590,7 +16101,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16653,7 +16163,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16679,7 +16188,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16742,7 +16250,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16769,7 +16276,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16832,7 +16338,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16859,7 +16364,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -16922,7 +16426,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -16949,7 +16452,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17012,7 +16514,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17039,7 +16540,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17102,7 +16602,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17127,7 +16626,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17190,7 +16688,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17215,7 +16712,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17278,7 +16774,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17303,7 +16798,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17363,7 +16857,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17388,7 +16881,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17451,7 +16943,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17476,7 +16967,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17538,7 +17028,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17563,7 +17052,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17625,7 +17113,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17650,7 +17137,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17712,7 +17198,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17735,7 +17220,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17798,7 +17282,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17826,7 +17309,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17889,7 +17371,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -17914,7 +17395,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -17977,7 +17457,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18002,7 +17481,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -18065,7 +17543,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18090,7 +17567,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -18153,7 +17629,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18179,7 +17654,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -18242,7 +17716,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18267,7 +17740,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -18330,7 +17802,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18355,7 +17826,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -18418,7 +17888,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello"
@@ -18479,7 +17948,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -18541,7 +18009,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -18603,7 +18070,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -18665,7 +18131,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -18728,7 +18193,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18753,7 +18217,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -18778,7 +18241,6 @@
             "type": "message",
             "id": "c",
             "parentId": "b",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -18841,7 +18303,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "plain ascii"
@@ -19091,7 +18552,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "界😀é end"
@@ -19341,7 +18801,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "a\u001b[31mb\u001b[0mc"
@@ -19591,7 +19050,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "👨‍👩‍👧‍👦 family"
@@ -19841,7 +19299,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -19854,7 +19311,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": "response"
@@ -19970,7 +19426,6 @@
             "type": "message",
             "id": "good",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -20047,7 +19502,6 @@
             "type": "message",
             "id": "good",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -20060,7 +19514,6 @@
             "type": "message",
             "id": "bad",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [],
@@ -20129,7 +19582,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -20152,7 +19604,6 @@
             "type": "message",
             "id": "bad",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "hello",
@@ -20199,7 +19650,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -20225,7 +19675,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -20288,7 +19737,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -20314,7 +19762,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -20377,7 +19824,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -20403,7 +19849,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -20466,7 +19911,6 @@
             "type": "message",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "assistant",
               "content": [
@@ -20491,7 +19935,6 @@
             "type": "message",
             "id": "b",
             "parentId": "a",
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "toolResult",
               "content": "",
@@ -20578,7 +20021,6 @@
             "type": "session_info",
             "id": "a",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "name": ""
           },
           "children": []
@@ -20588,7 +20030,6 @@
             "type": "message",
             "id": "b",
             "parentId": null,
-            "timestamp": "2026-01-02T03:04:05.000Z",
             "message": {
               "role": "user",
               "content": "hello"
@@ -20777,6 +20218,701 @@
               ],
               "cell_widths": [
                 13,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "numeric-path",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "read",
+                  "arguments": {
+                    "path": 123
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "read"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[read: 123]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                15,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "numeric-command",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "bash",
+                  "arguments": {
+                    "command": 123
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "bash"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[bash: 123]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                15,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "boolean-pattern",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "grep",
+                  "arguments": {
+                    "pattern": true
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "grep"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[grep: /true/ in .]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                23,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "zero-path-default",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "read",
+                  "arguments": {
+                    "path": 0,
+                    "file_path": "fallback"
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "read"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[read: fallback]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                20,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "false-command-default",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "bash",
+                  "arguments": {
+                    "command": false
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "bash"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[bash: ]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                12,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "false-pattern-default",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "find",
+                  "arguments": {
+                    "pattern": false,
+                    "path": false
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "find"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[find:  in .]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                17,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "object-path",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "write",
+                  "arguments": {
+                    "path": {
+                      "name": "a"
+                    }
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "write"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[write: {\"name\":\"a\"}]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                25,
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "tool_argument_values_render_with_truthy_defaults",
+    "case": "array-pattern",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "type": "message",
+            "id": "a",
+            "parentId": null,
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "tc",
+                  "name": "find",
+                  "arguments": {
+                    "pattern": [
+                      1,
+                      true
+                    ]
+                  }
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "type": "message",
+            "id": "b",
+            "parentId": "a",
+            "message": {
+              "role": "toolResult",
+              "content": "",
+              "toolCallId": "tc",
+              "toolName": "find"
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "leaf": "b",
+      "mode": "default",
+      "lines": 20,
+      "widths": [
+        200
+      ],
+      "ops": [],
+      "initial": null,
+      "env": {
+        "HOME": "/home/test",
+        "USERPROFILE": "C:/Users/test"
+      },
+      "palettes": [
+        "dark"
+      ],
+      "styles_enabled": true
+    },
+    "expected": {
+      "frames": [
+        {
+          "selected": "b",
+          "rendered": [
+            {
+              "palette": "dark",
+              "width": 200,
+              "lines": [
+                "\u001b[48;2;42;31;26m\u001b[38;2;217;160;102m› \u001b[39m\u001b[38;2;217;160;102m\u001b[39m\u001b[38;2;217;160;102m• \u001b[39m\u001b[1m\u001b[38;2;217;160;102m[find: [1,true] in .]\u001b[39m\u001b[22m\u001b[49m",
+                "\u001b[38;2;217;160;102m  (1/1)\u001b[39m"
+              ],
+              "cell_widths": [
+                25,
                 7
               ]
             }

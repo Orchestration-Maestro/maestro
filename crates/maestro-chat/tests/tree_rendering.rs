@@ -173,3 +173,16 @@ fn active_ancestry_self_cycle_terminates() {
 fn hidden_ancestry_cycle_becomes_visible_root() {
     tree_render_support::group("hidden_ancestry_cycle_becomes_visible_root");
 }
+
+/// Nonstring tool operands display with field-specific truthy defaults.
+#[test]
+fn tool_argument_values_render_with_truthy_defaults() {
+    tree_render_support::group("tool_argument_values_render_with_truthy_defaults");
+}
+
+/// Renaming a corpus case cannot admit a repeated complete input.
+#[test]
+#[should_panic(expected = "duplicate complete input")]
+fn renamed_duplicate_inputs_are_rejected() {
+    tree_render_support::reject_renamed_duplicate();
+}

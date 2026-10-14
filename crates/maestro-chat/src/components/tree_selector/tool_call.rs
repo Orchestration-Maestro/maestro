@@ -27,7 +27,7 @@ use super::{
 };
 use maestro_app::{is_truthy, truncate_utf16};
 use maestro_tui::tui::TuiRuntime;
-use std::io;
+use std::{borrow::Cow, io};
 impl TreeList<'_, '_> {
     /// Resolve a visible result against all retained assistant calls.
     pub(super) fn tool_result(
@@ -59,7 +59,7 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
     match name {
         "bash" => {
             let raw = argument(args, "command", "")?;
-            let command = truncate_utf16(&normalize(raw), 50);
+            let command = truncate_utf16(&normalize(&raw), 50);
             Ok(format!(
                 "[bash: {command}{}]",
                 if raw.encode_utf16().count() > 50 {
@@ -71,11 +71,11 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
         }
         "read" | "write" | "edit" => {
             let raw = if args.get("path").is_some_and(is_truthy) {
-                text(&args["path"])?
+                argument(args, "path", "")?
             } else {
                 argument(args, "file_path", "")?
             };
-            let path = shorten_path(raw, runtime);
+            let path = shorten_path(&raw, runtime);
             let range = if name == "read" {
                 maestro_app::format_read_line_range(args)
             } else {
@@ -84,7 +84,7 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
             Ok(format!("[{name}: {path}{range}]"))
         }
         "grep" | "find" | "ls" => {
-            let path = shorten_path(argument(args, "path", ".")?, runtime);
+            let path = shorten_path(&argument(args, "path", ".")?, runtime);
             if name == "ls" {
                 return Ok(format!("[ls: {path}]"));
             }
@@ -92,7 +92,7 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
             let pattern = if name == "grep" {
                 format!("/{pattern}/")
             } else {
-                pattern.to_owned()
+                pattern.into_owned()
             };
             Ok(format!("[{name}: {pattern} in {path}]"))
         }
@@ -110,11 +110,17 @@ fn format_call(name: &str, args: &Value, runtime: &dyn TuiRuntime) -> io::Result
         }
     }
 }
-/// A truthy string argument, otherwise the tool's own default.
-fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<&'a str> {
-    args.get(key)
-        .filter(|v| is_truthy(v))
-        .map_or(Ok(default), text)
+/// Display truthy arguments, otherwise the tool's own default.
+fn argument<'a>(args: &'a Value, key: &str, default: &'a str) -> io::Result<Cow<'a, str>> {
+    let Some(value) = args.get(key).filter(|v| is_truthy(v)) else {
+        return Ok(Cow::Borrowed(default));
+    };
+    if let Some(text) = value.as_str() {
+        return Ok(Cow::Borrowed(text));
+    }
+    maestro_app::compact_json(value)
+        .map(Cow::Owned)
+        .map_err(io::Error::other)
 }
 /// Bind the live nonempty home observation only when formatting a path.
 fn shorten_path(path: &str, runtime: &dyn TuiRuntime) -> String {
