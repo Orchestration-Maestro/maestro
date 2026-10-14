@@ -42,12 +42,14 @@ on native targets only.
 ## Streaming and sessions
 
 `wait_for_child_process` takes an optional fourth argument, a synchronous raw-byte
-sink. With `Some(&mut sink)`, newly consumed stdout and stderr chunks go to the
+sink `FnMut(OutputStream, &[u8])`. The descriptor tag identifies stdout or stderr;
+bytes stay unchanged. With `Some(&mut sink)`, newly consumed stdout and stderr chunks go to the
 sink rather than retained output; bytes retained by an earlier wait are not
 replayed. Streaming delivers new stderr even with `OutputMode::Discard`; that
 mode still drops earlier retained stderr. `None` preserves capture and
 stderr-discard behavior. The same waiter
 owns exit, EOF, selected grace and native error handling in either mode.
+The local shell ignores the tag and forwards chunks in observed interleaving order.
 
 `CapturedChild::id()` exposes the PID before reaping. `spawn_detached(command)` consumes the builder and applies a
 new Unix session to that spawn only; ordinary `spawn` and

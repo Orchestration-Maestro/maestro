@@ -32,6 +32,10 @@ mod find_execution;
 mod find_rendering;
 #[cfg(not(target_arch = "wasm32"))]
 mod find_support;
+mod grep_execution;
+mod grep_rendering;
+#[cfg(not(target_arch = "wasm32"))]
+mod grep_support;
 mod image_mime_detection;
 mod image_preparation;
 mod local_shell_execution;

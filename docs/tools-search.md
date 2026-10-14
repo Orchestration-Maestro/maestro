@@ -1,9 +1,9 @@
-# File listing and finding
+# File listing and search
 
 `maestro-tools` lists a directory with the `ls` tool, built by `create_ls_tool` or
 `create_ls_tool_definition`. Both are native-only, like the [read tool](tools-read.md#read-tool),
 and the crate still builds for browser targets without them. The native `find` tool
-searches file names; content search is not delivered here.
+searches file names; `grep` searches file contents.
 
 ## Arguments
 
@@ -98,8 +98,7 @@ Cleanup is attempted when staging is dropped, without replacing the primary resu
 An acquisition failure returns `None` and writes `Failed to download <name>: <detail>`
 when an output is supplied. Optional output uses the caller's writer and colour flag:
 dim progress, yellow advice/failure, or plain lines. No output means silence; writer
-errors do not change availability. Find uses silent acquisition; content search
-execution is a separate operation.
+errors do not change availability. Find and grep use silent acquisition.
 
 ## Find
 
@@ -148,3 +147,50 @@ The call renderer shows `find`, the pattern, ` in <path>` and a present limit.
 Result rendering shares the [listing preview](#rendering), using `results` for its
 count unit. Result options alone select expansion; successful rendering reuses the
 row's previous `Text`, and a rendering failure leaves its text unchanged.
+
+## Content search
+
+[`create_grep_tool` and `create_grep_tool_definition`](../crates/maestro-tools/src/search/grep/mod.rs)
+take a working directory, `GrepToolOptions` and an `Arc<ToolsManager>`. They are native-only
+and construction performs no I/O. `pattern` is required; `path` names a file or directory
+and defaults to the working directory. Paths resolve at execution after silent acquisition.
+`glob` filters files, `ignoreCase` enables case-insensitive matching and `literal` disables
+regular-expression interpretation. A `--` delimiter protects flag-like search text.
+
+`GrepOperations` replaces root inspection and context reads, not the search process.
+The native adapter follows explicitly named symlinks but does not follow links during
+traversal. The search includes hidden user files and unignored dependencies, honors scoped
+ignore files outside worktrees too, and excludes Git metadata during traversal. A positive
+user glob can override ordinary ignore rules; an explicitly named metadata file is searchable.
+
+`limit` defaults to 100 and clamps at 1. A fractional limit retains enough match events to
+reach it without rounding its notice label. Producer ordering and repeated matches remain.
+`context` defaults to zero; positive fractions round down to whole surrounding lines.
+Context reads are cached per file, including failures, and overlapping blocks remain.
+Unreadable context uses `(unable to read file)`; native reads retain BOM and lossily decode
+invalid content. Encoded native filenames keep their byte identity for reads and cache keys;
+only their displayed spelling is lossy. Directory output uses relative paths for contained
+files, otherwise basename; POSIX backslashes and names beginning with two dots stay intact.
+
+Each source line clips at 500 Unicode scalars. The joined body uses the shared 51200-byte
+head selection without another line cap. Count, byte and line-clipping notices follow in
+one bracket group, in that order. Details omit inactive limits; zero matches returns
+`No matches found` without details. A reached count boundary terminates the child normally
+and waits for exit and pipe EOF, with no deadline or escalation. Cancellation wins over a
+count-limited result; pending supplied operations are dropped. Root-inspection failures use
+`Path not found: <path>`. Other child exits fail with trimmed stderr or an exit-code message.
+
+Calls show `/pattern/ in path`, optional glob and a present limit. Results preview 15 lines
+unless expanded, with the shared live key hint and count/byte/clipping warning. Theme roles
+and reusable Text components come from the existing rendering owners.
+
+```rust
+use std::sync::Arc;
+use maestro_tools::{GrepToolOptions, ToolsManager, create_grep_tool};
+let tool = create_grep_tool(
+    "/workspace".into(),
+    GrepToolOptions::default(),
+    Arc::new(ToolsManager::new("/workspace/bin".into(), None)),
+);
+assert_eq!(tool.name, "grep");
+```

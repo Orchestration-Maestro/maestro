@@ -15,8 +15,6 @@ use maestro_text::is_whitespace_scalar;
 use maestro_theme::{Theme, ThemeColor};
 /// Result of a rendering operation.
 type Rendered<T> = Result<T, DiagnosticErrorInfo>;
-/// Rows shown before expansion.
-const PREVIEW_LINES: usize = 20;
 /// Borrowed limits of a listing result.
 #[derive(Clone, Copy)]
 pub(super) struct ListingView<'a> {
@@ -26,11 +24,16 @@ pub(super) struct ListingView<'a> {
     pub(super) truncation: Option<&'a TruncationResult>,
     /// Count unit in the warning.
     pub(super) noun: &'static str,
+    /// Rows shown before expansion.
+    pub(super) preview_lines: usize,
+    /// Optional warning after count and bytes.
+    pub(super) trailing_warning: Option<&'a str>,
 }
 /// Select a listing body without a separate line cap and append its notices.
 pub(super) fn select_listing(
     body: &str,
     mut notices: Vec<String>,
+    trailing_notice: Option<&str>,
 ) -> (String, Option<TruncationResult>) {
     let cut = truncate_head(
         body,
@@ -45,6 +48,7 @@ pub(super) fn select_listing(
             format_size(float(DEFAULT_MAX_BYTES))
         ));
     }
+    notices.extend(trailing_notice.map(str::to_owned));
     let (mut output, truncation) = if cut.truncated {
         (cut.content.clone(), Some(cut))
     } else {
@@ -59,13 +63,14 @@ pub(super) fn select_listing(
 fn limit_warning(view: ListingView<'_>, theme: &Theme) -> Rendered<String> {
     let entries = view.count.filter(|limit| *limit != 0.0 && !limit.is_nan());
     let bytes = view.truncation.filter(|cut| cut.truncated);
-    if entries.is_none() && bytes.is_none() {
+    if entries.is_none() && bytes.is_none() && view.trailing_warning.is_none() {
         return Ok(String::new());
     }
     let warnings: Vec<String> = entries
         .map(|limit| format!("{} {} limit", num(limit), view.noun))
         .into_iter()
         .chain(bytes.map(|cut| format!("{} limit", format_size(float(cut.max_bytes)))))
+        .chain(view.trailing_warning.map(str::to_owned))
         .collect();
     let notice = format!("[Truncated: {}]", warnings.join(", "));
     Ok(format!(
@@ -90,7 +95,7 @@ pub(super) fn render_listing<D>(
         let shown = if options.expanded {
             lines.len()
         } else {
-            PREVIEW_LINES.min(lines.len())
+            view.preview_lines.min(lines.len())
         };
         let rows = lines[..shown]
             .iter()

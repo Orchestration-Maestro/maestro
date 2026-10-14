@@ -1,4 +1,4 @@
-//! Tool definitions, the `read`, `write`, `edit`, `ls`, `find` and native `bash` tools,
+//! Tool definitions, the `read`, `write`, `edit`, `ls`, `find`, `grep` and native `bash` tools,
 //! the file mutation queue, output and inline-image helpers and word-level edit diff rendering
 //! for Maestro tools.
 //!
@@ -109,3 +109,9 @@ pub use search::tools_manager::{SearchTool, ToolsManager, ToolsManagerOutput};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::bash_executor::{BashExecutorOptions, BashResult, execute_bash_with_operations};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use search::grep::{
+    GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, create_grep_tool,
+    create_grep_tool_definition,
+};

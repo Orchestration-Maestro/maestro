@@ -46,7 +46,8 @@ fn format_entries(entries: &[String], reached: bool, limit: f64) -> AgentToolRes
     } else {
         Vec::new()
     };
-    let (output, truncation) = super::super::listing::select_listing(&entries.join("\n"), notices);
+    let (output, truncation) =
+        super::super::listing::select_listing(&entries.join("\n"), notices, None);
     let details = LsToolDetails {
         truncation,
         entry_limit_reached: reached.then_some(limit),
