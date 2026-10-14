@@ -377,7 +377,8 @@ async fn drive_timeout(
     witness.poll(operation).await;
 }
 
-/// Releases both gates on success or observation panic, then drives the same execution to settlement.
+/// Attempts both gate releases, terminating a known PID on errors other than an existing gate.
+/// Then drives the same execution to settlement.
 async fn settle_child(witness: &mut ChildWitness, operation: &mut Operation<'_>, dir: &TempDir) {
     for name in ["alive", "release"] {
         if let Err(error) = release(dir, name)
