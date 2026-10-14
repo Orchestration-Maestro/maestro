@@ -18,6 +18,10 @@ impl Drop for Cleanup {
 
 #[test]
 fn native_tree_kill_terminates_descendants() {
+    // The registry drain below would otherwise reach shells tracked by concurrent tests.
+    if !crate::read_support::isolated("native_tree_kill_terminates_descendants", "drain", &[]) {
+        return;
+    }
     tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
         let listener = TcpListener::bind(("127.0.0.1", 0)).await.unwrap();
         let script = "import os,socket,sys\nchild=os.fork()\ns=socket.create_connection(('127.0.0.1',int(sys.argv[1])))\ns.sendall(b'READY')\ns.recv(1)\nif child: os.waitpid(child,0)";

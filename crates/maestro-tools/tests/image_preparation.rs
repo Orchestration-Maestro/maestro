@@ -1,6 +1,6 @@
 //! Image preparation through public utility operations.
 
-mod support;
+use crate::support;
 use support::TestResult;
 
 use base64::Engine;

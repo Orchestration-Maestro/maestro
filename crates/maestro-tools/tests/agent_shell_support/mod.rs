@@ -575,6 +575,10 @@ pub fn hook_sequence() {
     );
 }
 
+/// The test that reruns `environment_sequence` in a child process.
+#[cfg(unix)]
+const SEQUENCE_TEST: &str = "bash_operations_receive_signal_timeout_and_environment";
+
 /// Fresh inherited environment on successive calls, isolated from the test runner.
 #[cfg(unix)]
 pub fn environment_sequence() {
@@ -584,12 +588,9 @@ pub fn environment_sequence() {
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
     if std::env::var_os("MAESTRO_SHELL_SEQUENCE_CHILD").is_none() {
-        let status = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "bash_operations_receive_signal_timeout_and_environment",
-                "--nocapture",
-            ])
+        let test = crate::child_process::selector(SEQUENCE_TEST).unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test, "--nocapture"])
             .env("MAESTRO_SHELL_SEQUENCE_CHILD", "1")
             .env_remove("ADDED")
             .envs(
@@ -599,9 +600,10 @@ pub fn environment_sequence() {
                     .iter()
                     .map(|(key, value)| (key, value.as_str().unwrap())),
             )
-            .status()
+            .output()
             .unwrap();
-        assert!(status.success());
+        assert!(output.status.success());
+        crate::child_process::assert_executed(&output, &test);
         return;
     }
     assert_eq!(sequence.as_object().unwrap().len(), 3);

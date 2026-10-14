@@ -1,7 +1,7 @@
 //! Native file sampling through the supported-image MIME operation.
 #![cfg(not(target_arch = "wasm32"))]
 
-mod support;
+use crate::support;
 use support::TestResult;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};

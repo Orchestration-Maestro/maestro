@@ -363,7 +363,7 @@ fn direct_finalizes_incomplete_escapes_like_whole_text() {
     corpus("direct_finalizes_incomplete_escapes_like_whole_text");
 }
 
-mod read_support;
+use crate::read_support;
 
 #[test]
 #[cfg(unix)]

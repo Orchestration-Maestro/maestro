@@ -36,7 +36,7 @@ fn local_bash_preserves_command_directory_and_closed_input() {
         });
 }
 
-mod read_support;
+use crate::read_support;
 use maestro_models::Cancellation;
 use maestro_tools::BashError;
 use maestro_tools::utils::shell::{ShellEnv, get_shell_config};

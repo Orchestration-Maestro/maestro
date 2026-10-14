@@ -2,11 +2,10 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod display_support;
-mod edit_render_support;
-mod edit_support;
-mod read_support;
-mod write_support;
+use crate::display_support;
+use crate::edit_render_support;
+use crate::edit_support;
+use crate::read_support;
 
 use display_support::{Env, NoLanguages, Setup, context};
 use edit_render_support::{Details, ResultRecord, cases, palette, theme};

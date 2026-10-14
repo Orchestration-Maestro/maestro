@@ -1,6 +1,6 @@
 //! Metadata orientation through the public image operation.
 
-mod support;
+use crate::support;
 use support::TestResult;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};

@@ -2,8 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod read_support;
-mod write_support;
+use crate::read_support;
+use crate::write_support;
 
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
 use maestro_tools::with_file_mutation_queue as queue;

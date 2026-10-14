@@ -1,7 +1,7 @@
 //! Cancellable delay observed through its public operation.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod process_support;
+use crate::process_support;
 
 use futures_util::FutureExt;
 use maestro_models::Cancellation;

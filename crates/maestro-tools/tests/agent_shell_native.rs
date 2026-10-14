@@ -1,9 +1,9 @@
 //! Native shell consumption, artifacts and cleanup through the agent factories.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod agent_shell_support;
-mod process_support;
-mod read_support;
+use crate::agent_shell_support;
+use crate::process_support;
+use crate::read_support;
 
 #[cfg(unix)]
 use agent_shell_support::{Immediate, result_value};
@@ -383,19 +383,18 @@ fn bash_artifact_creation_failure_is_reported() {
     if std::env::var_os("MAESTRO_ARTIFACT_CHILD").is_none() {
         let dir = TempDir::new();
         let missing = dir.0.join("missing");
-        let status = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "bash_artifact_creation_failure_is_reported",
-                "--nocapture",
-            ])
+        let test =
+            crate::child_process::selector("bash_artifact_creation_failure_is_reported").unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test, "--nocapture"])
             .env("MAESTRO_ARTIFACT_CHILD", "1")
             .env("TMPDIR", &missing)
             .env("TMP", &missing)
             .env("TEMP", &missing)
-            .status()
+            .output()
             .unwrap();
-        assert!(status.success());
+        assert!(output.status.success());
+        crate::child_process::assert_executed(&output, &test);
         return;
     }
     agent_shell_support::runtime().block_on(async {

@@ -394,6 +394,8 @@ pub fn isolated(test: &str, mode: &str, envs: &[(&str, Option<&str>)]) -> bool {
 }
 
 /// [`isolated`] with environment values that need not be text.
+///
+/// The parent also checks that the selected child test ran and passed.
 pub fn isolated_os(test: &str, mode: &str, envs: &[(&str, Option<&std::ffi::OsStr>)]) -> bool {
     if let Ok(current) = std::env::var("MAESTRO_READ_CHILD") {
         return current == mode;
@@ -408,8 +410,9 @@ pub fn isolated_os_output(
     mode: &str,
     envs: &[(&str, Option<&std::ffi::OsStr>)],
 ) -> std::process::Output {
+    let test = crate::child_process::selector(test).unwrap();
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    command.args(["--exact", test, "--nocapture"]);
+    command.args(["--exact", &test, "--nocapture"]);
     command.env("MAESTRO_READ_CHILD", mode);
     for (key, value) in envs {
         match value {
@@ -424,6 +427,7 @@ pub fn isolated_os_output(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    crate::child_process::assert_executed(&output, &test);
     output
 }
 

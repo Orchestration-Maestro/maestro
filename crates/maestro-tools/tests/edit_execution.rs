@@ -1,9 +1,9 @@
 //! Native edit composition and its supplied-operation lifecycle.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod edit_support;
-mod read_support;
-mod write_support;
+use crate::edit_support;
+use crate::read_support;
+use crate::write_support;
 use edit_support::*;
 use maestro_agent::AgentToolUpdateCallback;
 use maestro_tools::{EditOperations, EditToolOptions, create_edit_tool_definition};

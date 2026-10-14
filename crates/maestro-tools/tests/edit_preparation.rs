@@ -1,11 +1,10 @@
 //! Preparation through the edit definition's public callback.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod edit_observers;
-mod edit_support;
-mod loop_support;
-mod read_support;
-mod write_support;
+use crate::edit_observers;
+use crate::edit_support;
+use crate::loop_support;
+use crate::read_support;
 use edit_support::rows;
 use maestro_tools::{EditToolOptions, create_edit_tool_definition};
 

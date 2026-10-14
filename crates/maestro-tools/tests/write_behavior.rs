@@ -2,9 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod loop_support;
-mod read_support;
-mod write_support;
+use crate::loop_support;
+use crate::read_support;
+use crate::write_support;
 
 use loop_support::run_turn;
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};

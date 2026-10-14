@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-mod read_support;
+use crate::read_support;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use image::ImageOutputFormat;

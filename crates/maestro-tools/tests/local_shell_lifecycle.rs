@@ -1,9 +1,13 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
+use crate::{process_support, read_support};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
+use read_support::TempDir;
+#[cfg(target_os = "linux")]
+use read_support::pipe_holder;
 use std::{
     sync::{
         Arc,
@@ -13,11 +17,6 @@ use std::{
     time::Duration,
 };
 use tokio::io::AsyncWriteExt;
-mod process_support;
-#[cfg(target_os = "linux")]
-use read_support::pipe_holder;
-mod read_support;
-use read_support::TempDir;
 
 /// Counts wakes without retaining the operation that registered them.
 #[derive(Default)]
