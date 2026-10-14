@@ -281,7 +281,7 @@ let model: Model = serde_json::from_value(json!({
     "input": ["text"], "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
     "contextWindow": 8192, "maxTokens": 4096
 })).expect("model");
-let client = create_client(&model, "fixture-key", None);
+let client = create_client(&model, "fixture-key", None, None);
 let mut selected = json!({
     "model": "gemini-fixture", "contents": "hello",
     "config": {"httpOptions": {"timeout": 1001}}
@@ -295,3 +295,42 @@ assert_eq!(prepared.request.url,
 assert_eq!(prepared.timeout, Some(1001.0));
 assert!(prepared.request.signal.is_none());
 ```
+
+
+## Public invocation
+
+[`stream_google`](../../crates/maestro-models/src/providers/content/google.rs) takes
+`GoogleOptions` and returns an independently produced event stream. Native callers need a
+running Tokio runtime. Dropping the event reader does not cancel the producer; its retained
+result still observes completion. The module's `stream_simple_google` first selects
+[simple options](#request-preparation) and returns a missing-key error before creating a
+stream. The [root simple wrapper](module-linkage.md#root-entry-points) settles that error
+into a stream.
+
+The raw entry captures `GOOGLE_GEMINI_BASE_URL` synchronously into owned client settings.
+It is used only for an empty model endpoint, after trimming the shared text whitespace set;
+an absent or empty fallback keeps the built-in endpoint and version. The supplied endpoint
+is never trimmed. `create_client` receives this optional owned fallback without reading
+the environment. Cloud-mode preparation remains separate.
+
+After [parameter preparation](#request-preparation), the optional payload hook is awaited
+once and its selected payload passes through [projection](#request-projection) and
+[transport preparation](#request-transport). Dispatch makes one attempt through
+`StreamOptions::fetch` or the default transport. Common timeout/retry settings, transport
+selection and the response hook are not consumed. Only a positive selected
+`config.httpOptions.timeout` sets a deadline, spanning dispatch, error-body admission and
+reduction. Selected cancellation is checked before dispatch; removing the hook payload's
+`abortSignal` detaches request cancellation, not the caller's final abort classification.
+Timeout cancellation belongs to the request and does not abort the caller's signal.
+
+A successful status publishes `start` before body reduction; bodyless 204/205 fail afterward,
+while an empty streamed 200 completes normally. Failure statuses consume their complete
+body before `start`: a case-sensitive `application/json` substring selects whole JSON,
+otherwise text is wrapped with status and reason phrase. Body/JSON failures win at admission.
+
+The [shared HTTP framing owner](../../crates/maestro-models/src/providers/http/server_sent_events.rs)
+selects whole data segments for this protocol; other callers retain field framing. Ordered
+items feed the existing [response reducer](#response-reduction). A non-whitespace EOF tail
+fails; a residual bare error with numeric or decimal numeric-string code in `[400, 600)`
+is classified consistently across chunk boundaries. Reduction failures preserve prior
+content without closing its active block. Clean EOF uses the shared conclusion policy.

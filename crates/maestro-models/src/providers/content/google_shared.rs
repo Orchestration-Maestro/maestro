@@ -65,7 +65,7 @@ const FINISH_REASONS: [&str; 17] = [
 ];
 
 /// Thinking level accepted by the newest model generation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum GoogleThinkingLevel {
     /// The service picks the level.

@@ -401,3 +401,53 @@ pub(crate) fn bedrock(
         request_metadata: extra.request_metadata,
     })
 }
+
+/// Selected raw content-generation fields.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GoogleExtras {
+    /// Optional tool-calling mode spelling.
+    tool_choice: Option<String>,
+    /// Object-valued thinking controls.
+    thinking: Option<serde_json::Map<String, Value>>,
+}
+
+/// Declared controls inside an admitted thinking object.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GoogleThinkingExtras {
+    /// Whether to request thinking.
+    enabled: bool,
+    /// Optional numeric budget; null is not a number.
+    #[serde(default, deserialize_with = "present")]
+    budget_tokens: Option<f64>,
+    /// Optional string-only level.
+    #[serde(default, deserialize_with = "literal")]
+    level: Option<crate::GoogleThinkingLevel>,
+}
+
+/// Decode raw content-generation options without validating unused policy fields.
+pub(crate) fn google(
+    options: ProviderStreamOptions,
+) -> Result<crate::GoogleOptions, serde_json::Error> {
+    let extra: GoogleExtras = extras(options.extra)?;
+    let thinking = extra
+        .thinking
+        .map(extras::<GoogleThinkingExtras>)
+        .transpose()?;
+    Ok(crate::GoogleOptions {
+        common: options.common,
+        tool_choice: extra
+            .tool_choice
+            .as_deref()
+            .filter(|choice| !choice.is_empty())
+            .map(crate::providers::content::google_shared::map_tool_choice),
+        thinking: thinking.map(
+            |thinking| crate::providers::content::google::GoogleThinking {
+                enabled: thinking.enabled,
+                budget_tokens: thinking.budget_tokens,
+                level: thinking.level,
+            },
+        ),
+    })
+}

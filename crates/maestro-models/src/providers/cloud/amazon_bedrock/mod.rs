@@ -178,9 +178,9 @@ mod native {
     use super::events::Reducer;
     use super::proxy::Environment;
     use super::request::{payload, prepare};
+    use crate::providers::assistant_output::conclude;
     use crate::providers::assistant_output::{callback_failure, fail};
     use crate::providers::http::{Raced, RequestFailure, race};
-    use crate::providers::responses::openai_responses::conclude;
     use crate::{
         AssistantMessageEventStream, Cancellation, Context, Model, ProviderResponse,
         SharedAssistantMessage,

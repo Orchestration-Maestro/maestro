@@ -10,7 +10,7 @@ use super::openai_responses_shared::{
     process_responses_stream,
 };
 use crate::options::resolve_api_key;
-use crate::providers::assistant_output::{fail, initial_message};
+use crate::providers::assistant_output::{conclude, fail, initial_message};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
@@ -24,10 +24,9 @@ use crate::providers::http::{
 };
 use crate::providers::json_text::compact_json;
 use crate::{
-    AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, Model, ModelThinkingLevel, SharedAssistantMessage,
-    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, build_base_options,
-    clamp_thinking_level, get_env_api_key,
+    AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
+    DiagnosticErrorInfo, Model, ModelThinkingLevel, SharedAssistantMessage, SimpleStreamOptions,
+    StreamOptions, ThinkingLevel, build_base_options, clamp_thinking_level, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -35,7 +34,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::{HashSet, VecDeque};
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
 
 /// Options for the standard response endpoint.
 #[derive(Clone, Default)]
@@ -451,35 +450,6 @@ pub(crate) fn price(usage: &mut crate::Usage, tier: Option<&str>, model: &str) {
     usage.cost.cache_write *= multiplier;
     usage.cost.total =
         usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
-}
-
-/// Publish completion only after reduction and cancellation checks succeed.
-pub(crate) fn conclude(
-    events: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-    signal: Option<&Cancellation>,
-) -> Result<(), RequestFailure> {
-    if signal.is_some_and(Cancellation::is_aborted) {
-        return Err(RequestFailure::new("Request was aborted"));
-    }
-    let reason = match output
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .stop_reason
-    {
-        StopReason::Stop => DoneReason::Stop,
-        StopReason::Length => DoneReason::Length,
-        StopReason::ToolUse => DoneReason::ToolUse,
-        StopReason::Error | StopReason::Aborted => {
-            return Err(RequestFailure::new("An unknown error occurred"));
-        }
-    };
-    events.push(AssistantMessageEvent::Done {
-        reason,
-        message: Arc::clone(output),
-    });
-    events.end(None);
-    Ok(())
 }
 
 /// Select requested effort or the model's unrequested reasoning mapping.

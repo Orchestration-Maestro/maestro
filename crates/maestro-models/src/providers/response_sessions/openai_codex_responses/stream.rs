@@ -6,9 +6,9 @@ use super::{
     request::{diagnostic, prepare_request},
 };
 use crate::options::resolve_api_key;
+use crate::providers::assistant_output::conclude;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::http::{RequestFailure, spawn_detached};
-use crate::providers::responses::openai_responses::conclude;
 use crate::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ModelThinkingLevel,
     SharedAssistantMessage, SimpleStreamOptions, build_base_options, clamp_thinking_level,

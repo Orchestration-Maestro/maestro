@@ -62,6 +62,7 @@ pub fn apis() -> Vec<&'static str> {
 /// The complete bundled registry inventory, separate from the SSE fixture protocols.
 pub fn registered_apis() -> Vec<&'static str> {
     let mut apis = apis();
+    apis.push("google-generative-ai");
     apis.push("bedrock-converse-stream");
     apis
 }

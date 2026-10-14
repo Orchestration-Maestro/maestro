@@ -59,11 +59,16 @@ pub(crate) struct SseMessages {
     lines: LineDecoder,
     /// Collects the fields of the lines.
     fields: SseDecoder,
+    /// Whole-segment framing, when selected instead of fields.
+    segments: Option<Segments>,
 }
 
 impl SseMessages {
     /// Add a body chunk and return the events it completes.
     pub(crate) fn push(&mut self, chunk: &[u8]) -> Vec<ServerSentEvent> {
+        if let Some(segments) = &mut self.segments {
+            return segments.push(chunk);
+        }
         let mut events = Vec::new();
         self.read(chunk, &mut events);
         events
@@ -72,6 +77,9 @@ impl SseMessages {
     /// End the body: a last line without its ending is read, but an event whose blank line
     /// never arrived is not delivered.
     pub(crate) fn finish(&mut self) -> Vec<ServerSentEvent> {
+        if self.segments.is_some() {
+            return Vec::new();
+        }
         let mut events = Vec::new();
         for line in self.lines.flush() {
             events.extend(self.fields.decode(&line));
@@ -84,5 +92,84 @@ impl SseMessages {
         for line in self.lines.decode(bytes) {
             events.extend(self.fields.decode(&line));
         }
+    }
+}
+
+/// Byte buffer with a monotone delimiter scan for whole data segments.
+#[derive(Default)]
+struct Segments {
+    /// Bytes after the last complete delimiter.
+    buffer: Vec<u8>,
+    /// First position not yet ruled out as a delimiter start.
+    scan: usize,
+}
+
+impl Segments {
+    /// Scan each new byte once, retaining at most delimiter-length lookbehind.
+    fn push(&mut self, chunk: &[u8]) -> Vec<ServerSentEvent> {
+        self.buffer.extend_from_slice(chunk);
+        let mut start = 0;
+        let mut events = Vec::new();
+        while self.scan + 1 < self.buffer.len() {
+            let remaining = &self.buffer[self.scan..];
+            if remaining.len() < 4 && b"\r\n\r\n".starts_with(remaining) {
+                break;
+            }
+            let length = if remaining.starts_with(b"\n\n") || remaining.starts_with(b"\r\r") {
+                2
+            } else if remaining.starts_with(b"\r\n\r\n") {
+                4
+            } else {
+                self.scan += 1;
+                continue;
+            };
+            let text = super::decode_utf8(&self.buffer[start..self.scan]);
+            if let Some(data) = text
+                .trim_matches(maestro_text::is_whitespace_scalar)
+                .strip_prefix("data:")
+            {
+                events.push(ServerSentEvent {
+                    event: None,
+                    data: data
+                        .trim_matches(maestro_text::is_whitespace_scalar)
+                        .to_owned(),
+                });
+            }
+            self.scan += length;
+            start = self.scan;
+        }
+        self.buffer.drain(..start);
+        self.scan -= start;
+        events
+    }
+}
+
+impl SseMessages {
+    /// Read only initial data fields in LF-LF, CR-CR or CRLF-CRLF segments.
+    pub(crate) fn data_segments() -> Self {
+        Self {
+            segments: Some(Segments::default()),
+            ..Self::default()
+        }
+    }
+
+    /// Decode the remaining segment without flushing an incomplete UTF-8 suffix.
+    pub(crate) fn segment_tail(&self) -> String {
+        let bytes = self
+            .segments
+            .as_ref()
+            .map_or(&[][..], |segments| segments.buffer.as_slice());
+        let mut end = bytes.len();
+        let start = end.saturating_sub(3);
+        for index in start..end {
+            if bytes[index] & 0b1100_0000 != 0b1000_0000
+                && std::str::from_utf8(&bytes[index..])
+                    .is_err_and(|error| error.error_len().is_none())
+            {
+                end = index;
+                break;
+            }
+        }
+        super::decode_utf8(&bytes[..end]).into_owned()
     }
 }

@@ -8,18 +8,17 @@ mod tool_names;
 mod wire;
 
 use std::borrow::Cow;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
 
 use crate::options::{resolve_api_key, token_base};
-use crate::providers::assistant_output::{callback_failure, fail, initial_message};
+use crate::providers::assistant_output::{callback_failure, conclude, fail, initial_message};
 use crate::providers::http::{
     HttpResponse, RequestFailure, envelope_failure, send_with_status_error, spawn_detached,
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
-    DiagnosticErrorInfo, DoneReason, Model, ProviderResponse, SharedAssistantMessage,
-    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice,
-    adjust_max_tokens_for_thinking, build_base_options,
+    DiagnosticErrorInfo, Model, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions,
+    StreamOptions, ThinkingLevel, ToolChoice, adjust_max_tokens_for_thinking, build_base_options,
 };
 use events::Reducer;
 use request::Invocation;
@@ -28,8 +27,6 @@ use sse::{Reading, consume};
 
 /// Text of the failure that ends a cancelled invocation.
 const ABORTED_TEXT: &str = "Request was aborted";
-/// Failure of a message whose stop reason names an error or an abort.
-const UNKNOWN_ERROR_TEXT: &str = "An unknown error occurred";
 
 /// Effort supplied to adaptive thinking on a raw invocation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize)]
@@ -333,36 +330,4 @@ async fn invoke(
     let mut reducer = Reducer::new(model, output, stream, tools);
     consume(body, options.common.signal.as_ref(), reading, &mut reducer).await?;
     conclude(stream, output, options.common.signal.as_ref())
-}
-
-/// Report cancellation or an error outcome, otherwise announce completion.
-///
-/// An aborted signal reports the cancellation text; a stop reason of `error` or `aborted`
-/// reports an unknown error.
-fn conclude(
-    stream: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-    signal: Option<&Cancellation>,
-) -> Result<(), RequestFailure> {
-    if signal.is_some_and(Cancellation::is_aborted) {
-        return Err(RequestFailure::new(ABORTED_TEXT));
-    }
-    let reason = match output
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .stop_reason
-    {
-        StopReason::Stop => DoneReason::Stop,
-        StopReason::Length => DoneReason::Length,
-        StopReason::ToolUse => DoneReason::ToolUse,
-        StopReason::Error | StopReason::Aborted => {
-            return Err(RequestFailure::new(UNKNOWN_ERROR_TEXT));
-        }
-    };
-    stream.push(AssistantMessageEvent::Done {
-        reason,
-        message: Arc::clone(output),
-    });
-    stream.end(None);
-    Ok(())
 }

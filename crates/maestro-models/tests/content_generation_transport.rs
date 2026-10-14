@@ -167,7 +167,7 @@ fn check_row(row: Row) -> TestResult {
     let mut input: Input = serde_json::from_str(&row.input)?;
     let mut model =
         chat::model(&json!({"baseUrl": input.base_url, "headers": input.model_headers}))?;
-    let client = create_client(&model, &input.api_key, input.option_headers.as_ref());
+    let client = create_client(&model, &input.api_key, input.option_headers.as_ref(), None);
     if input.snapshot {
         "https://decoy.invalid".clone_into(&mut model.base_url);
         model.headers = Some(IndexMap::from([("X".to_owned(), "changed".to_owned())]));
