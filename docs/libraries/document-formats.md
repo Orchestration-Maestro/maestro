@@ -46,8 +46,9 @@ The application uses `hayro =0.8.0` and `hayro-interpret =0.8.0` with default
 embedded fonts/CMaps and native SIMD. Text interpretation uses the glyph device;
 previews reuse `render_into` with f64 transforms and the native pixmap PNG encoder.
 No separate extraction or PNG library is introduced. The native engine's text
-segmentation, Type3 text, bidirectional ordering, rasterization and page-box
-precision are retained rather than reconstructed by the application.
+segmentation, Type3 text, bidirectional ordering and rasterization are retained.
+The application reads inherited page-box numbers through the object API as f64
+for thumbnail dimensions; it does not parse PDF syntax separately.
 
 The resolved dependency closure is listed below. Choose MIT or Apache-2.0 where
 available and preserve BSD-3-Clause, Zlib and Unicode-3.0 obligations. Embedded

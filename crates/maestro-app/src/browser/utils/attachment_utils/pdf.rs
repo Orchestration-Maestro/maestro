@@ -1,7 +1,11 @@
 //! Native PDF page text and opaque rasterization.
 use super::AttachmentError;
 use base64::{Engine, engine::general_purpose::STANDARD};
-use hayro::hayro_syntax::{Pdf, page::Page};
+use hayro::hayro_syntax::{
+    Pdf,
+    object::{Array, Dict, Rect as PdfRect},
+    page::{Page, Rotation},
+};
 use hayro::kurbo::{Affine, BezPath, Rect};
 use hayro::vello_cpu::color::palette::css::WHITE;
 use hayro::vello_cpu::{Pixmap, RasterizerSettings, RenderContext, Resources, TargetInit};
@@ -49,8 +53,8 @@ pub(super) fn process_pdf(
 /// Fit the first page to 160 pixels, omitting failed PNG encodings.
 fn generate_pdf_preview(pdf: &Pdf) -> Option<String> {
     let page = pdf.pages().first()?;
-    let (width, height) = page.render_dimensions();
-    let scale = (160.0 / f64::from(width)).min(160.0 / f64::from(height));
+    let (width, height) = pdf_page_dimensions(page);
+    let scale = (160.0 / width).min(160.0 / height);
     render_pdf_page(page, &RenderCache::new(), scale)?
         .into_png()
         .ok()
@@ -63,9 +67,9 @@ pub(crate) fn render_pdf_page<'a>(
     cache: &RenderCache<'a>,
     scale: f64,
 ) -> Option<Pixmap> {
-    let (width, height) = page.render_dimensions();
-    let width = (f64::from(width) * scale).to_u16()?;
-    let height = (f64::from(height) * scale).to_u16()?;
+    let (width, height) = pdf_page_dimensions(page);
+    let width = (width * scale).to_u16()?;
+    let height = (height * scale).to_u16()?;
     let mut context = RenderContext::new(width, height);
     hayro::render_into(
         page,
@@ -101,24 +105,94 @@ fn pdf_page_text(runs: Vec<String>) -> String {
 struct TextDevice {
     /// Interpreted runs in page order.
     runs: Vec<String>,
+    /// Previous fill glyphs for the engine's adjacent stroke dispatch.
+    /// shortcut: separate identical fill/stroke shows collapse until a text-show hook exists.
+    fill: Option<Vec<(Option<BfString>, Affine)>>,
 }
 impl<'a> Device<'a> for TextDevice {
-    fn draw_path(&mut self, _: &BezPath, _: DrawProps<'a>, _: &DrawMode) {}
-    fn push_clip_path(&mut self, _: &ClipPath) {}
-    fn push_transparency_group(&mut self, _: f32, _: Option<SoftMask<'a>>, _: BlendMode) {}
-    fn draw_image(&mut self, _: Image<'a, '_>, _: ImageDrawProps<'a>) {}
-    fn pop_clip(&mut self) {}
-    fn pop_transparency_group(&mut self) {}
-    fn draw_glyph_run(&mut self, run: &GlyphRun<'_, 'a>, _: DrawProps<'a>, _: &DrawMode) {
-        let mut text = String::new();
-        for glyph in run.glyphs() {
-            match glyph.as_unicode() {
-                Some(BfString::Char(c)) => text.push(c),
-                Some(BfString::String(value)) => text.push_str(&value),
-                None => {}
-            }
+    fn draw_path(&mut self, _: &BezPath, _: DrawProps<'a>, _: &DrawMode) {
+        self.fill = None;
+    }
+    fn push_clip_path(&mut self, _: &ClipPath) {
+        self.fill = None;
+    }
+    fn push_transparency_group(&mut self, _: f32, _: Option<SoftMask<'a>>, _: BlendMode) {
+        self.fill = None;
+    }
+    fn draw_image(&mut self, _: Image<'a, '_>, _: ImageDrawProps<'a>) {
+        self.fill = None;
+    }
+    fn pop_clip(&mut self) {
+        self.fill = None;
+    }
+    fn pop_transparency_group(&mut self) {
+        self.fill = None;
+    }
+    fn draw_glyph_run(&mut self, run: &GlyphRun<'_, 'a>, _: DrawProps<'a>, mode: &DrawMode) {
+        let glyphs = run
+            .glyphs()
+            .iter()
+            .map(|glyph| (glyph.as_unicode(), glyph.transform()))
+            .collect::<Vec<_>>();
+        let fill = self.fill.take();
+        if matches!(mode, DrawMode::Stroke(_)) && fill.as_ref() == Some(&glyphs) {
+            return;
         }
+        if matches!(mode, DrawMode::Fill(_)) {
+            self.fill = Some(glyphs);
+        }
+        let text = run
+            .glyphs()
+            .iter()
+            .filter_map(|glyph| glyph.as_unicode())
+            .map(|value| match value {
+                BfString::Char(c) => c.to_string(),
+                BfString::String(value) => value,
+            })
+            .collect();
         self.runs.push(text);
+    }
+}
+
+/// Read inherited page-box coordinates without narrowing the object numbers.
+fn pdf_page_box(page: &Page<'_>, key: &[u8]) -> Option<PdfRect> {
+    let mut parent: Option<Dict<'_>> = None;
+    let mut seen = std::collections::HashSet::new();
+    loop {
+        let dict = parent.as_ref().unwrap_or_else(|| page.raw());
+        if !seen.insert(dict.obj_id()) {
+            return None;
+        }
+        if let Some(array) = dict.get::<Array<'_>>(key) {
+            let mut numbers = array.iter::<f64>();
+            let (x0, y0, x1, y1) = (
+                numbers.next()?,
+                numbers.next()?,
+                numbers.next()?,
+                numbers.next()?,
+            );
+            return Some(PdfRect::new(x0.min(x1), y0.min(y1), x0.max(x1), y0.max(y1)));
+        }
+        parent = Some(dict.get::<Dict<'_>>(b"Parent")?);
+    }
+}
+
+/// Preserve box intersection and page rotation at full precision.
+fn pdf_page_dimensions(page: &Page<'_>) -> (f64, f64) {
+    let media = pdf_page_box(page, b"MediaBox").unwrap_or_else(|| page.media_box());
+    let crop = pdf_page_box(page, b"CropBox")
+        .unwrap_or(media)
+        .intersect(media);
+    let dimensions = (crop.width().max(1.0), crop.height().max(1.0));
+    if crop.width() == 0.0 || crop.height() == 0.0 {
+        return (
+            f64::from(page.render_dimensions().0),
+            f64::from(page.render_dimensions().1),
+        );
+    }
+    match page.rotation() {
+        Rotation::Horizontal | Rotation::FlippedHorizontal => (dimensions.1, dimensions.0),
+        _ => dimensions,
     }
 }
 

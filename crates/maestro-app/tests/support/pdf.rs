@@ -7,7 +7,7 @@ use maestro_app::browser::utils::attachment_utils::{
 };
 use maestro_models::{Fetch, HttpResponse};
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, sync::Arc};
+use std::{fmt::Write, path::PathBuf, sync::Arc};
 
 /// One independently recorded document.
 #[derive(Deserialize)]
@@ -248,4 +248,41 @@ pub fn check_route(row: &Route) {
             assert_eq!(format!("Error: {}", actual.unwrap_err()), *message);
         }
     }
+}
+
+/// Build a controlled PDF with valid stream lengths and cross references.
+pub fn synthetic(content: &str, inherited: bool) -> Vec<u8> {
+    let geometry = "/MediaBox [0 0 100.2 250.5] /CropBox [0 0 100.2 250.5]";
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+        format!(
+            "<< /Type /Pages /Count 1 /Kids [3 0 R] {} >>",
+            if inherited { geometry } else { "" }
+        ),
+        format!(
+            "<< /Type /Page /Parent 2 0 R {} /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 4 0 R >>",
+            if inherited { "" } else { geometry }
+        ),
+        format!(
+            "<< /Length {} >>\nstream\n{content}\nendstream",
+            content.len()
+        ),
+    ];
+    let mut pdf = "%PDF-1.7\n".to_owned();
+    let mut offsets = Vec::new();
+    for (index, object) in objects.iter().enumerate() {
+        offsets.push(pdf.len());
+        write!(pdf, "{} 0 obj\n{object}\nendobj\n", index + 1).unwrap();
+    }
+    let xref = pdf.len();
+    pdf.push_str("xref\n0 5\n0000000000 65535 f \n");
+    for offset in offsets {
+        writeln!(pdf, "{offset:010} 00000 n ").unwrap();
+    }
+    write!(
+        pdf,
+        "trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n"
+    )
+    .unwrap();
+    pdf.into_bytes()
 }

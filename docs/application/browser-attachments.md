@@ -33,7 +33,10 @@ selecting canonical `application/pdf`. PDF documents retain original bytes/name/
 Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
 `<pdf filename="NAME">` and final `\n</pdf>` wrapper. Native Unicode runs are
 filtered by the shared whitespace policy without trimming retained text, then
-joined with one space. Page order, duplicate runs and empty page wrappers remain.
+joined with one space. Outlined text emits one run rather than separate fill/stroke
+copies; invisible OCR text is retained. Page order and empty page wrappers remain.
+Clip-only text and separate identical fill/stroke text-show operations await
+[an interpreter text-show hook](https://github.com/Orchestration-Maestro/maestro/issues/1014).
 
 The optional preview is standard padded base64 PNG from page one, fit to 160
 pixels with truncating target dimensions, opaque white background and upscaling
@@ -42,8 +45,10 @@ without losing extracted text. Opening failures return `AttachmentError::Pdf`,
 displaying `Failed to process PDF: ` followed by the native diagnostic; this native
 error has no `Error::source`. Exhaustive SDK matches must handle this variant.
 The [approved PDF engine](../libraries/document-formats.md#pdf-processing) owns
-text segmentation, Type3 text, bidirectional ordering, font rasterization and
-page-box precision. Documents, caches and pixels are scoped to the operation.
+text segmentation, Type3 text, bidirectional ordering and font rasterization.
+Thumbnail sizing reads inherited page boxes at full precision before intersecting
+the crop and media boxes and applying page rotation. Documents, caches and pixels
+are scoped to the operation.
 
 Presentation documents retain the original bytes/name/size, use the canonical
 presentation MIME and have extracted text without a preview. The

@@ -242,3 +242,47 @@ fn pdf_preview_encoding_failure_keeps_text() {
     assert_eq!((width, height), (1.0, 1000.0));
     assert!(hayro::vello_cpu::Pixmap::new(0, 160).into_png().is_err());
 }
+
+#[test]
+fn pdf_text_modes_keep_one_run_and_repeated_show_operations() {
+    for mode in [1, 2, 3, 6] {
+        let bytes = support::pdf::synthetic(
+            &format!("BT /F1 12 Tf {mode} Tr 5 30 Td (Page A) Tj (Page A) Tj ET"),
+            false,
+        );
+        let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+        let attachment = support::pdf::run(load_attachment(
+            AttachmentSource::Buffer(&bytes),
+            Some("runs.pdf"),
+            &fetch,
+        ))
+        .unwrap();
+        assert_eq!(
+            attachment.extracted_text.as_deref(),
+            Some(
+                "<pdf filename=\"runs.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+            ),
+            "mode {mode}"
+        );
+    }
+}
+
+#[test]
+fn pdf_preview_preserves_full_precision_direct_and_inherited_boxes() {
+    for inherited in [false, true] {
+        let bytes = support::pdf::synthetic("", inherited);
+        let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+        let attachment = support::pdf::run(load_attachment(
+            AttachmentSource::Buffer(&bytes),
+            Some("geometry.pdf"),
+            &fetch,
+        ))
+        .unwrap();
+        let pixels = support::pdf::pixels(attachment.preview.as_deref().unwrap());
+        assert_eq!(
+            (pixels.width(), pixels.height()),
+            (64, 160),
+            "inherited {inherited}"
+        );
+    }
+}
