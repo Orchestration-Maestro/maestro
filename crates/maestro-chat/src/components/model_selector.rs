@@ -216,12 +216,8 @@ impl SelectionState {
         self.list.clear();
         let filtered = self.filtered.borrow();
         let count = filtered.len();
-        let start = self
-            .selected
-            .get()
-            .saturating_sub(5)
-            .min(count.saturating_sub(10));
-        let end = (start + 10).min(count);
+        let window = super::list_window(self.selected.get(), count, 10);
+        let (start, end) = (window.start, window.end);
         for (index, item) in filtered.iter().enumerate().take(end).skip(start) {
             self.text(self.row(index, item));
         }

@@ -1,0 +1,3912 @@
+[
+  {
+    "fn": "isEnabled",
+    "args": [
+      null,
+      "a"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      null,
+      "a"
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "a",
+      -1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "a",
+      0
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "a",
+      1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      null,
+      "b"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      null,
+      "b"
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "b",
+      -1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "b",
+      0
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "b",
+      1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      null,
+      "missing"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      null,
+      "missing"
+    ],
+    "expected": [
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "missing",
+      -1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "missing",
+      0
+    ],
+    "expected": null
+  },
+  {
+    "fn": "move",
+    "args": [
+      null,
+      "missing",
+      1
+    ],
+    "expected": null
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      null,
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      null,
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [],
+      "a"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [],
+      "a"
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "a",
+      -1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "a",
+      0
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "a",
+      1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [],
+      "b"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [],
+      "b"
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "b",
+      -1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "b",
+      0
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "b",
+      1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [],
+      "missing"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [],
+      "missing"
+    ],
+    "expected": [
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "missing",
+      -1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "missing",
+      0
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [],
+      "missing",
+      1
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a"
+      ],
+      "a"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a"
+      ],
+      "a"
+    ],
+    "expected": []
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "a",
+      -1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "a",
+      0
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "a",
+      1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a"
+      ],
+      "b"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a"
+      ],
+      "b"
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "b",
+      -1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "b",
+      0
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "b",
+      1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": [
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "missing",
+      -1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "missing",
+      0
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a"
+      ],
+      "missing",
+      1
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "a"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "a"
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "a",
+      -1
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "a",
+      0
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "a",
+      1
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "b"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "b"
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "b",
+      -1
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "b",
+      0
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "b",
+      1
+    ],
+    "expected": [
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": [
+      "b",
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "missing",
+      -1
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "missing",
+      0
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      "missing",
+      1
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "b",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "b"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "a"
+    ],
+    "expected": true
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "a"
+    ],
+    "expected": [
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "a",
+      -1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "a",
+      0
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "a",
+      1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "b"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "b"
+    ],
+    "expected": [
+      "a",
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "b",
+      -1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "b",
+      0
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "b",
+      1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "missing"
+    ],
+    "expected": [
+      "a",
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "missing",
+      -1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "missing",
+      0
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      "missing",
+      1
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "stale"
+      ],
+      "a"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "stale"
+      ],
+      "a"
+    ],
+    "expected": [
+      "stale",
+      "a"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "a",
+      -1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "a",
+      0
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "a",
+      1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "stale"
+      ],
+      "b"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "stale"
+      ],
+      "b"
+    ],
+    "expected": [
+      "stale",
+      "b"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "b",
+      -1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "b",
+      0
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "b",
+      1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "isEnabled",
+    "args": [
+      [
+        "stale"
+      ],
+      "missing"
+    ],
+    "expected": false
+  },
+  {
+    "fn": "toggle",
+    "args": [
+      [
+        "stale"
+      ],
+      "missing"
+    ],
+    "expected": [
+      "stale",
+      "missing"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "missing",
+      -1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "missing",
+      0
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "move",
+    "args": [
+      [
+        "stale"
+      ],
+      "missing",
+      1
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "stale"
+      ],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      []
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      []
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": [
+      "stale",
+      "a",
+      "b"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "stale",
+      "a"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "stale",
+      "a",
+      "missing"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "b"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "getSortedIds",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": [
+      "stale",
+      "a",
+      "a"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ]
+    ],
+    "expected": []
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      []
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "enableAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": null
+  },
+  {
+    "fn": "clearAll",
+    "args": [
+      [
+        "stale"
+      ],
+      [
+        "a",
+        "a"
+      ],
+      [
+        "a",
+        "missing"
+      ]
+    ],
+    "expected": [
+      "stale"
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      0,
+      8
+    ],
+    "expected": [
+      0,
+      0
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      0,
+      10
+    ],
+    "expected": [
+      0,
+      0
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      1,
+      8
+    ],
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      1,
+      10
+    ],
+    "expected": [
+      0,
+      1
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      7,
+      8
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      7,
+      10
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      7,
+      8
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      7,
+      10
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      7,
+      8
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      7,
+      10
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      7,
+      8
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      7,
+      10
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      6,
+      7,
+      8
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      6,
+      7,
+      10
+    ],
+    "expected": [
+      0,
+      7
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      8,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      8,
+      10
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      8,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      8,
+      10
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      8,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      8,
+      10
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      8,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      8,
+      10
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      7,
+      8,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      7,
+      8,
+      10
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      9,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      9,
+      10
+    ],
+    "expected": [
+      0,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      9,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      9,
+      10
+    ],
+    "expected": [
+      0,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      9,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      9,
+      10
+    ],
+    "expected": [
+      0,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      9,
+      8
+    ],
+    "expected": [
+      1,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      9,
+      10
+    ],
+    "expected": [
+      0,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      8,
+      9,
+      8
+    ],
+    "expected": [
+      1,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      8,
+      9,
+      10
+    ],
+    "expected": [
+      0,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      16,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      0,
+      16,
+      10
+    ],
+    "expected": [
+      0,
+      10
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      16,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      3,
+      16,
+      10
+    ],
+    "expected": [
+      0,
+      10
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      16,
+      8
+    ],
+    "expected": [
+      0,
+      8
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      4,
+      16,
+      10
+    ],
+    "expected": [
+      0,
+      10
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      16,
+      8
+    ],
+    "expected": [
+      1,
+      9
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      5,
+      16,
+      10
+    ],
+    "expected": [
+      0,
+      10
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      15,
+      16,
+      8
+    ],
+    "expected": [
+      8,
+      16
+    ]
+  },
+  {
+    "fn": "list_window",
+    "args": [
+      15,
+      16,
+      10
+    ],
+    "expected": [
+      6,
+      16
+    ]
+  }
+]

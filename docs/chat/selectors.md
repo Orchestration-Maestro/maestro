@@ -231,3 +231,39 @@ unchanged values and while hidden. Inherited child-array edits preserve retained
 content/input aliases. New text captures its current styling; borders read the
 live theme. Editing, wrapping and cursor geometry remain with the
 [terminal components](../terminal/components.md).
+
+## Scoped model editor
+
+`components::ScopedModelsSelectorComponent` edits the supplied cycling scope.
+`ModelsConfig` retains shared model descriptors and an optional ordered identity
+list: `None` enables all models; `Some(vec![])` is an explicit empty scope.
+Explicit order, duplicates and unavailable identities remain in callback payloads
+and counts; unavailable identities do not produce rows. Repeated available
+identities use the last supplied descriptor while retaining row occurrences.
+
+Install the application's `presentation_data::keybindings::KEYBINDINGS` in the
+active key manager. The editor reads live bindings: Enter toggles, Ctrl+A enables,
+Ctrl+X clears, Ctrl+P toggles the selected provider, Alt+Up/Alt+Down reorder,
+and Ctrl+S requests persistence. A nonempty search restricts enable/clear;
+provider toggles still cover the entire provider. All-enabled detection checks
+identity coverage rather than list length. Filtered reorder clamps the cursor
+at both ends. Up/down wrap within the search results, which match ID and provider,
+not display name.
+
+`ModelsCallbacks::on_change` reports edits immediately, after rebuilding the view.
+`on_persist` runs only on save; save clears the unsaved marker after the callback's
+synchronous invocation. Each receives an owned selection snapshot and may return
+an asynchronous tail to the supplied host without delaying further input. Host
+failures remain owned by the [terminal runtime](../terminal/rendering.md).
+
+`get_search_input` retains the editable child without installing a submit
+callback. Direct child edits refilter on the next selector dispatch. Parent focus
+forwards immediately while the child's own focus flag remains independently
+editable. Clearing the inherited Container children removes presentation, not
+selection or callback capability. Literal Ctrl+C clears a nonempty query before
+cancelling; literal Escape always cancels.
+
+Eight visible rows use the shared centered list window. Borders sample the live
+theme; header styling stays captured, navigation rebuilds rows, edits rebuild rows
+and footer, and save rebuilds only the footer. Wrapping, cursor decoration and
+cell widths belong to the [terminal components](../terminal/components.md).

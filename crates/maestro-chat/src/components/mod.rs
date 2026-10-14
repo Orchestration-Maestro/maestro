@@ -253,3 +253,5 @@ fn shorten_home_path(path: &str, home: Option<&str>) -> String {
 }
 
 pub mod session_selector;
+pub mod scoped_models_selector;
+pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
