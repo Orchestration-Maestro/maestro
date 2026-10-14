@@ -46,7 +46,7 @@ impl Environment {
     /// names one. A proxy written without a scheme takes the destination's.
     ///
     /// # Errors
-    /// Fails when the selected proxy is not a URL or its scheme is not `http` or `https`.
+    /// Fails when the selected proxy is not a URL or uses an unsupported scheme.
     pub(super) fn proxy_for(&self, destination: &Url) -> Result<Option<Url>, String> {
         let Some(host) = destination.host_str() else {
             return Ok(None);
@@ -74,7 +74,7 @@ impl Environment {
         }
         .map_err(|error| format!("Invalid proxy URL {proxy}: {error}"))?;
         match parsed.scheme() {
-            "http" | "https" => Ok(Some(parsed)),
+            "http" | "https" | "socks" | "socks5" | "socks5h" => Ok(Some(parsed)),
             _ => Err(format!("Unsupported protocol for proxy URL: {proxy}")),
         }
     }

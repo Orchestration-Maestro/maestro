@@ -23,6 +23,7 @@ pub struct Received {
 
 impl Received {
     /// First value of a header.
+    #[must_use]
     pub fn header(&self, name: &str) -> Option<&str> {
         self.headers
             .iter()
@@ -31,6 +32,7 @@ impl Received {
     }
 
     /// The bytes after `name: ` on the header line of that name (lowercase), as received.
+    #[must_use]
     pub fn header_octets(&self, name: &str) -> Option<&[u8]> {
         let prefix = format!("{name}: ").into_bytes();
         self.head
@@ -55,6 +57,9 @@ pub struct Loopback {
 
 impl Loopback {
     /// Wait for the exchange to finish and return what the client sent.
+    ///
+    /// # Errors
+    /// Returns worker failures, panics or a missing request.
     pub fn finish(self) -> TestResult<Received> {
         self.worker.join().map_err(|_| "server thread panicked")??;
         Ok(self.received.recv()?)
@@ -98,7 +103,10 @@ fn client_closed(error: &std::io::Error) -> bool {
 
 /// Read one request, or `None` when the client closes before finishing its head; a body cut
 /// short by the client is returned as received.
-fn read_request(connection: &mut TcpStream) -> std::io::Result<Option<Received>> {
+///
+/// # Errors
+/// Returns socket read failures.
+pub fn read_request(connection: &mut impl Read) -> std::io::Result<Option<Received>> {
     let mut bytes = Vec::new();
     let mut buffer = [0_u8; 4096];
     let head = loop {
@@ -139,6 +147,9 @@ fn read_request(connection: &mut TcpStream) -> std::io::Result<Option<Received>>
 }
 
 /// Answer one request with `response_head` and then carry out `steps` in order.
+///
+/// # Errors
+/// Returns listener setup failures.
 pub fn serve(response_head: &str, steps: Vec<Step>) -> TestResult<Loopback> {
     let response_head = response_head.to_owned();
     let listener = TcpListener::bind("127.0.0.1:0")?;
@@ -211,6 +222,9 @@ impl Routed {
     }
 
     /// Stop accepting connections and wait until every admitted request was answered.
+    ///
+    /// # Errors
+    /// Returns stop, worker or join failures after waiting for admitted connections.
     pub fn finish(mut self) -> TestResult {
         self.stop_accepting()?;
         let worker = self.worker.take().ok_or("server already finished")?;
@@ -229,8 +243,11 @@ impl Drop for Routed {
 }
 
 /// Read one request from `connection`, answer it with `handler` and close.
-fn answer_connection(
-    mut connection: TcpStream,
+///
+/// # Errors
+/// Returns request read or response write failures.
+pub fn answer_connection(
+    mut connection: impl Read + Write,
     handler: &dyn Fn(&Received) -> Reply,
 ) -> std::io::Result<()> {
     let Some(request) = read_request(&mut connection)? else {
@@ -292,6 +309,9 @@ fn serve_until_stopped(
 }
 
 /// Answer each request on its own connection with `handler`, and close the connection after it.
+///
+/// # Errors
+/// Returns listener setup failures.
 pub fn serve_routed(
     handler: impl Fn(&Received) -> Reply + Send + Sync + 'static,
 ) -> TestResult<Routed> {
@@ -301,6 +321,9 @@ pub fn serve_routed(
 }
 
 /// Close each admitted connection before HTTP parsing, recording its admission.
+///
+/// # Errors
+/// Returns listener setup failures.
 pub fn serve_closed(on_accept: impl Fn() + Send + Sync + 'static) -> TestResult<Routed> {
     start_routed(std::sync::Arc::new(move |connection| {
         on_accept();
@@ -309,8 +332,19 @@ pub fn serve_closed(on_accept: impl Fn() + Send + Sync + 'static) -> TestResult<
 }
 
 /// Start the shared accept/join owner with a connection handler.
-fn start_routed(handler: Handler) -> TestResult<Routed> {
-    let listener = TcpListener::bind("127.0.0.1:0")?;
+///
+/// # Errors
+/// Returns listener setup failures.
+pub fn start_routed(handler: Handler) -> TestResult<Routed> {
+    start_routed_at("127.0.0.1:0", handler)
+}
+
+/// Start the shared owner on an explicitly selected loopback address family.
+///
+/// # Errors
+/// Returns bind or local-address lookup failures.
+pub fn start_routed_at(address: &str, handler: Handler) -> TestResult<Routed> {
+    let listener = TcpListener::bind(address)?;
     let address = listener.local_addr()?;
     let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let stopped = std::sync::Arc::clone(&stop);

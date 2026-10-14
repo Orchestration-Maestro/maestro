@@ -83,6 +83,7 @@ mod cloud_conversation_streams;
 mod cloud_conversation_unknown_unions;
 mod cloud_model_routes;
 mod cloud_profile_credentials;
+mod cloud_proxy_transports;
 mod compatibility_invocation;
 mod content_generation_conversion;
 mod content_generation_invocation;
@@ -202,6 +203,12 @@ mod schema_checker_qualification;
 mod schema_diagnostics;
 mod scripted_model_invocation;
 mod simple_model_options;
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/socks.rs"]
+mod socks;
 mod streamed_arguments;
 mod subscription_accounts;
 #[path = "tool_images.rs"]

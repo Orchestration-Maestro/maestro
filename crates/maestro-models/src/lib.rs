@@ -104,3 +104,6 @@ pub use providers::response_sessions::openai_codex_responses::{
 };
 
 pub use providers::json_text::{compact_json, parsed_arguments};
+
+#[cfg(test)]
+pub mod tests;

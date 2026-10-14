@@ -153,13 +153,14 @@ fn peer(
     route: &'static str,
     seen: &Arc<Mutex<Vec<Seen>>>,
     endpoint: &str,
+    socks_proxy: bool,
 ) -> TestResult<loopback::Routed> {
     let body = bedrock::answer("answer")?.concat();
     let (input, seen) = (input.clone(), Arc::clone(seen));
     let authority = url::Url::parse(endpoint)
         .ok()
         .map(|url| url[url::Position::BeforeHost..url::Position::AfterPort].to_owned());
-    loopback::serve_routed(move |request| {
+    let handler = move |request: &loopback::Received| {
         let entry = observation(route, request);
         let connect = entry.service == "connect";
         seen.lock()
@@ -185,7 +186,15 @@ fn peer(
             &mut profile_services::Log::default(),
             &body,
         )
-    })
+    };
+    if socks_proxy {
+        loopback::start_routed(Arc::new(move |mut socket| {
+            crate::socks::negotiate(&mut socket, false)?;
+            loopback::answer_connection(socket, &handler)
+        }))
+    } else {
+        loopback::serve_routed(handler)
+    }
 }
 
 /// Add destination-specific proxy variables and distinct service/conversation endpoints.
@@ -226,6 +235,21 @@ fn environment(row: &Row, work: &Workdir, input: &Input, urls: [&str; 3]) -> Vec
     vars
 }
 
+/// Observe the real destination TLS attempt independently of the proxy.
+fn tls_peer(seen: &Arc<Mutex<Vec<Seen>>>) -> TestResult<loopback::Routed> {
+    let seen = Arc::clone(seen);
+    loopback::serve_closed(move || {
+        seen.lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(Seen {
+                route: "direct".to_owned(),
+                service: "tls".to_owned(),
+                signature: None,
+                token: None,
+            });
+    })
+}
+
 /// Compare peers only after child exit and all admitted connections have joined.
 fn outside(row: &Row, supplied: bool) -> TestResult {
     let input = profile(&row.input)?;
@@ -235,33 +259,26 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
     if row.input.mode == "mandatory" {
         direct.deny = Some(On);
     }
-    let origin = peer(&direct, "direct", &seen, "")?;
-    let conversation = peer(&input, "direct", &seen, "")?;
-    let tls = if row.input.mode == "https" {
-        let seen = Arc::clone(&seen);
-        Some(loopback::serve_closed(move || {
-            seen.lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(Seen {
-                    route: "direct".to_owned(),
-                    service: "tls".to_owned(),
-                    signature: None,
-                    token: None,
-                });
-        })?)
-    } else {
-        None
-    };
+    let origin = peer(&direct, "direct", &seen, "", false)?;
+    let conversation = peer(&input, "direct", &seen, "", false)?;
+    let tls = (row.input.mode == "https")
+        .then(|| tls_peer(&seen))
+        .transpose()?;
     let endpoint = tls.as_ref().map_or_else(
         || origin.url.clone(),
         |tls| tls.url.replacen("http:", "https:", 1),
     );
-    let proxy = peer(&input, "proxy", &seen, &endpoint)?;
+    let proxy = peer(&input, "proxy", &seen, &endpoint, row.input.mode == "socks")?;
+    let proxy_url = if row.input.mode == "socks" {
+        proxy.url.replacen("http", "socks5h", 1)
+    } else {
+        proxy.url.clone()
+    };
     let mut vars = environment(
         row,
         &work,
         &input,
-        [&endpoint, &conversation.url, &proxy.url],
+        [&endpoint, &conversation.url, &proxy_url],
     );
     let test = if supplied {
         vars.retain(|(name, _)| !name.to_lowercase().contains("proxy"));

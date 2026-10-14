@@ -4,9 +4,15 @@ mod client;
 mod failure;
 mod headers;
 mod line_decoder;
+#[cfg(not(target_arch = "wasm32"))]
+mod proxy_agent;
 mod retry;
 mod runtime;
 mod server_sent_events;
+#[cfg(not(target_arch = "wasm32"))]
+mod socks_client;
+#[cfg(not(target_arch = "wasm32"))]
+mod socks_proxy_agent;
 
 use std::collections::BTreeMap;
 use std::fmt;

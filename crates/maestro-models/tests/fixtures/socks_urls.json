@@ -1,0 +1,360 @@
+[
+  {
+    "id": "empty_pair",
+    "input": {
+      "url": "socks5h://:@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "minimum_port",
+    "input": {
+      "url": "socks5h://proxy.example:1"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "maximum_port",
+    "input": {
+      "url": "socks5h://proxy.example:65535"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 65535,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "ignored_path_query_fragment",
+    "input": {
+      "url": "socks5h://proxy.example:1080/ignored?x=1#fragment"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "nul_credentials",
+    "input": {
+      "url": "socks5h://u%00ser:p%00ass@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "u\u0000ser",
+      "password": "p\u0000ass"
+    }
+  },
+  {
+    "id": "empty_host",
+    "input": {
+      "url": "socks5h://"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "bytes_255",
+    "input": {
+      "url": "socks5h://%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9a:pass@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa",
+      "password": "pass"
+    }
+  },
+  {
+    "id": "bytes_256",
+    "input": {
+      "url": "socks5h://%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9%C3%A9:pass@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+      "password": "pass"
+    }
+  },
+  {
+    "id": "alias_remote",
+    "input": {
+      "url": "socks://proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "local_default",
+    "input": {
+      "url": "socks5://proxy.example"
+    },
+    "expected": {
+      "lookup": true,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "remote_default",
+    "input": {
+      "url": "socks5h://proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "alias_zero_port",
+    "input": {
+      "url": "socks://proxy.example:0"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "local_explicit_port",
+    "input": {
+      "url": "socks5://proxy.example:1081"
+    },
+    "expected": {
+      "lookup": true,
+      "host": "proxy.example",
+      "port": 1081,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "remote_encoded_credentials",
+    "input": {
+      "url": "socks5h://user%40team:p%3Ass@proxy.example:1081"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1081,
+      "user": "user@team",
+      "password": "p:ss"
+    }
+  },
+  {
+    "id": "local_unicode_credentials",
+    "input": {
+      "url": "socks5://%E7%94%A8%E6%88%B7:%E5%AF%86%E7%A0%81@proxy.example"
+    },
+    "expected": {
+      "lookup": true,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "用户",
+      "password": "密码"
+    }
+  },
+  {
+    "id": "password_only",
+    "input": {
+      "url": "socks5h://:pass@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": "pass"
+    }
+  },
+  {
+    "id": "user_only",
+    "input": {
+      "url": "socks5://user@proxy.example"
+    },
+    "expected": {
+      "lookup": true,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "user",
+      "password": ""
+    }
+  },
+  {
+    "id": "uppercase_alias",
+    "input": {
+      "url": "SOCKS://proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "literal_plus",
+    "input": {
+      "url": "socks5h://user+tag:pass+suffix@proxy.example"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "user+tag",
+      "password": "pass+suffix"
+    }
+  },
+  {
+    "id": "decode_once",
+    "input": {
+      "url": "socks5://u%2525:p%2540@proxy.example"
+    },
+    "expected": {
+      "lookup": true,
+      "host": "proxy.example",
+      "port": 1080,
+      "user": "u%25",
+      "password": "p%40"
+    }
+  },
+  {
+    "id": "ipv4_proxy",
+    "input": {
+      "url": "socks5h://127.0.0.1:1081"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "127.0.0.1",
+      "port": 1081,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "ipv6_proxy",
+    "input": {
+      "url": "socks5h://[::1]:1081"
+    },
+    "expected": {
+      "lookup": false,
+      "host": "[::1]",
+      "port": 1081,
+      "user": "",
+      "password": ""
+    }
+  },
+  {
+    "id": "bad_user_escape",
+    "input": {
+      "url": "socks5h://bad%ZZ@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "short_user_escape",
+    "input": {
+      "url": "socks5://bad%A@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "trailing_user_escape",
+    "input": {
+      "url": "socks://bad%@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "bad_password_escape",
+    "input": {
+      "url": "socks5h://user:bad%GG@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "bad_user_utf8",
+    "input": {
+      "url": "socks5h://bad%FF@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "bad_password_utf8",
+    "input": {
+      "url": "socks://user:bad%C3@proxy.example"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "out_of_range_port",
+    "input": {
+      "url": "socks5://proxy.example:65536"
+    },
+    "expected": {
+      "error": true
+    }
+  },
+  {
+    "id": "nonnumeric_port",
+    "input": {
+      "url": "socks5h://proxy.example:abc"
+    },
+    "expected": {
+      "error": true
+    }
+  }
+]
