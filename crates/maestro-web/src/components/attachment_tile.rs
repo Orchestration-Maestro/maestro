@@ -55,12 +55,14 @@ impl AttachmentTile {
         style(ui, p)?;
         let (name, preview, pdf, excel) = self.thumbnail_data()?;
         let (_, rect) = ui.allocate_space(egui::vec2(64., 64.));
+        let badge = (pdf && preview.is_some()).then_some(rect.with_min_y(rect.bottom() - 19.));
+        let image = badge.map_or(rect, |badge| rect.with_max_y(badge.top()));
         let response = ui
-            .interact(rect, self.id, egui::Sense::click())
+            .interact(image, self.id, egui::Sense::click())
             .on_hover_text(&name)
             .on_hover_cursor(egui::CursorIcon::PointingHand);
         let hovered = response.hovered()
-            && ui.input(|i| i.pointer.hover_pos().is_some_and(|pos| rect.contains(pos)));
+            && ui.input(|i| i.pointer.hover_pos().is_some_and(|pos| image.contains(pos)));
         let opacity = if hovered { 0.8 } else { 1. };
         let muted = color(p, "muted")?.gamma_multiply(opacity);
         ui.painter().rect(
@@ -70,14 +72,10 @@ impl AttachmentTile {
             egui::Stroke::new(1., color(p, "border")?),
             egui::StrokeKind::Inside,
         );
-        let (removed, remove_rect) = self.delete(ui, &response, i, p)?;
+        let (removed, remove_rect) = self.delete(ui, rect, i, p)?;
         let mut occluders: Vec<_> = remove_rect.into_iter().collect();
         if let Some(source) = preview {
-            if pdf {
-                let badge = egui::Rect::from_min_max(
-                    rect.left_bottom() - egui::vec2(0., 19.),
-                    rect.right_bottom(),
-                );
+            if let Some(badge) = badge {
                 occluders.push(badge);
                 ui.painter().rect_filled(badge, 0., color(p, "background")?);
                 ui.painter().text(
@@ -140,7 +138,7 @@ impl AttachmentTile {
     fn delete<F: ?Sized>(
         &self,
         ui: &egui::Ui,
-        response: &egui::Response,
+        tile_rect: egui::Rect,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
     ) -> Result<(bool, Option<egui::Rect>), AttachmentUiError> {
@@ -148,7 +146,7 @@ impl AttachmentTile {
             return Ok((false, None));
         }
         let rect = egui::Rect::from_min_size(
-            response.rect.right_top() + egui::vec2(-16., -4.),
+            tile_rect.right_top() + egui::vec2(-16., -4.),
             egui::vec2(20., 20.),
         );
         let button = ui
@@ -157,7 +155,7 @@ impl AttachmentTile {
         let hovered = ui.input(|i| {
             i.pointer
                 .hover_pos()
-                .is_some_and(|pos| response.rect.contains(pos))
+                .is_some_and(|pos| tile_rect.contains(pos))
         });
         let visible = !self.host.hover_capable()? || hovered || button.hovered();
         if visible {

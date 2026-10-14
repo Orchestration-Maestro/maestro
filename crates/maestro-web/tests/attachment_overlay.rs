@@ -173,6 +173,13 @@ fn overlay_toggle_clears_errors_without_changing_attachment() {
     assert!(
         matches!(&host.surfaces.borrow().last().unwrap().content,Content::Preview(FileType::Pdf,handle,true) if Rc::ptr_eq(handle,&record))
     );
+    let pos = frame.label("Text").center();
+    frame.overlay(&mut overlay, click(pos)).unwrap();
+    *host.fail.borrow_mut() = Some("text failure".into());
+    frame.overlay(&mut overlay, vec![]).unwrap();
+    frame.overlay(&mut overlay, vec![]).unwrap();
+    assert!(frame.texts().contains(&"text failure".into()));
+    assert_error_survives_record_edits(&mut frame, &mut overlay, &record, &host, "text failure");
 }
 /// Source content selection input/output.
 #[derive(Deserialize)]

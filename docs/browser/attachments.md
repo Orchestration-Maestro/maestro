@@ -5,7 +5,8 @@ filename. Its public `attachment` is an `Rc<RefCell<Attachment>>`; replacing it 
 editing the shared record is observed on subsequent frames. `show_delete` defaults
 to false. When enabled, the remove target calls the optional `on_delete` without
 opening an overlay. Hover-capable platforms reveal its paint on hover; other
-platforms keep it visible.
+platforms keep it visible. A PDF badge is not part of the image hover/click
+target; the remaining image area opens the overlay.
 
 Retain the `AttachmentOverlay` returned by a tile click, or construct one with
 `AttachmentOverlay::open`. Call `render` each frame and release it when it returns

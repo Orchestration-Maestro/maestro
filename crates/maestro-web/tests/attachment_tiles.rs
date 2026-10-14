@@ -58,6 +58,24 @@ fn tile_preview_preserves_mime_badge_and_filename() {
         assert_eq!(occluders.len(), usize::from(c.expected.pdf_badge));
         if c.expected.pdf_badge {
             assert_eq!(occluders[0].size(), egui::vec2(64., 19.));
+            let badge_pos = occluders[0].center();
+            frame
+                .tile(&mut tile, vec![egui::Event::PointerMoved(badge_pos)])
+                .unwrap();
+            assert_eq!(
+                host.surfaces.borrow().last().unwrap().opacity.to_bits(),
+                1_f32.to_bits()
+            );
+            assert!(frame.tile(&mut tile, click(badge_pos)).unwrap().is_none());
+            let image_pos = occluders[0].left_top() - egui::vec2(-8., 8.);
+            frame
+                .tile(&mut tile, vec![egui::Event::PointerMoved(image_pos)])
+                .unwrap();
+            assert_eq!(
+                host.surfaces.borrow().last().unwrap().opacity.to_bits(),
+                0.8_f32.to_bits()
+            );
+            assert!(frame.tile(&mut tile, click(image_pos)).unwrap().is_some());
         }
         assert_eq!(
             frame.texts().contains(&"PDF".into()),
