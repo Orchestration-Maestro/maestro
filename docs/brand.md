@@ -42,7 +42,8 @@ bare in primary and fallback positions, quoting other names without trimming.
 Order, repeats and spelling are retained. CSS strings escape quotes and backslashes;
 C0 controls, DEL and less-than use lowercase hexadecimal escapes with a following
 space, and NUL becomes the replacement character. Custom-property role names use
-the same control escaping plus CSS identifier escaping.
+the same control escaping plus CSS identifier escaping. Both operations reuse
+the [text owner](text.md) for CSS serialization.
 
 `BrandPresentation::fill_mark(template)` substitutes original `{{wordmark}}`,
 `var(--role)` and `currentColor` tokens once. Wordmark text is XML-escaped;

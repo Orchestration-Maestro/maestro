@@ -324,3 +324,49 @@ fn parsed_tree_survives_source_release() {
         "urn:w"
     );
 }
+
+#[test]
+fn simple_fields_read_standard_lock_before_alias() {
+    use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
+    for (attributes, expected) in [
+        ("w:fldLock=\"true\" w:lock=\"false\"", true),
+        ("w:fldLock=\"false\" w:lock=\"true\"", false),
+        ("w:lock=\"true\"", true),
+        ("w:fldLock=\"unknown\" w:lock=\"true\"", false),
+    ] {
+        let source = format!("<w:p xmlns:w=\"urn:w\"><w:fldSimple {attributes}/></w:p>");
+        let xml = parse_xml_string(&source, true).unwrap();
+        let tree = parse_paragraph(&OwnedXmlElement::new(xml.root())).unwrap();
+        assert!(
+            matches!(tree.nodes[1].data, Data::SimpleField { lock, dirty: false, .. } if lock == expected)
+        );
+    }
+}
+
+#[test]
+fn complex_fields_read_standard_lock_before_alias() {
+    use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
+    for (attributes, expected) in [
+        ("w:fldLock=\"true\" w:lock=\"false\"", true),
+        ("w:fldLock=\"false\" w:lock=\"true\"", false),
+        ("w:lock=\"true\"", true),
+        ("w:fldLock=\"unknown\" w:lock=\"true\"", false),
+    ] {
+        let source = format!("<w:r xmlns:w=\"urn:w\"><w:fldChar {attributes}/></w:r>");
+        let xml = parse_xml_string(&source, true).unwrap();
+        let tree = parse_run(&OwnedXmlElement::new(xml.root())).unwrap();
+        assert!(
+            matches!(tree.nodes[1].data, Data::ComplexField { lock, dirty: false, .. } if lock == expected)
+        );
+    }
+}
+
+#[test]
+fn invalid_symbol_fonts_escape_style_element_delimiters() {
+    use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
+    let xml = parse_xml_string("<r><sym font=\"A&lt;B\"/></r>", true).unwrap();
+    let tree = parse_run(&OwnedXmlElement::new(xml.root())).unwrap();
+    assert!(
+        matches!(&tree.nodes[1].data, Data::Symbol { font: Some(font), .. } if font == "\"A\\3c B\"")
+    );
+}

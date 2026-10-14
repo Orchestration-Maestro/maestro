@@ -1329,7 +1329,10 @@
           "children": []
         }
       ]
-    }
+    },
+    "also": [
+      "field_flags_use_shared_boolean_tokens"
+    ]
   },
   {
     "test": "simple_fields_keep_instruction_and_flags",
@@ -1381,34 +1384,6 @@
           "type": "simpleField",
           "instruction": " DATE & TIME ",
           "lock": true,
-          "dirty": false,
-          "children": []
-        }
-      ]
-    }
-  },
-  {
-    "test": "field_flags_use_shared_boolean_tokens",
-    "input": {
-      "operation": "run",
-      "xml": "<r><fldSimple/></r>"
-    },
-    "expected": {
-      "roots": [
-        0
-      ],
-      "nodes": [
-        {
-          "type": "run",
-          "children": [
-            1
-          ],
-          "parent": null
-        },
-        {
-          "type": "simpleField",
-          "instruction": null,
-          "lock": false,
           "dirty": false,
           "children": []
         }
@@ -1721,7 +1696,10 @@
           "dirty": false
         }
       ]
-    }
+    },
+    "also": [
+      "complex_fields_keep_open_character_type"
+    ]
   },
   {
     "test": "field_flags_use_shared_boolean_tokens",
@@ -2050,34 +2028,6 @@
           "charType": null,
           "lock": false,
           "dirty": true
-        }
-      ]
-    }
-  },
-  {
-    "test": "complex_fields_keep_open_character_type",
-    "input": {
-      "operation": "run",
-      "xml": "<r><fldChar/></r>"
-    },
-    "expected": {
-      "roots": [
-        0
-      ],
-      "nodes": [
-        {
-          "type": "run",
-          "children": [
-            1
-          ],
-          "fieldRun": true,
-          "parent": null
-        },
-        {
-          "type": "complexField",
-          "charType": null,
-          "lock": false,
-          "dirty": false
         }
       ]
     }

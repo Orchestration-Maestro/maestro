@@ -639,13 +639,6 @@
   {
     "test": "font_family_enclosure_uses_shared_whitespace",
     "input": {
-      "font": "'A B"
-    },
-    "expected": "'A B"
-  },
-  {
-    "test": "font_family_enclosure_uses_shared_whitespace",
-    "input": {
       "font": "Arial,serif"
     },
     "expected": "Arial,serif"

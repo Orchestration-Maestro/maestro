@@ -1,5 +1,4 @@
 //! Package path spellings and font-family formatting.
-use std::fmt::Write;
 /// Split at the final forward slash, retaining the folder's slash.
 pub(super) fn split_path(path: &str) -> (&str, &str) {
     path.split_at(path.rfind('/').map_or(0, |i| i + 1))
@@ -59,22 +58,7 @@ pub(super) fn enclose_font_family(name: &str) -> String {
     if name.is_empty() || valid_font_family(&candidate) {
         return candidate;
     }
-    let mut quoted = String::from("\"");
-    for c in name.chars() {
-        match c {
-            '"' | '\\' => {
-                quoted.push('\\');
-                quoted.push(c);
-            }
-            '\0' => quoted.push('\u{fffd}'),
-            c if c.is_control() && c.is_ascii() => {
-                let _ = write!(quoted, "\\{:x} ", u32::from(c));
-            }
-            _ => quoted.push(c),
-        }
-    }
-    quoted.push('"');
-    quoted
+    maestro_text::css::string(name)
 }
 
 /// Line boundaries excluded by the original font enclosure operation.

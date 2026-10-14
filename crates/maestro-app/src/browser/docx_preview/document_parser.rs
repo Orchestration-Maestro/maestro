@@ -167,9 +167,13 @@ impl<'input> DocumentParser<'_, 'input> {
     }
     /// Read shared field flags with the kind-specific open metadata.
     fn field(&self, element: XmlElement<'_, 'input>) -> Data {
+        let lock_name = self
+            .xml
+            .attr(element, "fldLock")
+            .map_or("lock", |_| "fldLock");
         let lock = self
             .xml
-            .bool_attr(element, "lock", Some(false))
+            .bool_attr(element, lock_name, Some(false))
             .unwrap_or(false);
         let dirty = self
             .xml

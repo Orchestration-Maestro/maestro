@@ -70,7 +70,10 @@ Ordered arena positions preserve separate runs and their paragraph or simple-fie
 parents, including hidden paragraphs used by content controls and change wrappers.
 Text, breaks, tabs, symbols, note references and field metadata remain typed;
 paragraph-level simple fields retain their result runs without evaluating fields.
-Symbol font-family values preserve valid CSS spellings and quote invalid names.
+Field locks read `fldLock`, falling back to `lock` only when `fldLock` is absent;
+invalid or missing flag values default to false independently of `dirty`.
+Symbol font-family values preserve valid CSS spellings and quote invalid names
+through the [shared CSS string serializer](../text.md), including escaping `<`.
 
 Raw property elements and recognized foreign branches retain shared complete XML
 source with selected byte ranges, preserving ancestor namespaces. These slots do
