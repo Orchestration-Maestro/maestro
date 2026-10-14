@@ -252,4 +252,5 @@ fn shorten_home_path(path: &str, home: Option<&str>) -> String {
         .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
 }
 
+pub mod bash_execution;
 pub mod session_selector;

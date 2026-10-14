@@ -46,3 +46,31 @@ All four widgets expose the existing editable child-array interface through
 wrapping, empty styled text and narrow-viewport padding follow the toolkit owner.
 Background callbacks read the live theme; cached Markdown is refreshed by
 invalidation. Summary labels and hints are repainted when rebuilt.
+
+## Direct shell output
+
+`BashExecutionComponent`, exported at the crate root and in
+`components::bash_execution`, takes an authored command, writer, live theme and
+context-exclusion flag. Its border and bold command header retain `bashMode`, or
+`dim` for excluded commands, regardless of completion status. No panel background
+is painted.
+
+`append_output` strips ANSI escapes and converts CRLF and remaining CR to LF per
+chunk before storing it; stripper failures leave stored output unchanged.
+`get_command` borrows the original command, and `get_output` returns the full
+cleaned output. Display selection uses the existing [tail truncation owner](../tools-read.md):
+expanded rows show that context-limited tail; collapsed rows select its last 20
+logical entries and then at most 20 wrapped rows at the current render width.
+`set_expanded` rebuilds even for an unchanged value.
+
+The shared loader animates until `set_complete` stops it. Completion hints precede
+cancellation or nonzero-exit notices, followed by the full-output path when either
+context or supplied truncation is true and the path is nonempty. Cancellation
+wins over exit errors; success adds no exit-zero notice. Completion may be replaced,
+and output may still be appended without restarting animation.
+
+Borders read the live theme at render time. Header, output and completion hints
+capture theme values when rebuilt; cancel keys are captured at construction and
+expansion keys at completion-display rebuild. Missing themes leave text unstyled.
+`invalidate` first invalidates existing children and then rebuilds the content.
+The inherited editable `Container` child array remains available through `Deref`.

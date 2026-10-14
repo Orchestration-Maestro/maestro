@@ -179,3 +179,59 @@ fn renderer_bindings_are_available_from_application_root() {
         ""
     );
 }
+
+use maestro_app::{
+    TruncationOptions, TruncationResult, normalize_to_lf, num, plain_key_hint, strip_ansi,
+    truncate_tail, truncate_to_visual_lines,
+};
+#[test]
+fn shell_display_exports_share_existing_owners() {
+    let selected: TruncationResult = truncate_tail(
+        "a\nb",
+        TruncationOptions {
+            max_lines: Some(1),
+            ..Default::default()
+        },
+    );
+    let owned: maestro_tools::TruncationResult = selected;
+    assert_eq!(owned.content, "b");
+    assert!(owned.truncated);
+    assert_eq!(
+        (
+            owned.total_lines,
+            owned.total_bytes,
+            owned.output_lines,
+            owned.output_bytes,
+            owned.max_lines,
+            owned.max_bytes
+        ),
+        (2, 3, 1, 1, 1, 51200)
+    );
+    assert!(!owned.last_line_partial && !owned.first_line_exceeds_limit);
+    assert_eq!(
+        truncate_tail("full", TruncationOptions::default()).content,
+        "full"
+    );
+    assert_eq!(normalize_to_lf("a\r\nb\rc"), "a\nb\nc");
+    assert_eq!(strip_ansi("\x1b[31ma\x1b[39m").unwrap(), "a");
+    let visual = truncate_to_visual_lines("a\nb\nc", 2, 5, Some(1));
+    assert_eq!(visual.visual_lines, [" b   ", " c   "]);
+    assert_eq!(visual.skipped_count, 1);
+    assert_eq!(num(1e21), "1e+21");
+    let old = maestro_tui::get_keybindings();
+    let mut definitions = maestro_tui::TUI_KEYBINDINGS.clone();
+    definitions.push((
+        "app.tools.expand".into(),
+        maestro_tui::KeybindingDefinition {
+            default_keys: maestro_tui::KeybindingKeys::Multiple(vec![
+                "alt+x".into(),
+                "ctrl+o".into(),
+            ]),
+            description: None,
+        },
+    ));
+    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(definitions, vec![]));
+    let hint = plain_key_hint("app.tools.expand", "to expand");
+    maestro_tui::set_keybindings(old);
+    assert_eq!(hint, "alt+x/ctrl+o to expand");
+}
