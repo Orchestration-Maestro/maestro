@@ -1,5 +1,10 @@
 //! Context usage and message-size estimates.
 use super::CompactionSettings;
+use crate::session_manager::context::property;
+use maestro_json::is_truthy;
+use serde::Deserialize;
+use serde::de::Error as _;
+use serde_json::Value;
 /// Whether enabled compaction exceeds the available context window.
 #[must_use]
 pub fn should_compact(
@@ -9,11 +14,6 @@ pub fn should_compact(
 ) -> bool {
     settings.enabled && context_tokens > context_window - settings.reserve_tokens
 }
-use crate::session_manager::context::property;
-use maestro_json::is_truthy;
-use serde::Deserialize;
-use serde::de::Error as _;
-use serde_json::Value;
 /// Decode one reached scalar without inspecting sibling fields.
 fn scalar<'a, T: Deserialize<'a>>(value: Option<&'a Value>) -> Result<T, serde_json::Error> {
     T::deserialize(value.ok_or_else(|| serde_json::Error::custom("missing field"))?)
