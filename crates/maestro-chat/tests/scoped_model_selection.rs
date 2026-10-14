@@ -15,6 +15,31 @@ mod model_selector_support;
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
 mod scoped_model_support;
+/// Caller-added child rendering failures propagate through the selector.
+#[test]
+fn caller_added_child_render_error_propagates() {
+    use maestro_tui::Component;
+    use std::{error::Error, io, rc::Rc};
+
+    struct Fallible;
+    impl Component for Fallible {
+        fn render(&self, _: usize) -> Vec<String> {
+            Vec::new()
+        }
+        fn try_render(&self, _: usize) -> Result<Vec<String>, Box<dyn Error>> {
+            Err(io::Error::other("child render failed").into())
+        }
+    }
+
+    let _guard = keybindings::bindings_guard();
+    let fixture = scoped_model_support::Fixture::new(scoped_model_support::native_query());
+    fixture.selector.add_child(Rc::new(Fallible));
+    assert_eq!(
+        fixture.selector.try_render(120).unwrap_err().to_string(),
+        "child render failed"
+    );
+}
+
 /// Ordered constructor scope with all callback payloads.
 #[test]
 fn initial_order_retains_explicit_duplicates_and_missing_ids() {

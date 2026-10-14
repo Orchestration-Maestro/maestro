@@ -351,15 +351,9 @@ impl ScopedModelsSelectorComponent {
     /// Wraps navigation while keeping empty results inert.
     fn navigate(&self, up: bool) {
         let count = self.filtered.borrow().len();
-        if count == 0 {
-            return;
+        if super::navigate_list(&self.selected, count, up) {
+            self.update_list();
         }
-        self.selected.set(if up {
-            (self.selected.get() + count - 1) % count
-        } else {
-            (self.selected.get() + 1) % count
-        });
-        self.update_list();
     }
     /// Toggles the selected occurrence without calling out under state borrows.
     fn confirm(&self) {
@@ -508,6 +502,9 @@ impl Focusable for ScopedModelsSelectorComponent {
 impl Component for ScopedModelsSelectorComponent {
     fn render(&self, width: usize) -> Vec<String> {
         self.container.render(width)
+    }
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.container.try_render(width)
     }
     fn invalidate(&self) {
         self.container.invalidate();

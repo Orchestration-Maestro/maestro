@@ -257,7 +257,9 @@ an asynchronous tail to the supplied host without delaying further input. Host
 failures remain owned by the [terminal runtime](../terminal/rendering.md).
 
 `get_search_input` retains the editable child without installing a submit
-callback. Direct child edits refilter on the next selector dispatch. Parent focus
+callback. Direct child edits refilter on dispatch branches that fully refresh the
+view, not navigation or save. Caller-added child render errors propagate through
+`try_render`. Parent focus
 forwards immediately while the child's own focus flag remains independently
 editable. Clearing the inherited Container children removes presentation, not
 selection or callback capability. Literal Ctrl+C clears a nonempty query before
