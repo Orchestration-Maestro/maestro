@@ -1,6 +1,6 @@
 //! Synchronous capture through the public native process interface.
 #![cfg(unix)]
-use maestro_process::spawn_sync;
+use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::{os::unix::process::ExitStatusExt, time::Duration};
 use tokio::process::Command;
 
@@ -29,7 +29,16 @@ sys.exit(int(sys.argv[1]))
             ])
             .env("MAESTRO_CAPTURE", "chosen")
             .current_dir(&directory);
-        let output = spawn_sync(&mut command, Duration::from_secs(5)).unwrap();
+        let output = spawn_sync(
+            &mut command,
+            SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
+                input: None,
+                timeout: Some(Duration::from_secs(5)),
+                stderr: OutputMode::Discard,
+            },
+        )
+        .unwrap();
         let mut expected = format!(
             "literal $HOME;|||literal $HOME;||chosen|{}|True|True",
             directory.display()
@@ -45,7 +54,16 @@ sys.exit(int(sys.argv[1]))
         "-c",
         "import os, signal; os.kill(os.getpid(), signal.SIGTERM)",
     ]);
-    let output = spawn_sync(&mut signal, Duration::from_secs(5)).unwrap();
+    let output = spawn_sync(
+        &mut signal,
+        SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
+            input: None,
+            timeout: Some(Duration::from_secs(5)),
+            stderr: OutputMode::Discard,
+        },
+    )
+    .unwrap();
     assert_eq!(output.status.signal(), Some(15));
     assert!(output.stdout.is_empty());
 }
@@ -60,11 +78,23 @@ fn sync_capture_is_callable_inside_a_running_runtime() {
             let mut command = Command::new("printf");
             command.arg("nested");
             assert_eq!(
-                spawn_sync(&mut command, Duration::from_secs(5))
-                    .unwrap()
-                    .stdout,
+                spawn_sync(
+                    &mut command,
+                    SpawnSyncOptions::Capture {
+                        stdout: OutputMode::Capture,
+                        input: None,
+                        timeout: Some(Duration::from_secs(5)),
+                        stderr: OutputMode::Discard
+                    }
+                )
+                .unwrap()
+                .stdout,
                 b"nested"
             );
+            maestro_process::spawn(Command::new("true"), None)
+                .unwrap()
+                .join()
+                .unwrap();
         });
 }
 
@@ -78,7 +108,16 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
         (std::env::temp_dir(), io::ErrorKind::PermissionDenied),
     ] {
         let native = std::process::Command::new(&path).spawn().unwrap_err();
-        let error = spawn_sync(&mut Command::new(&path), Duration::from_secs(5)).unwrap_err();
+        let error = spawn_sync(
+            &mut Command::new(&path),
+            SpawnSyncOptions::Capture {
+                stdout: OutputMode::Capture,
+                input: None,
+                timeout: Some(Duration::from_secs(5)),
+                stderr: OutputMode::Discard,
+            },
+        )
+        .unwrap_err();
         assert_eq!(error.to_string(), "Cannot start the process");
         let source = error.source().unwrap().downcast_ref::<io::Error>().unwrap();
         assert_eq!(source.raw_os_error(), native.raw_os_error());
@@ -86,7 +125,16 @@ fn sync_capture_distinguishes_spawn_failure_from_completed_failure() {
     }
     let mut command = Command::new("sh");
     command.args(["-c", "printf done; exit 7"]);
-    let output = spawn_sync(&mut command, Duration::from_secs(5)).unwrap();
+    let output = spawn_sync(
+        &mut command,
+        SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
+            input: None,
+            timeout: Some(Duration::from_secs(5)),
+            stderr: OutputMode::Discard,
+        },
+    )
+    .unwrap();
     assert_eq!(output.status.code(), Some(7));
     assert_eq!(output.stdout, b"done");
 }

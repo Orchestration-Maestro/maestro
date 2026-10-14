@@ -1,7 +1,9 @@
 //! Raw streaming through the captured-child lifecycle.
 #![cfg(unix)]
 #![cfg(test)]
-use maestro_process::child_process::{CapturedChild, WaitOptions, wait_for_child_process};
+use maestro_process::child_process::{
+    CapturedChild, OutputMode, WaitOptions, wait_for_child_process,
+};
 
 #[test]
 fn streamed_wait_delivers_chunks_without_retaining_them() {
@@ -80,15 +82,7 @@ fn session_spawn_leaves_ordinary_children_unchanged() {
                 );
                 assert_eq!(child.id(), None);
             }
-            let mut command = tokio::process::Command::new("python3");
-            command.args(["-c", "import os; print(os.getsid(0),os.getpgrp())"]);
-            let output =
-                maestro_process::spawn_sync(&mut command, std::time::Duration::from_secs(5))
-                    .unwrap();
-            assert_eq!(
-                String::from_utf8(output.stdout).unwrap(),
-                format!("{parent_session} {parent_group}\n")
-            );
+            assert_sync_session(parent_session, parent_group);
         });
 }
 
@@ -147,7 +141,7 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
             let output = wait_for_child_process(
                 &mut child,
                 WaitOptions {
-                    stderr: maestro_process::child_process::StderrMode::Discard,
+                    stderr: maestro_process::child_process::OutputMode::Discard,
                     ..WaitOptions::default()
                 },
                 std::future::pending(),
@@ -159,4 +153,24 @@ fn streamed_wait_delivers_stderr_even_when_capture_discards_it() {
             assert!(output.stderr.is_empty());
             assert!(child.take_output().1.is_empty());
         });
+}
+
+/// The synchronous launch preserves the parent session and process group.
+fn assert_sync_session(parent_session: i32, parent_group: i32) {
+    let mut command = tokio::process::Command::new("python3");
+    command.args(["-c", "import os; print(os.getsid(0),os.getpgrp())"]);
+    let output = maestro_process::spawn_sync(
+        &mut command,
+        maestro_process::SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
+            input: None,
+            timeout: Some(std::time::Duration::from_secs(5)),
+            stderr: OutputMode::Discard,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("{parent_session} {parent_group}\n")
+    );
 }

@@ -20,12 +20,14 @@ maestro-watch = { path = "../maestro-watch" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-tools = { path = "../maestro-tools" }
+maestro-process = { path = "../maestro-process" }
 
 [target.'cfg(unix)'.dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "time", "process"] }
 
 [target.'cfg(unix)'.dev-dependencies]
-tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync"] }
+rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync", "test-util"] }
 
 [dev-dependencies]
 serde.workspace = true

@@ -2,7 +2,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 use maestro_process::child_process::{
-    CapturedChild, StderrMode, Termination, WaitOptions, wait_for_child_process,
+    CapturedChild, OutputMode, Termination, WaitOptions, wait_for_child_process,
 };
 use std::cell::Cell;
 use std::future::Future;
@@ -158,8 +158,8 @@ sys.stdout.buffer.write(sys.argv[1].encode() + b'|' + os.getcwd().encode() + b'|
 sys.stdout.buffer.write(b'o' * 300000 + b'\x82\xac\xff')
 ";
     for (mode, stderr) in [
-        (StderrMode::Capture, Some(300_006)),
-        (StderrMode::Discard, None),
+        (OutputMode::Capture, Some(300_006)),
+        (OutputMode::Discard, None),
     ] {
         let mut command = tokio::process::Command::new("python3");
         command

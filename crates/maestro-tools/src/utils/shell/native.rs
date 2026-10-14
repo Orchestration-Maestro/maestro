@@ -1,6 +1,6 @@
 //! Native shell selection, inheritance and detached-child cleanup.
 use indexmap::{IndexMap, IndexSet};
-use maestro_process::spawn_sync;
+use maestro_process::{OutputMode, SpawnSyncOptions, spawn_sync};
 use std::{
     ffi::OsString,
     io,
@@ -39,7 +39,16 @@ pub fn get_shell_config(custom_shell_path: Option<&str>) -> io::Result<ShellConf
 pub(super) fn probe(program: &str, operand: &str, deadline: Duration) -> Option<String> {
     let mut command = tokio::process::Command::new(program);
     command.arg(operand);
-    let output = spawn_sync(&mut command, deadline).ok()?;
+    let output = spawn_sync(
+        &mut command,
+        SpawnSyncOptions::Capture {
+            stdout: OutputMode::Capture,
+            input: None,
+            timeout: Some(deadline),
+            stderr: OutputMode::Discard,
+        },
+    )
+    .ok()?;
     output
         .status
         .success()
