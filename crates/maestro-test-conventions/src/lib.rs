@@ -40,11 +40,16 @@ mod time_limits;
 /// for metadata. Emits no output. Legal included fragments are counted without
 /// requiring a full-module parse; macros are not expanded.
 ///
+/// The feature unifier `maestro-dependencies` is dedicated, has no workspace dependencies and may be
+/// declared by other members only as a non-optional normal dependency under
+/// `cfg(not(target_arch = "wasm32"))`; it never satisfies a required direct dependency.
+///
 /// The canonical workspace `serde_json` entry must name `serde_json` and explicitly
 /// enable `float_roundtrip`. Normal member declarations, including aliases, targets
 /// and optional entries, must inherit an entry enabling it. Dev/build declarations
 /// are outside member inheritance enforcement and cannot supply the required
 /// workspace feature; test feature unification can hide missing normal precision.
+/// The unifier's own direct `serde_json` entries are exempt from member inheritance.
 ///
 /// # Errors
 ///

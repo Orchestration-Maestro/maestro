@@ -6,6 +6,7 @@
   "maestro-catalog": "core",
   "maestro-chat": "core",
   "maestro-credentials": "core",
+  "maestro-dependencies": "dedicated",
   "maestro-entry": "core",
   "maestro-export": "core",
   "maestro-extensions": "core",

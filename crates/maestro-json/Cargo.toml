@@ -10,5 +10,8 @@ ryu-js.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["raw_value"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
 [lints]
 workspace = true

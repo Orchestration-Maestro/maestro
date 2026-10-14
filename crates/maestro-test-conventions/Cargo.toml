@@ -16,5 +16,8 @@ proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 
 pulldown-cmark = { version = "=0.13.4", default-features = false }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
 [lints]
 workspace = true

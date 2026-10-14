@@ -1721,3 +1721,153 @@ fn complete_permitted_graph_is_acyclic() {
         assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
     }
 }
+
+/// The feature unifier's package name.
+const UNIFIER: &str = "maestro-dependencies";
+
+/// The only target table that may declare the unifier.
+const NATIVE: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dependencies";
+
+/// Manifest declaring the unifier through one section and extra entry fields.
+fn unifier_declaration(required: &[&str], section: &str, alias: &str, extra: &str) -> String {
+    let mut text = String::from("[dependencies]\n");
+    for target in required {
+        writeln!(text, "{target} = {{ path = \"../{target}\" }}").unwrap();
+    }
+    if section != "dependencies" {
+        writeln!(text, "[{section}]").unwrap();
+    }
+    writeln!(
+        text,
+        "{alias} = {{ package = {UNIFIER:?}, path = \"../{UNIFIER}\"{extra} }}"
+    )
+    .unwrap();
+    text
+}
+
+#[test]
+fn feature_unifier_is_a_native_build_dependency_leaf() {
+    for from in [
+        "maestro-path",
+        "maestro-models",
+        "maestro-app",
+        "maestro-tooling",
+        "maestro-test-conventions",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[from, UNIFIER]);
+        let required = required_targets(from);
+        for alias in [UNIFIER, "unified"] {
+            workspace.member(
+                from,
+                from,
+                &unifier_declaration(required, NATIVE, alias, ""),
+            );
+            assert_eq!(check_workspace(&workspace.root), Ok(()), "{from} {alias}");
+        }
+        for (section, extra) in [
+            ("dependencies", ""),
+            ("target.'cfg(target_arch = \"wasm32\")'.dependencies", ""),
+            (NATIVE, ", optional = true"),
+            ("build-dependencies", ""),
+            ("dev-dependencies", ""),
+            ("target.'cfg(unix)'.dependencies", ""),
+        ] {
+            workspace.member(
+                from,
+                from,
+                &unifier_declaration(required, section, "unified", extra),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "{from}: {UNIFIER} must be a native, normal, non-optional dependency"
+                )),
+                "{from} [{section}]{extra}"
+            );
+        }
+    }
+    unifier_has_no_outbound_edges();
+    unifier_class_is_dedicated();
+}
+
+/// Reject every dependency kind from the unifier to any workspace crate, utility included.
+fn unifier_has_no_outbound_edges() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[UNIFIER, "maestro-path", "maestro-models"]);
+    for target in ["maestro-path", "maestro-models"] {
+        for kind in ["dependencies", "dev-dependencies", "build-dependencies"] {
+            workspace.member(
+                UNIFIER,
+                UNIFIER,
+                &format!("[{kind}]\nx = {{ package = {target:?}, path = \"../{target}\" }}"),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "{UNIFIER} must not depend on workspace crate {target}"
+                ))
+            );
+        }
+    }
+}
+
+/// Require the dedicated classification and keep core crates out of the dedicated exception.
+fn unifier_class_is_dedicated() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[UNIFIER]);
+    workspace.list(&[(UNIFIER, "core")]);
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(format!(
+            "invalid scoped layer for {UNIFIER}: expected dedicated"
+        ))
+    );
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-models", "maestro-tooling", UNIFIER]);
+    workspace.member(
+        "maestro-models",
+        "maestro-models",
+        "[dependencies]\ntooling = { package = \"maestro-tooling\", path = \"../maestro-tooling\" }",
+    );
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err("core crate maestro-models must not depend on dedicated crate maestro-tooling".into())
+    );
+}
+
+#[test]
+fn feature_unifier_preserves_required_domain_edges() {
+    for from in [
+        "maestro-cli",
+        "maestro-chat",
+        "maestro-rpc",
+        "maestro-web",
+        "maestro-tui-crossterm",
+        "maestro-test-terminal",
+    ] {
+        let required = required_targets(from);
+        let workspace = Workspace::new();
+        workspace.foundation(&[&[from, UNIFIER], required].concat());
+        workspace.member(
+            from,
+            from,
+            &unifier_declaration(required, NATIVE, "unified", ""),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
+        for omitted in required {
+            let remaining: Vec<_> = required.iter().copied().filter(|t| t != omitted).collect();
+            workspace.member(
+                from,
+                from,
+                &unifier_declaration(&remaining, NATIVE, "unified", ""),
+            );
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "{from}: missing required direct dependency {omitted}"
+                ))
+            );
+        }
+    }
+}

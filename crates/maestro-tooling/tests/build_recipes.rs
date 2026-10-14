@@ -95,7 +95,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked\n"
     );
     fs::remove_file(workspace.0.join("log")).unwrap();
     let result = workspace
@@ -108,7 +108,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
         workspace.log(),
         "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\n"
     );
-    for phase in ["fmt", "clippy", "doc", "test"] {
+    for phase in ["fmt", "hakari", "clippy", "doc", "test"] {
         fs::remove_file(workspace.0.join("log")).unwrap();
         let output = workspace
             .command("ci")
@@ -124,7 +124,20 @@ fn maestro_workspace_recipes_keep_phase_order() {
                 .starts_with(&format!("cargo {phase}"))
         );
         assert!(!log.contains("cargo nextest") && !log.contains("cargo test|--workspace"));
+        if phase == "hakari" {
+            assert!(!log.contains("cargo clippy"), "{log}");
+        }
     }
+    assert_test_phase_failures(&workspace);
+    fs::remove_file(workspace.0.join("log")).unwrap();
+    assert!(workspace.run("ci").status.success());
+    assert!(workspace.log().ends_with(
+        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
+    ));
+}
+
+/// Checks that each test phase stops on failure without skipping doctests.
+fn assert_test_phase_failures(workspace: &Workspace) {
     for (phase, expected) in [
         ("nextest", "cargo nextest|run|--workspace|--locked\n"),
         (
@@ -141,11 +154,6 @@ fn maestro_workspace_recipes_keep_phase_order() {
         assert!(!output.status.success());
         assert_eq!(workspace.log(), expected);
     }
-    fs::remove_file(workspace.0.join("log")).unwrap();
-    assert!(workspace.run("ci").status.success());
-    assert!(workspace.log().ends_with(
-        "cargo nextest|run|--workspace|--locked\ncargo test|--workspace|--locked|--doc\n"
-    ));
 }
 
 #[test]
@@ -839,6 +847,14 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         "std::path::Path::new(\"bin/cargo\")",
     );
     fs::write(main, contents).unwrap();
+    let unifier = workspace.0.join("crates/maestro-dependencies");
+    fs::create_dir_all(unifier.join("src")).unwrap();
+    fs::write(unifier.join("src/lib.rs"), "").unwrap();
+    fs::write(
+        unifier.join("Cargo.toml"),
+        "[package]\nname = 'maestro-dependencies'\nversion = '0.1.0'\nedition = '2024'\n[lints]\nworkspace = true\n",
+    )
+    .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
     fs::copy(
         source.join("../../Cargo.toml"),
@@ -1466,6 +1482,7 @@ fn assert_pinned_tools() {
         ("just", "1.58.0"),
         ("prek", "0.5.4"),
         ("watchexec", "2.8.0"),
+        ("cargo-hakari", "0.9.39"),
     ] {
         let output = Command::new("mise")
             .current_dir(&root)

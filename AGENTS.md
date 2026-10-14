@@ -19,12 +19,15 @@ just ci
 ```
 
 `just setup` installs pinned tools and prek hooks. `just check` runs formatting,
-Clippy with warnings denied, strict public rustdoc and workspace conventions.
+`cargo hakari verify`, Clippy with warnings denied, strict public rustdoc and workspace conventions.
 `just test` runs workspace tests with cargo-nextest, then Cargo doctests after
 success. `just ci` runs checks and both test phases. Development and test builds
 use line-table debug information: backtraces retain file:line, but debugger
 variable views are unavailable.
 Rust is pinned in `rust-toolchain.toml` and installed by rustup, never mise.
+Run `cargo hakari generate` after changing dependencies, their features or
+`Cargo.lock`, and `cargo hakari manage-deps` after adding a member (see
+[development](docs/development.md#feature-unification)).
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
 The commit hook formats the code, re-stages the staged files and runs
@@ -92,6 +95,10 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
 
 ## Crates
 
+Dependency descriptions below state domain edges; each also permits the
+[native feature-unifier exception](docs/specs/maestro-port.md#native-feature-unifier).
+This includes leaves, exact sets and the core-to-dedicated prohibition; the unifier itself has no workspace dependencies.
+
 - One job per crate, describable in one sentence without "and".
 - Dependencies point one way; core crates never depend on dedicated
   (non-core) crates.
@@ -114,6 +121,12 @@ positive. Ordinary technical terms such as "the JSON-RPC specification",
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
+- `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
+  dedicated, unpublished and without workspace dependencies. Members declare it only
+  as a non-optional normal dependency under `cfg(not(target_arch = "wasm32"))`; it
+  never supplies a required edge. The crate is exempt from member `serde_json`
+  inheritance (lint inheritance and the workspace precision entry still apply).
+  Never hand-edit its generated manifest section.
 - `maestro-watch` and `maestro-lock` are declared core leaves below layer 0 with
   no workspace dependencies, including the path utility. Only theme/application
   may depend on watch; only settings/credentials may depend on lock. Follow the
@@ -158,9 +171,10 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, terminal scenario harness and repository tooling are dedicated.
+conventions checker, terminal scenario harness, repository tooling and the feature
+unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility. Sparse workspaces need
+no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The

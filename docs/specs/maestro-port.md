@@ -169,8 +169,10 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 
 ## Crates and delivery order
 
-The table declares the enforced crate graph. An em dash means no internal
-dependencies apart from the optional foundation utility described below.
+The table declares the enforced domain graph. Its rows and the dependency
+descriptions below also permit the [native feature-unifier exception](#native-feature-unifier),
+including leaves and exact sets. An em dash means no domain dependencies apart
+from the optional foundation utility described below.
 
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
@@ -320,6 +322,18 @@ permission, so being a text consumer does not authorize the utility. Shared path
 take supplied directory observations and add no global environment, filesystem service,
 directory cache, scheduler or workspace dependency.
 
+### Native feature unifier
+
+`maestro-dependencies` is the build-only feature unifier, generated and verified
+by `cargo hakari`. It is a dedicated, unpublished crate with an empty library, no
+public API and no workspace dependencies, including the path utility. Every other
+workspace member may declare it only as a non-optional normal dependency under
+`cfg(not(target_arch = "wasm32"))`, so browser and component builds never reach it.
+It never satisfies a required or exact direct dependency and never changes a
+member's layer. The crate is the sole exception to member `serde_json` inheritance;
+the workspace precision declaration and lint inheritance still apply to it.
+Never hand-edit its generated manifest section.
+
 The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
 terminal scenario harness remains forbidden from importing text.
@@ -332,8 +346,8 @@ The edge remains subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
 
-The graph consists of the table entries, the foundation utility and this
-development-only exception. The
+The graph consists of the table entries, the foundation utility, the native
+feature unifier and this development-only exception. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
 checks the table against the enforced dependency policy, including permitted
 utility edges and leaves. The below-layer-0 owners are delivered before their

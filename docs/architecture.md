@@ -6,6 +6,10 @@ owns the crate graph. `maestro-test-conventions` checks that graph through
 
 ## Inventory and dependencies
 
+Dependency descriptions here state domain edges, subject to the
+[native feature-unifier exception](specs/maestro-port.md#native-feature-unifier),
+including leaves and exact sets. The unifier itself has no workspace dependencies.
+
 The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, and it has no workspace dependencies.
@@ -28,10 +32,11 @@ these permissions for normal, build, optional and foreign-target declarations.
 
 `workspace-crates.json` lists workspace members and declared-but-absent owners
 with string-valued classes.
-The binary composition root, conventions checker, terminal scenario harness and
-repository tooling are `dedicated`; all product libraries and adapters are `core`.
+The binary composition root, conventions checker, terminal scenario harness,
+repository tooling and the feature unifier (`maestro-dependencies`) are `dedicated`; all product libraries and adapters are `core`.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
-no internal dependencies apart from the optional utility. Classes are not numeric
+no internal dependencies apart from the optional utility and the native-only
+feature unifier. Classes are not numeric
 delivery layers. Known absent entries do not require placeholder crates; unknown
 actual members are rejected.
 
@@ -111,9 +116,15 @@ shared first component. Empty tails still permit component traversal. Without a
 shared base the normalized destination is returned: `D:a` to `D:b` under a UNC
 working directory with no drive entries yields `D:b`, not `..\b`.
 
-`maestro-path` has no internal dependencies and is the one named exception to
-leaf and exact-set rules. Any crate in the specification table may declare it as
-a normal or build dependency (optional and target-specific forms included)
+`maestro-dependencies` is the other named exception: every member may declare it,
+and only as a non-optional normal dependency under
+`cfg(not(target_arch = "wasm32"))`. It has no internal dependencies, is not listed
+in the specification table, cannot satisfy a required direct dependency and is the
+only crate whose direct `serde_json` entries bypass member inheritance.
+
+`maestro-path` has no domain dependencies and is the optional utility exception to
+leaf and exact-set rules, alongside the native feature unifier. Any crate in the
+specification table may declare it as a normal or build dependency (optional and target-specific forms included)
 without changing its layer, except the guest authoring crate, the runtime
 adapter, shared request owner, cancellation leaf, watch leaf, lock leaf, process leaf,
 file-pattern crate, text leaf, JSON leaf, entry and tool record crates, brand crate and the

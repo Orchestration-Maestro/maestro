@@ -1,0 +1,194 @@
+[package]
+name = "maestro-dependencies"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+### BEGIN HAKARI SECTION
+[dependencies]
+ahash = { version = "0.8.12", features = ["no-rng", "serde"] }
+base64 = { version = "0.23.1" }
+bytemuck = { version = "1.25.2", default-features = false, features = ["aarch64_simd", "derive", "extern_crate_alloc", "min_const_generics"] }
+cargo_metadata = { version = "0.23.1" }
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "wasmbind"] }
+crc32fast = { version = "1.5.2" }
+hashbrown = { version = "0.17.1" }
+icu_locale_core = { version = "2.3.0", default-features = false, features = ["alloc", "zerovec"] }
+icu_normalizer = { version = "2.3.0", default-features = false, features = ["compiled_data", "utf16_iter", "utf8_iter"] }
+icu_properties = { version = "2.3.0", default-features = false, features = ["compiled_data"] }
+icu_provider = { version = "2.3.1", default-features = false, features = ["alloc", "baked"] }
+idna = { version = "1.1.0" }
+indexmap = { version = "2.14.2", features = ["serde"] }
+litemap = { version = "0.8.3", default-features = false, features = ["alloc"] }
+log = { version = "0.4.34", default-features = false, features = ["std"] }
+memchr = { version = "2.8.3" }
+num-traits = { version = "0.2.19", features = ["i128"] }
+potential_utf = { version = "0.1.6", default-features = false, features = ["alloc", "zerovec"] }
+proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
+quote = { version = "1.0.47" }
+regex-automata = { version = "0.4.18", default-features = false, features = ["dfa", "hybrid", "meta", "nfa", "perf", "std", "unicode"] }
+regex-syntax = { version = "0.8.11" }
+regress = { version = "0.12.0", features = ["prohibit-unsafe"] }
+roxmltree = { version = "0.21.1" }
+semver = { version = "1.0.28", features = ["serde"] }
+serde = { version = "1.0.229", features = ["alloc", "derive", "rc"] }
+serde_core = { version = "1.0.229", features = ["alloc", "rc"] }
+serde_json = { version = "1.0.151", features = ["float_roundtrip", "preserve_order", "raw_value", "unbounded_depth"] }
+simd-adler32 = { version = "0.3.10" }
+smallvec = { version = "1.16.2", default-features = false, features = ["const_new", "union"] }
+stable_deref_trait = { version = "1.2.1", default-features = false, features = ["alloc"] }
+syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit"] }
+tinystr = { version = "0.8.4", default-features = false, features = ["alloc", "zerovec"] }
+tokio = { version = "1.53.2", default-features = false, features = ["test-util"] }
+unicode-width = { version = "0.2.2" }
+writeable = { version = "0.6.4", default-features = false, features = ["alloc"] }
+yoke = { version = "0.8.3", default-features = false, features = ["alloc", "derive"] }
+zerofrom = { version = "0.1.8", default-features = false, features = ["alloc", "derive"] }
+zerotrie = { version = "0.2.5", default-features = false, features = ["alloc", "yoke", "zerofrom"] }
+zerovec = { version = "0.11.8", default-features = false, features = ["alloc", "derive", "yoke"] }
+
+[build-dependencies]
+hashbrown = { version = "0.17.1" }
+indexmap = { version = "2.14.2", features = ["serde"] }
+log = { version = "0.4.34", default-features = false, features = ["std"] }
+memchr = { version = "2.8.3" }
+proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
+quote = { version = "1.0.47" }
+semver = { version = "1.0.28", features = ["serde"] }
+serde = { version = "1.0.229", features = ["alloc", "derive", "rc"] }
+serde_core = { version = "1.0.229", features = ["alloc", "rc"] }
+serde_json = { version = "1.0.151", features = ["float_roundtrip", "preserve_order", "raw_value", "unbounded_depth"] }
+syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit"] }
+
+[target.x86_64-unknown-linux-gnu.dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
+either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+form_urlencoded = { version = "1.2.2" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
+futures-sink = { version = "0.3.34" }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "ioctl", "no_std", "prctl", "system"] }
+mio = { version = "1.2.4", features = ["net", "os-ext"] }
+num-integer = { version = "0.1.47", features = ["i128"] }
+once_cell = { version = "1.21.4" }
+percent-encoding = { version = "2.3.2" }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
+sha2 = { version = "0.11.0" }
+slab = { version = "0.4.12" }
+tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
+uuid = { version = "1.27.0", features = ["v4", "v7"] }
+
+[target.x86_64-unknown-linux-gnu.build-dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+
+[target.aarch64-unknown-linux-gnu.dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
+either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+form_urlencoded = { version = "1.2.2" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
+futures-sink = { version = "0.3.34" }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "ioctl", "no_std", "prctl", "system"] }
+mio = { version = "1.2.4", features = ["net", "os-ext"] }
+num-integer = { version = "0.1.47", features = ["i128"] }
+once_cell = { version = "1.21.4" }
+percent-encoding = { version = "2.3.2" }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
+sha2 = { version = "0.11.0" }
+slab = { version = "0.4.12" }
+tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
+uuid = { version = "1.27.0", features = ["v4", "v7"] }
+
+[target.aarch64-unknown-linux-gnu.build-dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+
+[target.x86_64-apple-darwin.dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
+either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+form_urlencoded = { version = "1.2.2" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
+futures-sink = { version = "0.3.34" }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+num-integer = { version = "0.1.47", features = ["i128"] }
+once_cell = { version = "1.21.4" }
+percent-encoding = { version = "2.3.2" }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
+sha2 = { version = "0.11.0" }
+slab = { version = "0.4.12" }
+tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
+uuid = { version = "1.27.0", features = ["v4", "v7"] }
+
+[target.x86_64-apple-darwin.build-dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+
+[target.aarch64-apple-darwin.dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
+either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+form_urlencoded = { version = "1.2.2" }
+futures-channel = { version = "0.3.34", features = ["sink"] }
+futures-core = { version = "0.3.34" }
+futures-sink = { version = "0.3.34" }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+num-integer = { version = "0.1.47", features = ["i128"] }
+once_cell = { version = "1.21.4" }
+percent-encoding = { version = "2.3.2" }
+rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
+sha2 = { version = "0.11.0" }
+slab = { version = "0.4.12" }
+tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
+uuid = { version = "1.27.0", features = ["v4", "v7"] }
+
+[target.aarch64-apple-darwin.build-dependencies]
+bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+libc = { version = "0.2.190", features = ["extra_traits"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+
+[target.x86_64-pc-windows-msvc.dependencies]
+digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
+either = { version = "1.19.0", default-features = false, features = ["use_std"] }
+form_urlencoded = { version = "1.2.2" }
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+num-integer = { version = "0.1.47", features = ["i128"] }
+once_cell = { version = "1.21.4" }
+percent-encoding = { version = "2.3.2" }
+ryu = { version = "1.0.23", default-features = false, features = ["small"] }
+sha2 = { version = "0.11.0" }
+tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread"] }
+uuid = { version = "1.27.0", features = ["v4", "v7"] }
+windows-sys = { version = "0.61.2", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
+
+[target.x86_64-pc-windows-msvc.build-dependencies]
+getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["extra-traits", "full", "visit-mut"] }
+
+### END HAKARI SECTION

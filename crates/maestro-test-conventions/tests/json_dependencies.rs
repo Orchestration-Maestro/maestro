@@ -497,3 +497,51 @@ fn json_checks_include_guest_and_all_workspace_members() {
     .unwrap();
     assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
+
+/// Add the generated unifier with its own direct JSON entries and a native edge from `tui`.
+fn with_unifier(workspace: &Workspace, entries: &str, tui_json: &str) {
+    workspace.member("maestro-dependencies", "maestro-dependencies", entries);
+    workspace.member(
+        "tui",
+        "maestro-tui",
+        &format!(
+            "[dependencies]\n{tui_json}[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\nmaestro-dependencies = {{ path = \"../maestro-dependencies\" }}\n"
+        ),
+    );
+    workspace.list(&[
+        ("maestro-tui", "core"),
+        ("maestro-dependencies", "dedicated"),
+    ]);
+}
+
+#[test]
+fn generated_unifier_json_keeps_member_precision_rules() {
+    let direct = "[dependencies]\nserde_json = { version = \"=1.0.151\", default-features = false, features = [\"float_roundtrip\"] }\n[target.'cfg(unix)'.dependencies]\njson = { package = \"serde_json\", version = \"=1.0.151\", optional = true }\n";
+    let workspace = fixture();
+    with_unifier(&workspace, direct, "serde_json.workspace = true\n");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+
+    root_json(&workspace, "{ version = \"=1.0.151\" }");
+    assert_eq!(
+        check_workspace(&workspace.root),
+        Err(root_error(&workspace))
+    );
+    root_json(&workspace, JSON);
+
+    for entry in [
+        "serde_json = \"=1.0.151\"\n",
+        "json = { package = \"serde_json\", version = \"=1.0.151\", features = [\"float_roundtrip\"] }\n",
+    ] {
+        with_unifier(&workspace, direct, entry);
+        let alias = entry.split(' ').next().unwrap();
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(member_error(
+                &workspace,
+                "crates/tui",
+                "dependencies",
+                alias
+            ))
+        );
+    }
+}

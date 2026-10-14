@@ -42,6 +42,50 @@ checksum = "sha256:bef17504bed9d4994cf860c122e84a90d613b92e6d89584fa9e28bd53ad42
 url = "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.148/cargo-nextest-0.9.148-x86_64-pc-windows-msvc.tar.gz"
 url_api = "https://api.github.com/repos/nextest-rs/nextest/releases/assets/620604883"
 
+[[tools.cargo-hakari]]
+version = "0.9.39"
+backend = "github:guppy-rs/guppy"
+specifiers = ["0.9.39"]
+
+[tools.cargo-hakari.options]
+matching = "cargo-hakari"
+version_prefix = "cargo-hakari-"
+
+[tools.cargo-hakari."platforms.linux-arm64"]
+checksum = "sha256:c92f6c556e84f00da1ea0a26217eea5be3d701f1ee9d24a04066a46b65886fbc"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573894299"
+
+[tools.cargo-hakari."platforms.linux-arm64-musl"]
+checksum = "sha256:c92f6c556e84f00da1ea0a26217eea5be3d701f1ee9d24a04066a46b65886fbc"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573894299"
+
+[tools.cargo-hakari."platforms.linux-x64"]
+checksum = "sha256:699a3193a9bd1a8d914b970d3f50f3385f24fbd8b1294d0c0ff31fbe7c2c9f48"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573894484"
+
+[tools.cargo-hakari."platforms.linux-x64-musl"]
+checksum = "sha256:6437e3dede815ff68b7671c15ad65240a7c80118e5a6a07d68ff85d29e78d017"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573897686"
+
+[tools.cargo-hakari."platforms.macos-arm64"]
+checksum = "sha256:c1f84026b805cc7fb31c271e8b0720abadb8d9416d126c76d6fc50a2a147d7f9"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-universal-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573896468"
+
+[tools.cargo-hakari."platforms.macos-x64"]
+checksum = "sha256:c1f84026b805cc7fb31c271e8b0720abadb8d9416d126c76d6fc50a2a147d7f9"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-universal-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573896468"
+
+[tools.cargo-hakari."platforms.windows-x64"]
+checksum = "sha256:d0a87cf9083c3c956de0bbae2e1fbee4b30ad7f53c81ee7032e21ec3b6b7d3f3"
+url = "https://github.com/guppy-rs/guppy/releases/download/cargo-hakari-0.9.39/cargo-hakari-0.9.39-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/guppy-rs/guppy/releases/assets/573898733"
+
 [[tools.fd]]
 version = "10.5.0"
 backend = "aqua:sharkdp/fd"

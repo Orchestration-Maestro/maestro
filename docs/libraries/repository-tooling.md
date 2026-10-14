@@ -23,3 +23,8 @@ Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
 semver, serde, serde_core, serde_derive, serde_json, itoa, proc-macro2, quote,
 syn, thiserror and thiserror-impl), Unlicense OR MIT (memchr),
 MIT (zmij), and (MIT OR Apache-2.0) AND Unicode-3.0 (unicode-ident).
+
+`cargo-hakari =0.9.39` (MIT OR Apache-2.0), pinned in `mise.toml`, is an external
+development tool, not a Cargo dependency. It generates the marked dependency section
+of `maestro-dependencies`, whose manifest therefore repeats existing locked packages
+and features for native targets; it adds no package version of its own.

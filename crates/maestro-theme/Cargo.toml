@@ -23,6 +23,7 @@ two-face = { version = "=0.5.2", default-features = false, features = ["syntect-
 owo-colors = "=4.2.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
 maestro-text = { path = "../maestro-text", features = ["collation"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

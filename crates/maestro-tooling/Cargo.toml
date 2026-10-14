@@ -11,5 +11,8 @@ cargo_metadata = "=0.23.1"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json.workspace = true
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
 [lints]
 workspace = true
