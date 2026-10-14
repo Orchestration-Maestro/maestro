@@ -175,6 +175,36 @@ fn decimal_fields_keep_optional_digits_and_point_rules() {
 }
 
 #[test]
+fn empty_fractional_fields_round_magnitude_before_restoring_sign() {
+    for (format, near_zero) in [
+        ("0.", "-0."),
+        (".", "-."),
+        ("#.", "-."),
+        ("00.", "-0."),
+        ("##0.", "-0."),
+    ] {
+        for (value, expected) in [(-1.5, "-2."), (-0.1, near_zero)] {
+            assert_eq!(
+                write_num(NumberToken::Number, format, value),
+                Ok(expected.into()),
+                "{format} at {value}"
+            );
+        }
+    }
+    for (format, value, expected) in [
+        ("$0.", -1.5, "$-2."),
+        ("0.%", -0.015, "-2.%"),
+        ("0.,", -1500.0, "-2."),
+    ] {
+        assert_eq!(
+            write_num(NumberToken::Number, format, value),
+            Ok(expected.into()),
+            "{format} at {value}"
+        );
+    }
+}
+
+#[test]
 fn grouped_fields_keep_commas_zero_suppression_and_carry() {
     check("grouping");
     for format in ["#,##0.#", "00,000", "##,##0.00", "#,###."] {
@@ -263,6 +293,33 @@ fn phone_masks_do_not_select_accounting_parentheses() {
 #[test]
 fn scientific_fields_keep_precision_and_exponent_signs() {
     check("scientific");
+}
+
+#[test]
+fn zero_fraction_scientific_fields_omit_the_decimal_point() {
+    for (format, exponent) in [
+        ("0.E+00", "+00"),
+        ("0.E-00", "0"),
+        ("0.E+0", "+0"),
+        ("0.E-0", "0"),
+        ("0.E+000", "+0"),
+    ] {
+        for (value, mantissa) in [(1.0, "1"), (-1.0, "-1"), (0.0, "0")] {
+            assert_eq!(
+                write_num(NumberToken::Number, format, value),
+                Ok(format!("{mantissa}E{exponent}")),
+                "{format} at {value}"
+            );
+        }
+        let negative_exponent = if format == "0.E+00" { "-02" } else { "-2" };
+        for (value, mantissa) in [(0.01, "1"), (-0.01, "-1")] {
+            assert_eq!(
+                write_num(NumberToken::Number, format, value),
+                Ok(format!("{mantissa}E{negative_exponent}")),
+                "{format} at {value}"
+            );
+        }
+    }
 }
 
 #[test]

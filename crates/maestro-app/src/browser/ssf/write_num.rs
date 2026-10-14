@@ -145,7 +145,12 @@ fn decimal_fallback(format: &str, value: f64) -> Result<String, FormatError> {
 
 /// Render required fractional zeroes without globally trimming the decimal point.
 fn decimal_field(format: &str, fraction: &str, value: f64) -> String {
-    let text = rounded_decimal(value, fraction.len());
+    let (sign, magnitude) = if fraction.is_empty() {
+        (sign(value), value.abs())
+    } else {
+        ("", value)
+    };
+    let text = rounded_decimal(magnitude, fraction.len());
     let (whole, digits) = text.split_once('.').unwrap_or((&text, ""));
     let whole = if whole == "0" && !format.contains("0.") {
         ""
@@ -153,7 +158,7 @@ fn decimal_field(format: &str, fraction: &str, value: f64) -> String {
         whole
     };
     let missing = placeholders(fraction).len().saturating_sub(digits.len());
-    format!("{whole}.{digits}{}", "0".repeat(missing))
+    format!("{sign}{whole}.{digits}{}", "0".repeat(missing))
 }
 
 /// Align question fields around the capped fixed-decimal observation.
