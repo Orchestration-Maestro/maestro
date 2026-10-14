@@ -210,8 +210,14 @@ fn chain(error: &dyn Error) -> String {
 
 /// Build the retryable connection failure for a message.
 fn connection(message: String) -> FetchError {
+    // Reqwest retains browser exceptions as `JsValue(Name: message)` in the chain.
+    let name = message
+        .split_once("JsValue(")
+        .and_then(|(_, exception)| exception.split_once(": "))
+        .map_or("FetchError", |(name, _)| name)
+        .to_owned();
     FetchError::Connection(DiagnosticErrorInfo {
-        name: Some("FetchError".to_owned()),
+        name: Some(name),
         message,
         stack: None,
         code: None,

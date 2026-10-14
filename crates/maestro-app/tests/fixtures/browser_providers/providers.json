@@ -1,0 +1,762 @@
+[
+  {
+    "provider": "zai",
+    "key": "",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "ordinary",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "sk-ant-api-token",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": " {\"token\":\"value\"}",
+    "expected": true
+  },
+  {
+    "provider": "zai",
+    "key": "SK-ANT-OAT-token",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "ordinary",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "sk-ant-api-token",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": " {\"token\":\"value\"}",
+    "expected": true
+  },
+  {
+    "provider": "ZAI",
+    "key": "SK-ANT-OAT-token",
+    "expected": true
+  },
+  {
+    "provider": "anthropic",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "anthropic",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "anthropic",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "anthropic",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "anthropic",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "anthropic",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "anthropic",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "anthropic",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "ANTHROPIC",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "openai-codex",
+    "key": "",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "ordinary",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "sk-ant-api-token",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": " {\"token\":\"value\"}",
+    "expected": true
+  },
+  {
+    "provider": "openai-codex",
+    "key": "SK-ANT-OAT-token",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "ordinary",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "sk-ant-oat",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "sk-ant-oat-token",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "sk-ant-api-token",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "{}",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": " {\"token\":\"value\"}",
+    "expected": true
+  },
+  {
+    "provider": "OPENAI-CODEX",
+    "key": "SK-ANT-OAT-token",
+    "expected": true
+  },
+  {
+    "provider": "openai",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "openai",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "google",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "groq",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "openrouter",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "cerebras",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "xai",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "ollama",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "lmstudio",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "github-copilot",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "unknown",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": " anthropic",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "ordinary",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "sk-ant-oat",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "sk-ant-oat-token",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "sk-ant-api-token",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "{}",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": " {\"token\":\"value\"}",
+    "expected": false
+  },
+  {
+    "provider": "anthropİc",
+    "key": "SK-ANT-OAT-token",
+    "expected": false
+  }
+]

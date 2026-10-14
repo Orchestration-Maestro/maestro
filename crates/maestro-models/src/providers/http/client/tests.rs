@@ -1,4 +1,4 @@
-//! Native status-text extraction across protocol versions.
+//! Retained connection diagnostics and native status-text extraction.
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::convert::Infallible;
@@ -10,7 +10,34 @@ use hyper::service::service_fn;
 use hyper::{Response, Version};
 use hyper_util::rt::{TokioExecutor, TokioIo};
 
-use super::status_text;
+use super::{classify, status_text};
+
+/// Browser exception names survive the retained client error chain.
+#[test]
+fn connection_retains_browser_exception_names() {
+    for (message, name) in [
+        (
+            "error sending request: JsValue(TypeError: Failed to fetch)",
+            "TypeError",
+        ),
+        (
+            "error sending request: JsValue(NetworkError: A network error occurred)",
+            "NetworkError",
+        ),
+        (
+            "error sending request: JsValue(TypeError: NetworkError when attempting to fetch resource.)",
+            "TypeError",
+        ),
+        ("error sending request: connection refused", "FetchError"),
+    ] {
+        let error = classify(&std::io::Error::other(message));
+        let crate::FetchError::Connection(diagnostic) = error else {
+            panic!("expected a connection failure");
+        };
+        assert_eq!(diagnostic.name.as_deref(), Some(name), "{message}");
+        assert_eq!(diagnostic.message, message);
+    }
+}
 
 #[test]
 fn http_status_text_empty_for_http2() {

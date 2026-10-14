@@ -2644,6 +2644,7 @@ dependencies = [
  "maestro-tui",
  "maestro-watch",
  "num-traits",
+ "percent-encoding",
  "rand 0.10.3",
  "roxmltree",
  "rustix",

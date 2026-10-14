@@ -1,0 +1,68 @@
+[
+  {
+    "name": "failed_fetch",
+    "message": "Failed to fetch",
+    "errorName": "TypeError",
+    "expected": true
+  },
+  {
+    "name": "upper_fetch",
+    "message": "FAILED TO FETCH",
+    "errorName": "TypeError",
+    "expected": true
+  },
+  {
+    "name": "generic_fetch",
+    "message": "Failed to fetch",
+    "errorName": "Error",
+    "expected": false
+  },
+  {
+    "name": "network",
+    "message": "anything",
+    "errorName": "NetworkError",
+    "expected": true
+  },
+  {
+    "name": "wrong_name",
+    "message": "network error",
+    "errorName": "Error",
+    "expected": false
+  },
+  {
+    "name": "cors",
+    "message": "blocked by CORS policy",
+    "errorName": "Error",
+    "expected": true
+  },
+  {
+    "name": "cross_origin",
+    "message": "CROSS-ORIGIN failure",
+    "errorName": "Error",
+    "expected": true
+  },
+  {
+    "name": "other",
+    "message": "socket refused",
+    "errorName": "Error",
+    "expected": false
+  },
+  {
+    "name": "timeout",
+    "message": "timed out",
+    "errorName": "TimeoutError",
+    "expected": false
+  },
+  {
+    "name": "aborted",
+    "message": "aborted",
+    "errorName": "AbortError",
+    "expected": false
+  },
+  {
+    "name": "embedded",
+    "message": "precursor cors-like text",
+    "errorName": "Error",
+    "expected": true
+  }
+]
