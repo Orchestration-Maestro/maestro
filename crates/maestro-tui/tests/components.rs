@@ -56,6 +56,22 @@ fn component_capabilities_distinguish_missing_input_and_focus() {
 }
 
 #[test]
+fn focus_forwarding_keeps_independent_flags_and_repeats_setters() {
+    use maestro_tui::{FocusFlag, Focusable};
+    let field = Rc::new(Field::default());
+    let parent = FocusFlag::forwarding(field.clone());
+    assert!(!parent.get() && !field.focus_flag().get());
+    parent.set(true);
+    assert!(parent.get() && field.focus_flag().get());
+    field.focus_flag().set(false);
+    assert!(parent.get() && !field.focus_flag().get());
+    parent.set(true);
+    assert!(field.focus_flag().get());
+    parent.set(false);
+    assert!(!parent.get() && !field.focus_flag().get());
+}
+
+#[test]
 fn container_retains_shared_children_order_and_invalidation() {
     let trace = InvalidationTrace::default();
     let first: ComponentHandle = Rc::new(Block {

@@ -11,6 +11,7 @@ maestro-tui = { path = "../maestro-tui" }
 maestro-theme = { path = "../maestro-theme" }
 indexmap = "=2.14.2"
 serde_json.workspace = true
+tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }
 regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [dev-dependencies]
@@ -18,6 +19,7 @@ serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+tokio = { version = "=1.53.2", default-features = false, features = ["process"] }
 
 [lints]
 workspace = true
