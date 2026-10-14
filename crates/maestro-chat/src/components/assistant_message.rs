@@ -82,7 +82,7 @@ impl AssistantMessageComponent {
         self.options.borrow_mut().hidden_thinking_label = label;
         self.rebuild();
     }
-    /// Copies only child-owned text while holding the message read guard.
+    /// Copies Markdown text under the message guard, omitting hidden thinking bodies.
     fn rebuild(&self) {
         let Some(message) = self.message.borrow().clone() else {
             return;
@@ -91,10 +91,11 @@ impl AssistantMessageComponent {
             let message = message
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let hide = self.options.borrow().hide_thinking_block;
             let blocks: Vec<_> = message
                 .content
                 .iter()
-                .filter_map(Visible::from_content)
+                .filter_map(|content| Visible::from_content(content, hide))
                 .collect();
             let tools = message
                 .content
@@ -110,7 +111,7 @@ impl AssistantMessageComponent {
         }
         let count = blocks.len();
         for (index, block) in blocks.into_iter().enumerate() {
-            let thinking = matches!(block, Visible::Thinking(_));
+            let thinking = matches!(block, Visible::Thinking(_) | Visible::HiddenThinking);
             self.content.add_child(self.block(block));
             if thinking && index + 1 < count {
                 self.content.add_child(Rc::new(Spacer::new(1)));
@@ -122,40 +123,47 @@ impl AssistantMessageComponent {
             self.content.add_child(Rc::new(Text::new(text, 1, 0, None)));
         }
     }
-    /// Builds one visible child without holding a message guard or option borrow.
+    /// Builds one visible child after releasing the message guard.
     fn block(&self, block: Visible) -> Rc<dyn Component> {
         match block {
             Visible::Text(text) => self.rendering.markdown(text, 1, None, false),
             Visible::Thinking(text) => {
+                self.rendering
+                    .markdown(text, 1, Some(ThemeColor::ThinkingText), true)
+            }
+            Visible::HiddenThinking => {
                 let options = self.options.borrow();
-                if options.hide_thinking_block {
-                    let label = options.hidden_thinking_label.clone();
-                    let enabled = options.styles_enabled;
-                    drop(options);
-                    let label = self.rendering.paint(&ThemeColor::ThinkingText, &label);
-                    Rc::new(Text::new(Theme::italic(&label, enabled), 1, 0, None))
-                } else {
-                    drop(options);
-                    self.rendering
-                        .markdown(text, 1, Some(ThemeColor::ThinkingText), true)
-                }
+                let label = self
+                    .rendering
+                    .paint(&ThemeColor::ThinkingText, &options.hidden_thinking_label);
+                let enabled = options.styles_enabled;
+                drop(options);
+                Rc::new(Text::new(Theme::italic(&label, enabled), 1, 0, None))
             }
         }
     }
 }
-/// Child-owned visible text; tool calls do not produce a child here.
+/// Visible Markdown text or a body-free hidden thought; excludes tool calls.
 enum Visible {
     /// Ordinary assistant Markdown.
     Text(String),
-    /// Thinking Markdown or its hidden label.
+    /// Visible thinking Markdown.
     Thinking(String),
+    /// Hidden thinking whose label is read when building its child.
+    HiddenThinking,
 }
 impl Visible {
     /// Trims with the shared scalar predicate before testing visibility.
-    fn from_content(content: &AssistantContent) -> Option<Self> {
+    fn from_content(content: &AssistantContent, hide: bool) -> Option<Self> {
         let (text, constructor): (&str, fn(String) -> Self) = match content {
             AssistantContent::Text(value) => (&value.text, Self::Text),
-            AssistantContent::Thinking(value) => (&value.thinking, Self::Thinking),
+            AssistantContent::Thinking(value) => {
+                if hide {
+                    return (!value.thinking.trim_matches(is_whitespace_scalar).is_empty())
+                        .then_some(Self::HiddenThinking);
+                }
+                (&value.thinking, Self::Thinking)
+            }
             AssistantContent::ToolCall(_) => return None,
         };
         let text = text.trim_matches(is_whitespace_scalar);

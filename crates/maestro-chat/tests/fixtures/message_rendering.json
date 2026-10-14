@@ -2480,7 +2480,6 @@
       "kind": "branch",
       "width": 40,
       "text": "# title",
-      "tokens": 1234,
       "customMarkdown": true,
       "ops": [
         {
@@ -2515,7 +2514,6 @@
       "kind": "branch",
       "width": 40,
       "text": "# title",
-      "tokens": 1234,
       "ops": [
         {
           "op": "expand",
@@ -2574,7 +2572,6 @@
       "kind": "branch",
       "width": 40,
       "text": "# title",
-      "tokens": 1234,
       "ops": [
         {
           "op": "captureChildren",
@@ -2629,7 +2626,6 @@
       "kind": "branch",
       "width": 40,
       "text": "# title",
-      "tokens": 1234,
       "palette": "dark",
       "ops": [
         {
@@ -2664,7 +2660,6 @@
       "kind": "branch",
       "width": 40,
       "text": "# title",
-      "tokens": 1234,
       "palette": "light",
       "ops": [
         {
