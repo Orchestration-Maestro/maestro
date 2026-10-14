@@ -48,7 +48,9 @@ pub use maestro_models::{
     OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
     StopReason, TextContent, UserBlock, UserContent, default_fetch,
 };
-pub use maestro_session::messages::{BranchSummaryMessage, CompactionSummaryMessage};
+pub use maestro_session::messages::{
+    BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,
+};
 pub use maestro_text::number_format::LocaleNumberFormat;
 
 /// Agent reasoning levels, including disabled reasoning.

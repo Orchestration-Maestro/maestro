@@ -22,6 +22,11 @@ midnight, or offset-less local date-times. Invalid input becomes NaN, serialized
 as null. Submillisecond precision is discarded. Legacy free-form date parsing
 is not provided.
 
+`maestro_session::messages::parse_timestamp_millis`, also exposed through
+`maestro_app`, returns `Option<i64>` for the same date forms. Ambiguous local
+fall-back times select the earlier instant. Invalid input returns `None`; the
+message constructors retain their NaN fallback.
+
 The open `CustomAgentMessages<T, C>` enum bridges these four application variants
 to the agent's custom-role trait. `Other(C)` retains caller-defined roles without
 projecting them. Install a closure invoking the converter in

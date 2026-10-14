@@ -40,6 +40,10 @@ pub(super) struct TreeState {
     pub(super) folded: HashSet<String>,
     /// Authored literal search query.
     pub(super) query: String,
+    /// Whether label times are displayed.
+    pub(super) show_label_timestamps: bool,
+    /// Wall-clock observation shared by rendering and updates.
+    pub(super) now: Rc<dyn Fn() -> std::time::SystemTime>,
     /// Last selection retained through empty views.
     bookmark: Option<String>,
 }
@@ -79,6 +83,8 @@ impl TreeState {
             leaf: current_leaf_id.map(str::to_owned),
             bookmark: None,
             query: String::new(),
+            show_label_timestamps: false,
+            now: Rc::new(std::time::SystemTime::now),
             folded: HashSet::new(),
         };
         list.active_path = Rc::new(list.ancestors(current_leaf_id).map(str::to_owned).collect());
@@ -369,6 +375,40 @@ impl TreeList {
         let state = Rc::clone(&self.state.borrow());
         state.render(width, theme, runtime, styles_enabled)
     }
+    /// Installs the panel clock without changing the list constructor.
+    pub(super) fn set_clock(&self, now: Rc<dyn Fn() -> std::time::SystemTime>) {
+        let old = std::mem::replace(&mut Rc::make_mut(&mut self.state.borrow_mut()).now, now);
+        drop(old);
+    }
+    /// Updates only the first navigation occurrence, without rebuilding the view.
+    pub fn update_node_label(&self, entry_id: &str, label: Option<&str>, timestamp: Option<&str>) {
+        let (node, now) = {
+            let state = self.state.borrow();
+            (
+                state
+                    .nodes
+                    .iter()
+                    .find(|n| n.entry()["id"] == entry_id)
+                    .cloned(),
+                state.now.clone(),
+            )
+        };
+        let Some(node) = node else {
+            return;
+        };
+        *node.label_mut() = label.map(|s| Value::String(s.to_owned()));
+        let timestamp = label.filter(|s| !s.is_empty()).map(|_| {
+            timestamp.map_or_else(
+                || {
+                    chrono::DateTime::<chrono::Utc>::from(now())
+                        .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+                },
+                str::to_owned,
+            )
+        });
+        *node.label_timestamp_mut() = timestamp.map(Value::String);
+    }
+
     /// Leaves this uncached view unchanged.
     pub fn invalidate(&self) {}
     /// Returns the installed confirmation callback.

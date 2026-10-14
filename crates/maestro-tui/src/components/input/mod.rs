@@ -85,6 +85,14 @@ impl Input {
         state.current = InputState { value, cursor };
     }
 
+    /// Starts fresh editing at cursor zero, retaining focus and callbacks.
+    pub fn reset(&self, value: String) {
+        *self.state.borrow_mut() = Editing {
+            current: InputState { value, cursor: 0 },
+            ..Editing::default()
+        };
+    }
+
     /// Returns a retained submission callable.
     #[must_use]
     pub fn on_submit(&self) -> Option<SubmitCallback> {
