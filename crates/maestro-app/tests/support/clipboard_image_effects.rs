@@ -227,7 +227,11 @@ impl ClipboardOperations for Effects<'_> {
 }
 /// Real byte collection proves the controlled command's buffer boundary.
 #[cfg(unix)]
-fn real_capture(count: usize, options: SpawnSyncOptions<'_>) -> Result<Output, SpawnSyncError> {
+fn real_capture(count: usize, mut options: SpawnSyncOptions<'_>) -> Result<Output, SpawnSyncError> {
+    // Exercise the byte boundary without racing runner speed against the deadline.
+    if let SpawnSyncOptions::Capture { timeout, .. } = &mut options {
+        *timeout = None;
+    }
     let mut command = Command::new("python3");
     command.args([
         "-c",
