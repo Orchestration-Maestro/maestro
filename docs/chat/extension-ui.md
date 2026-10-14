@@ -82,8 +82,9 @@ independently when preparing help and on each invocation. With neither configure
 the action does nothing. On Unix, commands split on literal ASCII spaces, preserving
 empty arguments; quotes and tabs are not parsed, and execution is direct. Windows uses
 the configured command interpreter, defaulting to `cmd.exe`, before invoking the
-same inherited-terminal process bridge. The generated Windows path is quoted as one
-literal operand for that interpreter; the configured command keeps its shell syntax.
+same inherited-terminal process bridge. The generated Windows path is passed in a
+dedicated environment variable, referenced once as a quoted operand by that
+interpreter; the configured command keeps its shell syntax.
 No deadline is added.
 
 The current text is written as UTF-8 to

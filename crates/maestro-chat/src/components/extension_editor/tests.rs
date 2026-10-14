@@ -67,31 +67,51 @@ fn external_editor_windows_uses_shell_while_unix_executes_directly() {
             .chain(input.args)
             .collect::<Vec<_>>()
             .join(" ");
-        let (file, args, verbatim) = windows_command(&command, &path, input.comspec.as_deref());
-        assert_eq!(file, expected.launch.file);
-        assert_eq!(args, expected.launch.args);
-        assert_eq!(verbatim, expected.launch.windows_verbatim_arguments);
+        let (launch, env) = windows_command(&command, &path, input.comspec.as_deref());
+        assert_eq!(launch.executable, expected.launch.file);
+        assert_eq!(env, ("MAESTRO_EDITOR_FILE", path));
+        assert_eq!(launch.args, expected.launch.args);
+        assert_eq!(launch.verbatim, expected.launch.windows_verbatim_arguments);
     }
 }
 
 #[test]
 fn external_editor_windows_keeps_temp_path_one_literal_operand() {
-    let path = r"C:\Temp Dir & files\editor's.md";
-    let (_, args, verbatim) = windows_command("editor --wait", path, None);
-    assert!(verbatim);
+    let path = r"C:\%USERNAME%\Temp Dir & files\editor's.md";
+    let (launch, env) = windows_command("editor --wait", path, None);
+    assert!(launch.verbatim);
+    assert_eq!(env, ("MAESTRO_EDITOR_FILE", path.into()));
     assert_eq!(
-        args,
+        launch.args,
         [
             "/d",
             "/s",
             "/c",
-            r#""editor --wait "C:\Temp Dir & files\editor's.md"""#
+            r#""editor --wait "%MAESTRO_EDITOR_FILE%"""#
         ]
     );
-    let (_, args, verbatim) = windows_command("editor --wait", path, Some("bash.exe"));
-    assert!(!verbatim);
+    let (launch, env) = windows_command("editor --wait", path, Some("bash.exe"));
+    assert!(!launch.verbatim);
+    assert_eq!(env, ("MAESTRO_EDITOR_FILE", path.into()));
     assert_eq!(
-        args,
-        ["-c", r"editor --wait 'C:\Temp Dir & files\editor'\''s.md'"]
+        launch.args,
+        ["-c", r#"editor --wait "$MAESTRO_EDITOR_FILE""#]
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn external_editor_shell_receives_exact_filename_as_single_argument() {
+    let path = r"C:\%USERNAME%\Temp Dir & files\$HOME`whoami`'s.md";
+    let (launch, env) = windows_command("printf '<%s>\\n'", path, Some("sh"));
+    let output = std::process::Command::new(launch.executable)
+        .args(launch.args)
+        .env(env.0, env.1)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!("<{path}>\n")
     );
 }

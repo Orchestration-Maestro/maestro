@@ -219,17 +219,18 @@ fn native_command(
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        let (shell, mut args, verbatim) = windows_command(
+        let (mut launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
             _runtime.environment("comspec").as_deref(),
         );
-        let mut command = std::process::Command::new(shell);
-        if verbatim {
-            let text = args.pop().unwrap_or_default();
-            command.args(args).raw_arg(text);
+        let mut command = std::process::Command::new(launch.executable);
+        command.env(env.0, env.1);
+        if launch.verbatim {
+            let text = launch.args.pop().unwrap_or_default();
+            command.args(launch.args).raw_arg(text);
         } else {
-            command.args(args);
+            command.args(launch.args);
         }
         command.into()
     }
@@ -254,19 +255,23 @@ fn editor_hint(theme: &LiveTheme, runtime: &dyn TuiRuntime) -> Result<String, Th
 
 /// Returns native interpreter arguments while preserving the original command string.
 #[cfg(any(windows, test))]
-fn windows_command(command: &str, path: &str, shell: Option<&str>) -> (String, Vec<String>, bool) {
+fn windows_command(
+    command: &str,
+    path: &str,
+    shell: Option<&str>,
+) -> (maestro_app::Launch, (&'static str, String)) {
+    /// Environment operand keeps the filename out of interpreted command text.
+    const EDITOR_FILE_ENV: &str = "MAESTRO_EDITOR_FILE";
     let mut launch = maestro_app::windows_shell_launch(command, shell);
     let operand = if launch.verbatim {
-        format!(" \"{path}\"")
+        format!(" \"%{EDITOR_FILE_ENV}%\"")
     } else {
-        format!(" '{}'", path.replace('\'', "'\\''"))
+        format!(" \"${EDITOR_FILE_ENV}\"")
     };
     if let Some(text) = launch.args.last_mut() {
-        // The cmd command text ends in the shell owner's closing quote.
-        let index = text.len() - usize::from(launch.verbatim);
-        text.insert_str(index, &operand);
+        text.insert_str(text.len() - usize::from(launch.verbatim), &operand);
     }
-    (launch.executable, launch.args, launch.verbatim)
+    (launch, (EDITOR_FILE_ENV, path.into()))
 }
 #[cfg(test)]
 mod tests;
