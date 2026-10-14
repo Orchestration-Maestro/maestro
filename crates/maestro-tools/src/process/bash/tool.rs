@@ -59,13 +59,15 @@ pub struct BashToolOptions {
     pub spawn_hook: Option<BashSpawnHook>,
 }
 
-/// Build the native agent shell definition with an unused caller context.
+/// Build the native shell definition with call/result renderers and shared timing state.
+///
+/// The caller context is unused; [`super::BashRenderState`] owns row refresh teardown.
 #[must_use]
 pub fn create_bash_tool_definition<C: 'static>(
     cwd: String,
     bin_dir: String,
     options: BashToolOptions,
-) -> ToolDefinition<C, BashToolInput, BashToolDetails> {
+) -> ToolDefinition<C, BashToolInput, BashToolDetails, super::BashRenderState> {
     let operations = options
         .operations
         .unwrap_or_else(|| create_local_bash_operations(bin_dir.clone(), options.shell_path));
@@ -100,8 +102,8 @@ pub fn create_bash_tool_definition<C: 'static>(
             let operations = Arc::clone(&operations);
             Box::pin(super::execute::run(operations, context, input.timeout, signal, update))
         }),
-        render_call: None,
-        render_result: None,
+        render_call: Some(std::rc::Rc::new(super::render::render_call)),
+        render_result: Some(std::rc::Rc::new(super::render::render_result)),
     }
 }
 

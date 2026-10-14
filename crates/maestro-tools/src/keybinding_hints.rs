@@ -1,6 +1,6 @@
 //! Keybinding hints for the current registry, styled with the published theme.
 
-use maestro_theme::{LiveTheme, ThemeColor, ThemeError};
+use maestro_theme::{LiveTheme, Theme, ThemeColor, ThemeError};
 use maestro_tui::get_keybindings;
 
 /// The keybinding that expands a collapsed tool row.
@@ -31,6 +31,26 @@ pub fn key_hint(
 /// Returns the theme's failure when no theme is published or it lacks a color.
 pub fn raw_key_hint(key: &str, description: &str, theme: &LiveTheme) -> Result<String, ThemeError> {
     let theme = theme.get()?;
-    Ok(theme.fg(&ThemeColor::Dim, key)?
-        + &theme.fg(&ThemeColor::Muted, &format!(" {description}"))?)
+    format_key_hint(key, description, Some(&theme))
+}
+
+/// An unstyled hint for deferred drawing when the live theme becomes unavailable.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn plain_key_hint(keybinding: &str, description: &str) -> String {
+    format_key_hint(&key_text(keybinding), description, None).unwrap_or_default()
+}
+
+/// One owner for styled and unstyled key-hint framing.
+fn format_key_hint(
+    key: &str,
+    description: &str,
+    theme: Option<&Theme>,
+) -> Result<String, ThemeError> {
+    let description = format!(" {description}");
+    match theme {
+        Some(theme) => {
+            Ok(theme.fg(&ThemeColor::Dim, key)? + &theme.fg(&ThemeColor::Muted, &description)?)
+        }
+        None => Ok(format!("{key}{description}")),
+    }
 }

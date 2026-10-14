@@ -1,5 +1,7 @@
 //! Replaceable raw-byte shell execution with native local operations.
 mod execute;
+mod render;
+pub use render::BashRenderState;
 mod result;
 mod tool;
 pub use tool::{

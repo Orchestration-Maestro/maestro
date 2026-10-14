@@ -10,6 +10,7 @@ mod geometry;
 mod input;
 mod overlay_types;
 mod overlays;
+mod repeating_timer;
 mod runtime;
 mod schedule;
 mod screen;
@@ -31,6 +32,7 @@ pub use input::{InputListener, InputListenerResult};
 pub use overlay_types::{
     OverlayAnchor, OverlayHandle, OverlayMargin, OverlayMarginValue, OverlayOptions, SizeValue,
 };
+pub use repeating_timer::RepeatingTimer;
 pub use runtime::{
     LocalFuture, LogContext, RenderCallback, RenderTimer, TerminalHandle, TuiRuntime,
 };

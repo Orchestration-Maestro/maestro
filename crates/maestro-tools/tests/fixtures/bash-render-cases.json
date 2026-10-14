@@ -1,0 +1,2453 @@
+{
+  "colors": {
+    "toolTitle": 1,
+    "toolOutput": 2,
+    "error": 3,
+    "muted": 4,
+    "warning": 5,
+    "dim": 6
+  },
+  "cases": [
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {},
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;2m...\u001b[39m\u001b[22m\u001b[39m                         "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": null
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;2m...\u001b[39m\u001b[22m\u001b[39m                         "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": ""
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;2m...\u001b[39m\u001b[22m\u001b[39m                         "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": 12
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;3m[invalid arg]\u001b[39m\u001b[22m\u001b[39m               "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": false
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;3m[invalid arg]\u001b[39m\u001b[22m\u001b[39m               "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": []
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;3m[invalid arg]\u001b[39m\u001b[22m\u001b[39m               "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": {}
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ \u001b[38;5;3m[invalid arg]\u001b[39m\u001b[22m\u001b[39m               "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo ok"
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo ok\u001b[22m\u001b[39m                     "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "a\tb\nc"
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ a   b\u001b[22m                       ",
+        "\u001b[38;5;1m\u001b[1mc\u001b[22m\u001b[39m                             "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": " \ufeff\u0085 "
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$  \ufeff\u0085 \u001b[22m\u001b[39m                          "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": 0
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m                        "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": null
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m                        "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": 1
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m\u001b[38;5;4m (timeout 1s)\u001b[39m           "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": -2
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m\u001b[38;5;4m (timeout -2s)\u001b[39m          "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": 0.1
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m\u001b[38;5;4m (timeout 0.1s)\u001b[39m         "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": 1e-07
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m\u001b[38;5;4m (timeout 1e-7s)\u001b[39m        "
+      ]
+    },
+    {
+      "test": "bash_call_formats_partial_arguments",
+      "op": "call",
+      "input": {
+        "args": {
+          "command": "echo",
+          "timeout": 1e+21
+        },
+        "width": 30
+      },
+      "expected": [
+        "\u001b[38;5;1m\u001b[1m$ echo\u001b[22m\u001b[39m\u001b[38;5;4m (timeout 1e+21s)\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 0
+      },
+      "expected": "0.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 1
+      },
+      "expected": "0.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 49
+      },
+      "expected": "0.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 50
+      },
+      "expected": "0.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 99
+      },
+      "expected": "0.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 100
+      },
+      "expected": "0.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 149
+      },
+      "expected": "0.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 150
+      },
+      "expected": "0.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 250
+      },
+      "expected": "0.3s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 950
+      },
+      "expected": "0.9s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 999
+      },
+      "expected": "1.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 1000
+      },
+      "expected": "1.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 1050
+      },
+      "expected": "1.1s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 1250
+      },
+      "expected": "1.3s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 9999
+      },
+      "expected": "10.0s"
+    },
+    {
+      "test": "bash_elapsed_uses_one_decimal_seconds",
+      "op": "duration",
+      "input": {
+        "ms": 60000
+      },
+      "expected": "60.0s"
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\n\ufeff"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \t\n\ufeff"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u0085"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2m\u0085\u001b[39m        "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u0085"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2m\u0085\u001b[39m        "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \ufeffa \n b\t\r\n"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2ma \u001b[39m      ",
+        "\u001b[38;5;2m b\u001b[39m      "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \ufeffa \n b\t\r\n"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2ma \u001b[39m      ",
+        "\u001b[38;5;2m b\u001b[39m      "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u001b[31mred\u001b[0m\r\n\u0000\u0007\ufff9end"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mred\u001b[39m     ",
+        "\u001b[38;5;2mend\u001b[39m     "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "\u001b[31mred\u001b[0m\r\n\u0000\u0007\ufff9end"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2mred\u001b[39m     ",
+        "\u001b[38;5;2mend\u001b[39m     "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2m1\u001b[39m       ",
+        "\u001b[38;5;2m2\u001b[39m       ",
+        "\u001b[38;5;2m3\u001b[39m       ",
+        "\u001b[38;5;2m4\u001b[39m       ",
+        "\u001b[38;5;2m5\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2m1\u001b[39m       ",
+        "\u001b[38;5;2m2\u001b[39m       ",
+        "\u001b[38;5;2m3\u001b[39m       ",
+        "\u001b[38;5;2m4\u001b[39m       ",
+        "\u001b[38;5;2m5\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (\u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m       ",
+        "\u001b[38;5;2m3\u001b[39m       ",
+        "\u001b[38;5;2m4\u001b[39m       ",
+        "\u001b[38;5;2m5\u001b[39m       ",
+        "\u001b[38;5;2m6\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2m1\u001b[39m       ",
+        "\u001b[38;5;2m2\u001b[39m       ",
+        "\u001b[38;5;2m3\u001b[39m       ",
+        "\u001b[38;5;2m4\u001b[39m       ",
+        "\u001b[38;5;2m5\u001b[39m       ",
+        "\u001b[38;5;2m6\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "abcdefghijklmnop\nlast"
+            }
+          ]
+        },
+        "expanded": false,
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mabcdefgh",
+        "\u001b[38;5;2mijklmnop\u001b[39m",
+        "\u001b[38;5;2mlast\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "abcdefghijklmnop\nlast"
+            }
+          ]
+        },
+        "expanded": true,
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2mabcdefgh",
+        "\u001b[38;5;2mijklmnop\u001b[39m",
+        "\u001b[38;5;2mlast\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_uses_shared_image_fallback",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": ""
+            },
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/gif",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            }
+          ]
+        },
+        "images": null,
+        "showImages": false,
+        "width": 40
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mfirst\u001b[39m                                   ",
+        "\u001b[38;5;2mlast\u001b[39m                                    ",
+        "\u001b[38;5;2m[Image: [image/png]]\u001b[39m                    ",
+        "\u001b[38;5;2m[Image: [image/gif] 1x1]\u001b[39m                "
+      ]
+    },
+    {
+      "test": "bash_result_uses_shared_image_fallback",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": ""
+            },
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/gif",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            }
+          ]
+        },
+        "images": null,
+        "showImages": true,
+        "width": 40
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mfirst\u001b[39m                                   ",
+        "\u001b[38;5;2mlast\u001b[39m                                    ",
+        "\u001b[38;5;2m[Image: [image/png]]\u001b[39m                    ",
+        "\u001b[38;5;2m[Image: [image/gif] 1x1]\u001b[39m                "
+      ]
+    },
+    {
+      "test": "bash_result_uses_shared_image_fallback",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": ""
+            },
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/gif",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            }
+          ]
+        },
+        "images": "kitty",
+        "showImages": false,
+        "width": 40
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mfirst\u001b[39m                                   ",
+        "\u001b[38;5;2mlast\u001b[39m                                    ",
+        "\u001b[38;5;2m[Image: [image/png]]\u001b[39m                    ",
+        "\u001b[38;5;2m[Image: [image/gif] 1x1]\u001b[39m                "
+      ]
+    },
+    {
+      "test": "bash_result_uses_shared_image_fallback",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/png",
+              "data": ""
+            },
+            {
+              "type": "text",
+              "text": "last"
+            },
+            {
+              "type": "image",
+              "mimeType": "image/gif",
+              "data": "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            }
+          ]
+        },
+        "images": "kitty",
+        "showImages": true,
+        "width": 40
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mfirst\u001b[39m                                   ",
+        "\u001b[38;5;2mlast\u001b[39m                                    "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {}
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "fullOutputPath": ""
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "fullOutputPath": "/tmp/output.log"
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Full output: /tmp/output.log]\u001b[39m                                                                      "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": false,
+              "truncatedBy": "lines",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "lines",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Truncated: showing 5 of 20 lines]\u001b[39m                                                                  "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            }
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Truncated: 5 lines shown (50.0KB limit)]\u001b[39m                                                           "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 1280
+            }
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Truncated: 5 lines shown (1.3KB limit)]\u001b[39m                                                            "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "bytes",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 0
+            }
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Truncated: 5 lines shown (0B limit)]\u001b[39m                                                               "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "body"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "lines",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            },
+            "fullOutputPath": "/tmp/output.log"
+          }
+        },
+        "width": 100
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2mbody\u001b[39m                                                                                                ",
+        "                                                                                                    ",
+        "\u001b[38;5;5m[Full output: /tmp/output.log. Truncated: showing 5 of 20 lines]\u001b[39m                                    "
+      ]
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": true,
+        "isError": false,
+        "state": {},
+        "now": 10250,
+        "width": 40
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": false,
+        "isError": false,
+        "state": {},
+        "now": 10250,
+        "width": 40
+      },
+      "expected": []
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": true,
+        "isError": false,
+        "state": {
+          "startedAt": 9000
+        },
+        "now": 10250,
+        "width": 40
+      },
+      "expected": [
+        "                                        ",
+        "\u001b[38;5;4mElapsed 1.3s\u001b[39m                            "
+      ]
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": false,
+        "isError": false,
+        "state": {
+          "startedAt": 9000
+        },
+        "now": 10250,
+        "width": 40
+      },
+      "expected": [
+        "                                        ",
+        "\u001b[38;5;4mTook 1.3s\u001b[39m                               "
+      ]
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": true,
+        "isError": true,
+        "state": {
+          "startedAt": 9000
+        },
+        "now": 10250,
+        "width": 40
+      },
+      "expected": [
+        "                                        ",
+        "\u001b[38;5;4mElapsed 1.3s\u001b[39m                            "
+      ]
+    },
+    {
+      "test": "bash_result_duration_follows_start_and_settlement",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ]
+        },
+        "partial": false,
+        "isError": true,
+        "state": {
+          "startedAt": 9000,
+          "endedAt": 9500
+        },
+        "now": 10250,
+        "width": 40
+      },
+      "expected": [
+        "                                        ",
+        "\u001b[38;5;4mTook 0.5s\u001b[39m                               "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [],
+        "width": 2
+      },
+      "expected": [
+        "",
+        "\u001b[0m..\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m ",
+        "\u001b[38;5;2m3\u001b[39m ",
+        "\u001b[38;5;2m4\u001b[39m ",
+        "\u001b[38;5;2m5\u001b[39m ",
+        "\u001b[38;5;2m6\u001b[39m "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [],
+        "width": 25
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m                        ",
+        "\u001b[38;5;2m3\u001b[39m                        ",
+        "\u001b[38;5;2m4\u001b[39m                        ",
+        "\u001b[38;5;2m5\u001b[39m                        ",
+        "\u001b[38;5;2m6\u001b[39m                        "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [],
+        "width": 80
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6m\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x"
+        ],
+        "width": 2
+      },
+      "expected": [
+        "",
+        "\u001b[0m..\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m ",
+        "\u001b[38;5;2m3\u001b[39m ",
+        "\u001b[38;5;2m4\u001b[39m ",
+        "\u001b[38;5;2m5\u001b[39m ",
+        "\u001b[38;5;2m6\u001b[39m "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x"
+        ],
+        "width": 25
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m                        ",
+        "\u001b[38;5;2m3\u001b[39m                        ",
+        "\u001b[38;5;2m4\u001b[39m                        ",
+        "\u001b[38;5;2m5\u001b[39m                        ",
+        "\u001b[38;5;2m6\u001b[39m                        "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x"
+        ],
+        "width": 80
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x",
+          "ctrl+o"
+        ],
+        "width": 2
+      },
+      "expected": [
+        "",
+        "\u001b[0m..\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m ",
+        "\u001b[38;5;2m3\u001b[39m ",
+        "\u001b[38;5;2m4\u001b[39m ",
+        "\u001b[38;5;2m5\u001b[39m ",
+        "\u001b[38;5;2m6\u001b[39m "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x",
+          "ctrl+o"
+        ],
+        "width": 25
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m2\u001b[39m                        ",
+        "\u001b[38;5;2m3\u001b[39m                        ",
+        "\u001b[38;5;2m4\u001b[39m                        ",
+        "\u001b[38;5;2m5\u001b[39m                        ",
+        "\u001b[38;5;2m6\u001b[39m                        "
+      ]
+    },
+    {
+      "test": "bash_expand_hint_uses_live_bindings",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ]
+        },
+        "bindings": [
+          "alt+x",
+          "ctrl+o"
+        ],
+        "width": 80
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x/ctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               "
+      ]
+    },
+    {
+      "test": "bash_render_state_starts_once_and_stops_refresh",
+      "op": "timeline",
+      "input": {
+        "steps": [
+          {
+            "call": {
+              "command": "go"
+            },
+            "started": false
+          },
+          {
+            "call": {
+              "command": "go"
+            },
+            "started": true
+          },
+          {
+            "advance": 250,
+            "call": {
+              "command": "go"
+            },
+            "started": true
+          },
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": ""
+                }
+              ]
+            },
+            "partial": true
+          },
+          {
+            "advance": 999
+          },
+          {
+            "advance": 1
+          },
+          {
+            "advance": 1000
+          },
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ok"
+                }
+              ]
+            },
+            "partial": true
+          },
+          {
+            "advance": 250,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ok"
+                }
+              ]
+            }
+          },
+          {
+            "advance": 2000,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "ok"
+                }
+              ]
+            }
+          },
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "late"
+                }
+              ]
+            },
+            "partial": true
+          },
+          {
+            "advance": 1000
+          },
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "late"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "expected": [
+        {
+          "kind": "call",
+          "same": true,
+          "rows": [
+            "\u001b[38;5;1m\u001b[1m$ go\u001b[22m\u001b[39m                                    "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": null,
+          "endedAt": null,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "call",
+          "same": true,
+          "rows": [
+            "\u001b[38;5;1m\u001b[1m$ go\u001b[22m\u001b[39m                                    "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "call",
+          "same": true,
+          "rows": [
+            "\u001b[38;5;1m\u001b[1m$ go\u001b[22m\u001b[39m                                    "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "                                        ",
+            "\u001b[38;5;4mElapsed 0.3s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 0
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 0
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 1
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 2
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mok\u001b[39m                                      ",
+            "                                        ",
+            "\u001b[38;5;4mElapsed 2.3s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 2
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mok\u001b[39m                                      ",
+            "                                        ",
+            "\u001b[38;5;4mTook 2.5s\u001b[39m                               "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 12500,
+          "timers": 0,
+          "invalidations": 2
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mok\u001b[39m                                      ",
+            "                                        ",
+            "\u001b[38;5;4mTook 2.5s\u001b[39m                               "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 12500,
+          "timers": 0,
+          "invalidations": 2
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mlate\u001b[39m                                    ",
+            "                                        ",
+            "\u001b[38;5;4mElapsed 2.5s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 12500,
+          "timers": 1,
+          "invalidations": 2
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 12500,
+          "timers": 1,
+          "invalidations": 3
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mlate\u001b[39m                                    ",
+            "                                        ",
+            "\u001b[38;5;4mTook 2.5s\u001b[39m                               "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 12500,
+          "timers": 0,
+          "invalidations": 3
+        }
+      ]
+    },
+    {
+      "test": "bash_error_partial_cancels_refresh_and_keeps_elapsed_label",
+      "op": "timeline",
+      "input": {
+        "steps": [
+          {
+            "call": {
+              "command": "go"
+            },
+            "started": true
+          },
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": ""
+                }
+              ]
+            },
+            "partial": true
+          },
+          {
+            "advance": 250,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            },
+            "partial": true,
+            "error": true
+          },
+          {
+            "advance": 2000,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "failure"
+                }
+              ]
+            },
+            "partial": true,
+            "error": true
+          }
+        ]
+      },
+      "expected": [
+        {
+          "kind": "call",
+          "same": true,
+          "rows": [
+            "\u001b[38;5;1m\u001b[1m$ go\u001b[22m\u001b[39m                                    "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "                                        ",
+            "\u001b[38;5;4mElapsed 0.0s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 0
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mfailure\u001b[39m                                 ",
+            "                                        ",
+            "\u001b[38;5;4mElapsed 0.3s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 10250,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mfailure\u001b[39m                                 ",
+            "                                        ",
+            "\u001b[38;5;4mElapsed 0.3s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10000,
+          "endedAt": 10250,
+          "timers": 0,
+          "invalidations": 0
+        }
+      ]
+    },
+    {
+      "test": "bash_replay_omits_clock_until_execution_starts",
+      "op": "timeline",
+      "input": {
+        "steps": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "past"
+                }
+              ]
+            }
+          },
+          {
+            "advance": 500,
+            "call": {
+              "command": "new"
+            },
+            "started": true
+          },
+          {
+            "advance": 100,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "new"
+                }
+              ]
+            },
+            "partial": true
+          }
+        ]
+      },
+      "expected": [
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mpast\u001b[39m                                    "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": null,
+          "endedAt": 10000,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "call",
+          "same": true,
+          "rows": [
+            "\u001b[38;5;1m\u001b[1m$ new\u001b[22m\u001b[39m                                   "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10500,
+          "endedAt": null,
+          "timers": 0,
+          "invalidations": 0
+        },
+        {
+          "kind": "result",
+          "same": true,
+          "rows": [
+            "",
+            "\u001b[38;5;2mnew\u001b[39m                                     ",
+            "                                        ",
+            "\u001b[38;5;4mElapsed 0.1s\u001b[39m                            "
+          ]
+        },
+        {
+          "kind": "state",
+          "startedAt": 10500,
+          "endedAt": null,
+          "timers": 1,
+          "invalidations": 0
+        }
+      ]
+    },
+    {
+      "test": "bash_result_cache_tracks_content_width_and_expansion",
+      "op": "cache",
+      "input": {},
+      "expected": [
+        {
+          "input": {
+            "text": "abcdefghijklmnop\nlast",
+            "width": 12,
+            "expanded": false,
+            "invalidate": false
+          },
+          "rows": [
+            "",
+            "\u001b[38;5;2mabcdefghijkl",
+            "\u001b[38;5;2mmnop\u001b[39m        ",
+            "\u001b[38;5;2mlast\u001b[39m        "
+          ]
+        },
+        {
+          "input": {
+            "text": "abcdefghijklmnop\nlast",
+            "width": 4,
+            "expanded": false,
+            "invalidate": false
+          },
+          "rows": [
+            "",
+            "\u001b[38;5;2mabcd",
+            "\u001b[38;5;2mefgh",
+            "\u001b[38;5;2mijkl",
+            "\u001b[38;5;2mmnop\u001b[39m",
+            "\u001b[38;5;2mlast\u001b[39m"
+          ]
+        },
+        {
+          "input": {
+            "text": "new1\nnew2\nnew3\nnew4\nnew5\nnew6",
+            "width": 4,
+            "expanded": false,
+            "invalidate": false
+          },
+          "rows": [
+            "",
+            "\u001b[38;5;4m.\u001b[0m...\u001b[0m",
+            "\u001b[38;5;2mnew2\u001b[39m",
+            "\u001b[38;5;2mnew3\u001b[39m",
+            "\u001b[38;5;2mnew4\u001b[39m",
+            "\u001b[38;5;2mnew5\u001b[39m",
+            "\u001b[38;5;2mnew6\u001b[39m"
+          ]
+        },
+        {
+          "input": {
+            "text": "new1\nnew2\nnew3\nnew4\nnew5\nnew6",
+            "width": 12,
+            "expanded": true,
+            "invalidate": false
+          },
+          "rows": [
+            "            ",
+            "\u001b[38;5;2mnew1\u001b[39m        ",
+            "\u001b[38;5;2mnew2\u001b[39m        ",
+            "\u001b[38;5;2mnew3\u001b[39m        ",
+            "\u001b[38;5;2mnew4\u001b[39m        ",
+            "\u001b[38;5;2mnew5\u001b[39m        ",
+            "\u001b[38;5;2mnew6\u001b[39m        "
+          ]
+        },
+        {
+          "input": {
+            "text": "x",
+            "width": 12,
+            "expanded": false,
+            "invalidate": true
+          },
+          "rows": [
+            "",
+            "\u001b[38;5;2mx\u001b[39m           "
+          ]
+        }
+      ]
+    },
+    {
+      "test": "bash_renderers_read_the_published_theme",
+      "op": "theme",
+      "input": {},
+      "expected": {
+        "original": [
+          "\u001b[38;5;1m\u001b[1m$ go\u001b[22m\u001b[39m                          "
+        ],
+        "replacement": [
+          "\u001b[38;5;21m\u001b[1m$ go\u001b[22m\u001b[39m                          "
+        ]
+      }
+    },
+    {
+      "test": "bash_dropped_row_releases_refresh",
+      "op": "drop",
+      "input": {},
+      "expected": {
+        "timers": 0,
+        "invalidations": 0
+      }
+    },
+    {
+      "test": "bash_result_options_control_expansion_and_partial_label",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1234567890123456789012345678901234567890123456789"
+            }
+          ]
+        },
+        "expanded": false,
+        "partial": false,
+        "state": {
+          "startedAt": 9000
+        },
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (\u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m78901234",
+        "\u001b[38;5;2m56789012",
+        "\u001b[38;5;2m34567890",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m9\u001b[39m       ",
+        "        ",
+        "\u001b[38;5;4mTook    ",
+        "\u001b[38;5;4m1.0s\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_options_control_expansion_and_partial_label",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1234567890123456789012345678901234567890123456789"
+            }
+          ]
+        },
+        "expanded": false,
+        "partial": true,
+        "state": {
+          "startedAt": 9000
+        },
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (\u001b[0m...\u001b[0m",
+        "\u001b[38;5;2m78901234",
+        "\u001b[38;5;2m56789012",
+        "\u001b[38;5;2m34567890",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m9\u001b[39m       ",
+        "        ",
+        "\u001b[38;5;4mElapsed ",
+        "\u001b[38;5;4m1.0s\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_options_control_expansion_and_partial_label",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1234567890123456789012345678901234567890123456789"
+            }
+          ]
+        },
+        "expanded": true,
+        "partial": false,
+        "state": {
+          "startedAt": 9000
+        },
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m90123456",
+        "\u001b[38;5;2m78901234",
+        "\u001b[38;5;2m56789012",
+        "\u001b[38;5;2m34567890",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m9\u001b[39m       ",
+        "        ",
+        "\u001b[38;5;4mTook    ",
+        "\u001b[38;5;4m1.0s\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_options_control_expansion_and_partial_label",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1234567890123456789012345678901234567890123456789"
+            }
+          ]
+        },
+        "expanded": true,
+        "partial": true,
+        "state": {
+          "startedAt": 9000
+        },
+        "width": 8
+      },
+      "expected": [
+        "        ",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m90123456",
+        "\u001b[38;5;2m78901234",
+        "\u001b[38;5;2m56789012",
+        "\u001b[38;5;2m34567890",
+        "\u001b[38;5;2m12345678",
+        "\u001b[38;5;2m9\u001b[39m       ",
+        "        ",
+        "\u001b[38;5;4mElapsed ",
+        "\u001b[38;5;4m1.0s\u001b[39m    "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "lines",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            },
+            "fullOutputPath": "/tmp/output.log"
+          }
+        },
+        "state": {
+          "startedAt": 9000
+        },
+        "now": 10250,
+        "width": 80
+      },
+      "expected": [
+        "                                                                                ",
+        "\u001b[38;5;5m[Full output: /tmp/output.log. Truncated: showing 5 of 20 lines]\u001b[39m                ",
+        "                                                                                ",
+        "\u001b[38;5;4mTook 1.3s\u001b[39m                                                                       "
+      ]
+    },
+    {
+      "test": "bash_result_orders_artifact_and_truncation_notices",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "1\n2\n3\n4\n5\n6"
+            }
+          ],
+          "details": {
+            "truncation": {
+              "content": "",
+              "truncated": true,
+              "truncatedBy": "lines",
+              "totalLines": 20,
+              "totalBytes": 80,
+              "outputLines": 5,
+              "outputBytes": 20,
+              "lastLinePartial": false,
+              "firstLineExceedsLimit": false,
+              "maxLines": 5,
+              "maxBytes": 51200
+            },
+            "fullOutputPath": "/tmp/output.log"
+          }
+        },
+        "state": {
+          "startedAt": 9000
+        },
+        "now": 10250,
+        "width": 80
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+        "\u001b[38;5;2m2\u001b[39m                                                                               ",
+        "\u001b[38;5;2m3\u001b[39m                                                                               ",
+        "\u001b[38;5;2m4\u001b[39m                                                                               ",
+        "\u001b[38;5;2m5\u001b[39m                                                                               ",
+        "\u001b[38;5;2m6\u001b[39m                                                                               ",
+        "                                                                                ",
+        "\u001b[38;5;5m[Full output: /tmp/output.log. Truncated: showing 5 of 20 lines]\u001b[39m                ",
+        "                                                                                ",
+        "\u001b[38;5;4mTook 1.3s\u001b[39m                                                                       "
+      ]
+    },
+    {
+      "test": "bash_result_sanitizes_trims_and_selects_tail",
+      "op": "result",
+      "input": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "a\n\nb"
+            }
+          ]
+        },
+        "width": 8
+      },
+      "expected": [
+        "",
+        "\u001b[38;5;2ma\u001b[39m       ",
+        "        ",
+        "\u001b[38;5;2mb\u001b[39m       "
+      ]
+    },
+    {
+      "test": "bash_renderers_reuse_matching_components",
+      "op": "reuse",
+      "input": {},
+      "expected": {
+        "callSame": true,
+        "resultSame": true,
+        "callRows": [
+          "\u001b[38;5;1m\u001b[1m$ second\u001b[22m\u001b[39m            "
+        ],
+        "resultRows": [
+          "",
+          "\u001b[38;5;2mnew\u001b[39m                 "
+        ]
+      }
+    },
+    {
+      "test": "bash_expand_hint_changes_on_retained_render",
+      "op": "hint_rebind",
+      "input": {},
+      "expected": {
+        "before": [
+          "",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6mctrl+o\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ],
+        "after": [
+          "",
+          "\u001b[38;5;4m... (1 earlier lines,\u001b[39m \u001b[38;5;6malt+x\u001b[39m\u001b[38;5;4m to expand\u001b[39m)",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ],
+        "afterTheme": [
+          "",
+          "\u001b[38;5;24m... (1 earlier lines,\u001b[39m \u001b[38;5;26malt+x\u001b[39m\u001b[38;5;24m to expand\u001b[39m)",
+          "\u001b[38;5;2m2\u001b[39m                                                                               ",
+          "\u001b[38;5;2m3\u001b[39m                                                                               ",
+          "\u001b[38;5;2m4\u001b[39m                                                                               ",
+          "\u001b[38;5;2m5\u001b[39m                                                                               ",
+          "\u001b[38;5;2m6\u001b[39m                                                                               "
+        ]
+      }
+    },
+    {
+      "test": "bash_default_themes_keep_role_colors",
+      "op": "brand",
+      "input": {
+        "mode": "dark",
+        "palette": {
+          "error": "#FF6A1A",
+          "warning": "#D9A066",
+          "muted": "#D9A066",
+          "dim": "#D9A066",
+          "toolTitle": "",
+          "toolOutput": "#D9A066"
+        },
+        "width": 80
+      },
+      "expected": {
+        "header": [
+          "\u001b[39m\u001b[1m$ echo hello\u001b[22m\u001b[39m\u001b[38;2;217;160;102m (timeout 2s)\u001b[39m                                                       "
+        ],
+        "body": [
+          "",
+          "\u001b[38;2;217;160;102m... (1 earlier lines,\u001b[39m \u001b[38;2;217;160;102mctrl+o\u001b[39m\u001b[38;2;217;160;102m to expand\u001b[39m)",
+          "\u001b[38;2;217;160;102m2\u001b[39m                                                                               ",
+          "\u001b[38;2;217;160;102m3\u001b[39m                                                                               ",
+          "\u001b[38;2;217;160;102m4\u001b[39m                                                                               ",
+          "\u001b[38;2;217;160;102m5\u001b[39m                                                                               ",
+          "\u001b[38;2;217;160;102m6\u001b[39m                                                                               ",
+          "                                                                                ",
+          "\u001b[38;2;217;160;102m[Full output: /tmp/output.log. Truncated: showing 5 of 20 lines]\u001b[39m                ",
+          "                                                                                ",
+          "\u001b[38;2;217;160;102mTook 1.3s\u001b[39m                                                                       "
+        ]
+      }
+    },
+    {
+      "test": "bash_default_themes_keep_role_colors",
+      "op": "brand",
+      "input": {
+        "mode": "light",
+        "palette": {
+          "error": "#2A1F1A",
+          "warning": "#2A1F1A",
+          "muted": "#2A1F1A",
+          "dim": "#2A1F1A",
+          "toolTitle": "",
+          "toolOutput": "#2A1F1A"
+        },
+        "width": 80
+      },
+      "expected": {
+        "header": [
+          "\u001b[39m\u001b[1m$ echo hello\u001b[22m\u001b[39m\u001b[38;2;42;31;26m (timeout 2s)\u001b[39m                                                       "
+        ],
+        "body": [
+          "",
+          "\u001b[38;2;42;31;26m... (1 earlier lines,\u001b[39m \u001b[38;2;42;31;26mctrl+o\u001b[39m\u001b[38;2;42;31;26m to expand\u001b[39m)",
+          "\u001b[38;2;42;31;26m2\u001b[39m                                                                               ",
+          "\u001b[38;2;42;31;26m3\u001b[39m                                                                               ",
+          "\u001b[38;2;42;31;26m4\u001b[39m                                                                               ",
+          "\u001b[38;2;42;31;26m5\u001b[39m                                                                               ",
+          "\u001b[38;2;42;31;26m6\u001b[39m                                                                               ",
+          "                                                                                ",
+          "\u001b[38;2;42;31;26m[Full output: /tmp/output.log. Truncated: showing 5 of 20 lines]\u001b[39m                ",
+          "                                                                                ",
+          "\u001b[38;2;42;31;26mTook 1.3s\u001b[39m                                                                       "
+        ]
+      }
+    }
+  ]
+}

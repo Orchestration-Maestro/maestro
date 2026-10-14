@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use super::Text;
-use crate::tui::{RenderTimer, TuiRuntime};
+use crate::tui::{RepeatingTimer, TuiRuntime};
 use crate::{Component, TUI};
 
 /// Optional frames and their animation interval.
@@ -46,7 +46,7 @@ struct State {
     /// Delay between animated frames.
     delay: Cell<Option<Duration>>,
     /// Pending animation callback.
-    timer: RefCell<Option<Box<dyn RenderTimer>>>,
+    timer: RefCell<Option<RepeatingTimer>>,
     /// Weak request to the existing writer.
     request: Rc<dyn Fn()>,
 }
@@ -89,9 +89,7 @@ impl Loader {
     /// Stops animation while retaining displayed content.
     pub fn stop(&self) {
         let timer = self.0.timer.take();
-        if let Some(mut timer) = timer {
-            timer.cancel();
-        }
+        drop(timer);
     }
 
     /// Replaces the message and refreshes the display, also while stopped.
@@ -132,17 +130,16 @@ impl State {
             return;
         };
         let weak = Rc::downgrade(self);
-        let timer = self.runtime.schedule(
+        let timer = RepeatingTimer::new(
+            Rc::clone(&self.runtime),
             delay,
-            Box::new(move || {
+            Rc::new(move || {
                 if let Some(state) = weak.upgrade() {
                     state
                         .index
                         .set((state.index.get() + 1) % state.frames.borrow().len());
-                    state.arm();
                     state.update_display();
                 }
-                Ok(())
             }),
         );
         let replaced = self.timer.replace(Some(timer));
@@ -167,14 +164,6 @@ impl State {
         self.text
             .set_text(format!("{indicator}{}", (self.message_color)(&message)));
         (self.request)();
-    }
-}
-
-impl Drop for State {
-    fn drop(&mut self) {
-        if let Some(mut timer) = self.timer.get_mut().take() {
-            timer.cancel();
-        }
     }
 }
 

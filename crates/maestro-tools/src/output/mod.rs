@@ -16,3 +16,5 @@ pub(crate) fn text_block(text: String) -> maestro_models::UserBlock {
         text_signature: None,
     })
 }
+
+pub mod visual_truncate;

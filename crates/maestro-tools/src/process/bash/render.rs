@@ -1,0 +1,259 @@
+//! Retained shell call and result rendering.
+use super::BashToolDetails;
+use crate::{
+    ToolRenderContext, ToolRenderResultOptions,
+    output::{
+        render_parts::{
+            downcast, expand_hint, float, into_text, num, paint, plain_expand_hint, themed,
+        },
+        render_utils::{get_text_output, invalid_arg_text, str},
+        visual_truncate::{VisualTruncateResult, truncate_to_visual_lines},
+    },
+};
+use maestro_agent::AgentToolResult;
+use maestro_models::DiagnosticErrorInfo;
+use maestro_theme::{LiveTheme, Theme, ThemeColor};
+use maestro_tui::tui::{ComponentHandle, RepeatingTimer};
+use maestro_tui::{Component, Container, Text, truncate_to_width};
+use num_traits::ToPrimitive;
+use serde_json::Value;
+use std::{cell::RefCell, rc::Rc, time::Duration};
+
+/// Timing shared by a shell row's call and result slots.
+#[derive(Default)]
+pub struct BashRenderState {
+    /// First execution timestamp in whole runtime milliseconds.
+    started_at: Option<u128>,
+    /// First settlement timestamp in whole runtime milliseconds.
+    ended_at: Option<u128>,
+    /// Owned refresh continuation, cancelled when the last row owner disappears.
+    timer: Option<RepeatingTimer>,
+}
+/// Draw authored arguments with the published theme.
+pub(super) fn render_call(
+    args: &Value,
+    _theme: &Theme,
+    context: &ToolRenderContext<'_, BashRenderState>,
+) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+    if context.phase.execution_started {
+        let now = context.runtime.now().as_millis();
+        let mut state = context.state.borrow_mut();
+        if state.started_at.is_none() {
+            state.started_at = Some(now);
+            state.ended_at = None;
+        }
+    }
+    let theme = themed(context.live_theme.get())?;
+    let command = match str(args.get("command")) {
+        None => themed(invalid_arg_text(&theme))?,
+        Some("") => paint(&theme, &ThemeColor::ToolOutput, "...")?,
+        Some(command) => command.to_owned(),
+    };
+    let mut title = paint(
+        &theme,
+        &ThemeColor::ToolTitle,
+        &Theme::bold(&format!("$ {command}"), true),
+    )?;
+    if let Some(timeout) = args
+        .get("timeout")
+        .and_then(Value::as_f64)
+        .filter(|timeout| *timeout != 0.0)
+    {
+        title.push_str(&paint(
+            &theme,
+            &ThemeColor::Muted,
+            &format!(" (timeout {}s)", num(timeout)),
+        )?);
+    }
+    Ok(into_text(context.last_component.as_ref(), title))
+}
+
+/// Settle the clock or admit one refresh continuation without retaining the row.
+fn timing(
+    options: ToolRenderResultOptions,
+    context: &ToolRenderContext<'_, BashRenderState>,
+) -> Option<u128> {
+    let now = context.runtime.now().as_millis();
+    let (start, end, needs_timer) = {
+        let mut state = context.state.borrow_mut();
+        if !options.is_partial || context.is_error {
+            state.ended_at.get_or_insert(now);
+        }
+        (
+            state.started_at,
+            state.ended_at,
+            state.started_at.is_some()
+                && options.is_partial
+                && !context.is_error
+                && state.timer.is_none(),
+        )
+    };
+    if needs_timer {
+        let weak = Rc::downgrade(&context.state);
+        let invalidate = Rc::clone(&context.invalidate);
+        let timer = RepeatingTimer::new(
+            Rc::clone(&context.runtime),
+            Duration::from_secs(1),
+            Rc::new(move || {
+                if let Some(_owner) = weak.upgrade() {
+                    invalidate();
+                }
+            }),
+        );
+        let replaced = context.state.borrow_mut().timer.replace(timer);
+        drop(replaced);
+    }
+    if !options.is_partial || context.is_error {
+        let timer = context.state.borrow_mut().timer.take();
+        drop(timer);
+    }
+    start.map(|start| end.unwrap_or(now).saturating_sub(start))
+}
+/// Draw the first captured duration through the existing text component.
+pub(super) fn render_result(
+    result: &AgentToolResult<BashToolDetails>,
+    options: ToolRenderResultOptions,
+    _theme: &Theme,
+    context: &ToolRenderContext<'_, BashRenderState>,
+) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+    let elapsed = timing(options, context);
+    let theme = themed(context.live_theme.get())?;
+    let component = context
+        .last_component
+        .as_ref()
+        .and_then(downcast::<BashResultRenderComponent>)
+        .unwrap_or_else(|| Rc::new(BashResultRenderComponent::default()));
+    component.frame.clear();
+    let output = get_text_output(Some(result), context.show_images, &context.terminal_image)?;
+    let output = output.trim_matches(maestro_text::is_whitespace_scalar);
+    if !output.is_empty() {
+        let styled = output
+            .split('\n')
+            .map(|line| paint(&theme, &ThemeColor::ToolOutput, line))
+            .collect::<Result<Vec<_>, _>>()?
+            .join("\n");
+        if options.expanded {
+            component
+                .frame
+                .add_child(Rc::new(Text::new(format!("\n{styled}"), 0, 0, None)));
+        } else {
+            paint(&theme, &ThemeColor::Muted, "")?;
+            paint(&theme, &ThemeColor::Dim, "")?;
+            component.frame.add_child(Rc::new(VisualTail {
+                text: styled,
+                live_theme: context.live_theme.clone(),
+                cache: RefCell::default(),
+            }));
+        }
+    }
+    if let Some(notice) = metadata(result.details.as_ref()) {
+        let notice = paint(&theme, &ThemeColor::Warning, &notice)?;
+        component
+            .frame
+            .add_child(Rc::new(Text::new(format!("\n{notice}"), 0, 0, None)));
+    }
+    if let Some(elapsed) = elapsed {
+        let label = if options.is_partial {
+            "Elapsed"
+        } else {
+            "Took"
+        };
+        let mut buffer = ryu_js::Buffer::new();
+        let seconds = buffer.format_to_fixed(elapsed.to_f64().unwrap_or(f64::MAX) / 1000.0, 1);
+        let text = paint(&theme, &ThemeColor::Muted, &format!("{label} {seconds}s"))?;
+        component
+            .frame
+            .add_child(Rc::new(Text::new(format!("\n{text}"), 0, 0, None)));
+    }
+    Ok(component)
+}
+
+/// Result slot identity with layout owned by the toolkit container.
+#[derive(Default)]
+struct BashResultRenderComponent {
+    /// Rebuilt body, notices and elapsed text.
+    frame: Container,
+}
+impl Component for BashResultRenderComponent {
+    fn render(&self, width: usize) -> Vec<String> {
+        self.frame.render(width)
+    }
+    fn invalidate(&self) {
+        self.frame.invalidate();
+    }
+}
+/// Width-sensitive tail with a live hint outside the cached body.
+struct VisualTail {
+    /// Styled body captured by the result callback.
+    text: String,
+    /// Current hint role colors.
+    live_theme: LiveTheme,
+    /// Wrapping result for the last viewport.
+    cache: RefCell<Option<(usize, VisualTruncateResult)>>,
+}
+impl Component for VisualTail {
+    fn render(&self, width: usize) -> Vec<String> {
+        let (skipped, lines) = {
+            let mut cache = self.cache.borrow_mut();
+            if cache.as_ref().is_none_or(|(old, _)| *old != width) {
+                *cache = Some((width, truncate_to_visual_lines(&self.text, 5, width, None)));
+            }
+            cache
+                .as_ref()
+                .map(|(_, tail)| (tail.skipped_count, tail.visual_lines.clone()))
+                .unwrap_or_default()
+        };
+        let mut rows = vec![String::new()];
+        if skipped > 0 {
+            let counts = format!("{skipped} earlier lines");
+            let hint = self
+                .live_theme
+                .get()
+                .ok()
+                .and_then(|theme| expand_hint(&counts, &theme, &self.live_theme).ok())
+                .unwrap_or_else(|| plain_expand_hint(&counts));
+            rows.push(truncate_to_width(
+                &hint.replacen('\n', "", 1),
+                width,
+                maestro_tui::TruncateOptions::default(),
+            ));
+        }
+        rows.extend(lines);
+        rows
+    }
+    fn invalidate(&self) {
+        self.cache.take();
+    }
+}
+
+/// Artifact identity precedes active truncation, independently of body presence.
+fn metadata(details: Option<&BashToolDetails>) -> Option<String> {
+    use crate::output::truncate::{TruncationBy, format_size};
+    let details = details?;
+    let mut warnings = Vec::new();
+    if let Some(path) = details
+        .full_output_path
+        .as_deref()
+        .filter(|path| !path.is_empty())
+    {
+        warnings.push(format!("Full output: {path}"));
+    }
+    if let Some(truncation) = details
+        .truncation
+        .as_ref()
+        .filter(|truncation| truncation.truncated)
+    {
+        warnings.push(match truncation.truncated_by {
+            Some(TruncationBy::Lines) => format!(
+                "Truncated: showing {} of {} lines",
+                truncation.output_lines, truncation.total_lines
+            ),
+            _ => format!(
+                "Truncated: {} lines shown ({} limit)",
+                truncation.output_lines,
+                format_size(float(truncation.max_bytes))
+            ),
+        });
+    }
+    (!warnings.is_empty()).then(|| format!("[{}]", warnings.join(". ")))
+}
