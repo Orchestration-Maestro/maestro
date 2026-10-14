@@ -233,3 +233,23 @@ fn bounded_select_list(
 pub mod settings_selector;
 
 pub mod login_dialog;
+
+#[cfg(test)]
+mod tests;
+
+/// Centers a bounded window while keeping its last page full.
+fn list_window(selected: usize, total: usize, capacity: usize) -> std::ops::Range<usize> {
+    let start = selected
+        .saturating_sub(capacity / 2)
+        .min(total.saturating_sub(capacity));
+    start..start.saturating_add(capacity).min(total)
+}
+
+/// Replaces a nonempty supplied raw home prefix for display.
+fn shorten_home_path(path: &str, home: Option<&str>) -> String {
+    home.filter(|home| !home.is_empty())
+        .and_then(|home| path.strip_prefix(home))
+        .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
+}
+
+pub mod session_selector;

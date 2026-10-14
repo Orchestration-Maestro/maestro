@@ -2748,6 +2748,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-process",
+ "maestro-resources",
  "maestro-session",
  "maestro-settings",
  "maestro-text",

@@ -69,3 +69,11 @@ pub use maestro_catalog::{
 };
 pub use maestro_models::models_are_equal;
 pub use maestro_settings::SettingsManager;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_resources::NativeResourceOperations;
+pub use maestro_resources::{
+    ResourceEntry, ResourceFileType, ResourceOperations, canonicalize_path,
+};
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_session::session_manager::SessionListProgress;

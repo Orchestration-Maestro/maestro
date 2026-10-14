@@ -32,11 +32,9 @@ impl TreeState {
             })
             .collect();
         }
-        let start = self
-            .selected
-            .saturating_sub(self.max_visible_lines / 2)
-            .min(self.visible.len().saturating_sub(self.max_visible_lines));
-        let end = (start + self.max_visible_lines).min(self.visible.len());
+        let window =
+            super::super::list_window(self.selected, self.visible.len(), self.max_visible_lines);
+        let (start, end) = (window.start, window.end);
         let mut lines = Vec::new();
         for index in start..end {
             lines.push(clip(&self.row(index, &theme, runtime, styles_enabled)?));
