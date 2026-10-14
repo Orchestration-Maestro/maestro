@@ -97,32 +97,49 @@ fn socks_handshake_deadline_ends_at_tunnel_establishment() {
 fn socks_connect_and_header_deadlines_keep_separate_scopes() {
     run(async {
         tokio::time::pause();
-        for (connect, headers, tunnel) in [(3, 10, false), (10, 3, false), (3, 10, true)] {
-            deadline_exchange(connect, headers, tunnel).await;
+        for (connect, headers, phase) in [
+            (3, 10, Phase::Handshake),
+            (10, 3, Phase::Handshake),
+            (3, 10, Phase::Headers),
+            (3, 10, Phase::Tls),
+            (10, 3, Phase::Tls),
+        ] {
+            deadline_exchange(connect, headers, phase).await;
         }
     });
 }
 
-/// Compare independently supplied deadlines at handshake and header phases.
-async fn deadline_exchange(connect: u64, headers: u64, tunnel: bool) {
+/// Peer boundary at which the request is held pending.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Phase {
+    /// SOCKS greeting has arrived without a reply.
+    Handshake,
+    /// The tunnel is established and the HTTP request has arrived.
+    Headers,
+    /// The tunnel is established and destination TLS has started.
+    Tls,
+}
+
+/// Compare independently supplied deadlines at handshake, TLS and header phases.
+async fn deadline_exchange(connect: u64, headers: u64, phase: Phase) {
     let (sent, received) = mpsc::channel();
     let (release, released) = mpsc::channel();
     let released = std::sync::Mutex::new(released);
     let server = loopback::start_routed(Arc::new(move |mut socket| {
         use std::io::Read;
-        if tunnel {
+        if phase == Phase::Headers {
             socks::negotiate(&mut socket, false)?;
             assert!(loopback::read_request(&mut socket)?.is_some());
         } else {
-            let mut greeting = [0; 3];
-            socket.read_exact(&mut greeting)?;
-            assert_eq!(greeting, [5, 1, 0]);
+            observe_stall(&mut socket, phase == Phase::Tls)?;
         }
         sent.send(()).unwrap();
         released.lock().unwrap().recv().unwrap();
         let mut bytes = Vec::new();
         socket.read_to_end(&mut bytes)?;
-        assert!(bytes.is_empty());
+        if phase != Phase::Tls {
+            assert!(bytes.is_empty());
+        }
         Ok(())
     }))
     .unwrap();
@@ -133,19 +150,28 @@ async fn deadline_exchange(connect: u64, headers: u64, tunnel: bool) {
         connect_timeout: Some(Duration::from_secs(connect)),
         read_timeout: Some(Duration::from_secs(headers)),
     });
-    let mut future = fetch(super::request("http://destination.invalid/"));
+    let destination = if phase == Phase::Tls {
+        "https://destination.invalid/"
+    } else {
+        "http://destination.invalid/"
+    };
+    let mut future = fetch(super::request(destination));
     ready(&received, &mut future).await;
     tokio::time::advance(Duration::from_secs(4)).await;
-    if tunnel {
+    if phase == Phase::Headers {
         assert!(pending(&mut future).await);
         tokio::time::advance(Duration::from_secs(7)).await;
     }
-    let outcome = future.await;
-    assert!(matches!(
-        outcome,
-        Err(crate::providers::http::FetchError::Timeout)
-    ));
+    let outcome = future.as_mut().now_or_never();
+    drop(future);
     release.send(()).unwrap();
     drop(fetch);
     server.finish().unwrap();
+    assert!(
+        matches!(
+            outcome,
+            Some(Err(crate::providers::http::FetchError::Timeout))
+        ),
+        "shorter deadline must have expired at the observed clock boundary"
+    );
 }
