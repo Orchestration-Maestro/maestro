@@ -150,6 +150,7 @@ pub mod theme_selector;
 
 pub mod user_message_selector;
 
+pub mod model_selector;
 pub mod oauth_selector;
 
 pub mod extension_selector;

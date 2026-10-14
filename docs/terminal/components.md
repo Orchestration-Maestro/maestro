@@ -36,7 +36,9 @@ Absence is explicit: a component without input returns `None` from `input_handle
 rather than a handler that ignores its input. `is_focusable` tests for the
 capability, not for the current focus. A focusable component owns a `FocusFlag`, which
 the frame writer sets when focus moves; the component reads it when it renders, so a
-change made during that render counts. A focused component is expected to emit
+change made during that render counts. `FocusFlag::forwarding` keeps an independent
+flag and synchronously forwards every set to a retained focusable target, even
+when the outer value is unchanged. Direct target changes do not alter that flag. A focused component is expected to emit
 `CURSOR_MARKER` where the hardware cursor belongs; the marker is an escape that
 occupies no cells.
 

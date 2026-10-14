@@ -102,3 +102,33 @@ Title styling is captured at construction, list styling and visible statuses at
 rebuild, and borders read the live theme at render. Render, invalidation and
 confirmation alone do not rebuild the list. Text and cursor layout belong to the
 [terminal toolkit](../terminal/input.md).
+# Model picker
+
+`ModelSelectorComponent::new` takes a `TUI`, shared mutable
+`maestro_app::SettingsManager`, mutable `maestro_app::ModelRegistry`,
+`ModelSelectorCallbacks` and `ModelSelectorOptions`. Construction refreshes the
+registry, propagates refresh failures and requests one render. Options supply the
+current shared `Model`, ordered `ScopedModel` records, initial search and
+`LiveTheme`; the application re-exports their existing catalog/settings owners.
+
+The picker starts scoped when scoped records exist, otherwise all. Scoped order,
+duplicates and missing models are retained; registry matches use refreshed
+handles. All models put current provider/ID matches first, followed by stable
+locale provider order. Search uses IDs, providers and their combinations, not
+model names, with [shared fuzzy ranking](../terminal/completion.md#shared-fuzzy-ranking).
+Filtering clamps the existing selection. Switching scope retains the query.
+
+Input reads live configurable bindings: Tab, up, down, confirm and cancel take
+precedence in that order. Tab without scoped models is consumed. Navigation wraps;
+empty confirmation does nothing. Confirmation updates both default provider and
+model before reporting the original shared handle, using its current metadata.
+Registry file diagnostics appear alongside usable rows. The window shows at most
+ten rows, a current-model checkmark and the selected model name unless a diagnostic
+is present.
+
+Focus the outer picker; its independent flag forwards to `get_search_input()`.
+The returned Input supports submission even after clearing or dropping the outer
+Container. Direct Input edits refilter only on subsequent picker dispatch.
+The inherited Container child editing interface remains available. Borders use
+the live theme, while help and list Text children retain the styling of their last
+owning update. The [toolkit](../terminal/components.md) owns wrapping and cursors.

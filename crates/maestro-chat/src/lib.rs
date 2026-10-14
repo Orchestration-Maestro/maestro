@@ -32,3 +32,7 @@ pub use components::oauth_selector::{
 
 pub use components::extension_input::{ExtensionInputComponent, ExtensionInputOptions};
 pub use components::extension_selector::{ExtensionSelectorComponent, ExtensionSelectorOptions};
+
+pub use components::model_selector::{
+    ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions,
+};
