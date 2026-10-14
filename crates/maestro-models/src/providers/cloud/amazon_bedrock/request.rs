@@ -8,7 +8,9 @@ use super::BedrockOptions;
 use super::messages::{messages, system_blocks, tool_config};
 use super::proxy::Environment;
 use super::thinking::{additional_model_request_fields, cache_point};
-use super::wire::{ContentBlock, SystemContentBlock, TextBlock, ToolConfiguration, list, map};
+use super::wire::{
+    ContentBlock, PromptVariableValues, SystemContentBlock, ToolConfiguration, Union, list, map,
+};
 use crate::providers::chat::openai_completions::resolve_cache_retention;
 use crate::providers::http::RequestFailure;
 use crate::providers::json_text::compact_json;
@@ -23,7 +25,7 @@ pub(super) struct Message {
     pub(super) role: Option<String>,
     /// What was said.
     #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
-    pub(super) content: Option<Vec<ContentBlock>>,
+    pub(super) content: Option<Vec<Union<ContentBlock>>>,
 }
 
 /// Sampling and length settings.
@@ -101,7 +103,7 @@ struct JsonSchema {
 /// The structure an output format names.
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
-struct Structure {
+struct OutputFormatStructure {
     /// JSON schema structure.
     #[serde(skip_serializing_if = "Option::is_none")]
     json_schema: Option<JsonSchema>,
@@ -116,7 +118,7 @@ struct TextFormat {
     kind: Option<String>,
     /// Format structure.
     #[serde(skip_serializing_if = "Option::is_none")]
-    structure: Option<Structure>,
+    structure: Option<Union<OutputFormatStructure>>,
 }
 
 /// Output configuration.
@@ -138,7 +140,7 @@ pub(super) struct Converse {
     pub(super) messages: Option<Vec<Message>>,
     /// System prompt blocks.
     #[serde(deserialize_with = "list", skip_serializing_if = "Option::is_none")]
-    pub(super) system: Option<Vec<SystemContentBlock>>,
+    pub(super) system: Option<Vec<Union<SystemContentBlock>>>,
     /// Sampling and length settings.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) inference_config: Option<Inference>,
@@ -156,7 +158,7 @@ pub(super) struct Converse {
     additional_model_response_field_paths: Option<Vec<String>>,
     /// Prompt-variable values by name.
     #[serde(deserialize_with = "map", skip_serializing_if = "Option::is_none")]
-    prompt_variables: Option<IndexMap<String, TextBlock>>,
+    prompt_variables: Option<IndexMap<String, Union<PromptVariableValues>>>,
     /// Latency preference.
     #[serde(skip_serializing_if = "Option::is_none")]
     performance_config: Option<Performance>,

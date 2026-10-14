@@ -1,0 +1,108 @@
+//! Unknown service union members through the public cloud conversation entries.
+
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/bedrock.rs"]
+mod bedrock;
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/chat.rs"]
+mod chat;
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/child_process.rs"]
+mod child_process;
+use bedrock::json;
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/bedrock_rows.rs"]
+mod rows;
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/transport.rs"]
+mod transport;
+
+use chat::TestResult;
+
+/// Check the complete wire observations owned by this behavior.
+fn check_rows(test: &str) -> TestResult {
+    rows::check_rows(
+        include_str!("fixtures/cloud_conversation_unknown_unions.json"),
+        test,
+    )
+}
+
+#[test]
+fn unknown_members_reach_every_request_union() -> TestResult {
+    check_rows("unknown_members_reach_every_request_union")
+}
+
+#[test]
+fn null_known_members_allow_union_fallback() -> TestResult {
+    check_rows("null_known_members_allow_union_fallback")
+}
+
+#[test]
+fn malformed_known_members_do_not_activate_fallback() -> TestResult {
+    check_rows("malformed_known_members_do_not_activate_fallback")
+}
+
+#[test]
+fn known_members_suppress_union_fallback() -> TestResult {
+    check_rows("known_members_suppress_union_fallback")
+}
+
+#[test]
+fn selected_unknown_members_reject_invalid_tuples() -> TestResult {
+    check_rows("selected_unknown_members_reject_invalid_tuples")
+}
+
+#[test]
+fn known_members_ignore_unselected_invalid_fallback() -> TestResult {
+    check_rows("known_members_ignore_unselected_invalid_fallback")
+}
+
+#[test]
+fn ordinary_records_discard_union_fallback() -> TestResult {
+    check_rows("ordinary_records_discard_union_fallback")
+}
+
+#[test]
+fn unknown_documents_keep_values_and_key_identity() -> TestResult {
+    check_rows("unknown_documents_keep_values_and_key_identity")
+}
+
+#[test]
+fn unknown_proto_name_is_an_ordinary_member() -> TestResult {
+    check_rows("unknown_proto_name_is_an_ordinary_member")
+}
+
+#[test]
+fn union_lists_keep_order_repeats_and_omit_nulls() -> TestResult {
+    check_rows("union_lists_keep_order_repeats_and_omit_nulls")
+}
+
+#[test]
+fn unknown_document_arrays_are_not_blob_fields() -> TestResult {
+    check_rows("unknown_document_arrays_are_not_blob_fields")
+}
+
+#[test]
+fn unknown_replacements_reach_raw_and_simple_entries() -> TestResult {
+    check_rows("unknown_replacements_reach_raw_and_simple_entries")
+}
+
+#[test]
+fn union_errors_keep_hook_and_route_precedence() -> TestResult {
+    check_rows("union_errors_keep_hook_and_route_precedence")
+}

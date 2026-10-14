@@ -150,6 +150,8 @@ pub struct Expected {
     path: Option<String>,
     /// Request body as sent.
     body: Option<Value>,
+    /// Exact UTF-8 request body when formatting is observable.
+    body_text: Option<String>,
     /// Stop reason of a failed request.
     stop_reason: Option<String>,
     /// Failure text of a failed request.
@@ -433,6 +435,9 @@ fn check_sent(
     let expected = &row.expected;
     if let Some(path) = &expected.path {
         assert_eq!(Url::parse(&request.url)?.path(), path, "{id}: path");
+    }
+    if let Some(text) = &expected.body_text {
+        assert_eq!(std::str::from_utf8(&request.body)?, text, "{id}: body text");
     }
     let body: Value = serde_json::from_slice(&request.body)?;
     assert_eq!(Some(&body), expected.body.as_ref(), "{id}: body");

@@ -13,7 +13,7 @@ use super::wire::{
     Blob, CachePointBlock, ContentBlock, ImageBlock, ImageSource, NamedToolChoice,
     ReasoningContentBlock, ReasoningTextBlock, SystemContentBlock, Tool, ToolChoiceBlock,
     ToolConfiguration, ToolInputSchema, ToolResultBlock, ToolResultContentBlock, ToolSpecification,
-    ToolUseBlock, Unit,
+    ToolUseBlock, Union, Unit,
 };
 use crate::arguments::json_parse::whitespace;
 use crate::projection::normalize_tool_call_id;
@@ -52,10 +52,13 @@ pub(super) fn messages(
         .last_mut()
         .filter(|turn| turn.role.as_deref() == Some("user"));
     if let (Some(content), Some(cache)) = (last.and_then(|turn| turn.content.as_mut()), cache) {
-        content.push(ContentBlock {
-            cache_point: Some(cache.clone()),
-            ..ContentBlock::default()
-        });
+        content.push(
+            ContentBlock {
+                cache_point: Some(cache.clone()),
+                ..ContentBlock::default()
+            }
+            .into(),
+        );
     }
     Ok(turns)
 }
@@ -64,17 +67,23 @@ pub(super) fn messages(
 pub(super) fn system_blocks(
     system_prompt: Option<String>,
     cache: Option<&CachePointBlock>,
-) -> Option<Vec<SystemContentBlock>> {
+) -> Option<Vec<Union<SystemContentBlock>>> {
     let prompt = system_prompt.filter(|prompt| !prompt.is_empty())?;
-    let mut blocks = vec![SystemContentBlock {
-        text: Some(prompt),
-        cache_point: None,
-        ..SystemContentBlock::default()
-    }];
-    blocks.extend(cache.map(|cache| SystemContentBlock {
-        text: None,
-        cache_point: Some(cache.clone()),
-        ..SystemContentBlock::default()
+    let mut blocks = vec![
+        SystemContentBlock {
+            text: Some(prompt),
+            cache_point: None,
+            ..SystemContentBlock::default()
+        }
+        .into(),
+    ];
+    blocks.extend(cache.map(|cache| {
+        SystemContentBlock {
+            text: None,
+            cache_point: Some(cache.clone()),
+            ..SystemContentBlock::default()
+        }
+        .into()
     }));
     Some(blocks)
 }
@@ -87,36 +96,51 @@ pub(super) fn tool_config(
     let tools = tools.filter(|tools| !tools.is_empty())?;
     let tool_choice = match choice {
         Some(ToolChoice::None) => return None,
-        Some(ToolChoice::Auto) => Some(ToolChoiceBlock {
-            auto: Some(Unit {}),
-            ..ToolChoiceBlock::default()
-        }),
-        Some(ToolChoice::Required) => Some(ToolChoiceBlock {
-            any: Some(Unit {}),
-            ..ToolChoiceBlock::default()
-        }),
-        Some(ToolChoice::Function { name }) => Some(ToolChoiceBlock {
-            tool: Some(NamedToolChoice {
-                name: Some(name.clone()),
-            }),
-            ..ToolChoiceBlock::default()
-        }),
+        Some(ToolChoice::Auto) => Some(
+            ToolChoiceBlock {
+                auto: Some(Unit {}),
+                ..ToolChoiceBlock::default()
+            }
+            .into(),
+        ),
+        Some(ToolChoice::Required) => Some(
+            ToolChoiceBlock {
+                any: Some(Unit {}),
+                ..ToolChoiceBlock::default()
+            }
+            .into(),
+        ),
+        Some(ToolChoice::Function { name }) => Some(
+            ToolChoiceBlock {
+                tool: Some(NamedToolChoice {
+                    name: Some(name.clone()),
+                }),
+                ..ToolChoiceBlock::default()
+            }
+            .into(),
+        ),
         None => None,
     };
     Some(ToolConfiguration {
         tools: Some(
             tools
                 .into_iter()
-                .map(|tool| Tool {
-                    spec: Some(ToolSpecification {
-                        name: Some(tool.name),
-                        description: Some(tool.description),
-                        input_schema: Some(ToolInputSchema {
-                            json: Some(tool.parameters),
+                .map(|tool| {
+                    Tool {
+                        spec: Some(ToolSpecification {
+                            name: Some(tool.name),
+                            description: Some(tool.description),
+                            input_schema: Some(
+                                ToolInputSchema {
+                                    json: Some(tool.parameters),
+                                }
+                                .into(),
+                            ),
+                            ..ToolSpecification::default()
                         }),
-                        ..ToolSpecification::default()
-                    }),
-                    ..Tool::default()
+                        ..Tool::default()
+                    }
+                    .into()
                 })
                 .collect(),
         ),
@@ -125,11 +149,12 @@ pub(super) fn tool_config(
 }
 
 /// A text block holding `text` as written.
-fn text_block(text: String) -> ContentBlock {
+fn text_block(text: String) -> Union<ContentBlock> {
     ContentBlock {
         text: Some(text),
         ..ContentBlock::default()
     }
+    .into()
 }
 
 /// A user turn; text is kept as written.
@@ -144,7 +169,8 @@ fn user_message(content: UserContent) -> Result<Message, RequestFailure> {
                     text,
                     image,
                     ..ContentBlock::default()
-                })
+                }
+                .into())
             })
             .collect::<Result<_, RequestFailure>>()?,
     };
@@ -156,7 +182,7 @@ fn user_message(content: UserContent) -> Result<Message, RequestFailure> {
 
 /// An assistant turn; a turn without any surviving block produces no message.
 fn assistant_message(assistant: AssistantMessage, claude: bool) -> Option<Message> {
-    let blocks: Vec<ContentBlock> = assistant
+    let blocks: Vec<Union<ContentBlock>> = assistant
         .content
         .into_iter()
         .filter_map(|block| assistant_block(block, claude))
@@ -169,30 +195,39 @@ fn assistant_message(assistant: AssistantMessage, claude: bool) -> Option<Messag
 
 /// One block of an assistant turn. Blank text and blank thinking are dropped. Claude thinking
 /// without a nonblank signature becomes plain text; other models get it without a signature.
-fn assistant_block(block: AssistantContent, claude: bool) -> Option<ContentBlock> {
-    let reasoning = |text: String, signature: Option<String>| ContentBlock {
-        reasoning_content: Some(ReasoningContentBlock {
-            reasoning_text: Some(ReasoningTextBlock {
-                text: Some(text),
-                signature,
-            }),
-            ..ReasoningContentBlock::default()
-        }),
-        ..ContentBlock::default()
+fn assistant_block(block: AssistantContent, claude: bool) -> Option<Union<ContentBlock>> {
+    let reasoning = |text: String, signature: Option<String>| {
+        ContentBlock {
+            reasoning_content: Some(
+                ReasoningContentBlock {
+                    reasoning_text: Some(ReasoningTextBlock {
+                        text: Some(text),
+                        signature,
+                    }),
+                    ..ReasoningContentBlock::default()
+                }
+                .into(),
+            ),
+            ..ContentBlock::default()
+        }
+        .into()
     };
     match block {
         AssistantContent::Text(text) => {
             (!text.text.trim_matches(whitespace).is_empty()).then(|| text_block(text.text))
         }
-        AssistantContent::ToolCall(call) => Some(ContentBlock {
-            tool_use: Some(ToolUseBlock {
-                tool_use_id: Some(call.id),
-                name: Some(call.name),
-                input: Some(Value::Object(call.arguments)),
-                ..ToolUseBlock::default()
-            }),
-            ..ContentBlock::default()
-        }),
+        AssistantContent::ToolCall(call) => Some(
+            ContentBlock {
+                tool_use: Some(ToolUseBlock {
+                    tool_use_id: Some(call.id),
+                    name: Some(call.name),
+                    input: Some(Value::Object(call.arguments)),
+                    ..ToolUseBlock::default()
+                }),
+                ..ContentBlock::default()
+            }
+            .into(),
+        ),
         AssistantContent::Thinking(thinking) => {
             if thinking.thinking.trim_matches(whitespace).is_empty() {
                 return None;
@@ -227,7 +262,7 @@ fn tool_results(
 }
 
 /// One tool result with its status.
-fn tool_result(result: ToolResultMessage) -> Result<ContentBlock, RequestFailure> {
+fn tool_result(result: ToolResultMessage) -> Result<Union<ContentBlock>, RequestFailure> {
     let content = result
         .content
         .into_iter()
@@ -237,7 +272,8 @@ fn tool_result(result: ToolResultMessage) -> Result<ContentBlock, RequestFailure
                 text,
                 image,
                 ..ToolResultContentBlock::default()
-            })
+            }
+            .into())
         })
         .collect::<Result<_, RequestFailure>>()?;
     Ok(ContentBlock {
@@ -248,7 +284,8 @@ fn tool_result(result: ToolResultMessage) -> Result<ContentBlock, RequestFailure
             ..ToolResultBlock::default()
         }),
         ..ContentBlock::default()
-    })
+    }
+    .into())
 }
 
 /// The text or the converted image of a user block.
@@ -278,10 +315,13 @@ fn image_block(mime_type: &str, data: &str) -> Result<ImageBlock, RequestFailure
         .decode(encoded)
         .map_err(|error| RequestFailure::new(error.to_string()))?;
     Ok(ImageBlock {
-        source: Some(ImageSource {
-            bytes: Some(Blob::Bytes(bytes)),
-            ..ImageSource::default()
-        }),
+        source: Some(
+            ImageSource {
+                bytes: Some(Blob::Bytes(bytes)),
+                ..ImageSource::default()
+            }
+            .into(),
+        ),
         format: Some(format.to_owned()),
         ..ImageBlock::default()
     })
