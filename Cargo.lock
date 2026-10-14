@@ -2626,6 +2626,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-export"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "maestro-json",
+ "maestro-models",
+ "maestro-path",
+ "maestro-session",
+ "maestro-text",
+ "maestro-theme",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
