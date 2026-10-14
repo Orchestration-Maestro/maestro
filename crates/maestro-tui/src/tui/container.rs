@@ -67,6 +67,19 @@ impl Container {
         drop(replaced);
     }
 
+    /// Renders children in order with the caller's failure policy.
+    fn render_children<E>(
+        &self,
+        width: usize,
+        mut render: impl FnMut(&dyn Component, usize) -> Result<Vec<String>, E>,
+    ) -> Result<Vec<String>, E> {
+        let mut lines = Vec::new();
+        for child in self.walk() {
+            lines.extend(render(child.as_ref(), width)?);
+        }
+        Ok(lines)
+    }
+
     /// The children by position in the array held when the walk starts, each fetched when
     /// the walk reaches it, so the walk ends at the length that array has by then. A child
     /// added to that array is visited only if the walk reaches its position, and one
@@ -83,7 +96,14 @@ impl Container {
 impl Component for Container {
     /// Renders the children in order, walking the array held when the render starts.
     fn render(&self, width: usize) -> Vec<String> {
-        self.walk().flat_map(|child| child.render(width)).collect()
+        self.render_children(width, |child, width| {
+            Ok::<_, std::convert::Infallible>(child.render(width))
+        })
+        .unwrap_or_else(|never| match never {})
+    }
+
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.render_children(width, Component::try_render)
     }
 
     /// Invalidates the children in order, walking the array held when the call starts as

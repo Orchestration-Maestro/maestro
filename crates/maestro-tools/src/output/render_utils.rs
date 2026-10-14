@@ -20,6 +20,8 @@ pub struct ToolRenderResultLike<'a, D> {
     pub content: &'a [UserBlock],
     /// Borrowed details, preserving absence.
     pub details: Option<&'a D>,
+    /// Termination hint supplied by the executed result, when present.
+    pub terminate: Option<bool>,
     /// Error observation supplied by a rendering host.
     pub is_error: Option<bool>,
 }
@@ -28,6 +30,7 @@ impl<'a, D> From<&'a AgentToolResult<D>> for ToolRenderResultLike<'a, D> {
         Self {
             content: &result.content,
             details: result.details.as_ref(),
+            terminate: result.terminate,
             is_error: None,
         }
     }

@@ -147,3 +147,94 @@ fn typed_definition(
     }));
     tool
 }
+
+#[test]
+fn nested_component_failures_fall_back_and_stop_later_phases() {
+    for padded in [false, true] {
+        for failing_phase in 0..3 {
+            assert_nested_failure(padded, failing_phase);
+        }
+    }
+}
+
+fn nest(child: ComponentHandle, padded: bool) -> ComponentHandle {
+    use maestro_tui::{Container, components::Box as PaddedBox};
+    if padded {
+        let parent = PaddedBox::default();
+        parent.add_child(child);
+        Rc::new(parent)
+    } else {
+        let parent = Container::new();
+        parent.add_child(child);
+        Rc::new(parent)
+    }
+}
+
+fn assert_nested_failure(padded: bool, failing_phase: usize) {
+    use maestro_export::{
+        ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
+    };
+    use std::cell::Cell;
+    let reached = Rc::new(Cell::new(0));
+    let mut tool: maestro_tools::ToolDefinition = component_support::definition();
+    let seen = Rc::clone(&reached);
+    tool.render_call = Some(Rc::new(move |_, _, _| {
+        seen.set(seen.get() + 1);
+        Ok(nest(Rc::new(Fallible(failing_phase == 0)), padded))
+    }));
+    let seen = Rc::clone(&reached);
+    tool.render_result = Some(Rc::new(move |_, options, _, _| {
+        seen.set(seen.get() + 1);
+        let phase = if options.expanded { 2 } else { 1 };
+        Ok(nest(Rc::new(Fallible(failing_phase == phase)), padded))
+    }));
+    let tool = Rc::new(tool);
+    let theme = component_support::theme();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        theme: &theme,
+        cwd: "/work",
+        width: None,
+        environment: component_support::environment(),
+        create_state: || serde_json::json!({}),
+    });
+    if failing_phase == 0 {
+        assert!(
+            renderer
+                .render_call("id", "custom", None)
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(reached.get(), 1);
+    } else {
+        assert!(
+            renderer
+                .render_result(
+                    "id",
+                    "custom",
+                    ToolHtmlResultInput {
+                        content: None,
+                        details: None,
+                        is_error: false,
+                    }
+                )
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(reached.get(), failing_phase);
+    }
+}
+
+struct Fallible(bool);
+impl Component for Fallible {
+    fn render(&self, _: usize) -> Vec<String> {
+        Vec::new()
+    }
+    fn try_render(&self, _: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        if self.0 {
+            Err(std::io::Error::other("nested component failure").into())
+        } else {
+            Ok(vec!["rendered".into()])
+        }
+    }
+}

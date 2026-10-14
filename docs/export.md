@@ -84,7 +84,9 @@ independent call/result component slots per call ID. Missing arguments stay miss
 It executes no tool.
 
 Results render collapsed before expanded, retaining each returned component before
-calling its fallible `Component::try_render` method. Result-edge blank lines are
+calling its fallible `Component::try_render` method. Composite components propagate
+child rendering errors; reconstruction from a document supplies no termination hint.
+Result-edge blank lines are
 trimmed after SGR removal using [text whitespace](text.md); call padding and interior
 blank lines remain. Expanded output stays present even when empty; collapsed output
 is included only when nonempty and different. Ordinary lookup, callback, component

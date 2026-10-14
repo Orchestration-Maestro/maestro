@@ -329,11 +329,28 @@ impl SettingsList {
             drop(old);
         }
     }
+    /// Renders the active submenu or main list using the caller's failure policy.
+    fn render_children<E>(
+        &self,
+        width: usize,
+        render: impl FnOnce(&dyn Component, usize) -> Result<Vec<String>, E>,
+    ) -> Result<Vec<String>, E> {
+        let child = self.state.child.borrow().clone();
+        child.map_or_else(
+            || Ok(self.main_list(width)),
+            |child| render(child.as_ref(), width),
+        )
+    }
 }
 impl Component for SettingsList {
     fn render(&self, width: usize) -> Vec<String> {
-        let child = self.state.child.borrow().clone();
-        child.map_or_else(|| self.main_list(width), |child| child.render(width))
+        self.render_children(width, |child, width| {
+            Ok::<_, std::convert::Infallible>(child.render(width))
+        })
+        .unwrap_or_else(|never| match never {})
+    }
+    fn try_render(&self, width: usize) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        self.render_children(width, Component::try_render)
     }
     fn invalidate(&self) {
         let child = self.state.child.borrow().clone();

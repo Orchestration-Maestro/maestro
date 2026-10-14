@@ -208,6 +208,7 @@ where
             let result = ToolRenderResultLike {
                 content: &content,
                 details: details.as_ref(),
+                terminate: None,
                 is_error: Some(input.is_error),
             };
             let collapsed = self.result_phase(id, callback, &result, false)?;

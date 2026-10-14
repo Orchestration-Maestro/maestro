@@ -182,8 +182,9 @@ callbacks must be `Send + Sync`.
 
 [`output::render_utils`](../crates/maestro-tools/src/output/render_utils.rs) holds the
 display strings tool renderers share. `ToolRenderResultLike` borrows ordered content
-and optional typed details; its optional error observation is supplied by the rendering
-host. Conversion from an execution result borrows its fields without supplying an error flag. `str` returns a borrowed string, an empty string for
+and optional typed details, preserving an executed result's optional termination hint.
+Its optional error observation is supplied by the rendering host. Conversion from an
+execution result supplies no error flag. `str` returns a borrowed string, an empty string for
 an absent or null value and nothing for any other type. `shorten_path` (native only) shows
 the home directory as `~` for a path equal to it or below it and leaves a sibling whose
 name merely starts with the home path unchanged; it reads the home directory through

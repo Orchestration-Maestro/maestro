@@ -185,3 +185,16 @@ fn borrowed_result_view_keeps_error_and_optional_details() {
     };
     assert!(ToolRenderResultLike::from(&absent).details.is_none());
 }
+
+#[test]
+fn borrowed_result_view_preserves_termination_hint() {
+    use maestro_tools::output::render_utils::ToolRenderResultLike;
+    for terminate in [None, Some(false), Some(true)] {
+        let source = maestro_agent::AgentToolResult::<serde_json::Value> {
+            content: Vec::new(),
+            details: None,
+            terminate,
+        };
+        assert_eq!(ToolRenderResultLike::from(&source).terminate, terminate);
+    }
+}
