@@ -263,11 +263,22 @@ pub fn cases(ids: &[&str]) {
     let fixture = fixture();
     for id in ids {
         let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
-        runtime().block_on(check_row(row));
+        runtime().block_on(check_row(row, None));
+    }
+}
+/// Replay the existing controlled oracle with a caller-supplied public constructor.
+pub fn cases_with(ids: &[&str], factory: &dyn Fn(BashToolOptions) -> maestro_agent::AgentTool) {
+    let fixture = fixture();
+    for id in ids {
+        let row = fixture.rows.iter().find(|row| &row.id == id).unwrap();
+        runtime().block_on(check_row(row, Some(factory)));
     }
 }
 /// Invoke the public definition or wrapped tool and inspect every expected field.
-async fn check_row(row: &Row) {
+async fn check_row(
+    row: &Row,
+    factory: Option<&dyn Fn(BashToolOptions) -> maestro_agent::AgentTool>,
+) {
     let input = Arc::new(row.input.clone());
     let log = Arc::new(Mutex::new(Observations::default()));
     let (tx, mut rx) = mpsc::unbounded_channel();
@@ -282,7 +293,7 @@ async fn check_row(row: &Row) {
         shell_path: input.shell_path.clone(),
         spawn_hook: hook(&input, &log),
     };
-    let future = start(&input, options, &log);
+    let future = start(&input, options, &log, factory);
     let result = drive(future, &mut rx).await;
     check_observations(row, result, &log);
 }
@@ -292,6 +303,7 @@ fn start(
     input: &Arc<Input>,
     options: BashToolOptions,
     log: &Log,
+    factory: Option<&dyn Fn(BashToolOptions) -> maestro_agent::AgentTool>,
 ) -> Pin<Box<dyn Future<Output = Result<Value, DiagnosticErrorInfo>>>> {
     let signal = (input.signal != Some(false)).then(Cancellation::new);
     if input.pre_abort == Some(true) {
@@ -312,8 +324,11 @@ fn start(
             .updates
             .push(result_value(value));
     });
-    if input.wrapped == Some(true) {
-        let tool = create_bash_tool("/work".into(), "/maestro/bin".into(), options);
+    if input.wrapped == Some(true) || factory.is_some() {
+        let tool = match factory {
+            Some(factory) => factory(options),
+            None => create_bash_tool("/work".into(), "/maestro/bin".into(), options),
+        };
         let observer_log = log.clone();
         let erased: AgentToolUpdateCallback = Arc::new(move |value| {
             observer_log

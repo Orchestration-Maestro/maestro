@@ -97,6 +97,21 @@ pub struct Scripted {
     started: Cancellation,
 }
 impl Scripted {
+    /// Supplied operations over a strict input, sharing the caller's cancellation.
+    pub fn new(input: Input, signal: &Cancellation) -> Self {
+        Self {
+            input,
+            calls: Mutex::new(Vec::new()),
+            signal: signal.clone(),
+            started: Cancellation::new(),
+        }
+    }
+
+    /// Calls made so far, in order.
+    pub fn log(&self) -> Vec<Value> {
+        self.calls.lock().unwrap().clone()
+    }
+
     /// Record effects with values taken from the strict input.
     fn step<T: Send + 'static>(
         &self,
@@ -214,12 +229,7 @@ pub fn custom(case: &Case) -> Value {
     if input.abort == Some(Stage::Before) {
         signal.abort();
     }
-    let operations = Arc::new(Scripted {
-        input,
-        calls: Mutex::new(Vec::new()),
-        signal: signal.clone(),
-        started: Cancellation::new(),
-    });
+    let operations = Arc::new(Scripted::new(input, &signal));
     let updates = Arc::new(AtomicUsize::new(0));
     let fetches = Arc::new(AtomicUsize::new(0));
     let result = run(async {
