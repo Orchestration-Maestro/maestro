@@ -1,3 +1,4 @@
+#![doc = include_str!("../../../docs/extensions/registration.md")]
 //! Shared event channels with callback-scoped extension delivery.
 //!
 //! Supply a serial cooperative spawner that never polls inline or concurrently
@@ -40,3 +41,14 @@ pub use event_bus::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
     Subscription, TailSpawner, create_event_bus,
 };
+
+mod loader;
+/// Owned registration records and callback types.
+pub mod types;
+pub use maestro_resources::SourceInfo;
+pub use types::{
+    Extension, ExtensionAPI, ExtensionFlag, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
+};
+/// Queries over current extension registrations.
+pub mod runner;
+pub use runner::ExtensionRunner;

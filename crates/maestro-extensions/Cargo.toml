@@ -6,7 +6,14 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+indexmap = "=2.14.2"
+maestro-models = { path = "../maestro-models" }
+maestro-resources = { path = "../maestro-resources" }
+maestro-tui = { path = "../maestro-tui" }
 serde_json.workspace = true
+
+[dev-dependencies]
+serde.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }

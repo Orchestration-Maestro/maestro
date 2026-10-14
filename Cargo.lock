@@ -2934,7 +2934,12 @@ dependencies = [
 name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "maestro-dependencies",
+ "maestro-models",
+ "maestro-resources",
+ "maestro-tui",
+ "serde",
  "serde_json",
  "tokio",
 ]

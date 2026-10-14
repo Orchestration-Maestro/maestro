@@ -1,0 +1,4422 @@
+[
+  {
+    "input": {
+      "id": "case_001",
+      "test": "owned_registration_records_keep_sources_and_callbacks",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "hello",
+          "owner": 0,
+          "description": "first",
+          "completions": [
+            {
+              "value": "x",
+              "label": "X",
+              "description": "detail"
+            }
+          ]
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0,
+          "description": "hotkey"
+        },
+        {
+          "op": "flag",
+          "name": "mode",
+          "owner": 0,
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "op": "emit_event",
+          "data": {
+            "order": [
+              "z",
+              "a"
+            ],
+            "empty": "",
+            "off": false
+          }
+        }
+      ],
+      "observe": [
+        "commands",
+        "flags",
+        "shortcuts",
+        "paths",
+        "trace"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "hello",
+          "invocation_name": "hello",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "description": "first",
+          "has_completions": true
+        }
+      ],
+      "flags": [
+        {
+          "key": "mode",
+          "name": "mode",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": false
+        }
+      ],
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm",
+          "description": "hotkey"
+        }
+      ],
+      "paths": [
+        "/extensions/zeta.wasm",
+        "/extensions/alpha.wasm"
+      ],
+      "trace": [
+        {
+          "event": {
+            "order": [
+              "z",
+              "a"
+            ],
+            "empty": "",
+            "off": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_002",
+      "test": "same_owner_command_replacement_keeps_position",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "z",
+          "owner": 0,
+          "description": "old"
+        },
+        {
+          "op": "command",
+          "name": "a",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "z",
+          "owner": 0,
+          "tag": "replacement"
+        },
+        {
+          "op": "invoke_command",
+          "name": "z",
+          "args": "  raw﻿ ",
+          "ctx": {
+            "marker": "retained"
+          }
+        }
+      ],
+      "observe": [
+        "commands",
+        "trace",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "z",
+          "invocation_name": "z",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "a",
+          "invocation_name": "a",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ],
+      "trace": [
+        {
+          "tag": "replacement",
+          "args": "  raw﻿ ",
+          "ctx": {
+            "marker": "retained"
+          }
+        }
+      ],
+      "observations": [
+        {
+          "invoked": true
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_003",
+      "test": "same_owner_shortcut_replacement_keeps_position",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+z",
+          "owner": 0,
+          "description": "old"
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+a",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+z",
+          "owner": 0,
+          "tag": "replacement"
+        },
+        {
+          "op": "invoke_shortcut",
+          "key": "ctrl+z",
+          "ctx": {
+            "marker": "current"
+          }
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "trace",
+        "observations"
+      ]
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+z",
+          "shortcut": "ctrl+z",
+          "extension_path": "/extensions/zeta.wasm"
+        },
+        {
+          "key": "ctrl+a",
+          "shortcut": "ctrl+a",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "trace": [
+        {
+          "tag": "replacement",
+          "ctx": {
+            "marker": "current"
+          }
+        }
+      ],
+      "observations": [
+        {
+          "invoked": true
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_004",
+      "test": "same_owner_flag_replacement_keeps_position",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "flag",
+          "name": "z",
+          "owner": 0,
+          "type": "boolean",
+          "default": true,
+          "description": "old"
+        },
+        {
+          "op": "flag",
+          "name": "a",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "flag",
+          "name": "z",
+          "owner": 0,
+          "type": "boolean",
+          "default": false
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "z",
+          "name": "z",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": false
+        },
+        {
+          "key": "a",
+          "name": "a",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "flag_values": [
+        [
+          "z",
+          true
+        ]
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_005",
+      "test": "command_queries_preserve_load_order_and_refresh",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "z",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "a",
+          "owner": 1
+        },
+        {
+          "op": "list_commands"
+        },
+        {
+          "op": "command",
+          "name": "b",
+          "owner": 0
+        },
+        {
+          "op": "clear_commands",
+          "owner": 1
+        },
+        {
+          "op": "command",
+          "name": "c",
+          "owner": 1
+        }
+      ],
+      "observe": [
+        "commands",
+        "command_diagnostics",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "z",
+          "invocation_name": "z",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "b",
+          "invocation_name": "b",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "c",
+          "invocation_name": "c",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        }
+      ],
+      "command_diagnostics": [],
+      "observations": [
+        [
+          {
+            "name": "z",
+            "invocation_name": "z",
+            "source_info": {
+              "path": "/extensions/zeta.wasm",
+              "source": "cli",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "has_completions": false
+          },
+          {
+            "name": "a",
+            "invocation_name": "a",
+            "source_info": {
+              "path": "/extensions/alpha.wasm",
+              "source": "package:local",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": ""
+            },
+            "has_completions": false
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_006",
+      "test": "duplicate_commands_receive_distinct_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "dup",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "other",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "dup",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/late.wasm"
+        },
+        {
+          "op": "command",
+          "name": "dup",
+          "owner": 2
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "dup",
+          "invocation_name": "dup:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "other",
+          "invocation_name": "other",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "dup",
+          "invocation_name": "dup:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "dup",
+          "invocation_name": "dup:3",
+          "source_info": {
+            "path": "/late.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_007",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "foo:1",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 2
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "foo:1",
+          "invocation_name": "foo:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:3",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_008",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "foo:1",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 2
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "foo",
+          "invocation_name": "foo:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo:1",
+          "invocation_name": "foo:1:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:2",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_009",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "foo:1",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "foo:2",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 2
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-3.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 3
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "foo:1",
+          "invocation_name": "foo:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo:2",
+          "invocation_name": "foo:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:3",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:4",
+          "source_info": {
+            "path": "/extensions/owner-3.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_010",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "foo:1",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "foo:1",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 2
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-3.wasm"
+        },
+        {
+          "op": "command",
+          "name": "foo",
+          "owner": 3
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "foo:1",
+          "invocation_name": "foo:1:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo:1",
+          "invocation_name": "foo:1:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:1",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "foo",
+          "invocation_name": "foo:2",
+          "source_info": {
+            "path": "/extensions/owner-3.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_011",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": ":1",
+          "owner": 2
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "",
+          "invocation_name": ":1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "",
+          "invocation_name": ":2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": ":1",
+          "invocation_name": ":1:2",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_012",
+      "test": "literal_suffix_names_avoid_taken_invocations",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "2",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "10",
+          "owner": 1
+        },
+        {
+          "op": "append_owner",
+          "path": "/extensions/owner-2.wasm"
+        },
+        {
+          "op": "command",
+          "name": "1",
+          "owner": 2
+        }
+      ],
+      "observe": [
+        "commands"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "2",
+          "invocation_name": "2",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "10",
+          "invocation_name": "10",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        {
+          "name": "1",
+          "invocation_name": "1",
+          "source_info": {
+            "path": "/extensions/owner-2.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_013",
+      "test": "command_lookup_uses_resolved_names",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "same",
+          "owner": 0
+        },
+        {
+          "op": "command",
+          "name": "same",
+          "owner": 1
+        },
+        {
+          "op": "lookup",
+          "name": "same"
+        },
+        {
+          "op": "lookup",
+          "name": "same:1"
+        },
+        {
+          "op": "lookup",
+          "name": "same:2"
+        },
+        {
+          "op": "lookup",
+          "name": "missing"
+        }
+      ],
+      "observe": [
+        "observations"
+      ]
+    },
+    "expected": {
+      "observations": [
+        null,
+        {
+          "name": "same",
+          "invocation_name": "same:1",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "same",
+          "invocation_name": "same:2",
+          "source_info": {
+            "path": "/extensions/alpha.wasm",
+            "source": "package:local",
+            "scope": "project",
+            "origin": "package",
+            "baseDir": ""
+          },
+          "has_completions": false
+        },
+        null
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_014",
+      "test": "command_completions_keep_none_empty_and_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "pick",
+          "owner": 0,
+          "completions": null
+        },
+        {
+          "op": "complete",
+          "name": "pick",
+          "prefix": " raw﻿ "
+        }
+      ],
+      "observe": [
+        "commands",
+        "observations",
+        "trace"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "pick",
+          "invocation_name": "pick",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": true
+        }
+      ],
+      "observations": [
+        null
+      ],
+      "trace": [
+        {
+          "completion_prefix": " raw﻿ "
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_015",
+      "test": "command_completions_keep_none_empty_and_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "pick",
+          "owner": 0,
+          "completions": []
+        },
+        {
+          "op": "complete",
+          "name": "pick",
+          "prefix": " raw﻿ "
+        }
+      ],
+      "observe": [
+        "commands",
+        "observations",
+        "trace"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "pick",
+          "invocation_name": "pick",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": true
+        }
+      ],
+      "observations": [
+        []
+      ],
+      "trace": [
+        {
+          "completion_prefix": " raw﻿ "
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_016",
+      "test": "command_completions_keep_none_empty_and_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "pick",
+          "owner": 0,
+          "completions": [
+            {
+              "value": "é",
+              "label": "É"
+            },
+            {
+              "value": "a",
+              "label": "A",
+              "description": ""
+            }
+          ]
+        },
+        {
+          "op": "complete",
+          "name": "pick",
+          "prefix": " raw﻿ "
+        }
+      ],
+      "observe": [
+        "commands",
+        "observations",
+        "trace"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "pick",
+          "invocation_name": "pick",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": true
+        }
+      ],
+      "observations": [
+        [
+          {
+            "value": "é",
+            "label": "É"
+          },
+          {
+            "value": "a",
+            "label": "A",
+            "description": ""
+          }
+        ]
+      ],
+      "trace": [
+        {
+          "completion_prefix": " raw﻿ "
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_017",
+      "test": "command_and_shortcut_callbacks_keep_context_and_errors",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "go",
+          "owner": 0,
+          "fail": "command failed"
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0,
+          "fail": "shortcut failed"
+        },
+        {
+          "op": "invoke_command",
+          "name": "go",
+          "args": "x y",
+          "ctx": {
+            "value": 42
+          },
+          "error": "command failed"
+        },
+        {
+          "op": "invoke_shortcut",
+          "key": "ctrl+x",
+          "ctx": {
+            "value": 43
+          },
+          "error": "shortcut failed"
+        }
+      ],
+      "observe": [
+        "observations",
+        "trace"
+      ]
+    },
+    "expected": {
+      "observations": [
+        {
+          "error": "command failed"
+        },
+        {
+          "error": "shortcut failed"
+        }
+      ],
+      "trace": [
+        {
+          "tag": "go",
+          "args": "x y",
+          "ctx": {
+            "value": 42
+          }
+        },
+        {
+          "tag": "ctrl+x",
+          "ctx": {
+            "value": 43
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_018",
+      "test": "flag_defaults_seed_only_missing_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "prior",
+          "value": false
+        },
+        {
+          "op": "flag",
+          "name": "prior",
+          "owner": 0,
+          "type": "boolean",
+          "default": "later"
+        },
+        {
+          "op": "flag",
+          "name": "fresh",
+          "owner": 0,
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "op": "flag",
+          "name": "none",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "get",
+          "name": "none"
+        },
+        {
+          "op": "get",
+          "name": "fresh"
+        },
+        {
+          "op": "get",
+          "name": "prior"
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "prior",
+          "name": "prior",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": "later"
+        },
+        {
+          "key": "fresh",
+          "name": "fresh",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": false
+        },
+        {
+          "key": "none",
+          "name": "none",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "flag_values": [
+        [
+          "prior",
+          false
+        ],
+        [
+          "fresh",
+          false
+        ]
+      ],
+      "observations": [
+        {
+          "absent": true
+        },
+        {
+          "value": false
+        },
+        {
+          "value": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_019",
+      "test": "flag_defaults_seed_only_missing_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "prior",
+          "value": true
+        },
+        {
+          "op": "flag",
+          "name": "prior",
+          "owner": 0,
+          "type": "boolean",
+          "default": "later"
+        },
+        {
+          "op": "flag",
+          "name": "fresh",
+          "owner": 0,
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "op": "flag",
+          "name": "none",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "get",
+          "name": "none"
+        },
+        {
+          "op": "get",
+          "name": "fresh"
+        },
+        {
+          "op": "get",
+          "name": "prior"
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "prior",
+          "name": "prior",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": "later"
+        },
+        {
+          "key": "fresh",
+          "name": "fresh",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": true
+        },
+        {
+          "key": "none",
+          "name": "none",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "flag_values": [
+        [
+          "prior",
+          true
+        ],
+        [
+          "fresh",
+          true
+        ]
+      ],
+      "observations": [
+        {
+          "absent": true
+        },
+        {
+          "value": true
+        },
+        {
+          "value": true
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_020",
+      "test": "flag_defaults_seed_only_missing_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "prior",
+          "value": ""
+        },
+        {
+          "op": "flag",
+          "name": "prior",
+          "owner": 0,
+          "type": "boolean",
+          "default": "later"
+        },
+        {
+          "op": "flag",
+          "name": "fresh",
+          "owner": 0,
+          "type": "boolean",
+          "default": ""
+        },
+        {
+          "op": "flag",
+          "name": "none",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "get",
+          "name": "none"
+        },
+        {
+          "op": "get",
+          "name": "fresh"
+        },
+        {
+          "op": "get",
+          "name": "prior"
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "prior",
+          "name": "prior",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": "later"
+        },
+        {
+          "key": "fresh",
+          "name": "fresh",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": ""
+        },
+        {
+          "key": "none",
+          "name": "none",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "flag_values": [
+        [
+          "prior",
+          ""
+        ],
+        [
+          "fresh",
+          ""
+        ]
+      ],
+      "observations": [
+        {
+          "absent": true
+        },
+        {
+          "value": ""
+        },
+        {
+          "value": ""
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_021",
+      "test": "flag_defaults_seed_only_missing_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "prior",
+          "value": "value"
+        },
+        {
+          "op": "flag",
+          "name": "prior",
+          "owner": 0,
+          "type": "boolean",
+          "default": "later"
+        },
+        {
+          "op": "flag",
+          "name": "fresh",
+          "owner": 0,
+          "type": "boolean",
+          "default": "value"
+        },
+        {
+          "op": "flag",
+          "name": "none",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "get",
+          "name": "none"
+        },
+        {
+          "op": "get",
+          "name": "fresh"
+        },
+        {
+          "op": "get",
+          "name": "prior"
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "prior",
+          "name": "prior",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": "later"
+        },
+        {
+          "key": "fresh",
+          "name": "fresh",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": "value"
+        },
+        {
+          "key": "none",
+          "name": "none",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "flag_values": [
+        [
+          "prior",
+          "value"
+        ],
+        [
+          "fresh",
+          "value"
+        ]
+      ],
+      "observations": [
+        {
+          "absent": true
+        },
+        {
+          "value": "value"
+        },
+        {
+          "value": "value"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_022",
+      "test": "unregistered_flags_do_not_leak_shared_values",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "hidden",
+          "value": "secret"
+        },
+        {
+          "op": "get",
+          "name": "hidden"
+        },
+        {
+          "op": "flag",
+          "name": "visible",
+          "owner": 0,
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "op": "get",
+          "owner": 1,
+          "name": "visible"
+        },
+        {
+          "op": "get",
+          "name": "visible"
+        }
+      ],
+      "observe": [
+        "observations"
+      ]
+    },
+    "expected": {
+      "observations": [
+        {
+          "absent": true
+        },
+        {
+          "absent": true
+        },
+        {
+          "value": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_023",
+      "test": "flags_keep_first_owner_but_all_owner_defaults_are_shared",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "flag",
+          "name": "shared",
+          "owner": 0,
+          "type": "boolean",
+          "default": false,
+          "description": "winner"
+        },
+        {
+          "op": "flag",
+          "name": "shared",
+          "owner": 1,
+          "type": "boolean",
+          "default": true,
+          "description": "loser"
+        },
+        {
+          "op": "flag",
+          "name": "last",
+          "owner": 1,
+          "type": "string",
+          "default": ""
+        },
+        {
+          "op": "get",
+          "owner": 1,
+          "name": "shared"
+        }
+      ],
+      "observe": [
+        "flags",
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flags": [
+        {
+          "key": "shared",
+          "name": "shared",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "description": "winner",
+          "default": false
+        },
+        {
+          "key": "last",
+          "name": "last",
+          "type": "string",
+          "extension_path": "/extensions/alpha.wasm",
+          "default": ""
+        }
+      ],
+      "flag_values": [
+        [
+          "shared",
+          false
+        ],
+        [
+          "last",
+          ""
+        ]
+      ],
+      "observations": [
+        {
+          "value": false
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_024",
+      "test": "flag_value_snapshots_are_independent_and_ordered",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "set",
+          "name": "z",
+          "value": true
+        },
+        {
+          "op": "set",
+          "name": "a",
+          "value": ""
+        },
+        {
+          "op": "snapshot_flags"
+        },
+        {
+          "op": "set",
+          "name": "z",
+          "value": false
+        },
+        {
+          "op": "set",
+          "name": "b",
+          "value": "new"
+        },
+        {
+          "op": "read_flag_snapshot"
+        }
+      ],
+      "observe": [
+        "flag_values",
+        "observations"
+      ]
+    },
+    "expected": {
+      "flag_values": [
+        [
+          "z",
+          false
+        ],
+        [
+          "a",
+          ""
+        ],
+        [
+          "b",
+          "new"
+        ]
+      ],
+      "observations": [
+        [
+          [
+            "z",
+            true
+          ],
+          [
+            "a",
+            ""
+          ],
+          [
+            "private-copy",
+            false
+          ]
+        ]
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_025",
+      "test": "registration_guard_preserves_first_stale_message",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "invalidate",
+          "message": "first stale"
+        },
+        {
+          "op": "invalidate",
+          "message": "second stale"
+        },
+        {
+          "op": "get",
+          "name": "any",
+          "error": "first stale"
+        }
+      ],
+      "observe": [
+        "observations"
+      ]
+    },
+    "expected": {
+      "observations": [
+        {
+          "error": "first stale"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_026",
+      "test": "registration_guard_preserves_first_stale_message",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "invalidate"
+        },
+        {
+          "op": "invalidate",
+          "message": "later"
+        },
+        {
+          "op": "get",
+          "name": "any",
+          "error": "default"
+        }
+      ],
+      "observe": [
+        "observations"
+      ]
+    },
+    "expected": {
+      "observations": [
+        {
+          "error": "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload()."
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_027",
+      "test": "stale_registration_changes_nothing_and_queries_remain_readable",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "kept",
+          "owner": 0
+        },
+        {
+          "op": "flag",
+          "name": "kept",
+          "owner": 0,
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        },
+        {
+          "op": "invalidate",
+          "message": "stale"
+        },
+        {
+          "op": "command",
+          "name": "bad",
+          "owner": 0,
+          "error": "stale"
+        },
+        {
+          "op": "flag",
+          "name": "bad",
+          "owner": 0,
+          "type": "boolean",
+          "default": false,
+          "error": "stale"
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+y",
+          "owner": 0,
+          "error": "stale"
+        },
+        {
+          "op": "set",
+          "name": "after",
+          "value": false
+        }
+      ],
+      "observe": [
+        "commands",
+        "flags",
+        "flag_values",
+        "shortcuts",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "kept",
+          "invocation_name": "kept",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "cli",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ],
+      "flags": [
+        {
+          "key": "kept",
+          "name": "kept",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "default": true
+        }
+      ],
+      "flag_values": [
+        [
+          "kept",
+          true
+        ],
+        [
+          "after",
+          false
+        ]
+      ],
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "observations": [
+        {
+          "error": "stale"
+        },
+        {
+          "error": "stale"
+        },
+        {
+          "error": "stale"
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_028",
+      "test": "registration_guard_preserves_first_stale_message",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "invalidate",
+          "message": ""
+        },
+        {
+          "op": "invalidate",
+          "message": "later"
+        },
+        {
+          "op": "command",
+          "name": "still-active",
+          "owner": 0
+        },
+        {
+          "op": "flag",
+          "name": "plan",
+          "owner": 0,
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "op": "get",
+          "name": "plan"
+        }
+      ],
+      "observe": [
+        "commands",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [],
+      "observations": [
+        {
+          "error": ""
+        },
+        {
+          "error": ""
+        },
+        {
+          "error": ""
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_029",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.interrupt": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_030",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_031",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.exit": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_032",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.suspend": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_033",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.thinking.cycle": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_034",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.model.cycleForward": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_035",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.model.cycleBackward": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_036",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.model.select": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_037",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.tools.expand": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_038",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.thinking.toggle": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_039",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.editor.external": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_040",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.message.followUp": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_041",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "tui.input.submit": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_042",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "tui.select.confirm": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_043",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "tui.select.cancel": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_044",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "tui.input.copy": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_045",
+      "test": "reserved_shortcuts_block_effective_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "tui.editor.deleteToLineEnd": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_046",
+      "test": "rebound_reserved_keys_release_old_bindings",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+p",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+n",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.model.cycleForward": "ctrl+n"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+p",
+          "shortcut": "ctrl+p",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+n' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_047",
+      "test": "reserved_and_nonreserved_overlap_cannot_unlock_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "Ctrl+X",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.interrupt": "CTRL+X",
+        "app.other": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_048",
+      "test": "reserved_and_nonreserved_overlap_cannot_unlock_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "Ctrl+X",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.other": "ctrl+x",
+        "app.interrupt": "CTRL+X"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'Ctrl+X' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_049",
+      "test": "reserved_multikey_bindings_block_every_key",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+y",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+z",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": [
+          "ctrl+x",
+          "ctrl+y"
+        ]
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+z",
+          "shortcut": "ctrl+z",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+        "Extension shortcut 'ctrl+y' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_050",
+      "test": "nonreserved_bindings_warn_and_allow_overrides",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+v",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clipboard.pasteImage": "ctrl+v"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+v",
+          "shortcut": "ctrl+v",
+          "extension_path": "/extensions/zeta.wasm"
+        },
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'ctrl+v' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut conflict: 'ctrl+v' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_051",
+      "test": "nonreserved_bindings_warn_and_allow_overrides",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+v",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clipboard.pasteImage": [
+          "ctrl+v",
+          "ctrl+x"
+        ]
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+v",
+          "shortcut": "ctrl+v",
+          "extension_path": "/extensions/zeta.wasm"
+        },
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'ctrl+v' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm.",
+          "path": "/extensions/zeta.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'ctrl+x' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut conflict: 'ctrl+v' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm.",
+        "Extension shortcut conflict: 'ctrl+x' is built-in shortcut for app.clipboard.pasteImage and /extensions/zeta.wasm. Using /extensions/zeta.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_052",
+      "test": "later_builtin_claims_determine_nonreserved_diagnostic",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.first": "ctrl+x",
+        "app.last": "CTRL+X"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'ctrl+x' is built-in shortcut for app.last and /extensions/zeta.wasm. Using /extensions/zeta.wasm.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut conflict: 'ctrl+x' is built-in shortcut for app.last and /extensions/zeta.wasm. Using /extensions/zeta.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_053",
+      "test": "shortcut_normalization_preserves_raw_registration_text",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "CTRL+SHIFT+P",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+shift+p",
+          "owner": 1
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+shift+p",
+          "shortcut": "ctrl+shift+p",
+          "extension_path": "/extensions/alpha.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'ctrl+shift+p' registered by both /extensions/zeta.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+          "path": "/extensions/alpha.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut conflict: 'ctrl+shift+p' registered by both /extensions/zeta.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_054",
+      "test": "shortcut_duplicates_keep_position_and_last_owner",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+z",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+a",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "CTRL+Z",
+          "owner": 1,
+          "description": "later"
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+z",
+          "shortcut": "CTRL+Z",
+          "extension_path": "/extensions/alpha.wasm",
+          "description": "later"
+        },
+        {
+          "key": "ctrl+a",
+          "shortcut": "ctrl+a",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'CTRL+Z' registered by both /extensions/zeta.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+          "path": "/extensions/alpha.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut conflict: 'CTRL+Z' registered by both /extensions/zeta.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_055",
+      "test": "shortcut_diagnostics_reset_without_mutating_old_result",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        },
+        {
+          "op": "query_shortcuts",
+          "bindings": {
+            "app.interrupt": "ctrl+x"
+          },
+          "retain": true
+        },
+        {
+          "op": "query_shortcuts",
+          "bindings": {}
+        },
+        {
+          "op": "read_diagnostic_snapshot"
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics",
+        "observations"
+      ]
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [],
+      "observations": [
+        {
+          "keys": [],
+          "diagnostics": [
+            {
+              "type": "warning",
+              "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+              "path": "/extensions/zeta.wasm"
+            }
+          ]
+        },
+        {
+          "keys": [
+            "ctrl+x"
+          ],
+          "diagnostics": []
+        },
+        [
+          {
+            "type": "warning",
+            "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+            "path": "/extensions/zeta.wasm"
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_056",
+      "test": "installed_ui_suppresses_only_warning_output",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "ui",
+          "installed": true
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+y",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "CTRL+Y",
+          "owner": 1
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+y",
+          "shortcut": "CTRL+Y",
+          "extension_path": "/extensions/alpha.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'CTRL+Y' registered by both /extensions/zeta.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+          "path": "/extensions/alpha.wasm"
+        }
+      ],
+      "warnings": []
+    }
+  },
+  {
+    "input": {
+      "id": "case_057",
+      "test": "installed_ui_suppresses_only_warning_output",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "ui",
+          "installed": true
+        },
+        {
+          "op": "ui",
+          "installed": false
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": "ctrl+x"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/extensions/zeta.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'ctrl+x' from /extensions/zeta.wasm conflicts with built-in shortcut. Skipping."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_058",
+      "test": "empty_and_unset_bindings_add_no_conflicts",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": [],
+        "app.nonreserved": []
+      },
+      "unset_bindings": [
+        "app.interrupt"
+      ],
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/extensions/zeta.wasm"
+        }
+      ],
+      "diagnostics": [],
+      "warnings": []
+    }
+  },
+  {
+    "input": {
+      "id": "case_059",
+      "test": "shortcut_warning_text_preserves_paths_and_keys",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "change_path",
+          "path": "/a\nquoted' path.wasm"
+        },
+        {
+          "op": "shortcut",
+          "key": "CTRL+X",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "CTRL+Y",
+          "owner": 0
+        },
+        {
+          "op": "shortcut",
+          "key": "CTRL+Y",
+          "owner": 1
+        }
+      ],
+      "observe": [
+        "shortcuts",
+        "diagnostics"
+      ],
+      "bindings": {
+        "app.clear": "ctrl+x",
+        "app.nonreserved": "ctrl+y"
+      },
+      "warnings": true
+    },
+    "expected": {
+      "shortcuts": [
+        {
+          "key": "ctrl+y",
+          "shortcut": "CTRL+Y",
+          "extension_path": "/extensions/alpha.wasm"
+        }
+      ],
+      "diagnostics": [
+        {
+          "type": "warning",
+          "message": "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm conflicts with built-in shortcut. Skipping.",
+          "path": "/a\nquoted' path.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /a\nquoted' path.wasm. Using /a\nquoted' path.wasm.",
+          "path": "/a\nquoted' path.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+          "path": "/extensions/alpha.wasm"
+        },
+        {
+          "type": "warning",
+          "message": "Extension shortcut conflict: 'CTRL+Y' registered by both /a\nquoted' path.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+          "path": "/extensions/alpha.wasm"
+        }
+      ],
+      "warnings": [
+        "Extension shortcut 'CTRL+X' from /a\nquoted' path.wasm conflicts with built-in shortcut. Skipping.",
+        "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /a\nquoted' path.wasm. Using /a\nquoted' path.wasm.",
+        "Extension shortcut conflict: 'CTRL+Y' is built-in shortcut for app.nonreserved and /extensions/alpha.wasm. Using /extensions/alpha.wasm.",
+        "Extension shortcut conflict: 'CTRL+Y' registered by both /a\nquoted' path.wasm and /extensions/alpha.wasm. Using /extensions/alpha.wasm."
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_060",
+      "test": "owner_collection_edits_are_observed_without_rebuilding_runner",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "original",
+          "owner": 0
+        },
+        {
+          "op": "list_commands"
+        },
+        {
+          "op": "append_owner",
+          "path": "/after.wasm"
+        },
+        {
+          "op": "command",
+          "name": "after",
+          "owner": 2
+        },
+        {
+          "op": "flag",
+          "name": "added",
+          "owner": 2,
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "op": "shortcut",
+          "key": "ctrl+x",
+          "owner": 2
+        },
+        {
+          "op": "clear_commands",
+          "owner": 0
+        }
+      ],
+      "observe": [
+        "commands",
+        "flags",
+        "shortcuts",
+        "paths",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "after",
+          "invocation_name": "after",
+          "source_info": {
+            "path": "/after.wasm",
+            "source": "late",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ],
+      "flags": [
+        {
+          "key": "added",
+          "name": "added",
+          "type": "boolean",
+          "extension_path": "/after.wasm",
+          "default": true
+        }
+      ],
+      "shortcuts": [
+        {
+          "key": "ctrl+x",
+          "shortcut": "ctrl+x",
+          "extension_path": "/after.wasm"
+        }
+      ],
+      "paths": [
+        "/extensions/zeta.wasm",
+        "/extensions/alpha.wasm",
+        "/after.wasm"
+      ],
+      "observations": [
+        [
+          {
+            "name": "original",
+            "invocation_name": "original",
+            "source_info": {
+              "path": "/extensions/zeta.wasm",
+              "source": "cli",
+              "scope": "temporary",
+              "origin": "top-level"
+            },
+            "has_completions": false
+          }
+        ]
+      ]
+    }
+  },
+  {
+    "input": {
+      "id": "case_061",
+      "test": "retained_flags_and_command_sources_follow_their_owners",
+      "owners": [
+        {
+          "path": "/extensions/zeta.wasm",
+          "source": "cli",
+          "scope": "temporary",
+          "origin": "top-level"
+        },
+        {
+          "path": "/extensions/alpha.wasm",
+          "source": "package:local",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": ""
+        }
+      ],
+      "steps": [
+        {
+          "op": "command",
+          "name": "source",
+          "owner": 0
+        },
+        {
+          "op": "flag",
+          "name": "flag",
+          "owner": 0,
+          "type": "boolean"
+        },
+        {
+          "op": "retain_command",
+          "name": "source"
+        },
+        {
+          "op": "retain_flag",
+          "name": "flag"
+        },
+        {
+          "op": "edit_retained_flag",
+          "description": "through retained alias"
+        },
+        {
+          "op": "edit_source",
+          "source": "mutated"
+        },
+        {
+          "op": "read_retained_command"
+        },
+        {
+          "op": "replace_source",
+          "source_info": {
+            "path": "/new",
+            "source": "new-owner",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "/base"
+          }
+        },
+        {
+          "op": "read_retained_command"
+        }
+      ],
+      "observe": [
+        "commands",
+        "flags",
+        "observations"
+      ]
+    },
+    "expected": {
+      "commands": [
+        {
+          "name": "source",
+          "invocation_name": "source",
+          "source_info": {
+            "path": "/new",
+            "source": "new-owner",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "/base"
+          },
+          "has_completions": false
+        }
+      ],
+      "flags": [
+        {
+          "key": "flag",
+          "name": "flag",
+          "type": "boolean",
+          "extension_path": "/extensions/zeta.wasm",
+          "description": "through retained alias"
+        }
+      ],
+      "observations": [
+        {
+          "name": "source",
+          "invocation_name": "source",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "mutated",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        },
+        {
+          "name": "source",
+          "invocation_name": "source",
+          "source_info": {
+            "path": "/extensions/zeta.wasm",
+            "source": "mutated",
+            "scope": "temporary",
+            "origin": "top-level"
+          },
+          "has_completions": false
+        }
+      ]
+    }
+  }
+]
