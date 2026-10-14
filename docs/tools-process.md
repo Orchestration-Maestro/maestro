@@ -134,7 +134,8 @@ oldest chunks are removed above 102400 UTF-8 bytes while more than one remains.
 Final selection uses the shared default tail limits; final truncation can also create
 an artifact. `BashResult` returns the selected text, cancellation and truncation flags,
 the optional supplied numeric status and the optional artifact path, without tool notices.
-An aborted signal selects cancellation and no status; nonzero status alone is not an error.
+The signal is sampled after final output callbacks: an aborted signal selects cancellation
+and no status; nonzero status alone is not an error.
 
 An ordinary operation error returns unchanged without finalizing pending text or creating
 a line-only artifact. The first processing failure stops output updates and returns after

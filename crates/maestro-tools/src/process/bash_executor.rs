@@ -27,7 +27,7 @@ pub struct BashResult {
     /// Supplied numeric status, absent when cancelled.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exit_code: Option<f64>,
-    /// Whether the signal was aborted at settlement.
+    /// Whether the signal was aborted after final output callbacks.
     pub cancelled: bool,
     /// Whether final tail selection removed output.
     pub truncated: bool,
@@ -72,7 +72,7 @@ pub async fn execute_bash_with_operations(
         (None, Err(error)) if !cancelled => Err(error),
         (None, outcome) => state.settle(
             outcome.ok().and_then(|result| result.exit_code),
-            cancelled,
+            options.signal,
             &mut options.on_chunk,
         ),
     };
@@ -167,7 +167,7 @@ impl Output {
     fn settle(
         &mut self,
         exit_code: Option<f64>,
-        cancelled: bool,
+        signal: Option<&Cancellation>,
         callback: &mut Option<&mut (dyn FnMut(&str) + Send)>,
     ) -> Result<BashResult, BashError> {
         let rest = self.decoder.finish();
@@ -177,6 +177,7 @@ impl Output {
         if selected.truncated {
             self.spill()?;
         }
+        let cancelled = signal.is_some_and(Cancellation::is_aborted);
         Ok(BashResult {
             output: selected.content,
             exit_code: if cancelled { None } else { exit_code },

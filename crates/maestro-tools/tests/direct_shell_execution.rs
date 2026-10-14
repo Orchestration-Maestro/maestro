@@ -116,6 +116,16 @@ impl Supplied<'_> {
 use read_support::run;
 
 fn corpus(name: &str) {
+    if std::env::var_os("MAESTRO_READ_CHILD").is_none() {
+        let dir = read_support::TempDir::new();
+        let root = Some(dir.0.as_os_str());
+        read_support::isolated_os(
+            name,
+            "direct-corpus",
+            &[("TMPDIR", root), ("TMP", root), ("TEMP", root)],
+        );
+        return;
+    }
     let cases: Vec<Case> =
         serde_json::from_str(include_str!("fixtures/direct_shell.json")).unwrap();
     let mut count = 0;
@@ -149,11 +159,6 @@ fn replay(case: Case) {
             on_chunk: (!case.input.no_callback).then_some(&mut sink),
         }
     };
-    let before: std::collections::HashSet<_> = std::fs::read_dir(std::env::temp_dir())
-        .unwrap()
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .collect();
     let result = run(execute_bash_with_operations(
         case.input.command.as_deref().unwrap_or("command"),
         case.input.cwd.as_deref().unwrap_or("cwd"),
@@ -166,20 +171,19 @@ fn replay(case: Case) {
         "{}",
         case.label
     );
-    observe(case, result, &marker, &before);
+    observe(case, result, &marker);
 }
 fn observe(
     case: Case,
     result: Result<maestro_tools::BashResult, BashError>,
     marker: &Arc<std::io::Error>,
-    before: &std::collections::HashSet<std::path::PathBuf>,
 ) {
     match result {
         Ok(result) => {
             observe_success(case, &result);
         }
         Err(BashError::Other(error)) => {
-            observe_error(case, error.as_ref(), marker, before);
+            observe_error(case, error.as_ref(), marker);
         }
         Err(error) => panic!("unexpected error category: {error}"),
     }
@@ -212,7 +216,6 @@ fn observe_error(
     case: Case,
     error: &(dyn std::error::Error + Send + Sync + 'static),
     marker: &Arc<std::io::Error>,
-    before: &std::collections::HashSet<std::path::PathBuf>,
 ) {
     let expected = case.expected.error.unwrap();
     assert_eq!(error.to_string(), expected.message);
@@ -222,23 +225,20 @@ fn observe_error(
         marker
     ));
     assert!(case.expected.result.is_none());
-    for artifact in &case.expected.artifacts {
+    let paths: Vec<_> = std::fs::read_dir(std::env::temp_dir())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    assert_eq!(paths.len(), case.expected.artifacts.len(), "{}", case.label);
+    for (path, artifact) in paths.iter().zip(&case.expected.artifacts) {
         assert_eq!(artifact.path, "<artifact-0>");
-        let path = std::fs::read_dir(std::env::temp_dir())
-            .unwrap()
-            .filter_map(Result::ok)
-            .map(|entry| entry.path())
-            .find(|path| {
-                !before.contains(path)
-                    && path
-                        .file_name()
-                        .unwrap()
-                        .to_string_lossy()
-                        .starts_with("maestro-bash-")
-                    && std::fs::read_to_string(path).is_ok_and(|text| text == artifact.content)
-            })
-            .unwrap();
-        assert_eq!(std::fs::read_to_string(&path).unwrap(), artifact.content);
+        assert!(
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("maestro-bash-")
+        );
+        assert_eq!(std::fs::read_to_string(path).unwrap(), artifact.content);
         std::fs::remove_file(path).unwrap();
     }
 }
@@ -335,15 +335,7 @@ fn direct_spill_replays_prefix_once_in_sanitized_order() {
 
 #[test]
 fn direct_unexpected_failure_closes_artifact_and_keeps_error() {
-    let dir = read_support::TempDir::new();
-    let root = Some(dir.0.as_os_str());
-    if read_support::isolated_os(
-        "direct_unexpected_failure_closes_artifact_and_keeps_error",
-        "failed-artifact",
-        &[("TMPDIR", root), ("TMP", root), ("TEMP", root)],
-    ) {
-        corpus("direct_unexpected_failure_closes_artifact_and_keeps_error");
-    }
+    corpus("direct_unexpected_failure_closes_artifact_and_keeps_error");
 }
 
 #[test]
@@ -645,4 +637,57 @@ fn direct_long_osc_payload_is_held_across_a_few_chunks() {
     assert_eq!(result.output, "ok");
     assert!(!result.truncated);
     assert!(result.full_output_path.is_none());
+}
+
+fn cancellation_from_final_chunk(hex: &str, final_text: &str) {
+    let signal = Cancellation::new();
+    let input = Input {
+        chunks_hex: vec![hex.into()],
+        exit_code: Some(7.0),
+        signal: "live".into(),
+        settle: "ok".into(),
+        no_options: false,
+        no_callback: false,
+        command: None,
+        cwd: None,
+    };
+    let chunks = Arc::new(Mutex::new(Vec::new()));
+    let mut sink = |text: &str| {
+        chunks.lock().unwrap().push(text.to_owned());
+        if text == final_text {
+            signal.abort();
+        }
+    };
+    let operations = Supplied {
+        input: &input,
+        chunks: chunks.clone(),
+        expected_chunks: &[String::new()],
+        signal: Some(&signal),
+        marker: Arc::new(std::io::Error::other("operation-marker")),
+    };
+    let result = run(execute_bash_with_operations(
+        "command",
+        "cwd",
+        &operations,
+        BashExecutorOptions {
+            signal: Some(&signal),
+            on_chunk: Some(&mut sink),
+        },
+    ))
+    .unwrap();
+    assert_eq!(*chunks.lock().unwrap(), ["", final_text]);
+    assert_eq!(result.output, final_text);
+    assert!(signal.is_aborted());
+    assert!(result.cancelled);
+    assert_eq!(result.exit_code, None);
+}
+
+#[test]
+fn direct_final_utf8_callback_can_cancel_success() {
+    cancellation_from_final_chunk("f0908d", "\u{fffd}");
+}
+
+#[test]
+fn direct_final_escape_callback_can_cancel_success() {
+    cancellation_from_final_chunk("1b5d303b7469746c65", "itle");
 }
