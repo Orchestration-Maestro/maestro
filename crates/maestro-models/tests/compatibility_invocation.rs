@@ -10,6 +10,7 @@ mod tests {
 
     #[test]
     fn custom_callbacks_receive_complete_compatibility() {
+        let _serial = crate::bundled::registry();
         let expected = json!({"supportsStore":false,"sendSessionIdHeader":true,"open":{"order":["b","a","b"],"null":null}});
         let model: Model = serde_json::from_value(json!({"id":"m","name":"M","api":"compatibility-custom","provider":"custom","baseUrl":"https://fixture.invalid","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10,"compat":expected})).unwrap();
         let observed = Arc::new(Mutex::new(Vec::<Value>::new()));

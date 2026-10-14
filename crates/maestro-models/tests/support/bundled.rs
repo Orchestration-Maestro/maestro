@@ -66,10 +66,10 @@ pub fn registered_apis() -> Vec<&'static str> {
     apis
 }
 
-/// Serializes tests that read or change the process-wide registry.
+/// Serializes tests that read or change process-wide provider and cleanup registries.
 static REGISTRY: Mutex<()> = Mutex::new(());
 
-/// Hold the registry for one test.
+/// Hold provider and cleanup registry admission for one test.
 pub fn registry() -> MutexGuard<'static, ()> {
     REGISTRY.lock().unwrap_or_else(PoisonError::into_inner)
 }

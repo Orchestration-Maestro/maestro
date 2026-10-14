@@ -46,7 +46,7 @@ fn check_manifest(member: &Member) -> Result<(), String> {
     Ok(())
 }
 
-/// Require one runnable canonical target and one declaration per source.
+/// With top-level integration sources, require one runnable target and one declaration per source.
 fn check_member(member: &Member) -> Result<(), String> {
     let tests = member.directory.join("tests");
     let files: Vec<_> = member

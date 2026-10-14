@@ -154,12 +154,16 @@ mod model_thinking_levels;
 mod oauth_primitives;
 mod oauth_provider_registry;
 mod offline_model_catalog;
+#[cfg(unix)]
 #[path = "support/profile_credentials.rs"]
 mod profile_credentials;
+#[cfg(unix)]
 #[path = "support/profile_files.rs"]
 mod profile_files;
+#[cfg(unix)]
 #[path = "support/profile_routes.rs"]
 mod profile_routes;
+#[cfg(unix)]
 #[path = "support/profile_services.rs"]
 mod profile_services;
 #[path = "provider_overflow.rs"]

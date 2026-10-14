@@ -358,5 +358,6 @@ sleep-based watchdogs require source review.
 
 Integration tests in `maestro-models` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support
-modules stay in their existing directories. The conventions check requires
-`autotests = false` and one runnable `integration` target for these crates.
+modules stay in their existing directories. When top-level integration-test
+sources exist, the conventions check requires `autotests = false` and one
+runnable `integration` target for these crates.
