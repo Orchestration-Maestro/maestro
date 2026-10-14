@@ -380,3 +380,99 @@ fn skip_flag_replaces_both_bearer_sources_and_only_the_exact_spelling_counts()
     assert_eq!(settings.auth, Auth::Bearer("explicit".into()));
     Ok(())
 }
+
+/// Environment compositions with selected URL spelling, before credential decoding.
+type SocksEnvironmentRow = (
+    &'static [(&'static str, &'static str)],
+    &'static str,
+    Option<&'static str>,
+);
+
+/// Selected proxy spellings for each environment composition.
+const SOCKS_ENVIRONMENT_ROWS: &[SocksEnvironmentRow] = &[
+    (
+        &[
+            ("HTTP_PROXY", "socks5h://bad%ZZ@proxy.example"),
+            ("NO_PROXY", "origin.example"),
+        ],
+        "http://origin.example/path",
+        None,
+    ),
+    (
+        &[
+            ("HTTP_PROXY", "socks5h://bad%ZZ@proxy.example"),
+            ("NO_PROXY", "other.example"),
+        ],
+        "http://origin.example/path",
+        Some("socks5h://bad%ZZ@proxy.example"),
+    ),
+    (
+        &[
+            ("HTTP_PROXY", "socks5://upper.example"),
+            ("http_proxy", "socks://lower.example"),
+        ],
+        "http://origin.example/path",
+        Some("socks://lower.example"),
+    ),
+    (
+        &[("ALL_PROXY", "socks5h://proxy.example")],
+        "http://origin.example/path",
+        None,
+    ),
+    (
+        &[
+            ("NO_PROXY", "other.example"),
+            ("ALL_PROXY", "socks5h://proxy.example"),
+        ],
+        "http://origin.example/path",
+        Some("socks5h://proxy.example"),
+    ),
+    (
+        &[
+            ("HTTP_PROXY", "socks5://http.example"),
+            ("HTTPS_PROXY", "socks://https.example"),
+        ],
+        "https://origin.example/path",
+        Some("socks://https.example"),
+    ),
+];
+
+#[test]
+fn socks_environment_selection_precedes_url_decoding() {
+    for &(pairs, destination, selected) in SOCKS_ENVIRONMENT_ROWS {
+        let environment = environment(pairs);
+        let chosen = if environment.names_proxy() {
+            environment
+                .proxy_for(&Url::parse(destination).unwrap())
+                .unwrap()
+        } else {
+            None
+        };
+        assert!(
+            chosen.as_ref().map(Url::as_str) == selected,
+            "environment selection"
+        );
+        if selected.is_some_and(|url| url.contains("%ZZ")) {
+            let fetch = crate::providers::http::configured_fetch(crate::providers::http::Route {
+                proxy: Some(std::sync::Arc::new(move |_| Ok(chosen.clone()))),
+                ..crate::providers::http::Route::default()
+            });
+            let request = crate::providers::http::HttpRequest {
+                method: "GET".into(),
+                url: destination.into(),
+                headers: indexmap::IndexMap::new(),
+                body: Vec::new(),
+                signal: None,
+            };
+            let result = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(fetch(request));
+            assert!(matches!(
+                result,
+                Err(crate::providers::http::FetchError::Connection(_))
+            ));
+        }
+    }
+}

@@ -21,13 +21,32 @@ async fn send(
     client: impl Borrow<reqwest::Client>,
     request: HttpRequest,
 ) -> Result<HttpResponse, FetchError> {
+    let request = prepare(client.borrow(), request)?;
+    Ok(finish(
+        client.borrow().execute(request).await.map_err(failed)?,
+    ))
+}
+
+/// Prepare one request for either native sender, including ordinary client defaults.
+fn prepare(client: &reqwest::Client, request: HttpRequest) -> Result<reqwest::Request, FetchError> {
     let method = reqwest::Method::from_bytes(request.method.as_bytes()).map_err(failed)?;
     let mut headers = request.headers;
-    let mut builder = client.borrow().request(method, &request.url);
+    let mut url = url::Url::parse(&request.url).map_err(failed)?;
+    url.set_fragment(None);
+    let mut builder = client.request(method, url);
     for (name, value) in client_pairs(&mut headers).map_err(connection)? {
         builder = builder.header(name, value);
     }
-    let response = builder.body(request.body).send().await.map_err(failed)?;
+    let mut request = builder.body(request.body).build().map_err(failed)?;
+    request
+        .headers_mut()
+        .entry(reqwest::header::ACCEPT)
+        .or_insert(reqwest::header::HeaderValue::from_static("*/*"));
+    Ok(request)
+}
+
+/// Convert a response once, with streaming body reads outside header deadlines.
+fn finish(response: reqwest::Response) -> HttpResponse {
     let status = response.status().as_u16();
     #[cfg(not(target_arch = "wasm32"))]
     let status_text = status_text(&response);
@@ -39,12 +58,12 @@ async fn send(
             .bytes_stream()
             .map(|chunk| chunk.map(|bytes| bytes.to_vec()).map_err(failed)),
     );
-    Ok(HttpResponse {
+    HttpResponse {
         status,
         status_text,
         headers,
         body,
-    })
+    }
 }
 
 /// Chooses the proxy for a destination URL, or none.
@@ -71,33 +90,21 @@ pub(crate) struct Route {
 /// for requests that do not use the process-wide client.
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
-    let mut builder = reqwest::Client::builder()
-        .retry(reqwest::retry::never())
-        .redirect(reqwest::redirect::Policy::none())
-        .no_proxy();
-    if let Some(timeout) = route.connect_timeout {
-        builder = builder.connect_timeout(timeout);
-    }
-    let check = route.proxy.clone();
-    if let Some(select) = route.proxy {
-        builder = builder.proxy(reqwest::Proxy::custom(move |url| {
-            select(url).ok().flatten()
-        }));
-    }
-    if route.http1_only {
-        builder = builder.http1_only();
-    }
-    let client = builder.build().map_err(|error| connection(chain(&error)));
+    let clients = configured_clients(&route);
+    let check = route.proxy;
+    let read_timeout = route.read_timeout;
     Arc::new(move |request| {
-        let client = client.clone();
+        let clients = clients.clone();
         let check = check.clone();
         Box::pin(async move {
-            if let Some(select) = check {
-                let destination = url::Url::parse(&request.url).map_err(failed)?;
-                select(&destination).map_err(connection)?;
-            }
-            let response = send(client?, request);
-            if let Some(timeout) = route.read_timeout {
+            let selected = if let Some(select) = check {
+                select(&url::Url::parse(&request.url).map_err(failed)?).map_err(connection)?
+            } else {
+                None
+            };
+            let (client, socks) = clients?;
+            let response = send_selected(client, socks, selected, request);
+            if let Some(timeout) = read_timeout {
                 tokio::time::timeout(timeout, response)
                     .await
                     .map_err(|_| FetchError::Timeout)?
@@ -106,6 +113,64 @@ pub(crate) fn configured_fetch(route: Route) -> super::Fetch {
             }
         })
     })
+}
+
+/// Choose one adapter after destination policy, with no automatic replay.
+#[cfg(not(target_arch = "wasm32"))]
+async fn send_selected(
+    client: reqwest::Client,
+    socks: Option<super::proxy_agent::Sender>,
+    selected: Option<url::Url>,
+    request: HttpRequest,
+) -> Result<HttpResponse, FetchError> {
+    if selected.is_some_and(|proxy| matches!(proxy.scheme(), "socks" | "socks5" | "socks5h")) {
+        let request = prepare(&client, request)?.try_into().map_err(failed)?;
+        let response = socks
+            .ok_or_else(|| connection("Missing SOCKS sender".into()))?
+            .request(request)
+            .await
+            .map_err(|error| classify(error.as_ref()))?;
+        Ok(finish(reqwest::Response::from(response)))
+    } else {
+        send(client, request).await
+    }
+}
+
+/// Retain both native adapters with one TLS configuration and route policy.
+#[cfg(not(target_arch = "wasm32"))]
+fn configured_clients(
+    route: &Route,
+) -> Result<(reqwest::Client, Option<super::proxy_agent::Sender>), FetchError> {
+    let mut builder = reqwest::Client::builder()
+        .retry(reqwest::retry::never())
+        .redirect(reqwest::redirect::Policy::none())
+        .no_proxy();
+    if let Some(timeout) = route.connect_timeout {
+        builder = builder.connect_timeout(timeout);
+    }
+    if let Some(select) = route.proxy.clone() {
+        builder = builder.proxy(reqwest::Proxy::custom(move |url| {
+            select(url)
+                .ok()
+                .flatten()
+                .filter(|proxy| matches!(proxy.scheme(), "http" | "https"))
+        }));
+    }
+    if route.http1_only {
+        builder = builder.http1_only();
+    }
+
+    let tls = super::proxy_agent::tls(route.http1_only)
+        .map_err(|error| connection(chain(error.as_ref())))?;
+    let socks = route
+        .proxy
+        .clone()
+        .map(|select| super::proxy_agent::sender(select, tls.clone(), route.connect_timeout));
+    let client = builder
+        .tls_backend_preconfigured(tls)
+        .build()
+        .map_err(failed)?;
+    Ok((client, socks))
 }
 
 /// The process-wide client; automatic retries are off because the sender owns retry policy.
@@ -155,13 +220,22 @@ fn connection(message: String) -> FetchError {
 
 /// Classify a client error as a timeout or a connection failure.
 fn failed<E: Error + 'static>(error: E) -> FetchError {
-    let timed_out = (&error as &dyn Error)
+    classify(&error)
+}
+
+/// Render a failure at the HTTP boundary after classifying its retained causes.
+fn classify(error: &(dyn Error + 'static)) -> FetchError {
+    let timed_out = error
         .downcast_ref::<reqwest::Error>()
         .is_some_and(reqwest::Error::is_timeout);
+    #[cfg(not(target_arch = "wasm32"))]
+    let timed_out = timed_out
+        || std::iter::successors(Some(error), |error| (*error).source())
+            .any(<dyn Error + 'static>::is::<super::proxy_agent::ConnectTimeout>);
     if timed_out {
         FetchError::Timeout
     } else {
-        connection(chain(&error))
+        connection(chain(error))
     }
 }
 

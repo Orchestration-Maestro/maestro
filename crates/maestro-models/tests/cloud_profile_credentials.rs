@@ -387,3 +387,15 @@ fn non_network_authentication_does_not_contact_credential_services() -> TestResu
 fn credential_services_reuse_the_supplied_sender() -> TestResult {
     profile_routes::check("credential_services_reuse_the_supplied_sender")
 }
+
+#[allow(
+    dead_code,
+    reason = "Shared helpers serve multiple integration targets."
+)]
+#[path = "support/socks.rs"]
+mod socks;
+
+#[test]
+fn bedrock_socks_reuses_credential_route() -> TestResult {
+    profile_routes::check("bedrock_socks_reuses_credential_route")
+}

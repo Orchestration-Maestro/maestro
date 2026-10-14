@@ -34,8 +34,8 @@ same-version dev-dependency, for its runtime-component builder.
 
 The resolved lockfile gains 42 packages: 22 under Apache-2.0, 19 under MIT or Apache-2.0
 expressions (or MIT alone) and `ryu =1.0.23` under Apache-2.0 OR BSL-1.0, used under
-Apache-2.0. No unapproved crate beyond these AWS packages is added: the byte and frame types
-come from the existing `hyper` dependency, and tests encode their own event-stream frames.
+Apache-2.0. The AWS bridge uses the existing `hyper` byte and frame types; tests encode their own
+event-stream frames.
 
 The login source adds 24 packages to the lockfile. `aws-sdk-signin =1.22.0` is Apache-2.0. Under
 MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base64ct =1.8.3`,
@@ -44,3 +44,15 @@ MIT or Apache-2.0 (either alone or as alternatives) are `base16ct =0.2.0`, `base
 `pem-rfc7468 =0.7.0`, `pkcs8 =0.10.2`, `ppv-lite86 =0.2.21`, `primeorder =0.13.6`, `rand =0.8.8`,
 `rand_chacha =0.3.1`, `rand_core =0.6.4`, `rfc6979 =0.4.0`, `sec1 =0.7.3`, `signature =2.2.0` and
 `spki =0.7.3`; no direct dependency on them is declared.
+
+The native SOCKS connector adds `tokio-socks =0.5.3` (MIT, defaults off, `tokio`), plus
+`thiserror =1.0.69` and `thiserror-impl =1.0.69` (MIT OR Apache-2.0) transitively. It retains
+reqwest `=0.13.5` with defaults and `stream`, without enabling reqwest's `socks` feature.
+Native direct declarations reuse already-locked `hyper =1.11.1` (`client`, `server`, `http1`),
+`hyper-util =0.1.21` (`tokio`), `hyper-rustls =0.27.10` (defaults off, `http1`),
+`rustls =0.23.45` (defaults off, `std`, `tls12`, `aws_lc_rs`),
+`rustls-platform-verifier =0.7.1` (defaults off) and `tower-service =0.3.3` (defaults off).
+These are MIT or Apache-2.0 alternatives. Tokio enables `io-util` alongside its existing native
+features. One TLS configuration supplies platform trust to reqwest and the SOCKS connector;
+Hyper's HTTP/1 connection is driven by its request and response body, without detached work
+or automatic replay. None of these declarations reaches the browser build.

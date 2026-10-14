@@ -146,12 +146,23 @@ way, excludes destinations from proxying: `*` excludes all, `host` that host onl
 `*suffix` hosts ending so, and a `:port` limits an entry; entries are separated by commas or
 JavaScript whitespace. With proxying off, no proxy is used whatever other variables say. A proxy
 or `AWS_BEDROCK_FORCE_HTTP1=1` makes the connection speak HTTP/1 only. HTTP and HTTPS proxies
-are supported; SOCKS and proxy auto-configuration remain in
-[#871](https://github.com/Orchestration-Maestro/maestro/issues/871). A selected proxy that is not a
-URL, or whose scheme is not `http` or `https`, ends the stream with an error before the
-destination is contacted; a destination the exclusion list leaves out never reads its proxy. The
-default sender returns a redirect response as it is, without following it, so it ends the call as
-a response that is not accepted.
+are supported, as are `socks`, `socks5` and `socks5h`. `socks5` resolves destination names
+locally; `socks` and `socks5h` send names to the proxy. IP literals retain their address family.
+SOCKS URL credentials are percent-decoded once as UTF-8; `+` stays a plus. Invalid escapes
+fail when selected. Configured credentials offer both no-login and username/password methods,
+including when one field is empty. A field exceeding 255 UTF-8 bytes fails only when the proxy
+selects password authentication. Empty credentials use no-login alone.
+
+The SOCKS handshake has a 30-second deadline covering proxy connection and negotiation,
+after local destination lookup and before destination TLS. Each SOCKS request owns its
+connection through response-body consumption; cancellation or a header deadline closes
+pending connection work. Request preparation and response conversion use the
+[shared HTTP transport](chat-completions.md#transport).
+SOCKS4/4a remain in [#900](https://github.com/Orchestration-Maestro/maestro/issues/900), and
+proxy auto-configuration remains in [#901](https://github.com/Orchestration-Maestro/maestro/issues/901).
+A selected proxy that is not a URL or has an unsupported scheme ends the stream with an error
+before the destination is contacted; a destination the exclusion list leaves out never reads
+its proxy. The default sender returns redirects without following them.
 
 ## Hooks and results
 

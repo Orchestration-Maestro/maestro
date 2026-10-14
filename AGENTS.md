@@ -196,6 +196,12 @@ Ask before adding any unapproved crate; never add one silently.
 except tokio (MIT) and ryu-js (Apache-2.0 OR BSL-1.0, used under Apache-2.0).
 The models crate reads server-sent events with its own reader, so no event-stream
 library is a dependency.
+Native SOCKS connections use `tokio-socks =0.5.3` (MIT, defaults off, `tokio`) and its
+`thiserror =1.0.69` closure, beside reqwest. Native connector support directly reuses locked
+`hyper =1.11.1`, `hyper-util =0.1.21`, `hyper-rustls =0.27.10`, `rustls =0.23.45`,
+`rustls-platform-verifier =0.7.1` and `tower-service =0.3.3` with the features listed in
+[provider qualification libraries](docs/libraries/provider-qualification.md). Request/response
+conversion and TLS setup stay single-owned; SOCKS request futures own their connection work.
 Native targets of `maestro-models` also use `aws-sdk-bedrockruntime =1.148.0` and
 `aws-config =1.12.0` for Bedrock credentials, signing, retries and event framing, with
 `aws-smithy-runtime-api =1.19.0` and `aws-smithy-types =1.8.1` for the transport bridge,
