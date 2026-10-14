@@ -123,18 +123,9 @@ fn bordered_select_list(
     max_visible: usize,
     theme: LiveTheme,
 ) -> (maestro_tui::Container, Rc<maestro_tui::SelectList>) {
-    use maestro_tui::{Container, SelectList, SelectListLayoutOptions};
+    use maestro_tui::Container;
     let container = Container::new();
-    let list = Rc::new(SelectList::new(
-        items,
-        max_visible,
-        maestro_theme::get_select_list_theme(theme.clone()),
-        SelectListLayoutOptions {
-            min_primary_column_width: Some(12),
-            max_primary_column_width: Some(32),
-            ..Default::default()
-        },
-    ));
+    let list = bounded_select_list(items, max_visible, theme.clone());
     container.add_child(Rc::new(dynamic_border::DynamicBorder::new(
         theme.clone(),
         None,
@@ -219,3 +210,24 @@ fn dialog_countdown(
 }
 
 pub mod extension_input;
+
+/// Builds the shared bounded primary-column list.
+fn bounded_select_list(
+    items: Vec<maestro_tui::SelectItem>,
+    max_visible: usize,
+    theme: LiveTheme,
+) -> Rc<maestro_tui::SelectList> {
+    use maestro_tui::{SelectList, SelectListLayoutOptions};
+    Rc::new(SelectList::new(
+        items,
+        max_visible,
+        maestro_theme::get_select_list_theme(theme),
+        SelectListLayoutOptions {
+            min_primary_column_width: Some(12),
+            max_primary_column_width: Some(32),
+            ..Default::default()
+        },
+    ))
+}
+
+pub mod settings_selector;

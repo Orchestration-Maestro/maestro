@@ -36,4 +36,7 @@ pub use components::extension_selector::{ExtensionSelectorComponent, ExtensionSe
 pub use components::model_selector::{
     ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions,
 };
+pub use components::settings_selector::{
+    BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig, SettingsSelectorComponent,
+};
 pub use components::tree_selector::{FilterMode, SessionTreeNode, TreeList};

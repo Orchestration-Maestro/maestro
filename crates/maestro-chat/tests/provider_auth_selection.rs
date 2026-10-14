@@ -1,5 +1,8 @@
 //! Provider selection through the public terminal component.
 #![cfg(test)]
+#[allow(dead_code, reason = "Only shared keybinding admission is reused.")]
+#[path = "support/keybindings.rs"]
+mod keybindings;
 #[allow(
     dead_code,
     reason = "Shared selector support requires theme file operations."
