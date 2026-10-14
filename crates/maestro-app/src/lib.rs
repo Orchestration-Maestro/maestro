@@ -62,6 +62,7 @@ pub use maestro_settings::{
 #[cfg(not(target_arch = "wasm32"))]
 pub use utils::clipboard::{copy_to_clipboard, copy_to_clipboard_with};
 
+pub use browser::tools::extract_document::{EXTRACT_DOCUMENT_TOOL, create_extract_document_tool};
 pub use maestro_catalog::{
     CatalogError, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
     ScopedModel, model_id_comparator,

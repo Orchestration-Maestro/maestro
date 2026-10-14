@@ -32,10 +32,7 @@ pub fn apply_proxy_if_needed(mut model: Model, api_key: &str, proxy_url: Option<
         && !model.base_url.is_empty()
         && should_use_proxy_for_provider(&model.provider, api_key)
     {
-        model.base_url = format!(
-            "{proxy}/?url={}",
-            utf8_percent_encode(&model.base_url, COMPONENT_ENCODING)
-        );
+        model.base_url = format!("{proxy}/?url={}", encode_uri_component(&model.base_url));
     }
     model
 }
@@ -95,4 +92,9 @@ pub fn create_stream_fn(get_proxy_url: GetProxyUrl) -> StreamFn {
             maestro_models::stream_simple(model, context, Some(options))
         })
     })
+}
+
+/// Encode the authored UTF-8 target as a URI component.
+pub(crate) fn encode_uri_component(text: &str) -> String {
+    utf8_percent_encode(text, COMPONENT_ENCODING).to_string()
 }

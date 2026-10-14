@@ -11,3 +11,6 @@ pub mod utils;
 
 /// Browser conversation records.
 pub mod components;
+
+/// Executable browser tools.
+pub mod tools;

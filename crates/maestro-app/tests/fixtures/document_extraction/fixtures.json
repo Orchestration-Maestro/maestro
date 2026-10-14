@@ -1,0 +1,3464 @@
+{
+  "metadata": {
+    "label": "Extract Document",
+    "name": "extract_document",
+    "description": "# Extract Document\n\nExtract plain text from documents on the web (PDF, DOCX, XLSX, PPTX).\n\n## When to Use\nUser wants you to read a document at a URL.\n\n## Input\n- { url: \"https://example.com/document.pdf\" } - URL to PDF, DOCX, XLSX, or PPTX\n\n## Returns\nStructured plain text with page/sheet/slide delimiters.",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"
+        }
+      }
+    },
+    "proxyInitiallyAbsent": true,
+    "factoriesAreDistinct": true,
+    "defaultIsPreconstructed": true,
+    "defaultIsShared": true,
+    "factorySettingsIndependent": true,
+    "defaultRetainsMutableRegistrationAlias": true
+  },
+  "cases": [
+    {
+      "name": "already_aborted_wins_invalid_url",
+      "input": {
+        "url": "not a URL",
+        "preAborted": true
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Extract document aborted"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "empty",
+      "input": {
+        "url": ""
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "URL is required"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "ascii_blank",
+      "input": {
+        "url": " \t\r\n "
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "URL is required"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "feff_blank",
+      "input": {
+        "url": "﻿"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "URL is required"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "invalid_relative",
+      "input": {
+        "url": "report.txt"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Invalid URL: report.txt"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "invalid_url",
+      "input": {
+        "url": "https://"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Invalid URL: https://"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "nel_not_trimmed",
+      "input": {
+        "url": "https://example.test/report.txt"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Invalid URL: https://example.test/report.txt"
+        },
+        "requests": [],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "trimmed_feFF",
+      "input": {
+        "url": " \t﻿https://example.test/report.txt﻿\r "
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "query",
+      "input": {
+        "url": "https://example.test/report.txt?x=1"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt?x=1",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "percent_name",
+      "input": {
+        "url": "https://example.test/a%20b.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "a%20b.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/a%20b.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "a%20b.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode_name",
+      "input": {
+        "url": "https://example.test/résumé.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "résumé.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/résumé.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "résumé.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "trailing_slash",
+      "input": {
+        "url": "https://example.test/"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "document",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "document",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "question_basename",
+      "input": {
+        "url": "https://example.test/?download=1"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "document",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/?download=1",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "document",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "fragment_name",
+      "input": {
+        "url": "https://example.test/report.txt#page=2"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt#page=2",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "query_slash",
+      "input": {
+        "url": "https://example.test/report.txt?redirect=https://other.test/part"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt?redirect=https://other.test/part",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_pdf",
+      "input": {
+        "url": "https://arxiv.org/pdf/1234.5678"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678.pdf",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://arxiv.org/pdf/1234.5678",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678.pdf",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_existing_suffix",
+      "input": {
+        "url": "https://arxiv.org/pdf/1234.5678.pdf"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678.pdf.pdf",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://arxiv.org/pdf/1234.5678.pdf",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678.pdf.pdf",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_http",
+      "input": {
+        "url": "http://arxiv.org/pdf/1234.5678"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "http://arxiv.org/pdf/1234.5678",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_other_host",
+      "input": {
+        "url": "https://arxiv.org.evil.test/pdf/1234.5678"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://arxiv.org.evil.test/pdf/1234.5678",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_uppercase_host",
+      "input": {
+        "url": "https://ARXIV.ORG/pdf/1234.5678"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://ARXIV.ORG/pdf/1234.5678",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "arxiv_abs",
+      "input": {
+        "url": "https://arxiv.org/abs/1234.5678"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "1234.5678.pdf",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://arxiv.org/abs/1234.5678",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "1234.5678.pdf",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "opaque_data",
+      "input": {
+        "url": "data:text/plain,hello"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "plain,hello",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "data:text/plain,hello",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "plain,hello",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "file_url",
+      "input": {
+        "url": "file:///tmp/report.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "file:///tmp/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "ftp_url",
+      "input": {
+        "url": "ftp://example.test/report.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "ftp://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "raw_tab_url",
+      "input": {
+        "url": "https://example.test/re\tport.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "re\tport.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/re\tport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "re\tport.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "http_199",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 199,
+          "statusText": "Denied by fixture",
+          "contentLength": "999999999",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to download the document (199 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "http_300",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 300,
+          "statusText": "Denied by fixture",
+          "contentLength": "999999999",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to download the document (300 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "http_403",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 403,
+          "statusText": "Denied by fixture",
+          "contentLength": "999999999",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to download the document (403 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "http_500",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 500,
+          "statusText": "Denied by fixture",
+          "contentLength": "999999999",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to download the document (500 Denied by fixture). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "http_empty_reason",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 404,
+          "statusText": "",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to download the document (404 ). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "http_success_200",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 200,
+          "bodySize": 0
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 0
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "http_success_204",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 204,
+          "bodySize": 0
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 0
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "http_success_299",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 299,
+          "bodySize": 0
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 0
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_absent",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {}
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_empty",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": ""
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_zero",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "0"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_below",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "52428799"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_at",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "52428800"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_fraction_at",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "52428800.9"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_exponent",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "6e7"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_hex",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "0x4000000"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_negative",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "-999999999"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_malformed",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "unknown"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_sign_only",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "+"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_feff_small",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "﻿ +42 bytes"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_nel_large",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "52428801"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "header_over",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "52428801",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document is too large (50.0MB). Maximum supported size is 50MB."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "header_positive_prefix",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": " +52428801 bytes",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document is too large (50.0MB). Maximum supported size is 50MB."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "header_feff_over",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "﻿52428801",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document is too large (50.0MB). Maximum supported size is 50MB."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "header_larger",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "contentLength": "62914560",
+          "bodyError": "body must not be read"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document is too large (60.0MB). Maximum supported size is 50MB."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "body_0",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodySize": 0,
+          "contentLength": "1"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 0
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "body_52428799",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodySize": 52428799,
+          "contentLength": "1"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 52428799
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 52428799
+          }
+        ]
+      }
+    },
+    {
+      "name": "body_52428800",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodySize": 52428800,
+          "contentLength": "1"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 52428800
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 52428800
+          }
+        ]
+      }
+    },
+    {
+      "name": "body_52428801",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodySize": 52428801,
+          "contentLength": "1"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document is too large (50.0MB). Maximum supported size is 50MB."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "body_read_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodyError": "body stream lost"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "body stream lost"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "body_error_wins_downloaded_size",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodySize": 52428801,
+          "bodyError": "body stream lost"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "body stream lost"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_type_fetch_without_proxy",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_type_fetch_proxy_succeeds",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?target="
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?target=https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "direct_network_without_proxy",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "NetworkError",
+          "message": "offline"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_network_proxy_succeeds",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "NetworkError",
+          "message": "offline"
+        },
+        "proxy": "https://proxy.test/?target="
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?target=https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "direct_cors_message_without_proxy",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "Blocked by CORS"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_cors_message_proxy_succeeds",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "Blocked by CORS"
+        },
+        "proxy": "https://proxy.test/?target="
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?target=https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "direct_cross_origin_without_proxy",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "cross-origin denied"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_cross_origin_proxy_succeeds",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "cross-origin denied"
+        },
+        "proxy": "https://proxy.test/?target="
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?target=https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "direct_ordinary_no_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "socket closed"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "socket closed"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_generic_fetch_no_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "Error",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Failed to fetch"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_abort_no_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "AbortError",
+          "message": "download cancelled"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "error": {
+          "name": "AbortError",
+          "message": "download cancelled"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "direct_timeout_no_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TimeoutError",
+          "message": "download timed out"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "error": {
+          "name": "TimeoutError",
+          "message": "download timed out"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "empty_proxy",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": ""
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "proxy_connection_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?",
+        "proxyError": {
+          "name": "Error",
+          "message": "proxy socket closed"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: proxy socket closed\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "proxy_status_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?",
+        "proxyResponse": {
+          "status": 503,
+          "statusText": "Unavailable"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: TELL USER: Unable to download the document (503 Unavailable). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "proxy_header_size_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?",
+        "proxyResponse": {
+          "contentLength": "52428801"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "proxy_body_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?",
+        "proxyResponse": {
+          "bodyError": "proxy body lost"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: proxy body lost\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "proxy_download_size_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?",
+        "proxyResponse": {
+          "bodySize": 52428801
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Document is too large (50.0MB). Maximum supported size is 50MB.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "current_setting_on_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://old.test/?",
+        "proxyChangedInFetch": "https://new.test/?"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://new.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "ascii_unicode_component_encoding",
+      "input": {
+        "url": "https://example.test/é😀-_.!~*'()?a=one two&b=%20#frag",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "é😀-_.!~*'()",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/é😀-_.!~*'()?a=one two&b=%20#frag",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2F%C3%A9%F0%9F%98%80-_.!~*'()%3Fa%3Done%20two%26b%3D%2520%23frag",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "é😀-_.!~*'()",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "proxy_unused_on_success",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "body_cors_retries",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodyError": "body CORS failure"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct",
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "body_ordinary_no_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "bodyError": "body stream lost"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "body stream lost"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "status_message_cors_retries",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "response": {
+          "status": 403,
+          "statusText": "CORS blocked"
+        },
+        "proxy": "https://proxy.test/?"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Freport.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "current_setting_cleared_on_failure",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "directError": {
+          "name": "TypeError",
+          "message": "Failed to fetch"
+        },
+        "proxy": "https://old.test/?",
+        "proxyChangedInFetch": ""
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions (the server blocks requests from browser extensions).\n\nTo fix this, you need to configure a CORS proxy in Maestro settings:\n1. Open Maestro settings\n2. Find \"CORS Proxy URL\" setting\n3. Enter a proxy URL like: https://corsproxy.io/?\n4. Save and try again\n\nAlternatively, download the file manually and attach it to your message using the attachment button (paperclip icon)."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "format_pdf",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "application/pdf"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "pdf",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "format_word",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "docx",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "format_xlsx",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "xlsx",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "format_xls",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "application/vnd.ms-excel"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "xlsx",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "format_slides",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "pptx",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "format_text",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "mimeType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "seam text"
+            }
+          ],
+          "details": {
+            "extractedText": "seam text",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "text_absent",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "extractedText": null
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document format not supported. Supported formats:\n- PDF (.pdf)\n- Word (.docx)\n- Excel (.xlsx, .xls)\n- PowerPoint (.pptx)"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "text_empty",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "extractedText": ""
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document format not supported. Supported formats:\n- PDF (.pdf)\n- Word (.docx)\n- Excel (.xlsx, .xls)\n- PowerPoint (.pptx)"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "text_whitespace",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "extractedText": " \n\t"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": " \n\t"
+            }
+          ],
+          "details": {
+            "extractedText": " \n\t",
+            "format": "unknown",
+            "fileName": "report.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "loader_failure_outside_retry",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "proxy": "https://proxy.test/?",
+        "loadError": "parser CORS failure"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "parser CORS failure"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "details_use_attachment_values",
+      "input": {
+        "url": "https://example.test/report.txt",
+        "attachment": {
+          "extractedText": "line one\n\nline two",
+          "fileName": "loader-selected.docx",
+          "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "size": 123
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "line one\n\nline two"
+            }
+          ],
+          "details": {
+            "extractedText": "line one\n\nline two",
+            "format": "docx",
+            "fileName": "loader-selected.docx",
+            "size": 123
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/report.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "report.txt",
+            "size": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "real_text",
+      "input": {
+        "url": "https://example.test/note.txt",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "résumé\nplain text",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "résumé\nplain text"
+            }
+          ],
+          "details": {
+            "extractedText": "résumé\nplain text",
+            "format": "unknown",
+            "fileName": "note.txt",
+            "size": 19
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_bom_text",
+      "input": {
+        "url": "https://example.test/note.txt",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "﻿clean text",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "clean text"
+            }
+          ],
+          "details": {
+            "extractedText": "clean text",
+            "format": "unknown",
+            "fileName": "note.txt",
+            "size": 13
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_empty",
+      "input": {
+        "url": "https://example.test/note.txt",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Document format not supported. Supported formats:\n- PDF (.pdf)\n- Word (.docx)\n- Excel (.xlsx, .xls)\n- PowerPoint (.pptx)"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_unknown",
+      "input": {
+        "url": "https://example.test/file.bin",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "text bytes",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Unsupported file type: application/octet-stream"
+        },
+        "requests": [
+          {
+            "url": "https://example.test/file.bin",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_query",
+      "input": {
+        "url": "https://example.test/note.txt?download=1",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "query text",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "query text"
+            }
+          ],
+          "details": {
+            "extractedText": "query text",
+            "format": "unknown",
+            "fileName": "note.txt",
+            "size": 10
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt?download=1",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_fragment_defect",
+      "input": {
+        "url": "https://example.test/note.txt#section",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "fragment text",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "fragment text"
+            }
+          ],
+          "details": {
+            "extractedText": "fragment text",
+            "format": "unknown",
+            "fileName": "note.txt",
+            "size": 13
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt#section",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "real_query_slash_defect",
+      "input": {
+        "url": "https://example.test/note.txt?redirect=https://other.test/file.bin",
+        "realAttachment": true,
+        "response": {
+          "bodyText": "query text",
+          "contentType": "text/plain"
+        }
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "query text"
+            }
+          ],
+          "details": {
+            "extractedText": "query text",
+            "format": "unknown",
+            "fileName": "note.txt",
+            "size": 10
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/note.txt?redirect=https://other.test/file.bin",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ]
+      }
+    },
+    {
+      "name": "cancel_pending_headers",
+      "input": {
+        "phase": "headers",
+        "url": "https://example.test/pending.txt"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Request was aborted."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/pending.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [],
+        "loads": []
+      }
+    },
+    {
+      "name": "cancel_pending_body",
+      "input": {
+        "phase": "body",
+        "url": "https://example.test/pending.txt"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "Request was aborted."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/pending.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "cancel_pending_proxy_body",
+      "input": {
+        "phase": "proxy_body",
+        "url": "https://example.test/pending.txt"
+      },
+      "expected": {
+        "error": {
+          "name": "Error",
+          "message": "TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: Request was aborted.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
+        },
+        "requests": [
+          {
+            "url": "https://example.test/pending.txt",
+            "signalSame": true
+          },
+          {
+            "url": "https://proxy.test/?https%3A%2F%2Fexample.test%2Fpending.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "proxy"
+        ],
+        "loads": []
+      }
+    },
+    {
+      "name": "cancel_during_attachment_is_not_rechecked",
+      "input": {
+        "phase": "attachment",
+        "url": "https://example.test/loading.txt"
+      },
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "completed load"
+            }
+          ],
+          "details": {
+            "extractedText": "completed load",
+            "format": "unknown",
+            "fileName": "loading.txt",
+            "size": 17
+          }
+        },
+        "requests": [
+          {
+            "url": "https://example.test/loading.txt",
+            "signalSame": true
+          }
+        ],
+        "bodyReads": [
+          "direct"
+        ],
+        "loads": [
+          {
+            "fileName": "loading.txt",
+            "size": 17
+          }
+        ]
+      }
+    }
+  ]
+}

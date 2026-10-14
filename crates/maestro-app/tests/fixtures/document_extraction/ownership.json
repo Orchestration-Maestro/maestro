@@ -1,0 +1,28 @@
+{
+  "proxyReadAfterConstructionBindingDropped": true,
+  "requests": [
+    {
+      "url": "https://example.test/retained.txt"
+    },
+    {
+      "url": "https://retained.test/?https%3A%2F%2Fexample.test%2Fretained.txt"
+    }
+  ],
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "seam text"
+      }
+    ],
+    "details": {
+      "extractedText": "seam text",
+      "format": "unknown",
+      "fileName": "retained.txt",
+      "size": 17
+    }
+  },
+  "metadata": {
+    "sizeIsSeamOnly": true
+  }
+}
