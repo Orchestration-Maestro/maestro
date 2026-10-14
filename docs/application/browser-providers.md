@@ -11,7 +11,10 @@ application operation for callers that manage provider settings.
 and for anthropic credentials beginning with `sk-ant-oat` or `{`.
 Provider names are case-insensitive, without trimming; other providers connect
 directly. `is_cors_error` classifies likely CORS failures from transport or SDK
-diagnostics. It is not proof that a browser security policy caused a failure.
+diagnostics. The default transport recovers browser exception names from the
+retained client error text, preserving the full message; ordinary connection
+failures remain named `FetchError`. Classification is not proof that a browser
+security policy caused a failure.
 
 `apply_proxy_if_needed` changes only the model base URL when proxying is needed
 and both URLs are nonempty. It appends `/?url=` and a URI-component-encoded
