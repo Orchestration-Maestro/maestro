@@ -800,7 +800,7 @@ s.recv(1)
 #[test]
 fn capture_overflow_drops_inherited_stdin() {
     use std::io::Write;
-    paused_runtime().block_on(async {
+    runtime().block_on(async {
         let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let script = format!(
             "{}\nos.write(1, b'overflow')\nos.close(1); os.close(2)\ns.recv(1)\ns.sendall(b'done')",
