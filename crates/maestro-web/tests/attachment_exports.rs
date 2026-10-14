@@ -86,3 +86,25 @@ fn web_local_attachment_loading_does_not_fetch() {
     };
     assert_eq!(loaded.extracted_text.as_deref(), Some("hi"));
 }
+
+#[test]
+fn web_pdf_loading_uses_application_owner() {
+    let bytes = include_bytes!("../../maestro-app/tests/fixtures/pdf/synthetic-wide.pdf");
+    let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
+    let mut future = std::pin::pin!(load_attachment(
+        AttachmentSource::Buffer(bytes),
+        Some("page.pdf"),
+        &fetch
+    ));
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    let std::task::Poll::Ready(Ok(loaded)) =
+        std::future::Future::poll(future.as_mut(), &mut context)
+    else {
+        panic!("local load did not complete");
+    };
+    assert_eq!(
+        loaded.extracted_text.as_deref(),
+        Some("<pdf filename=\"page.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>")
+    );
+    assert!(loaded.preview.is_some_and(|preview| !preview.is_empty()));
+}

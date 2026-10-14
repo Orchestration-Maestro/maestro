@@ -1,0 +1,371 @@
+[
+  {
+    "input": {
+      "source": "file",
+      "name": "a.PDF",
+      "mime": "image/png"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.PDF",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.PDF\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.PDF_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.pdf",
+      "mime": "text/plain"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.pptx",
+      "mime": "application/pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.pptx",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.pptx\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.pptx_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.docx",
+      "mime": "application/pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.docx",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.docx\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.docx_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.xlsx",
+      "mime": "application/pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.xlsx",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.xlsx\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.xlsx_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "blob",
+      "mime": "application/pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "unnamed",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"unnamed\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "unnamed_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "buffer",
+      "override": "chosen.pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "chosen.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"chosen.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "chosen.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "original.pdf",
+      "mime": "",
+      "override": "renamed.PDF"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "renamed.PDF",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"renamed.PDF\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "renamed.PDF_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "original.pdf",
+      "mime": "",
+      "override": ""
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "original.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"original.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "original.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "buffer",
+      "override": "a\"&<.pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a\"&<.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a\"&<.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a\"&<.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "url",
+      "url": "https://example.test/a.PDF",
+      "mime": ""
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.PDF",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.PDF\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.PDF_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "url",
+      "url": "https://example.test/a.bin",
+      "mime": "application/pdf",
+      "override": "chosen.pdf"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "chosen.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"chosen.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "chosen.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.bin",
+      "mime": "APPLICATION/PDF"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.bin",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.bin\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.bin_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.bin",
+      "mime": "application/pdf; charset=binary"
+    },
+    "expected": {
+      "branch": "error",
+      "message": "Error: Unsupported file type: application/pdf; charset=binary"
+    }
+  },
+  {
+    "input": {
+      "source": "url",
+      "url": "https://example.test/a.bin",
+      "mime": "APPLICATION/PDF"
+    },
+    "expected": {
+      "branch": "error",
+      "message": "Error: Unsupported file type: APPLICATION/PDF"
+    }
+  },
+  {
+    "input": {
+      "source": "url",
+      "url": "https://example.test/a.bin",
+      "mime": "application/pdf; charset=binary"
+    },
+    "expected": {
+      "branch": "error",
+      "message": "Error: Unsupported file type: application/pdf; charset=binary"
+    }
+  },
+  {
+    "input": {
+      "source": "file",
+      "name": "a.pdf",
+      "mime": "application/pdf; charset=binary"
+    },
+    "expected": {
+      "branch": "success",
+      "attachment": {
+        "type": "document",
+        "fileName": "a.pdf",
+        "mimeType": "application/pdf",
+        "size": 576,
+        "content": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9Db3VudCAxIC9LaWRzIFszIDAgUl0gPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAyMDAgMTAwXSAvUm90YXRlIDAgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+IC9Db250ZW50cyA0IDAgUiA+PgplbmRvYmoKNCAwIG9iago8PCAvTGVuZ3RoIDYzID4+CnN0cmVhbQpxIDEgMCAwIHJnIDAgMCAyMCAyMCByZSBmIFEgQlQgL0YxIDEyIFRmIDUgMzAgVGQgKFBhZ2UgQSkgVGogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAzMDAgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA1IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MTMKJSVFT0YK",
+        "extractedText": "<pdf filename=\"a.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>",
+        "id": "a.pdf_<generated>"
+      },
+      "preview": {
+        "width": 160,
+        "height": 80,
+        "file": "synthetic-wide.pdf.png"
+      }
+    }
+  }
+]

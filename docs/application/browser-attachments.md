@@ -24,9 +24,26 @@ a suffix-only text match uses `text/plain`.
 PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
 PowerPoint recognition uses the exact presentation MIME or a case-insensitive
 `.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
-precedes spreadsheet recognition. PDF, Word and spreadsheets still return
+precedes spreadsheet recognition. Word and spreadsheets still return
 `AttachmentError::Unsupported`. Transport/body errors retain the original
 `FetchError`, while rejected response status has its own `HttpStatus` variant.
+
+PDF recognition uses exact `application/pdf` or a case-insensitive `.pdf` suffix,
+selecting canonical `application/pdf`. PDF documents retain original bytes/name/size.
+Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
+`<pdf filename="NAME">` and final `\n</pdf>` wrapper. Native Unicode runs are
+filtered by the shared whitespace policy without trimming retained text, then
+joined with one space. Page order, duplicate runs and empty page wrappers remain.
+
+The optional preview is standard padded base64 PNG from page one, fit to 160
+pixels with truncating target dimensions, opaque white background and upscaling
+for small pages. Unrepresentable targets or PNG encoding failures omit the preview
+without losing extracted text. Opening failures return `AttachmentError::Pdf`,
+displaying `Failed to process PDF: ` followed by the native diagnostic; this native
+error has no `Error::source`. Exhaustive SDK matches must handle this variant.
+The [approved PDF engine](../libraries/document-formats.md#pdf-processing) owns
+text segmentation, Type3 text, bidirectional ordering, font rasterization and
+page-box precision. Documents, caches and pixels are scoped to the operation.
 
 Presentation documents retain the original bytes/name/size, use the canonical
 presentation MIME and have extracted text without a preview. The
