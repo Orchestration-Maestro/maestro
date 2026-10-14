@@ -1,0 +1,1001 @@
+[
+  {
+    "test": "package_opens_stored_and_deflated_entries",
+    "input": {
+      "file": "packages/01.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_opens_stored_and_deflated_entries",
+    "input": {
+      "file": "packages/02.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_uses_first_root_target_or_default",
+    "input": {
+      "file": "packages/03.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "one",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "custom/main.xml",
+          "targetMode": null
+        },
+        {
+          "id": "two",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "custom/main.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "custom/main.xml"
+    }
+  },
+  {
+    "test": "document_uses_first_root_target_or_default",
+    "input": {
+      "file": "packages/04.docx"
+    },
+    "expected": {
+      "rels": [],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_missing_parts_and_unknown_types_are_tolerated",
+    "input": {
+      "file": "packages/05.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "missing",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+              "target": "missing.xml",
+              "targetMode": null
+            },
+            {
+              "id": "unknown",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/unrecognised",
+              "target": "bad.xml",
+              "targetMode": null
+            },
+            {
+              "id": "effects",
+              "type": "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects",
+              "target": "bad.xml",
+              "targetMode": null
+            },
+            {
+              "id": "web",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings",
+              "target": "bad.xml",
+              "targetMode": null
+            },
+            {
+              "id": "external",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+              "target": "https://example.org",
+              "targetMode": "External"
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_missing_parts_and_unknown_types_are_tolerated",
+    "input": {
+      "file": "packages/06.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [],
+      "document_path": null
+    }
+  },
+  {
+    "test": "document_missing_root_relationships_use_default_parts",
+    "input": {
+      "file": "packages/07.docx"
+    },
+    "expected": {
+      "rels": null,
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_missing_root_relationships_use_default_parts",
+    "input": {
+      "file": "packages/08.docx"
+    },
+    "expected": {
+      "rels": null,
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_loads_all_supported_parts_before_returning",
+    "input": {
+      "file": "packages/09.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        },
+        {
+          "id": "ext",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties",
+          "target": "alternate/app.xml",
+          "targetMode": null
+        },
+        {
+          "id": "core",
+          "type": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties",
+          "target": "alternate/core.xml",
+          "targetMode": null
+        },
+        {
+          "id": "custom",
+          "type": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/custom-properties",
+          "target": "alternate/custom.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "r0",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+              "target": "styles.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r1",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering",
+              "target": "numbering.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r2",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable",
+              "target": "fontTable.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r3",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme",
+              "target": "theme.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r4",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "header.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r5",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer",
+              "target": "footer.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r6",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes",
+              "target": "footnotes.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r7",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes",
+              "target": "endnotes.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r8",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings",
+              "target": "settings.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r9",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments",
+              "target": "comments.xml",
+              "targetMode": null
+            },
+            {
+              "id": "r10",
+              "type": "http://schemas.microsoft.com/office/2011/relationships/commentsExtended",
+              "target": "commentsExtended.xml",
+              "targetMode": null
+            }
+          ]
+        },
+        {
+          "path": "alternate/app.xml",
+          "kind": "ExtendedPropsPart",
+          "rels": null
+        },
+        {
+          "path": "alternate/core.xml",
+          "kind": "CorePropsPart",
+          "rels": null
+        },
+        {
+          "path": "alternate/custom.xml",
+          "kind": "CustomPropsPart",
+          "rels": null
+        },
+        {
+          "path": "word/styles.xml",
+          "kind": "StylesPart",
+          "rels": null
+        },
+        {
+          "path": "word/numbering.xml",
+          "kind": "NumberingPart",
+          "rels": null
+        },
+        {
+          "path": "word/fontTable.xml",
+          "kind": "FontTablePart",
+          "rels": null
+        },
+        {
+          "path": "word/theme.xml",
+          "kind": "ThemePart",
+          "rels": null
+        },
+        {
+          "path": "word/header.xml",
+          "kind": "HeaderPart",
+          "rels": null
+        },
+        {
+          "path": "word/footer.xml",
+          "kind": "FooterPart",
+          "rels": null
+        },
+        {
+          "path": "word/footnotes.xml",
+          "kind": "FootnotesPart",
+          "rels": null
+        },
+        {
+          "path": "word/endnotes.xml",
+          "kind": "EndnotesPart",
+          "rels": null
+        },
+        {
+          "path": "word/settings.xml",
+          "kind": "SettingsPart",
+          "rels": null
+        },
+        {
+          "path": "word/comments.xml",
+          "kind": "CommentsPart",
+          "rels": null
+        },
+        {
+          "path": "word/commentsExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_related_xml_errors_are_eager",
+    "input": {
+      "file": "packages/10.docx"
+    },
+    "expected": {
+      "error": "Xml",
+      "path": "word/comments.xml"
+    }
+  },
+  {
+    "test": "document_related_xml_errors_are_eager",
+    "input": {
+      "file": "packages/11.docx"
+    },
+    "expected": {
+      "error": "Xml",
+      "path": "alternate/custom.xml"
+    }
+  },
+  {
+    "test": "relationships_keep_order_duplicates_and_missing_attributes",
+    "input": {
+      "file": "packages/12.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "b",
+              "type": "unknown",
+              "target": "b",
+              "targetMode": null
+            },
+            {
+              "id": "a",
+              "type": "unknown",
+              "target": "a",
+              "targetMode": null
+            },
+            {
+              "id": "b",
+              "type": "unknown",
+              "target": "b",
+              "targetMode": null
+            },
+            {
+              "id": null,
+              "type": null,
+              "target": null,
+              "targetMode": null
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_cycles_and_repeated_targets_share_one_part",
+    "input": {
+      "file": "packages/13.docx",
+      "lookup": [
+        "one",
+        "two",
+        "absent"
+      ]
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "one",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "header.xml",
+              "targetMode": null
+            },
+            {
+              "id": "two",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "header.xml",
+              "targetMode": null
+            }
+          ]
+        },
+        {
+          "path": "word/header.xml",
+          "kind": "HeaderPart",
+          "rels": [
+            {
+              "id": "back",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+              "target": "document.xml",
+              "targetMode": null
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml",
+      "lookup": [
+        "word/header.xml",
+        "word/header.xml",
+        null
+      ]
+    }
+  },
+  {
+    "test": "document_alias_keys_remain_distinct",
+    "input": {
+      "file": "packages/14.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "/word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "/word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "self",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+              "target": "/word/document.xml",
+              "targetMode": null
+            }
+          ]
+        },
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "self",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+              "target": "/word/document.xml",
+              "targetMode": null
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_lookup_prefers_slashes_then_backslashes",
+    "input": {
+      "file": "packages/15.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_lookup_prefers_slashes_then_backslashes",
+    "input": {
+      "file": "packages/16.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_resources_are_read_only_when_requested",
+    "input": {
+      "file": "packages/17.docx",
+      "resources": [
+        "img",
+        "imG",
+        "chunk",
+        "empty",
+        "missing",
+        "absent"
+      ]
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "img",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              "target": "media/image.bin",
+              "targetMode": null
+            },
+            {
+              "id": "img",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              "target": "media/decoy.bin",
+              "targetMode": null
+            },
+            {
+              "id": "chunk",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/aFChunk",
+              "target": "chunk.html",
+              "targetMode": null
+            },
+            {
+              "id": "empty",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              "target": "empty.bin",
+              "targetMode": null
+            },
+            {
+              "id": "missing",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              "target": "none.bin",
+              "targetMode": null
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml",
+      "resources": [
+        {
+          "id": "img",
+          "path": "word/media/image.bin",
+          "bytes": [
+            0,
+            128,
+            255,
+            3
+          ]
+        },
+        {
+          "id": "imG",
+          "path": null,
+          "bytes": null
+        },
+        {
+          "id": "chunk",
+          "path": "word/chunk.html",
+          "bytes": [
+            60,
+            112,
+            62,
+            108,
+            105,
+            116,
+            101,
+            114,
+            97,
+            108,
+            60,
+            47,
+            112,
+            62
+          ]
+        },
+        {
+          "id": "empty",
+          "path": "word/empty.bin",
+          "bytes": []
+        },
+        {
+          "id": "missing",
+          "path": "word/none.bin",
+          "bytes": null
+        },
+        {
+          "id": "absent",
+          "path": null,
+          "bytes": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "document_root_lookup_works_without_a_base_part",
+    "input": {
+      "file": "packages/18.docx",
+      "rootLookup": "root"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml",
+      "root_lookup": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_unknown_and_external_targets_are_not_fetched",
+    "input": {
+      "file": "packages/19.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "external",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles",
+              "target": "https://example.org/a.xml",
+              "targetMode": "External"
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_invalid_archive_reports_archive_failure",
+    "input": {
+      "file": "packages/20.docx"
+    },
+    "expected": {
+      "error": "Archive"
+    }
+  },
+  {
+    "test": "document_recursion_keeps_sibling_order_and_non_topological_edges",
+    "input": {
+      "file": "packages/21.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "b",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "b.xml",
+              "targetMode": null
+            },
+            {
+              "id": "a",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "a.xml",
+              "targetMode": null
+            }
+          ]
+        },
+        {
+          "path": "word/b.xml",
+          "kind": "HeaderPart",
+          "rels": [
+            {
+              "id": "c",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/header",
+              "target": "c.xml",
+              "targetMode": null
+            }
+          ]
+        },
+        {
+          "path": "word/a.xml",
+          "kind": "HeaderPart",
+          "rels": null
+        },
+        {
+          "path": "word/c.xml",
+          "kind": "HeaderPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_relationship_failure_precedes_part_xml_failure",
+    "input": {
+      "file": "packages/22.docx"
+    },
+    "expected": {
+      "error": "Xml",
+      "path": "word/_rels/document.xml.rels"
+    }
+  },
+  {
+    "test": "package_archive_names_are_sanitized_before_lookup",
+    "input": {
+      "file": "packages/23.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_xml_and_relationships_are_retained",
+    "input": {
+      "file": "packages/24.docx",
+      "raw": true
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": [
+            {
+              "id": "present",
+              "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image",
+              "target": "media/raw.bin",
+              "targetMode": null
+            }
+          ]
+        }
+      ],
+      "document_path": "word/document.xml",
+      "xml": "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>sample</w:t></w:r></w:p></w:body></w:document>"
+    }
+  },
+  {
+    "test": "package_archive_names_are_sanitized_before_lookup",
+    "input": {
+      "file": "packages/25.docx"
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_archive_names_are_sanitized_before_lookup",
+    "input": {
+      "file": "packages/26.docx"
+    },
+    "expected": {
+      "error": "Xml",
+      "path": "word/document.xml"
+    }
+  },
+  {
+    "test": "document_xml_and_relationships_are_retained",
+    "input": {
+      "file": "packages/27.docx",
+      "raw": true
+    },
+    "expected": {
+      "rels": [
+        {
+          "id": "root",
+          "type": "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+          "target": "word/document.xml",
+          "targetMode": null
+        }
+      ],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml",
+      "xml": "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>\ufffd</w:t></w:r></w:p></w:body></w:document>"
+    }
+  },
+  {
+    "test": "document_uses_first_root_target_or_default",
+    "input": {
+      "file": "packages/28.docx"
+    },
+    "expected": {
+      "rels": [],
+      "parts": [
+        {
+          "path": "word/document.xml",
+          "kind": "DocumentPart",
+          "rels": null
+        },
+        {
+          "path": "docProps/app.xml",
+          "kind": "ExtendedPropsPart",
+          "rels": null
+        },
+        {
+          "path": "docProps/core.xml",
+          "kind": "CorePropsPart",
+          "rels": null
+        },
+        {
+          "path": "docProps/custom.xml",
+          "kind": "CustomPropsPart",
+          "rels": null
+        }
+      ],
+      "document_path": "word/document.xml"
+    }
+  }
+]

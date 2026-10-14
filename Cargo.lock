@@ -2642,11 +2642,14 @@ dependencies = [
  "maestro-watch",
  "num-traits",
  "rand 0.10.3",
+ "roxmltree",
  "rustix",
  "ryu-js",
  "serde",
  "serde_json",
  "tokio",
+ "url",
+ "zip",
 ]
 
 [[package]]

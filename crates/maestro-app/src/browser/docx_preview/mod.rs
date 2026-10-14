@@ -1,0 +1,54 @@
+//! In-memory Word package reading and borrowed XML queries.
+mod document;
+pub use document::common::{LengthUsage, convert_boolean, convert_length};
+mod parser;
+pub use parser::xml_parser::{XmlAttribute, XmlElement, XmlParser, parse_xml_string};
+
+/// Failure opening an archive or one of its XML parts.
+#[derive(Debug)]
+pub enum DocxError {
+    /// Archive decoding or entry-read failure.
+    Archive(String),
+    /// XML admission failure with an optional package path.
+    Xml {
+        /// Failing package part, if known.
+        path: Option<String>,
+        /// Native parser diagnostic.
+        message: String,
+    },
+}
+impl std::fmt::Display for DocxError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Archive(message) => write!(f, "{message}"),
+            Self::Xml { path, message } => {
+                write!(f, "{}: {message}", path.as_deref().unwrap_or("XML"))
+            }
+        }
+    }
+}
+impl std::error::Error for DocxError {}
+mod common;
+#[cfg(test)]
+mod tests;
+mod utils;
+mod word_document;
+pub use common::{
+    part::{Part, PartKind},
+    relationship::Relationship,
+};
+pub use word_document::WordDocument;
+
+/// XML admission options for the package reader.
+#[derive(Clone, Copy)]
+pub struct Options {
+    /// Remove a leading XML declaration before parsing.
+    pub trim_xml_declaration: bool,
+}
+impl Default for Options {
+    fn default() -> Self {
+        Self {
+            trim_xml_declaration: true,
+        }
+    }
+}

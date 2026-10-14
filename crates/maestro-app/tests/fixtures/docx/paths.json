@@ -1,0 +1,305 @@
+[
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": ""
+    },
+    "expected": {
+      "split": [
+        "",
+        ""
+      ],
+      "normalized": ""
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "word/document.xml"
+    },
+    "expected": {
+      "split": [
+        "word/",
+        "document.xml"
+      ],
+      "normalized": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "word/"
+    },
+    "expected": {
+      "split": [
+        "word/",
+        ""
+      ],
+      "normalized": "word/"
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "document.xml"
+    },
+    "expected": {
+      "split": [
+        "",
+        "document.xml"
+      ],
+      "normalized": "document.xml"
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "/word/document.xml"
+    },
+    "expected": {
+      "split": [
+        "/word/",
+        "document.xml"
+      ],
+      "normalized": "word/document.xml"
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "a\\b.xml"
+    },
+    "expected": {
+      "split": [
+        "",
+        "a\\b.xml"
+      ],
+      "normalized": "a\\b.xml"
+    }
+  },
+  {
+    "test": "package_paths_split_and_remove_one_leading_slash",
+    "input": {
+      "value": "//a"
+    },
+    "expected": {
+      "split": [
+        "//",
+        "a"
+      ],
+      "normalized": "/a"
+    }
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "styles.xml",
+      "base": "word/"
+    },
+    "expected": "word/styles.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "../styles.xml",
+      "base": "word/"
+    },
+    "expected": "styles.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "../../x.xml",
+      "base": "word/sub/"
+    },
+    "expected": "x.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "/word/document.xml",
+      "base": ""
+    },
+    "expected": "word/document.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "./x/../styles.xml",
+      "base": "word/"
+    },
+    "expected": "word/styles.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "a b.xml",
+      "base": "word/"
+    },
+    "expected": "word/a%20b.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "%2e%2e/styles.xml",
+      "base": "word/"
+    },
+    "expected": "styles.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "a%20b.xml",
+      "base": "word/"
+    },
+    "expected": "word/a%20b.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "a%2Fb.xml",
+      "base": "word/"
+    },
+    "expected": "word/a%2Fb.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "a\\b.xml",
+      "base": "word/"
+    },
+    "expected": "word/a/b.xml"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "a.xml?x=1#y",
+      "base": "word/"
+    },
+    "expected": "word/a.xml?x=1#y"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "",
+      "base": "word/"
+    },
+    "expected": "word/"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "https://example.org/a",
+      "base": "word/"
+    },
+    "expected": "https://example.org/a"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "//elsewhere/a",
+      "base": "word/"
+    },
+    "expected": "http://elsewhere/a"
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "http://[",
+      "base": "word/"
+    },
+    "expected": "word/http://["
+  },
+  {
+    "test": "relationship_targets_use_url_resolution",
+    "input": {
+      "value": "../x.xml",
+      "base": "word/document.xml"
+    },
+    "expected": "x.xml"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "word/./document.xml"
+    },
+    "expected": "word/document.xml"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "word/a/../document.xml"
+    },
+    "expected": "word/document.xml"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "../word/document.xml"
+    },
+    "expected": "word/document.xml"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "../../x"
+    },
+    "expected": "x"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "/../x"
+    },
+    "expected": "x"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "/a/../../x"
+    },
+    "expected": "x"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "/a//b/"
+    },
+    "expected": "/a/b/"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "a\\\\b"
+    },
+    "expected": "a\\\\b"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "a///b"
+    },
+    "expected": "a/b"
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "a/.."
+    },
+    "expected": ""
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": "./"
+    },
+    "expected": ""
+  },
+  {
+    "test": "archive_names_apply_package_normalization",
+    "input": {
+      "value": ""
+    },
+    "expected": ""
+  }
+]
