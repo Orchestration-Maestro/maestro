@@ -27,6 +27,17 @@ safe.
 identities first appear, using each identity's last record. It is a method of
 `SessionManager`, not of the read-only view, and does not sort.
 
+## Shared construction
+
+`maestro_session::export_html::template::build_tree(entries, label, label_timestamp)`
+is also available through `maestro_app::export_html::template`. It borrows raw
+records and synchronously calls the supplied metadata selectors; no selectors
+are retained. The manager's `get_tree` uses this same constructor with its resolved
+label and timestamp maps. The offline reader supplies its own viewer-selected
+labels and no timestamps, without changing the manager's label-clearing policy.
+String identities use the ordering, occurrence and cycle rules above; records
+without string identities contribute no node.
+
 ## Labels
 
 `append_label_change(target, label)` appends a label record below the selected

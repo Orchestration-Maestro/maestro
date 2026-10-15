@@ -57,3 +57,7 @@ DOM custom properties come from that presentation; image bytes are not recolored
 Production installs no default font bundle. Native tests use test-only fallback
 fonts and do not qualify installed brand faces. See
 [browser libraries](../libraries/browser-frontend.md) for features and licences.
+
+Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`
+through both tile and overlay drawing. Platform failures remain `Host` errors;
+color admission uses the existing shared style owner, before content placement.

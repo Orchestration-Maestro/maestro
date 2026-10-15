@@ -60,6 +60,7 @@ pub use maestro_text::number_format::LocaleNumberFormat;
 pub use maestro_agent::ThinkingLevel;
 /// Shared with the terminal frontend.
 pub use maestro_json::compact_json;
+pub use maestro_text::decode_utf8;
 /// Shared with the terminal frontend.
 pub use maestro_text::truncate_utf16;
 /// Shared with the terminal frontend.

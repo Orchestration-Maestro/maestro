@@ -10,6 +10,8 @@ font bundle; native tests enable the dev-only egui default fonts.
 | egui | 0.36.2 | production defaults off; drawing, controls and color/image types; dev-only default_fonts | MIT |
 | usvg | 0.48.1 | defaults off; SVG parsing; roxmltree re-export | MIT |
 | resvg | 0.48.1 | defaults off; native rendering; tiny-skia re-export | MIT |
+| base64 | 0.23.1 | defaults off/std; offline export payload decoding | MIT |
+| url | 2.5.8 | default; form-urlencoded deep-link parsing | MIT |
 | indexmap | 2.14.2 | serde, default/std | MIT |
 | ryu-js | 1.0.3 | workspace number formatting | Apache-2.0 |
 | num-traits | 0.2.19 | workspace checked canvas-size conversion | MIT |
@@ -78,3 +80,8 @@ Apache-2.0) for UTC millisecond text, the text library's native collation featur
 (ICU collator 2.3.1 and locale core 2.3.0, Unicode-3.0), and js-sys 0.3.106
 (default/std, MIT) on browser targets for default-locale comparison. These are
 existing locked libraries, with no new runtime or storage adapter dependency.
+
+The [offline document reader](../browser/session-viewer.md) directly reuses the
+locked base64 and URL libraries already below the application. URL form decoding
+uses form_urlencoded 1.2.2 and percent-encoding 2.3.2; its existing IDNA/ICU closure
+adds no new package versions. Unicode data retains its Unicode-3.0 requirement.

@@ -486,3 +486,38 @@ fn reachable_tree_cycles_omit_only_active_path_back_edges() {
     assert_eq!(tree[0].entry["parentId"], "a");
     assert_eq!(manager.get_children("a").len(), 2);
 }
+
+#[test]
+fn forest_constructor_uses_each_callers_selected_metadata() {
+    use maestro_session::export_html::template::build_tree;
+    let scratch = Scratch::new();
+    let entries = [
+        record("t", None, "2025-01-01T00:00:00Z"),
+        label("l", "t", "t", "kept"),
+        label("c", "l", "t", ""),
+    ];
+    let file = history_file(&scratch, "policies.jsonl", &entries);
+    let manager = SessionManager::open(&file, None, None).unwrap();
+    let viewer = build_tree(
+        manager.get_entries(),
+        |id| (id == "t").then_some(&entries[1]["label"]),
+        |_| None,
+    );
+    let cleared = manager.get_tree();
+    assert_eq!(shape(&viewer[0]), shape(&cleared[0]));
+    assert_eq!(viewer[0].label, Some(&json!("kept")));
+    assert_eq!(viewer[0].label_timestamp, None);
+    assert_eq!(cleared[0].label, None);
+    assert_eq!(cleared[0].label_timestamp, None);
+    assert!(std::ptr::eq(
+        viewer[0].entry,
+        manager.get_entry("t").unwrap()
+    ));
+    let selected = build_tree(
+        manager.get_entries(),
+        |_| Some(&entries[1]["label"]),
+        |_| Some(&entries[1]["timestamp"]),
+    );
+    assert_eq!(selected[0].label_timestamp, Some(&entries[1]["timestamp"]));
+    assert!(std::ptr::eq(selected[0].entry, viewer[0].entry));
+}

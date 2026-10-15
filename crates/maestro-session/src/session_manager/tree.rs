@@ -6,7 +6,7 @@ use super::{
 };
 use maestro_request::presence::Presence;
 use serde_json::{Map, Value};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::io;
 
 /// Apply a label record to the resolved maps; a falsy or absent label clears its target.
@@ -77,13 +77,11 @@ impl ReadonlySessionManager for SessionManager {
             .collect()
     }
     fn get_tree(&self) -> Vec<SessionTreeNode<'_>> {
-        let shape = Shape::new(self);
-        let mut active = vec![false; shape.nodes.len()];
-        shape
-            .roots
-            .iter()
-            .filter_map(|&root| self.expand(&shape, root, &mut active))
-            .collect()
+        crate::export_html::template::build_tree(
+            self.get_entries(),
+            |id| self.labels.get(id),
+            |id| self.label_timestamps.get(id),
+        )
     }
     fn get_session_name(&self) -> io::Result<Option<&str>> {
         let newest = self
@@ -150,137 +148,4 @@ impl SessionManager {
         }
         Ok(id)
     }
-
-    /// Build the borrowed subtree at a root, omitting only edges back into the active path.
-    ///
-    /// `active` marks the nodes on the path being built and is all false again on return.
-    fn expand<'a>(
-        &'a self,
-        shape: &Shape<'a>,
-        root: usize,
-        active: &mut [bool],
-    ) -> Option<SessionTreeNode<'a>> {
-        active[root] = true;
-        let mut stack = vec![Frame {
-            node: root,
-            ..Frame::default()
-        }];
-        let mut finished = None;
-        while finished.is_none() {
-            let top = stack.last_mut()?;
-            let next = shape.children[top.node].get(top.next).copied();
-            top.next += usize::from(next.is_some());
-            finished = match next {
-                Some(child) if !active[child] => {
-                    active[child] = true;
-                    stack.push(Frame {
-                        node: child,
-                        ..Frame::default()
-                    });
-                    None
-                }
-                Some(_) => None,
-                None => self.close(shape, &mut stack, active),
-            };
-        }
-        finished
-    }
-
-    /// Finish the innermost node, handing it to its parent frame or returning the root.
-    fn close<'a>(
-        &'a self,
-        shape: &Shape<'a>,
-        stack: &mut Vec<Frame<'a>>,
-        active: &mut [bool],
-    ) -> Option<SessionTreeNode<'a>> {
-        let frame = stack.pop()?;
-        active[frame.node] = false;
-        let entry = shape.nodes[frame.node];
-        let id = entry["id"].as_str().unwrap_or_default();
-        let node = SessionTreeNode {
-            entry,
-            children: frame.built,
-            label: self.labels.get(id),
-            label_timestamp: self.label_timestamps.get(id),
-        };
-        match stack.last_mut() {
-            Some(parent) => {
-                parent.built.push(node);
-                None
-            }
-            None => Some(node),
-        }
-    }
-}
-
-/// Unique identities with their parent-to-child edges, one per retained record.
-struct Shape<'a> {
-    /// Last record per identity, in first-seen order.
-    nodes: Vec<&'a SessionEntry>,
-    /// Node positions without a usable parent, in record order.
-    roots: Vec<usize>,
-    /// Child node positions per node, in chronological order.
-    children: Vec<Vec<usize>>,
-}
-
-impl<'a> Shape<'a> {
-    /// Index identities, attach every record to its parent and order each child list by
-    /// parsed instant, with unparsable instants last and equal keys in record order.
-    fn new(manager: &'a SessionManager) -> Self {
-        let records = manager.get_entries();
-        let mut index: HashMap<&str, usize> = HashMap::new();
-        let mut nodes = Vec::new();
-        for id in records.iter().filter_map(|record| record["id"].as_str()) {
-            if let (None, Some(entry)) = (index.get(id), manager.get_entry(id)) {
-                index.insert(id, nodes.len());
-                nodes.push(entry);
-            }
-        }
-        let mut roots = Vec::new();
-        let mut children = vec![Vec::new(); nodes.len()];
-        for record in records {
-            let Some(id) = record["id"].as_str() else {
-                continue;
-            };
-            let Some(&node) = index.get(id) else { continue };
-            let parent = record["parentId"]
-                .as_str()
-                .filter(|parent| *parent != id)
-                .and_then(|parent| index.get(parent));
-            match parent {
-                Some(&parent) => children[parent].push(node),
-                None => roots.push(node),
-            }
-        }
-        let times: Vec<f64> = nodes
-            .iter()
-            .map(|entry| {
-                let instant = entry["timestamp"]
-                    .as_str()
-                    .map(crate::messages::timestamp_millis);
-                instant
-                    .filter(|time| !time.is_nan())
-                    .unwrap_or(f64::INFINITY)
-            })
-            .collect();
-        for list in &mut children {
-            list.sort_by(|&a, &b| times[a].total_cmp(&times[b]));
-        }
-        Self {
-            nodes,
-            roots,
-            children,
-        }
-    }
-}
-
-/// Progress through one node's children while its subtree is built.
-#[derive(Default)]
-struct Frame<'a> {
-    /// Node position being built.
-    node: usize,
-    /// Next child edge to visit.
-    next: usize,
-    /// Completed child subtrees.
-    built: Vec<SessionTreeNode<'a>>,
 }

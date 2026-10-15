@@ -1,10 +1,11 @@
-//! Browser-facing attachment previews, localization, formatting and SVG glyphs.
+//! Browser-facing attachments, offline session documents, localization and SVG glyphs.
 
 pub mod browser;
 pub mod components;
 pub mod dialogs;
 pub use components::attachment_tile::AttachmentTile;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
+pub mod export_html;
 pub mod icons;
 pub mod storage;
 #[cfg(target_arch = "wasm32")]

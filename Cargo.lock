@@ -3539,6 +3539,7 @@ dependencies = [
 name = "maestro-web"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
  "egui",
  "indexmap",
  "js-sys",
@@ -3550,6 +3551,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "url",
  "usvg",
  "wasm-bindgen",
  "wasm-bindgen-futures",

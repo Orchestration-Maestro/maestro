@@ -1,4 +1,6 @@
 //! Pure session-tree ordering and geometry.
+mod forest;
+pub use forest::build_tree;
 mod nodes;
 mod structure;
 use crate::session_manager::SessionTreeNode as InputNode;
