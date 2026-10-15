@@ -1183,6 +1183,20 @@ pub fn definitions() {
         |_: Empty, e: Definitions| {
             let manager = KeybindingsManager::new(KEYBINDINGS.clone(), vec![]);
             assert_eq!(e.definitions.len(), 3);
+            let session_actions: Vec<_> = manager
+                .get_resolved_bindings()
+                .into_iter()
+                .filter(|(id, _)| id.starts_with("app.session."))
+                .map(|(id, _)| id)
+                .collect();
+            assert_eq!(
+                session_actions,
+                [
+                    "app.session.toggleNamedFilter",
+                    "app.session.togglePath",
+                    "app.session.toggleSort",
+                ]
+            );
             for row in e.definitions {
                 assert_eq!(manager.get_keys(&row.id), row.keys);
                 assert_eq!(

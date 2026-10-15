@@ -3897,6 +3897,13 @@
     "expected": {
       "definitions": [
         {
+          "id": "app.session.toggleNamedFilter",
+          "keys": [
+            "ctrl+n"
+          ],
+          "description": "Toggle named session filter"
+        },
+        {
           "id": "app.session.togglePath",
           "keys": [
             "ctrl+p"
@@ -3909,13 +3916,6 @@
             "ctrl+s"
           ],
           "description": "Toggle session sort mode"
-        },
-        {
-          "id": "app.session.toggleNamedFilter",
-          "keys": [
-            "ctrl+n"
-          ],
-          "description": "Toggle named session filter"
         }
       ]
     }
