@@ -4,6 +4,9 @@ use super::{
     FilterMode, SessionTreeNode,
     structure::{FlatNode, Structure},
 };
+use maestro_app::export_html::template::{
+    ancestors, flatten_tree, read_message, recalculate_visual_structure,
+};
 use maestro_app::{SessionTreeNode as InputNode, is_truthy, is_whitespace_scalar};
 use maestro_theme::LiveTheme;
 use maestro_tui::tui::TuiRuntime;
@@ -87,7 +90,11 @@ impl TreeState {
             now: Rc::new(std::time::SystemTime::now),
             folded: HashSet::new(),
         };
-        list.active_path = Rc::new(list.ancestors(current_leaf_id).map(str::to_owned).collect());
+        list.active_path = Rc::new(
+            ancestors(&list.parents, current_leaf_id)
+                .map(str::to_owned)
+                .collect(),
+        );
         list.apply_filter()?;
         list.selected = list.nearest_visible(initial_selected_id.or(current_leaf_id));
         list.remember_selection();
@@ -111,23 +118,12 @@ impl TreeState {
             .enumerate()
             .filter_map(|(i, node)| node.entry().get("id")?.as_str().map(|id| (id, i)))
             .collect();
-        for id in self.ancestors(target) {
+        for id in ancestors(&self.parents, target) {
             if let Some(index) = indices.get(id) {
                 return *index;
             }
         }
         self.visible.len().saturating_sub(1)
-    }
-
-    /// Stored parent traversal is bounded by the retained identity count.
-    pub(super) fn ancestors<'a>(
-        &'a self,
-        target: Option<&'a str>,
-    ) -> impl Iterator<Item = &'a str> {
-        std::iter::successors(target, |id| {
-            self.parents.get(*id)?.entry()["parentId"].as_str()
-        })
-        .take(self.parents.len())
     }
 
     /// Rebuilds the view and keeps the last valid selection through empty views.
@@ -153,7 +149,8 @@ impl TreeState {
                 .is_none_or(|id| !hidden.contains(id))
         });
         self.visible = visible;
-        self.structure = self.project();
+        self.structure =
+            recalculate_visual_structure(&self.nodes, &self.visible, &self.physical, &self.parents);
         self.selected = self.nearest_visible(self.bookmark.as_deref());
         self.remember_selection();
         Ok(())
@@ -201,62 +198,6 @@ impl TreeState {
                 .map(str::to_owned);
         }
     }
-}
-
-/// Computes active subtree membership once, then walks stable active-first groups.
-fn flatten_tree<'tree, 'entry>(
-    tree: &'tree [InputNode<'entry>],
-    leaf: Option<&str>,
-) -> io::Result<Vec<&'tree InputNode<'entry>>> {
-    let mut preorder = Vec::new();
-    let mut pending: Vec<_> = tree.iter().collect();
-    while let Some(node) = pending.pop() {
-        preorder.push(node);
-        pending.extend(&node.children);
-    }
-    let mut active = HashMap::new();
-    for node in preorder.into_iter().rev() {
-        let contains = leaf.is_some_and(|id| node.entry["id"] == id)
-            || node
-                .children
-                .iter()
-                .any(|child| active[&std::ptr::from_ref(child)]);
-        active.insert(std::ptr::from_ref(node), contains);
-    }
-    push_ordered(tree, &active, &mut pending);
-    let mut ordered = Vec::new();
-    while let Some(node) = pending.pop() {
-        if node.entry["type"] == "message" {
-            read_message(node.entry)?;
-        }
-        ordered.push(node);
-        push_ordered(&node.children, &active, &mut pending);
-    }
-    Ok(ordered)
-}
-
-/// Pushes reversed inactive and active groups for active-first stack traversal.
-fn push_ordered<'tree, 'entry>(
-    nodes: &'tree [InputNode<'entry>],
-    active: &HashMap<*const InputNode<'entry>, bool>,
-    pending: &mut Vec<&'tree InputNode<'entry>>,
-) {
-    for group in [false, true] {
-        pending.extend(
-            nodes
-                .iter()
-                .rev()
-                .filter(|node| active[&std::ptr::from_ref(*node)] == group),
-        );
-    }
-}
-
-/// Reads the message receiver without eagerly decoding its fields.
-fn read_message(entry: &Value) -> io::Result<&Value> {
-    entry
-        .get("message")
-        .filter(|message| !message.is_null())
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "missing message receiver"))
 }
 
 /// Tests string and array content, stopping before unread later malformed text.

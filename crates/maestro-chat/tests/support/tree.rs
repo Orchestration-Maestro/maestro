@@ -18,7 +18,7 @@ pub struct Node {
     pub label_timestamp: Option<Value>,
 }
 /// Distinguishes an explicitly null label from an omitted label.
-fn present_value<'de, D: Deserializer<'de>>(decoder: D) -> Result<Option<Value>, D::Error> {
+pub fn present_value<'de, D: Deserializer<'de>>(decoder: D) -> Result<Option<Value>, D::Error> {
     Value::deserialize(decoder).map(Some)
 }
 /// Builds owned child containers iteratively over borrowed raw entries.

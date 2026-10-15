@@ -122,3 +122,4 @@ pub use browser::tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
 pub use browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
 };
+pub use maestro_session::export_html;
