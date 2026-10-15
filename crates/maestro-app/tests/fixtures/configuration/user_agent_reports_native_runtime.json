@@ -1,0 +1,98 @@
+[
+  {
+    "input": {
+      "platform": "linux",
+      "arch": "x64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (linux; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "linux",
+      "arch": "x64",
+      "version": ""
+    },
+    "expected": "maestro/ (linux; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "linux",
+      "arch": "arm64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (linux; rust; arm64)"
+  },
+  {
+    "input": {
+      "platform": "linux",
+      "arch": "arm64",
+      "version": ""
+    },
+    "expected": "maestro/ (linux; rust; arm64)"
+  },
+  {
+    "input": {
+      "platform": "darwin",
+      "arch": "x64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (darwin; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "darwin",
+      "arch": "x64",
+      "version": ""
+    },
+    "expected": "maestro/ (darwin; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (darwin; rust; arm64)"
+  },
+  {
+    "input": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "version": ""
+    },
+    "expected": "maestro/ (darwin; rust; arm64)"
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "arch": "x64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (win32; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "arch": "x64",
+      "version": ""
+    },
+    "expected": "maestro/ (win32; rust; x64)"
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "arch": "arm64",
+      "version": "1.2.3"
+    },
+    "expected": "maestro/1.2.3 (win32; rust; arm64)"
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "arch": "arm64",
+      "version": ""
+    },
+    "expected": "maestro/ (win32; rust; arm64)"
+  }
+]

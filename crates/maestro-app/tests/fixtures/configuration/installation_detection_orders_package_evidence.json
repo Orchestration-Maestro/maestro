@@ -1,0 +1,102 @@
+[
+  {
+    "input": {
+      "execPath": "/usr/node_modules/agent",
+      "layout": "standalone",
+      "moduleDir": "/$bunfs"
+    },
+    "expected": "bun-binary"
+  },
+  {
+    "input": {
+      "layout": "standalone",
+      "moduleDir": "/x/%7EBUN"
+    },
+    "expected": "bun-binary"
+  },
+  {
+    "input": {
+      "execPath": "C:\\Users\\Admin\\.pnpm\\agent\\dist\\cli.js",
+      "layout": "package"
+    },
+    "expected": "pnpm"
+  },
+  {
+    "input": {
+      "execPath": "/OPT/PNPM/global/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "pnpm"
+  },
+  {
+    "input": {
+      "execPath": "/opt/yarn/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "yarn"
+  },
+  {
+    "input": {
+      "execPath": "C:\\cache\\.yarn\\agent",
+      "layout": "package"
+    },
+    "expected": "yarn"
+  },
+  {
+    "input": {
+      "execPath": "/custom/install/global/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "bun"
+  },
+  {
+    "input": {
+      "execPath": "/opt/npm/lib/agent",
+      "layout": "package"
+    },
+    "expected": "npm"
+  },
+  {
+    "input": {
+      "execPath": "/custom/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "npm"
+  },
+  {
+    "input": {
+      "execPath": "/usr/local/bin/wrapper",
+      "layout": "package"
+    },
+    "expected": "unknown"
+  },
+  {
+    "input": {
+      "execPath": "/usr/pnpm-repository/yarn-tools/npm-tool",
+      "layout": "package"
+    },
+    "expected": "unknown"
+  },
+  {
+    "input": {
+      "moduleDir": "/root/.pnpm/agent/src",
+      "execPath": "/usr/bin/node",
+      "layout": "package"
+    },
+    "expected": "pnpm"
+  },
+  {
+    "input": {
+      "execPath": "/pnpm/yarn/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "pnpm"
+  },
+  {
+    "input": {
+      "execPath": "/yarn/install/global/node_modules/agent",
+      "layout": "package"
+    },
+    "expected": "yarn"
+  }
+]

@@ -1,0 +1,63 @@
+[
+  {
+    "input": {
+      "moduleDir": "/workspace/target/debug",
+      "execPath": "/workspace/target/debug/maestro",
+      "exists": [
+        "/workspace/Cargo.toml"
+      ],
+      "layout": "package"
+    },
+    "expected": "/workspace",
+    "observations": {
+      "exists": [
+        "/workspace/target/debug/package.json",
+        "/workspace/target/debug/Cargo.toml",
+        "/workspace/target/package.json",
+        "/workspace/target/Cargo.toml",
+        "/workspace/package.json",
+        "/workspace/Cargo.toml"
+      ]
+    }
+  },
+  {
+    "input": {
+      "moduleDir": "/workspace/target/debug",
+      "execPath": "/workspace/target/debug/maestro",
+      "exists": [
+        "/workspace/package.json",
+        "/workspace/Cargo.toml"
+      ],
+      "layout": "package"
+    },
+    "expected": "/workspace",
+    "observations": {
+      "exists": [
+        "/workspace/target/debug/package.json",
+        "/workspace/target/debug/Cargo.toml",
+        "/workspace/target/package.json",
+        "/workspace/target/Cargo.toml",
+        "/workspace/package.json"
+      ]
+    }
+  },
+  {
+    "input": {
+      "moduleDir": "/workspace/target/debug",
+      "execPath": "/workspace/target/debug/maestro",
+      "exists": [],
+      "layout": "package"
+    },
+    "expected": "/workspace/target/debug",
+    "observations": {
+      "exists": [
+        "/workspace/target/debug/package.json",
+        "/workspace/target/debug/Cargo.toml",
+        "/workspace/target/package.json",
+        "/workspace/target/Cargo.toml",
+        "/workspace/package.json",
+        "/workspace/Cargo.toml"
+      ]
+    }
+  }
+]

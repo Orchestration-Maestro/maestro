@@ -1,0 +1,247 @@
+[
+  {
+    "input": {
+      "exists": [
+        "/package/package.json",
+        "/package/src"
+      ],
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "/package",
+      "getThemesDir": "/package/src/modes/interactive/theme",
+      "getExportTemplateDir": "/package/src/core/export-html",
+      "getReadmePath": "/package/README.md",
+      "getDocsPath": "/package/docs",
+      "getExamplesPath": "/package/examples",
+      "getChangelogPath": "/package/CHANGELOG.md",
+      "getInteractiveAssetsDir": "/package/src/modes/interactive/assets",
+      "getAgentDir": "/home/sample/.maestro/agent",
+      "getCustomThemesDir": "/home/sample/.maestro/agent/themes",
+      "getModelsPath": "/home/sample/.maestro/agent/models.json",
+      "getAuthPath": "/home/sample/.maestro/agent/auth.json",
+      "getSettingsPath": "/home/sample/.maestro/agent/settings.json",
+      "getToolsDir": "/home/sample/.maestro/agent/tools",
+      "getBinDir": "/home/sample/.maestro/agent/bin",
+      "getPromptsDir": "/home/sample/.maestro/agent/prompts",
+      "getSessionsDir": "/home/sample/.maestro/agent/sessions",
+      "getDebugLogPath": "/home/sample/.maestro/agent/maestro-debug.log",
+      "getBundledInteractiveAssetPath": "/package/src/modes/interactive/assets/badge.png"
+    }
+  },
+  {
+    "input": {
+      "exists": [
+        "/package/package.json"
+      ],
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "/package",
+      "getThemesDir": "/package/dist/modes/interactive/theme",
+      "getExportTemplateDir": "/package/dist/core/export-html",
+      "getReadmePath": "/package/README.md",
+      "getDocsPath": "/package/docs",
+      "getExamplesPath": "/package/examples",
+      "getChangelogPath": "/package/CHANGELOG.md",
+      "getInteractiveAssetsDir": "/package/dist/modes/interactive/assets",
+      "getAgentDir": "/home/sample/.maestro/agent",
+      "getCustomThemesDir": "/home/sample/.maestro/agent/themes",
+      "getModelsPath": "/home/sample/.maestro/agent/models.json",
+      "getAuthPath": "/home/sample/.maestro/agent/auth.json",
+      "getSettingsPath": "/home/sample/.maestro/agent/settings.json",
+      "getToolsDir": "/home/sample/.maestro/agent/tools",
+      "getBinDir": "/home/sample/.maestro/agent/bin",
+      "getPromptsDir": "/home/sample/.maestro/agent/prompts",
+      "getSessionsDir": "/home/sample/.maestro/agent/sessions",
+      "getDebugLogPath": "/home/sample/.maestro/agent/maestro-debug.log",
+      "getBundledInteractiveAssetPath": "/package/dist/modes/interactive/assets/badge.png"
+    }
+  },
+  {
+    "input": {
+      "execPath": "/opt/bin/maestro",
+      "exists": [],
+      "layout": "standalone",
+      "moduleDir": "/$bunfs"
+    },
+    "expected": {
+      "getPackageDir": "/opt/bin",
+      "getThemesDir": "/opt/bin/theme",
+      "getExportTemplateDir": "/opt/bin/export-html",
+      "getReadmePath": "/opt/bin/README.md",
+      "getDocsPath": "/opt/bin/docs",
+      "getExamplesPath": "/opt/bin/examples",
+      "getChangelogPath": "/opt/bin/CHANGELOG.md",
+      "getInteractiveAssetsDir": "/opt/bin/assets",
+      "getAgentDir": "/home/sample/.maestro/agent",
+      "getCustomThemesDir": "/home/sample/.maestro/agent/themes",
+      "getModelsPath": "/home/sample/.maestro/agent/models.json",
+      "getAuthPath": "/home/sample/.maestro/agent/auth.json",
+      "getSettingsPath": "/home/sample/.maestro/agent/settings.json",
+      "getToolsDir": "/home/sample/.maestro/agent/tools",
+      "getBinDir": "/home/sample/.maestro/agent/bin",
+      "getPromptsDir": "/home/sample/.maestro/agent/prompts",
+      "getSessionsDir": "/home/sample/.maestro/agent/sessions",
+      "getDebugLogPath": "/home/sample/.maestro/agent/maestro-debug.log",
+      "getBundledInteractiveAssetPath": "/opt/bin/assets/badge.png"
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_CODING_AGENT_DIR": "./agent/../state",
+        "MAESTRO_PACKAGE_DIR": "./pkg/../assets"
+      },
+      "exists": [
+        "./pkg/../assets/src"
+      ],
+      "assetName": "../logo.png",
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "./pkg/../assets",
+      "getThemesDir": "assets/dist/modes/interactive/theme",
+      "getExportTemplateDir": "assets/dist/core/export-html",
+      "getReadmePath": "/work/assets/README.md",
+      "getDocsPath": "/work/assets/docs",
+      "getExamplesPath": "/work/assets/examples",
+      "getChangelogPath": "/work/assets/CHANGELOG.md",
+      "getInteractiveAssetsDir": "assets/dist/modes/interactive/assets",
+      "getAgentDir": "./agent/../state",
+      "getCustomThemesDir": "state/themes",
+      "getModelsPath": "state/models.json",
+      "getAuthPath": "state/auth.json",
+      "getSettingsPath": "state/settings.json",
+      "getToolsDir": "state/tools",
+      "getBinDir": "state/bin",
+      "getPromptsDir": "state/prompts",
+      "getSessionsDir": "state/sessions",
+      "getDebugLogPath": "state/maestro-debug.log",
+      "getBundledInteractiveAssetPath": "assets/dist/modes/interactive/logo.png"
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/missing"
+      },
+      "exists": [],
+      "assetName": "missing.png",
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "/missing",
+      "getThemesDir": "/missing/dist/modes/interactive/theme",
+      "getExportTemplateDir": "/missing/dist/core/export-html",
+      "getReadmePath": "/missing/README.md",
+      "getDocsPath": "/missing/docs",
+      "getExamplesPath": "/missing/examples",
+      "getChangelogPath": "/missing/CHANGELOG.md",
+      "getInteractiveAssetsDir": "/missing/dist/modes/interactive/assets",
+      "getAgentDir": "/home/sample/.maestro/agent",
+      "getCustomThemesDir": "/home/sample/.maestro/agent/themes",
+      "getModelsPath": "/home/sample/.maestro/agent/models.json",
+      "getAuthPath": "/home/sample/.maestro/agent/auth.json",
+      "getSettingsPath": "/home/sample/.maestro/agent/settings.json",
+      "getToolsDir": "/home/sample/.maestro/agent/tools",
+      "getBinDir": "/home/sample/.maestro/agent/bin",
+      "getPromptsDir": "/home/sample/.maestro/agent/prompts",
+      "getSessionsDir": "/home/sample/.maestro/agent/sessions",
+      "getDebugLogPath": "/home/sample/.maestro/agent/maestro-debug.log",
+      "getBundledInteractiveAssetPath": "/missing/dist/modes/interactive/assets/missing.png"
+    }
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "exists": [
+        "C:\\package\\package.json",
+        "C:\\package\\src"
+      ],
+      "execPath": "C:\\bin\\node.exe",
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "C:\\package",
+      "getThemesDir": "C:\\package\\src\\modes\\interactive\\theme",
+      "getExportTemplateDir": "C:\\package\\src\\core\\export-html",
+      "getReadmePath": "C:\\package\\README.md",
+      "getDocsPath": "C:\\package\\docs",
+      "getExamplesPath": "C:\\package\\examples",
+      "getChangelogPath": "C:\\package\\CHANGELOG.md",
+      "getInteractiveAssetsDir": "C:\\package\\src\\modes\\interactive\\assets",
+      "getAgentDir": "C:\\users\\sample\\.maestro\\agent",
+      "getCustomThemesDir": "C:\\users\\sample\\.maestro\\agent\\themes",
+      "getModelsPath": "C:\\users\\sample\\.maestro\\agent\\models.json",
+      "getAuthPath": "C:\\users\\sample\\.maestro\\agent\\auth.json",
+      "getSettingsPath": "C:\\users\\sample\\.maestro\\agent\\settings.json",
+      "getToolsDir": "C:\\users\\sample\\.maestro\\agent\\tools",
+      "getBinDir": "C:\\users\\sample\\.maestro\\agent\\bin",
+      "getPromptsDir": "C:\\users\\sample\\.maestro\\agent\\prompts",
+      "getSessionsDir": "C:\\users\\sample\\.maestro\\agent\\sessions",
+      "getDebugLogPath": "C:\\users\\sample\\.maestro\\agent\\maestro-debug.log",
+      "getBundledInteractiveAssetPath": "C:\\package\\src\\modes\\interactive\\assets\\badge.png"
+    }
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "execPath": "C:\\bin\\node.exe",
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": "C:\\package",
+      "getThemesDir": "C:\\package\\dist\\modes\\interactive\\theme",
+      "getExportTemplateDir": "C:\\package\\dist\\core\\export-html",
+      "getReadmePath": "C:\\package\\README.md",
+      "getDocsPath": "C:\\package\\docs",
+      "getExamplesPath": "C:\\package\\examples",
+      "getChangelogPath": "C:\\package\\CHANGELOG.md",
+      "getInteractiveAssetsDir": "C:\\package\\dist\\modes\\interactive\\assets",
+      "getAgentDir": "C:\\users\\sample\\.maestro\\agent",
+      "getCustomThemesDir": "C:\\users\\sample\\.maestro\\agent\\themes",
+      "getModelsPath": "C:\\users\\sample\\.maestro\\agent\\models.json",
+      "getAuthPath": "C:\\users\\sample\\.maestro\\agent\\auth.json",
+      "getSettingsPath": "C:\\users\\sample\\.maestro\\agent\\settings.json",
+      "getToolsDir": "C:\\users\\sample\\.maestro\\agent\\tools",
+      "getBinDir": "C:\\users\\sample\\.maestro\\agent\\bin",
+      "getPromptsDir": "C:\\users\\sample\\.maestro\\agent\\prompts",
+      "getSessionsDir": "C:\\users\\sample\\.maestro\\agent\\sessions",
+      "getDebugLogPath": "C:\\users\\sample\\.maestro\\agent\\maestro-debug.log",
+      "getBundledInteractiveAssetPath": "C:\\package\\dist\\modes\\interactive\\assets\\badge.png"
+    }
+  },
+  {
+    "input": {
+      "platform": "win32",
+      "env": {
+        "MAESTRO_CODING_AGENT_DIR": ".\\agent",
+        "MAESTRO_PACKAGE_DIR": ".\\assets"
+      },
+      "execPath": "C:\\bin\\node.exe",
+      "layout": "package"
+    },
+    "expected": {
+      "getPackageDir": ".\\assets",
+      "getThemesDir": "assets\\dist\\modes\\interactive\\theme",
+      "getExportTemplateDir": "assets\\dist\\core\\export-html",
+      "getReadmePath": "C:\\work\\assets\\README.md",
+      "getDocsPath": "C:\\work\\assets\\docs",
+      "getExamplesPath": "C:\\work\\assets\\examples",
+      "getChangelogPath": "C:\\work\\assets\\CHANGELOG.md",
+      "getInteractiveAssetsDir": "assets\\dist\\modes\\interactive\\assets",
+      "getAgentDir": ".\\agent",
+      "getCustomThemesDir": "agent\\themes",
+      "getModelsPath": "agent\\models.json",
+      "getAuthPath": "agent\\auth.json",
+      "getSettingsPath": "agent\\settings.json",
+      "getToolsDir": "agent\\tools",
+      "getBinDir": "agent\\bin",
+      "getPromptsDir": "agent\\prompts",
+      "getSessionsDir": "agent\\sessions",
+      "getDebugLogPath": "agent\\maestro-debug.log",
+      "getBundledInteractiveAssetPath": "assets\\dist\\modes\\interactive\\assets\\badge.png"
+    }
+  }
+]

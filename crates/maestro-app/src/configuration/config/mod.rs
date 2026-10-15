@@ -1,0 +1,35 @@
+//! Installation identity and paths.
+
+pub mod installation;
+pub mod paths;
+
+use std::sync::LazyLock;
+
+/// The distribution package name.
+pub const PACKAGE_NAME: &str = "maestro";
+/// The application command name.
+pub const APP_NAME: &str = "maestro";
+/// The application display title.
+pub const APP_TITLE: &str = "Maestro";
+/// The default user configuration directory name.
+pub const CONFIG_DIR_NAME: &str = ".maestro";
+/// The compiled application package version.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// The service origin, empty until configured.
+pub const SERVICE_ORIGIN: &str = "";
+/// The application-derived agent-directory environment key.
+pub static ENV_AGENT_DIR: LazyLock<String> =
+    LazyLock::new(|| format!("{}_CODING_AGENT_DIR", APP_NAME.to_uppercase()));
+/// The application-derived session-directory environment key.
+pub static ENV_SESSION_DIR: LazyLock<String> =
+    LazyLock::new(|| format!("{}_CODING_AGENT_SESSION_DIR", APP_NAME.to_uppercase()));
+
+/// Read the native agent-directory override, obtaining home only when needed.
+///
+/// # Errors
+/// Returns the native home lookup error when the chosen path requires home.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn get_agent_dir() -> std::io::Result<String> {
+    let value = std::env::var(&*ENV_AGENT_DIR).ok();
+    paths::get_agent_dir(value.as_deref(), || maestro_tools::expand_path("~"))
+}

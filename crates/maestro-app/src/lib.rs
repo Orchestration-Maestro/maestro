@@ -3,6 +3,7 @@
 //! [`presentation_data`] holds the data frontends render but do not own.
 
 pub mod browser;
+pub mod configuration;
 pub mod presentation_data;
 pub mod utils;
 
@@ -123,3 +124,7 @@ pub use browser::tools::prompts::{
     ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
 };
 pub use maestro_session::export_html;
+
+pub use configuration::config::VERSION;
+#[cfg(not(target_arch = "wasm32"))]
+pub use configuration::config::get_agent_dir;

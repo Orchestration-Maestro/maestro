@@ -1,0 +1,163 @@
+[
+  {
+    "input": {
+      "enabled": null,
+      "clock": [
+        100
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "",
+      "clockReads": 1
+    }
+  },
+  {
+    "input": {
+      "enabled": "",
+      "clock": [
+        100
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "",
+      "clockReads": 1
+    }
+  },
+  {
+    "input": {
+      "enabled": "0",
+      "clock": [
+        100
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "",
+      "clockReads": 1
+    }
+  },
+  {
+    "input": {
+      "enabled": "true",
+      "clock": [
+        100
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "",
+      "clockReads": 1
+    }
+  },
+  {
+    "input": {
+      "enabled": "01",
+      "clock": [
+        100
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "",
+      "clockReads": 1
+    }
+  },
+  {
+    "input": {
+      "enabled": "1",
+      "clock": [
+        100,
+        120,
+        117,
+        130,
+        140
+      ],
+      "actions": [
+        "print",
+        "time:load",
+        "time:load",
+        "print",
+        "print",
+        "reset",
+        "print",
+        "time:ready",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "\n--- Startup Timings ---\n  load: 20ms\n  load: -3ms\n  TOTAL: 17ms\n------------------------\n\n\n--- Startup Timings ---\n  load: 20ms\n  load: -3ms\n  TOTAL: 17ms\n------------------------\n\n\n--- Startup Timings ---\n  ready: 10ms\n  TOTAL: 10ms\n------------------------\n\n",
+      "clockReads": 5
+    }
+  },
+  {
+    "input": {
+      "enabled": "1",
+      "clock": [
+        0,
+        0,
+        0
+      ],
+      "actions": [
+        "time:",
+        "time:Ω\nnext",
+        "print"
+      ]
+    },
+    "expected": {
+      "stderr": "\n--- Startup Timings ---\n  : 0ms\n  Ω\nnext: 0ms\n  TOTAL: 0ms\n------------------------\n\n",
+      "clockReads": 3
+    }
+  }
+]
