@@ -36,7 +36,7 @@ The [extension question dialogs](extension-ui.md) provide clamped selection and
 text submission with optional countdowns and retained input focus.
 
 The [transcript messages](messages.md) provide user, assistant and expandable
-summary widgets over the same toolkit and live theme.
+summary widgets, plus retained tool-execution rows over the same toolkit and live theme.
 
 The application exports `key_hint`, `key_text` and `raw_key_hint` from their
 [tools owner](../../crates/maestro-tools/src/keybinding_hints.rs). The toolkit exports its shared `Cancellation` type.

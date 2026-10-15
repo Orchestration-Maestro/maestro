@@ -296,3 +296,20 @@ fn repl_json_array_format_reuses_canonical_owner() {
     );
     assert_eq!(maestro_json::pretty_json(&Value::Null).unwrap(), "null");
 }
+
+#[test]
+fn generic_pretty_json_preserves_canonical_numbers_and_keys() {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Query {
+        input: String,
+        expected: String,
+    }
+    let queries: Vec<Query> =
+        serde_json::from_str(include_str!("fixtures/pretty_json.json")).unwrap();
+    assert_eq!(queries.len(), 8);
+    for query in queries {
+        let value: Value = serde_json::from_str(&query.input).unwrap();
+        assert_eq!(maestro_json::pretty_json(&value).unwrap(), query.expected);
+    }
+}

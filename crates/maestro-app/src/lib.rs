@@ -109,3 +109,10 @@ pub use browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimePr
 pub use browser::components::sandboxed_iframe::{SandboxFile, SandboxResult, SandboxUrlProvider};
 /// JavaScript execution tool factory.
 pub use browser::tools::javascript_repl::create_javascript_repl_tool;
+pub use maestro_json::pretty_json;
+pub use maestro_tools::utils::image_convert::{ConvertedImage, convert_to_png};
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{
+    EditToolOptions, ReadToolOptions, WriteToolOptions, create_edit_tool_definition,
+    create_read_tool_definition, create_write_tool_definition,
+};
