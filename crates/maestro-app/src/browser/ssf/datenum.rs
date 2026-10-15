@@ -18,15 +18,11 @@ pub(super) fn datenum(value: &str, date1904: bool) -> Result<f64, WorkbookError>
             NaiveDate::parse_from_str(value, "%Y-%m-%d").map(|d| d.and_time(NaiveTime::MIN))
         })
         .or_else(|_| {
-            [
-                "%Y-%m-%dT%H:%M:%S%.f",
-                "%Y-%m-%d %H:%M:%S%.f",
-                "%Y-%m-%dT%H:%M",
-                "%Y-%m-%d %H:%M",
-            ]
-            .iter()
-            .find_map(|f| NaiveDateTime::parse_from_str(value, f).ok())
-            .ok_or_else(|| WorkbookError::Reader(format!("invalid date {value}")))
+            let local = value.replace('T', " ");
+            ["%Y-%m-%d %H:%M:%S%.f", "%Y-%m-%d %H:%M"]
+                .iter()
+                .find_map(|f| NaiveDateTime::parse_from_str(&local, f).ok())
+                .ok_or_else(|| WorkbookError::Reader(format!("invalid date {value}")))
         })?;
     let instant = instant.and_utc();
     let milliseconds = instant

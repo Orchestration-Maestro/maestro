@@ -52,7 +52,8 @@ detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 Blank sheets retain declared rectangular ranges; empty singleton defaults are omitted.
 Retained error cells load implicit formats into the live table and workbook snapshot.
-Cells retain raw typed values and optional formatted text. `format_cell` respects
+Cells retain raw typed values and optional formatted text. Raw string-cell escapes
+are decoded once; shared strings are not decoded again. `format_cell` respects
 present caches, including empty text, and otherwise uses the active default
 format with unrounded raw-scalar fallback on formatting failure, leaving the cache
 absent. Unknown error labels survive

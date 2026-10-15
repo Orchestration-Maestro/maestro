@@ -94,7 +94,7 @@ fn values(
                     DataRef::String(s) | DataRef::DateTimeIso(s) | DataRef::DurationIso(s) => {
                         CellValue::Text(s.clone())
                     }
-                    DataRef::SharedString(s) => CellValue::Text((*s).to_owned()),
+                    DataRef::SharedString(s) => CellValue::Text(s.replace("\r\n", "\n")),
                     DataRef::Bool(b) => CellValue::Boolean(*b),
                     DataRef::DateTime(d) => CellValue::Number(d.as_f64()),
                     DataRef::Error(_) | DataRef::Empty => continue,
@@ -147,7 +147,9 @@ fn sheet(
             }
             let raw = xml.element(node, "v").map(|n| n.text_content());
             let value = values.remove(&(position.r, position.c));
-            let value = if xml.attr(node, "t") == Some("d") {
+            let value = if xml.attr(node, "t") == Some("str") {
+                raw.as_deref().map(string_cell).map(CellValue::Text)
+            } else if xml.attr(node, "t") == Some("d") {
                 raw.as_deref()
                     .map(|s| super::datenum::datenum(s, format.2))
                     .transpose()?
@@ -257,4 +259,28 @@ fn cell(
         v: value,
         w: shown,
     })
+}
+
+/// Decode raw spreadsheet string escapes in one pass over UTF-16 code units.
+fn string_cell(value: &str) -> String {
+    let mut rest = value;
+    let mut units = Vec::new();
+    while let Some(c) = rest.chars().next() {
+        let escaped = rest
+            .get(..7)
+            .filter(|s| {
+                (s.starts_with("_x") || s.starts_with("_X"))
+                    && s.ends_with('_')
+                    && s[2..6].bytes().all(|b| b.is_ascii_hexdigit())
+            })
+            .and_then(|s| u16::from_str_radix(&s[2..6], 16).ok());
+        if let Some(unit) = escaped {
+            units.push(unit);
+            rest = &rest[7..];
+        } else {
+            units.extend_from_slice(c.encode_utf16(&mut [0; 2]));
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    String::from_utf16_lossy(&units).replace("\r\n", "\n")
 }

@@ -276,3 +276,10 @@ fn workbook_blank_templates_keep_declared_rectangles() {
 fn workbook_error_cells_load_implicit_formats_into_live_and_snapshot_tables() {
     check("error-implicit-format.xlsx");
 }
+
+#[test]
+fn workbook_string_escapes_decode_once_without_redecoding_shared_text() {
+    for file in ["escaped-raw.xlsx", "escaped-shared.xlsx"] {
+        check(file);
+    }
+}
