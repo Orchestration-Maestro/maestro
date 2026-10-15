@@ -1,5 +1,8 @@
 //! Strict recorded inputs, controlled hosts and lossless dialog observations.
+#[path = "../support/recorded_keys/bindings.rs"]
+mod bindings;
 use super::{manual_runtime::ms, recording_terminal::RecordingTerminal, runtime_spy::Spy};
+use bindings::{Binding, bindings};
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_chat::{
     ExtensionInputComponent, ExtensionInputOptions, ExtensionSelectorComponent,
@@ -7,8 +10,8 @@ use maestro_chat::{
 };
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{
-    Component, Container, KeybindingKeys, KeybindingsConfig, KeybindingsManager, TUI,
-    TerminalImage, Text, get_keybindings, set_keybindings,
+    Component, Container, KeybindingsManager, TUI, TerminalImage, Text, get_keybindings,
+    set_keybindings,
 };
 use serde::Deserialize;
 use std::{
@@ -135,15 +138,6 @@ impl Timeout {
         }
     }
 }
-/// Binding override shapes accepted by the manager.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    /// Single key.
-    Single(String),
-    /// Ordered keys, including disabled empty lists.
-    Multiple(Vec<String>),
-}
 /// One key or controlled host/configuration operation.
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -238,21 +232,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         )
         .unwrap(),
     )
-}
-/// Convert binding records once for both constructor and subsequent routes.
-fn bindings(values: &BTreeMap<String, Binding>) -> KeybindingsConfig {
-    values
-        .iter()
-        .map(|(key, value)| {
-            (
-                key.clone(),
-                Some(match value {
-                    Binding::Single(key) => KeybindingKeys::Single(key.clone()),
-                    Binding::Multiple(keys) => KeybindingKeys::Multiple(keys.clone()),
-                }),
-            )
-        })
-        .collect()
 }
 /// Typed owners retain the public inherited container interface.
 pub enum Dialog {
@@ -383,12 +362,9 @@ impl Replay {
                 .focus_flag()
                 .set(*focus),
             Operation::Theme { theme } => self.theme.set_theme_instance(colors(*theme)).unwrap(),
-            Operation::Replace { replace } => set_keybindings(KeybindingsManager::new(
-                KEYBINDINGS.clone(),
-                bindings(replace),
-            )),
+            Operation::Replace { replace } => bindings::replace(replace),
             Operation::Bindings { bindings: values } => {
-                get_keybindings().set_user_bindings(bindings(values));
+                bindings::mutate(values);
             }
             Operation::Dispose { dispose } => {
                 assert!(*dispose);

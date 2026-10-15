@@ -93,11 +93,13 @@ fn operation(case: &Case) -> Result<Option<Value>, serde_json::Error> {
         "serializeConversation" => json!(serialize_conversation(&serde_json::from_value::<
             Vec<maestro_models::Message>,
         >(a[0].clone())?)?),
-        "buildSessionContext" => serde_json::to_value(build_session_context(
-            a[0].as_array().unwrap(),
-            Presence::Missing,
-            None::<&std::collections::HashMap<_, _>>,
-        )?)?,
+        "serialize-conversation-json-probe" => {
+            json!(serialize_conversation(&serde_json::from_str::<
+                Vec<maestro_models::Message>,
+            >(
+                a[0].as_str().unwrap()
+            )?)?)
+        }
         "fixture-probe" => large_history()?,
         _ => panic!("unimplemented operation {}", case.operation),
     };

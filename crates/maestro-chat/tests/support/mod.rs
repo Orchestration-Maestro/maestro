@@ -1,12 +1,19 @@
 //! Strict recorded inputs replayed through the public navigation interface.
+#[path = "recorded_keys/bindings.rs"]
+mod bindings;
+#[path = "recorded_keys/filter_mode.rs"]
+mod filter_mode;
 pub mod occurrences;
+#[path = "recorded_keys/registry.rs"]
+mod recorded_registry;
 pub mod registry;
 pub mod tree;
+use bindings::{Binding, bindings};
+use filter_mode::mode;
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
-use maestro_chat::components::tree_selector::{FilterMode, SessionTreeNode, TreeList};
-use maestro_tui::{
-    KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
-};
+use maestro_chat::components::tree_selector::{SessionTreeNode, TreeList};
+use maestro_tui::{KeybindingsManager, get_keybindings, set_keybindings};
+use recorded_registry::{Operation, apply_operation};
 use registry::{REGISTRY, Restore};
 use serde::Deserialize;
 use std::{
@@ -66,33 +73,6 @@ struct Input {
 fn callbacks_enabled() -> bool {
     true
 }
-/// Accepted caller binding shapes.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    /// One key.
-    Single(String),
-    /// An explicit list, including a disabled empty list.
-    Multiple(Vec<String>),
-}
-/// A key event or an active manager change.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Operation {
-    /// Raw protocol bytes.
-    Key(String),
-    /// Manager replacement or live configuration change.
-    Registry(RegistryOperation),
-}
-/// The two recorded registry operations.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct RegistryOperation {
-    /// Replacement manager's overrides.
-    replace_bindings: Option<BTreeMap<String, Binding>>,
-    /// Live manager's replacement overrides.
-    set_bindings: Option<BTreeMap<String, Binding>>,
-}
 /// Ordered observations from the reference entry point.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -119,30 +99,6 @@ struct Frame {
     selected: Option<usize>,
     /// Ordered cumulative callback events.
     events: Vec<Vec<String>>,
-}
-/// Converts only the accepted recorded filter vocabulary.
-fn mode(value: &str) -> FilterMode {
-    match value {
-        "default" => FilterMode::Default,
-        "no-tools" => FilterMode::NoTools,
-        "user-only" => FilterMode::UserOnly,
-        "labeled-only" => FilterMode::LabeledOnly,
-        "all" => FilterMode::All,
-        _ => panic!("unrecognized fixture mode"),
-    }
-}
-/// Uses the toolkit's original scalar/list override shapes.
-fn bindings(values: &BTreeMap<String, Binding>) -> KeybindingsConfig {
-    values
-        .iter()
-        .map(|(id, value)| {
-            let keys = match value {
-                Binding::Single(key) => KeybindingKeys::Single(key.clone()),
-                Binding::Multiple(keys) => KeybindingKeys::Multiple(keys.clone()),
-            };
-            (id.clone(), Some(keys))
-        })
-        .collect()
 }
 /// Checks occurrence identity and a full ordered visible cycle through public keys.
 fn frame(
@@ -183,28 +139,6 @@ fn frame(
         assert!(expected.visible.is_empty());
     }
 }
-/// Drives a key event or caller configuration change through the existing manager.
-fn apply_operation(list: &mut TreeList, operation: &Operation) {
-    match operation {
-        Operation::Key(data) => list.handle_input(data).unwrap(),
-        Operation::Registry(change) => {
-            assert_ne!(
-                change.replace_bindings.is_some(),
-                change.set_bindings.is_some()
-            );
-            if let Some(values) = &change.replace_bindings {
-                set_keybindings(KeybindingsManager::new(
-                    KEYBINDINGS.clone(),
-                    bindings(values),
-                ));
-            }
-            if let Some(values) = &change.set_bindings {
-                get_keybindings().set_user_bindings(bindings(values));
-            }
-        }
-    }
-}
-
 /// Replays one scenario, preserving actual callback order and occurrence identity.
 fn replay(case: &Case) {
     set_keybindings(KeybindingsManager::new(
@@ -246,7 +180,7 @@ fn replay(case: &Case) {
     assert_eq!(case.expected.frames.len(), case.input.ops.len() + 1);
     frame(&mut list, &case.expected.frames[0], &nodes, &events);
     for (operation, expected) in case.input.ops.iter().zip(&case.expected.frames[1..]) {
-        apply_operation(&mut list, operation);
+        apply_operation(&list, operation);
         let nodes = occurrences::occurrences(&list, &case.input.nodes);
         frame(&mut list, expected, &nodes, &events);
     }

@@ -12,18 +12,8 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 
-/// Recorded query.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// Owning witness.
-    test: String,
-    /// Constructor data.
-    input: Value,
-    /// Complete output.
-    expected: Value,
-}
-/// Decode one nonempty group.
+pub use super::selector::{Frame, Frames, input, levels};
+/// Decode one nonempty locally owned corpus group.
 pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
     let owners = [
         "settings_rows_keep_text_order_and_initial_values",
@@ -60,47 +50,9 @@ pub fn corpus_cases<I: DeserializeOwned, E: DeserializeOwned>(
     count: usize,
     name: &str,
 ) -> Vec<(I, E)> {
-    let rows: Vec<Case> = serde_json::from_str(fixture).unwrap();
+    let rows = super::selector::load(fixture);
     assert_eq!(rows.len(), count);
-    let mut queries = std::collections::HashSet::new();
-    for row in &rows {
-        assert!(owners.contains(&row.test.as_str()), "orphan corpus group");
-        assert!(
-            queries.insert((row.test.as_str(), row.input.to_string())),
-            "duplicate query"
-        );
-    }
-    assert!(
-        owners
-            .iter()
-            .all(|owner| rows.iter().any(|row| row.test == *owner)),
-        "missing corpus group"
-    );
-    let result: Vec<_> = rows
-        .into_iter()
-        .filter(|row| row.test == name)
-        .map(|row| {
-            (
-                serde_json::from_value(row.input).unwrap(),
-                serde_json::from_value(row.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!result.is_empty());
-    result
-}
-/// Empty constructor query.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Empty {}
-/// Entire styled view and ordered callback transcript.
-#[derive(Debug, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct Frame {
-    /// Styled rows.
-    pub lines: Vec<String>,
-    /// Ordered callbacks.
-    pub events: Vec<Vec<Value>>,
+    super::selector::cases(rows, owners, name)
 }
 /// Row metadata, observed through its rendering and activation.
 #[derive(Deserialize)]
@@ -189,17 +141,6 @@ pub fn config() -> SettingsConfig {
         tree_filter_mode: TreeFilterMode::Default,
         warnings: WarningSettings::default(),
     }
-}
-/// Complete domain inventory.
-pub fn levels() -> Vec<ThinkingLevel> {
-    vec![
-        ThinkingLevel::Off,
-        ThinkingLevel::Minimal,
-        ThinkingLevel::Low,
-        ThinkingLevel::Medium,
-        ThinkingLevel::High,
-        ThinkingLevel::Xhigh,
-    ]
 }
 /// Ordered callback records.
 #[derive(Clone, Default)]
@@ -291,12 +232,6 @@ impl Events {
     }
 }
 pub use super::keybindings::bindings_guard;
-/// Delivers input through the actual component boundary.
-pub fn input(component: &dyn Component, keys: &[&str]) {
-    for key in keys {
-        component.input_handler().unwrap().handle_input(key);
-    }
-}
 /// Moves through the original ordered list using live keys.
 pub fn select(selector: &maestro_chat::SettingsSelectorComponent, id: &str) {
     select_with_images(selector, id, false);
@@ -494,13 +429,6 @@ pub struct Layout {
     /// Viewport cells.
     pub width: usize,
 }
-/// Ordered complete snapshots.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Frames {
-    /// Every observation.
-    pub frames: Vec<Frame>,
-}
 /// Reasoning levels supplied in any order.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -536,15 +464,6 @@ pub struct ThemeInput {
 pub struct WarningsInput {
     /// Raw owned warning record.
     pub warnings: WarningSettings,
-}
-/// Warning state snapshots and original input.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct WarningOutput {
-    /// Ordered frames.
-    pub frames: Vec<Frame>,
-    /// Unchanged original warning record.
-    pub input_unchanged: WarningSettings,
 }
 /// Theme publication snapshots.
 #[derive(Deserialize)]

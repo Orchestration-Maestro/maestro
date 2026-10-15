@@ -67,9 +67,11 @@ fn select_with_bin(
         )],
         "createCodingTools" => create_coding_tools(cwd, options, bin, manager),
         "createReadOnlyTools" => create_read_only_tools(cwd, options, bin, manager),
-        "createAllTools" => create_all_tools(cwd, options, bin, manager)
-            .into_values()
-            .collect(),
+        "createAllTools" => {
+            let tools = create_all_tools(cwd, options, bin, manager);
+            assert_eq!(tools.keys().copied().collect::<Vec<_>>(), ALL_TOOL_NAMES);
+            tools.into_values().collect()
+        }
         "createCodingToolDefinitions" => {
             create_coding_tool_definitions::<()>(cwd, options, bin, manager)
                 .into_iter()
@@ -82,10 +84,11 @@ fn select_with_bin(
                 .map(|t| wrap(t, None))
                 .collect()
         }
-        "createAllToolDefinitions" => create_all_tool_definitions::<()>(cwd, options, bin, manager)
-            .into_values()
-            .map(|t| wrap(t, None))
-            .collect(),
+        "createAllToolDefinitions" => {
+            let tools = create_all_tool_definitions::<()>(cwd, options, bin, manager);
+            assert_eq!(tools.keys().copied().collect::<Vec<_>>(), ALL_TOOL_NAMES);
+            tools.into_values().map(|t| wrap(t, None)).collect()
+        }
         _ => panic!("unknown fixture factory"),
     })
 }

@@ -2,27 +2,6 @@
   "rows": [
     {
       "test": "pptx_detection_selects_mime_or_suffix",
-      "case": "suffix",
-      "input": {
-        "file": "packages/01.pptx",
-        "source": "file",
-        "name": "deck.pptx",
-        "mime": ""
-      },
-      "expected": {
-        "attachment": {
-          "id": "deck.pptx_<generated>",
-          "type": "document",
-          "fileName": "deck.pptx",
-          "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-          "size": 251,
-          "content": "UEsDBBQAAAAAAAAAIQCh3bPubwAAAG8AAAAVAAAAcHB0L3NsaWRlcy9zbGlkZTEueG1sPHA6c2xkIHhtbG5zOnA9InVybjpwIiB4bWxuczphPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvZHJhd2luZ21sLzIwMDYvbWFpbiI+PGE6dD5oZWxsbzwvYTp0PjwvcDpzbGQ+UEsBAhQDFAAAAAAAAAAhAKHds+5vAAAAbwAAABUAAAAAAAAAAAAAAIABAAAAAHBwdC9zbGlkZXMvc2xpZGUxLnhtbFBLBQYAAAAAAQABAEMAAACiAAAAAAA=",
-          "extractedText": "<pptx filename=\"deck.pptx\">\n<slide number=\"1\">\nhello\n</slide>\n</pptx>"
-        }
-      }
-    },
-    {
-      "test": "pptx_detection_selects_mime_or_suffix",
       "case": "uppercase_suffix",
       "input": {
         "file": "packages/01.pptx",

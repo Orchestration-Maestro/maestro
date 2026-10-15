@@ -12,7 +12,7 @@ mod live;
 mod login_support;
 #[allow(
     dead_code,
-    reason = "Shared selector support uses the controlled runtime."
+    reason = "Shared sign-in witnesses use the controlled runtime."
 )]
 #[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
 mod manual_runtime;
@@ -22,11 +22,6 @@ mod manual_runtime;
 )]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
-#[allow(
-    dead_code,
-    reason = "Shared selector support owns keybinding admission."
-)]
-mod simple_selector_support;
 #[test]
 fn login_title_uses_registry_and_override_precedence() {
     login_support::replay("login_title_uses_registry_and_override_precedence");
@@ -155,7 +150,7 @@ fn native_browser_launch_is_detached_and_uses_one_literal_argument() {
 }
 #[test]
 fn input_futures_are_eager_owned_and_do_not_cycle() {
-    let _bindings = simple_selector_support::bindings_guard();
+    let _bindings = keybindings::bindings_guard();
     let runtime = manual_runtime::ManualRuntime::new();
     let terminal = recording_terminal::RecordingTerminal::new(80, 24);
     let terminal_handle = terminal.handle();
@@ -215,7 +210,7 @@ fn input_futures_are_eager_owned_and_do_not_cycle() {
 }
 #[test]
 fn login_rows_fit_one_cell_viewport() {
-    let _bindings = simple_selector_support::bindings_guard();
+    let _bindings = keybindings::bindings_guard();
     let (dialog, _) =
         login_support::controlled(LoginDialogPlatform::default(), Some(Rc::new(|_| {})));
     dialog
@@ -232,7 +227,7 @@ fn login_rows_fit_one_cell_viewport() {
 }
 #[test]
 fn login_dialog_uses_current_brand_roles() {
-    let _bindings = simple_selector_support::bindings_guard();
+    let _bindings = keybindings::bindings_guard();
     for mode in ["dark", "light"] {
         let theme = Rc::new(
             maestro_theme::load_theme_from_path(

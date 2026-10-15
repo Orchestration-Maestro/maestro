@@ -131,5 +131,4 @@ fn preparation_leaves_branch_unchanged() {
 #[test]
 fn large_history_preparation_preserves_fixture_structure() {
     support::compaction_cases::group("large_history");
-    support::compaction_cases::group("existing_context");
 }

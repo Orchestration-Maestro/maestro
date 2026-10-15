@@ -6,21 +6,10 @@ use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 
-/// One corpus query owned by a named witness.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Case {
-    /// Witness name.
-    test: String,
-    /// Input decoded by the witness.
-    input: Value,
-    /// Output decoded by the witness.
-    expected: Value,
-}
-/// Strictly decode a nonempty group.
+pub use super::selector::{Empty, Frame, Frames, input, levels};
+/// Decode one nonempty locally owned corpus group.
 pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
-    let rows: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/simple_selectors.json")).unwrap();
+    let rows = super::selector::load(include_str!("../fixtures/simple_selectors.json"));
     let owners = [
         "thinking_levels_keep_descriptions_and_current_selection",
         "thinking_supplied_order_duplicates_and_missing_current",
@@ -44,32 +33,7 @@ pub fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)
         "empty_message_auto_cancel_uses_one_original_delayed_callback",
         "theme_discovery_failure_propagates_without_callbacks",
     ];
-    let mut queries = std::collections::HashSet::new();
-    for row in &rows {
-        assert!(owners.contains(&row.test.as_str()), "orphan corpus group");
-        assert!(
-            queries.insert((row.test.clone(), row.input.to_string())),
-            "duplicate corpus query"
-        );
-    }
-    assert!(
-        owners
-            .iter()
-            .all(|owner| rows.iter().any(|row| row.test == *owner)),
-        "missing corpus group"
-    );
-    let result: Vec<_> = rows
-        .into_iter()
-        .filter(|row| row.test == name)
-        .map(|row| {
-            (
-                serde_json::from_value(row.input).unwrap(),
-                serde_json::from_value(row.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!result.is_empty(), "missing corpus group");
-    result
+    super::selector::cases(rows, &owners, name)
 }
 /// Exact three-role palette used by the recordings.
 pub fn colors(shift: u8) -> Rc<Theme> {
@@ -199,23 +163,6 @@ pub struct ImageInput {
     /// Starting bool.
     pub current: bool,
 }
-/// Complete domain inventory, in source order.
-pub fn levels() -> Vec<ThinkingLevel> {
-    vec![
-        ThinkingLevel::Off,
-        ThinkingLevel::Minimal,
-        ThinkingLevel::Low,
-        ThinkingLevel::Medium,
-        ThinkingLevel::High,
-        ThinkingLevel::Xhigh,
-    ]
-}
-/// Deliver keys to the public input interface.
-pub fn input(component: &dyn Component, keys: &[&str]) {
-    for key in keys {
-        component.input_handler().unwrap().handle_input(key);
-    }
-}
 impl Events {
     /// Boolean confirmation.
     pub fn images(&self) -> Rc<dyn Fn(bool)> {
@@ -331,10 +278,6 @@ pub struct ThemeWindow {
     #[serde(rename = "currentIndex")]
     pub current_index: usize,
 }
-/// Empty query with no unread members.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Empty {}
 /// Discovery-failure recording.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -365,15 +308,6 @@ pub struct MessageInitial {
     pub messages: Vec<Message>,
     /// Optional initial identity.
     pub initial: Option<String>,
-}
-/// Entire output with caller notifications.
-#[derive(Debug, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct Frame {
-    /// Complete rows.
-    pub lines: Vec<String>,
-    /// Ordered notifications.
-    pub events: Vec<Vec<Value>>,
 }
 /// Authored text query.
 #[derive(Deserialize)]
@@ -456,13 +390,6 @@ pub struct Navigation {
     pub n: usize,
     /// Input bytes.
     pub ops: Vec<String>,
-}
-/// Every observable frame after input.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Frames {
-    /// Ordered frames.
-    pub frames: Vec<Frame>,
 }
 pub use super::keybindings::bindings_guard;
 /// Cross-selector kind query.

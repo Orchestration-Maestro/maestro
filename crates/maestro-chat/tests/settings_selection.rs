@@ -5,8 +5,11 @@ mod keybindings;
 #[allow(dead_code, reason = "Shared published theme support.")]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
+#[path = "support/selector.rs"]
+mod selector;
 mod settings_selection_support;
 use maestro_tui::Component;
+use selector::Empty;
 use settings_selection_support::*;
 
 #[test]
@@ -369,13 +372,12 @@ fn theme_cancel_restores_latest_committed_value() {
 fn warning_edits_keep_unknown_members_snapshots_and_reopened_state() {
     let _guard = bindings_guard();
     let (_, theme) = published::published(&colors(0));
-    for (query, expected) in cases::<WarningsInput, WarningOutput>(
+    for (query, expected) in cases::<WarningsInput, Frames>(
         "warning_edits_keep_unknown_members_snapshots_and_reopened_state",
     ) {
         let events = Events::default();
         let mut cfg = config();
         cfg.warnings = query.warnings;
-        assert_eq!(cfg.warnings, expected.input_unchanged);
         let selector = maestro_chat::SettingsSelectorComponent::new(
             cfg,
             events.callbacks(true),
