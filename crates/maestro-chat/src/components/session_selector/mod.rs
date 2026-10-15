@@ -7,3 +7,9 @@ mod list;
 pub use list::{SessionList, SessionListOptions};
 
 mod tree;
+
+mod selector;
+pub use selector::{
+    SessionListProgress, SessionSelectorCallbacks, SessionSelectorComponent,
+    SessionSelectorOptions, SessionsFuture, SessionsLoader,
+};

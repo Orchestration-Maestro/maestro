@@ -9,6 +9,8 @@ use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
+mod controls;
+use controls::Controls;
 /// Constructor policies and supplied live observations.
 pub struct SessionListOptions {
     /// Show each record's working directory.
@@ -54,6 +56,8 @@ pub struct SessionList {
     select: RefCell<Option<Selection>>,
     /// Shared cancellation slot.
     cancel: RefCell<Option<Rc<dyn Fn()>>>,
+    /// Ordered controls and retained named-filter manager.
+    controls: Controls,
     /// Independent parent focus forwarding to Input.
     focus: FocusFlag,
     /// Selected visible position.
@@ -83,6 +87,7 @@ impl SessionList {
             current,
             select: RefCell::default(),
             cancel: RefCell::default(),
+            controls: Controls::new(),
             focus: FocusFlag::forwarding(input.clone()),
             sessions: RefCell::new(Rc::new(sessions)),
             selected: Cell::new(0),
@@ -119,10 +124,18 @@ impl SessionList {
     }
     /// Replaces records and working-directory display without clearing search.
     pub fn set_sessions(&self, sessions: Vec<SessionInfo>, show_cwd: bool) {
-        let old = self.sessions.replace(Rc::new(sessions));
+        self.install_sessions(Rc::new(sessions), show_cwd);
+    }
+    /// Installs an immutable shared discovery snapshot.
+    pub(super) fn install_sessions(&self, sessions: Rc<Vec<SessionInfo>>, show_cwd: bool) {
+        let old = self.sessions.replace(sessions);
         drop(old);
         self.show_cwd.set(show_cwd);
         self.filter_sessions();
+    }
+    /// Retains the caller's live named-filter manager.
+    pub(super) fn configure_keybindings(&self, manager: maestro_tui::KeybindingsManager) {
+        self.controls.keybindings.replace(manager);
     }
     /// Returns the current confirmation handle.
     #[must_use]
@@ -394,6 +407,9 @@ impl Focusable for SessionList {
 impl InputHandler for SessionList {
     fn handle_input(&self, data: &str) {
         let bindings = maestro_tui::get_keybindings();
+        if self.control_input(data) {
+            return;
+        }
         let last = self.visible.borrow().len().saturating_sub(1);
         let selected = self.selected.get();
         if bindings.matches(data, "tui.select.up") {
