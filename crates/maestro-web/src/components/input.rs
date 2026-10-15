@@ -123,13 +123,30 @@ impl Input {
         presentation: &BrandPresentation<'_>,
     ) -> Result<(), UiError> {
         style(ui, presentation)?;
+        ui.scope_builder(
+            egui::UiBuilder::new().layout(egui::Layout::top_down(egui::Align::Min)),
+            |ui| self.render_contents(ui, i18n, presentation),
+        )
+        .inner
+    }
+    /// Stack one field's label, native control and error inside its own column.
+    fn render_contents<F: ?Sized>(
+        &mut self,
+        ui: &mut egui::Ui,
+        i18n: &I18n<F>,
+        presentation: &BrandPresentation<'_>,
+    ) -> Result<(), UiError> {
         ui.spacing_mut().item_spacing.y = 6.;
+        let mut accessible_label = self.props.label.clone();
         let label = |ui: &mut egui::Ui| -> Result<(), UiError> {
             ui.label(&self.props.label);
             if self.props.required {
+                let marker = i18n.text("*")?;
+                accessible_label.push(' ');
+                accessible_label.push_str(&marker);
                 ui.colored_label(
                     crate::browser::attachment_content::color(presentation, "error")?,
-                    i18n.text("*")?,
+                    marker,
                 );
             }
             Ok(())
@@ -153,6 +170,7 @@ impl Input {
                 occluders: Vec::new(),
                 content: AttachmentContent::Input {
                     props: &self.props,
+                    accessible_label: &accessible_label,
                     value_changed: self.previous_value.as_ref() != Some(&self.props.value),
                     modal: (ui.layer_id().order == egui::Order::Foreground)
                         .then_some(ui.layer_id().id),

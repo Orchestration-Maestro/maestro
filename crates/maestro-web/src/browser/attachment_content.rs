@@ -50,6 +50,8 @@ pub enum AttachmentContent<'a> {
     Input {
         /// Live native field configuration.
         props: &'a crate::components::input::InputProps,
+        /// Localized native accessible name, including the required marker.
+        accessible_label: &'a str,
         /// Assign the caller's changed value, preserving native edits otherwise.
         value_changed: bool,
         /// Containing modal, when placed in a foreground layer.

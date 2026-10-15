@@ -67,12 +67,25 @@ impl DomInput {
     /// Forward live operands and retain actual native callbacks.
     pub(super) fn update(
         &mut self,
-        props: &InputProps,
-        value_changed: bool,
+        content: &super::AttachmentContent<'_>,
         escape: Rc<std::cell::Cell<bool>>,
-        context: &egui::Context,
     ) -> Result<(), AttachmentUiError> {
-        properties(&self.element, props, value_changed || !self.initialized)?;
+        let super::AttachmentContent::Input {
+            props,
+            accessible_label,
+            value_changed,
+            context,
+            ..
+        } = content
+        else {
+            return Ok(());
+        };
+        properties(
+            &self.element,
+            props,
+            *value_changed || !self.initialized,
+            accessible_label,
+        )?;
         self.initialized = true;
         self.listeners.clear();
         for (name, callback) in [("input", &props.on_input), ("change", &props.on_change)] {
@@ -82,7 +95,7 @@ impl DomInput {
             }
         }
         let key_down = props.on_key_down.clone();
-        let context = context.clone();
+        let drawing = (*context).clone();
         self.listeners.push(Listener::new(
             &self.element,
             "keydown",
@@ -95,7 +108,7 @@ impl DomInput {
                 }
                 if event.key() == "Escape" && !event.cancel_bubble() {
                     escape.set(true);
-                    context.request_repaint();
+                    drawing.request_repaint();
                 }
             }),
         )?);
@@ -105,18 +118,19 @@ impl DomInput {
                 &self.element,
                 "keyup",
                 Rc::new(move |e| {
-                    let _ = e
-                        .dyn_into::<KeyboardEvent>()
-                        .map_or((), |event| callback(event));
+                    let _ = e.dyn_into::<KeyboardEvent>().map(|event| callback(event));
                 }),
             )?);
         }
-        let same = matches!((&self.slot, &props.input_ref), (Some(a), Some(b)) if Rc::ptr_eq(a, b));
-        if same {
+        self.bind_ref(props.input_ref.as_ref())
+    }
+    /// Replace only this field's owned native reference assignment.
+    fn bind_ref(&mut self, reference: Option<&InputRef>) -> Result<(), AttachmentUiError> {
+        if matches!((&self.slot, reference), (Some(a), Some(b)) if Rc::ptr_eq(a, b)) {
             return Ok(());
         }
         self.clear_ref();
-        if let Some(slot) = &props.input_ref {
+        if let Some(slot) = reference {
             *slot
                 .try_borrow_mut()
                 .map_err(|_| AttachmentUiError::BorrowConflict)? = Some(self.element.clone());
@@ -145,6 +159,7 @@ fn properties(
     element: &HtmlInputElement,
     props: &InputProps,
     value_changed: bool,
+    accessible_label: &str,
 ) -> Result<(), AttachmentUiError> {
     let kind = match props.input_type {
         InputType::Text => "text",
@@ -172,14 +187,19 @@ fn properties(
             .set_attribute(name, &value)
             .map_err(|e| host_error(&e))?;
     }
-    if props.error.is_empty() {
-        element
-            .remove_attribute("aria-invalid")
-            .map_err(|e| host_error(&e))?;
-    } else {
-        element
-            .set_attribute("aria-invalid", "")
-            .map_err(|e| host_error(&e))?;
+    let label = (!accessible_label.is_empty()).then_some(accessible_label);
+    let error = (!props.error.is_empty()).then_some(props.error.as_str());
+    let invalid = error.map(|_| "");
+    for (name, text) in [
+        ("aria-label", label),
+        ("aria-description", error),
+        ("aria-invalid", invalid),
+    ] {
+        text.map_or_else(
+            || element.remove_attribute(name),
+            |text| element.set_attribute(name, text),
+        )
+        .map_err(|e| host_error(&e))?;
     }
     let (padding, size) = match props.size {
         InputSize::Sm | InputSize::Md => (12, "calc(var(--maestro-type-body-size) * 0.875)"),

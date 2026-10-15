@@ -11,7 +11,12 @@ Small, medium (default) and large fields allocate heights of 32, 36 and 40 point
 `render` uses the width available in its parent: callers composing a field beside
 a button reserve the button's width first. The wrapper receives `class_name`;
 CSS classes do not replace the caller's canvas layout. Label, required marker
-and error text use the supplied localization and brand presentation. Install the
+and error text use the supplied localization and brand presentation. Each field
+stacks those elements in its own column without changing caller spacing. The
+native input's accessible name includes the label and localized required marker;
+its accessible description contains the error. Updating or clearing these strings
+updates or removes the corresponding native attributes. Focus and error rings
+extend three points outside the control, bounded by the parent clip. Install the
 page's `dark` class for dark native-control background and invalid-ring styling.
 
 `set_props` updates the next presentation. An unchanged supplied value does not
@@ -27,6 +32,10 @@ Native keydown forwards the caller's event before bridging Escape into
 `AttachmentHost::take_escape`, requesting a repaint even while the canvas lacks
 focus. Stopped propagation suppresses this bridge; default prevention does not.
 This is a field bridge, not a dialog registration or a dialog shell.
+
+The canvas composition owns no HTML form, so fields have no implicit form
+association. Validation remains available through the native input handle.
+The separate dialog shell owns canvas layout, not a native form.
 
 [`Timer`](../../crates/maestro-web/src/browser/timer.rs) owns cancellation of one
 native timeout or interval. `AttachmentHost::timer` takes the caller's delay and

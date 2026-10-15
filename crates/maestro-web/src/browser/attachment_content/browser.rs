@@ -142,9 +142,9 @@ impl BrowserAttachmentHost {
         surface.modal = None;
         let element = &surface.child;
         let css=match content {
-            AttachmentContent::Input { props, value_changed, modal, context } => {
+            AttachmentContent::Input { props, modal, .. } => {
                 if surface.input.is_none() { surface.input = Some(super::input::DomInput::new(element)?); }
-                if let Some(input) = surface.input.as_mut() { input.update(props, *value_changed, Rc::clone(&self.escape), context)?; }
+                if let Some(input) = surface.input.as_mut() { input.update(content, Rc::clone(&self.escape))?; }
                 surface.wrapper.set_attribute("class", &props.class_name).map_err(|e|host_error(&e))?;
                 surface.modal = *modal;
                 return Ok(());

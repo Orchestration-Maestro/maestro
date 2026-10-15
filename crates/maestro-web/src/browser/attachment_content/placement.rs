@@ -3,12 +3,17 @@ use super::AttachmentSurface;
 use std::fmt::Write as _;
 /// Preserve the image layout while cutting out canvas-painted controls.
 pub(super) fn clip_path(surface: &AttachmentSurface<'_>, scale: (f64, f64)) -> String {
+    let paint_rect = if matches!(surface.content, super::AttachmentContent::Input { .. }) {
+        surface.rect.expand(3.)
+    } else {
+        surface.rect
+    };
     let mut path = String::new();
-    for rect in std::iter::once(surface.clip_rect.intersect(surface.rect)).chain(
+    for rect in std::iter::once(surface.clip_rect.intersect(paint_rect)).chain(
         surface
             .occluders
             .iter()
-            .map(|r| r.intersect(surface.rect).intersect(surface.clip_rect)),
+            .map(|r| r.intersect(paint_rect).intersect(surface.clip_rect)),
     ) {
         if !rect.is_positive() {
             continue;

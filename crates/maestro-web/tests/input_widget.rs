@@ -430,8 +430,9 @@ fn input_styles_use_caller_tokens_without_replacing_layout() {
                     egui::vec2(274.5, 400.),
                 )),
             );
+            let caller_spacing = ui.spacing().item_spacing;
             input.render(&mut ui, i, p).unwrap();
-            assert!((ui.spacing().item_spacing.y - 6.).abs() < f32::EPSILON);
+            assert_eq!(ui.spacing().item_spacing, caller_spacing);
             assert_eq!(
                 ui.visuals().selection.bg_fill,
                 egui::Color32::from_hex(p.colors["accent"]).unwrap()
@@ -541,4 +542,98 @@ fn localized_required_marker() {
         input.render(&mut ui, i, p).unwrap();
     });
     assert_eq!(frame.texts(), ["Label", "Pflicht"]);
+}
+
+#[test]
+fn input_native_label_and_error_update_and_clear_with_localized_required_marker() {
+    let seen = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let observed = seen.clone();
+    let host = input_support::Host::new(move |surface, _| {
+        let AttachmentContent::Input {
+            accessible_label,
+            props,
+            ..
+        } = &surface.content
+        else {
+            panic!("not input")
+        };
+        observed
+            .borrow_mut()
+            .push((accessible_label.to_string(), props.error.clone()));
+    });
+    let mut frame = attachment_support::Frame::default();
+    frame.i18n.translations().borrow()["en"]
+        .borrow_mut()
+        .insert(
+            "*".into(),
+            maestro_web::TranslationValue::Text("Pflicht".into()),
+        );
+    let mut input = Input::new(InputProps::default(), host);
+    for (label, required, error) in [
+        ("Email", true, "Invalid address"),
+        ("Phone", false, " "),
+        ("", true, ""),
+    ] {
+        input.set_props(InputProps {
+            label: label.into(),
+            required,
+            error: error.into(),
+            ..Default::default()
+        });
+        frame.run(vec![], |ctx, i, p| {
+            let mut ui = egui::Ui::new(
+                ctx.clone(),
+                egui::Id::new("semantics"),
+                egui::UiBuilder::new(),
+            );
+            input.render(&mut ui, i, p).unwrap();
+        });
+    }
+    assert_eq!(
+        *seen.borrow(),
+        [
+            ("Email Pflicht".into(), "Invalid address".into()),
+            ("Phone".into(), " ".into()),
+            (String::new(), String::new())
+        ]
+    );
+}
+
+#[test]
+fn input_stacks_in_horizontal_parent_without_changing_caller_spacing() {
+    let field = Rc::new(std::cell::Cell::new(egui::Rect::NOTHING));
+    let seen = field.clone();
+    let host = input_support::Host::new(move |surface, _| seen.set(surface.rect));
+    let mut input = Input::new(
+        InputProps {
+            label: "Label".into(),
+            error: "Error".into(),
+            ..Default::default()
+        },
+        host,
+    );
+    let mut frame = attachment_support::Frame::default();
+    frame.run(vec![], |ctx, i, p| {
+        let mut ui = egui::Ui::new(
+            ctx.clone(),
+            egui::Id::new("horizontal-parent"),
+            egui::UiBuilder::new()
+                .max_rect(egui::Rect::from_min_size(
+                    egui::pos2(10., 20.),
+                    egui::vec2(240., 400.),
+                ))
+                .layout(egui::Layout::left_to_right(egui::Align::Min)),
+        );
+        ui.spacing_mut().item_spacing = egui::vec2(13., 17.);
+        input.render(&mut ui, i, p).unwrap();
+        assert_eq!(ui.spacing().item_spacing, egui::vec2(13., 17.));
+        let after = ui.label("After");
+        assert!(after.rect.left() >= field.get().right());
+    });
+    let label = frame.label("Label");
+    let error = frame.label("Error");
+    assert!(label.bottom() < field.get().top());
+    assert!(field.get().bottom() < error.top());
+    assert!((label.left() - field.get().left()).abs() < 1.);
+    assert!((error.left() - field.get().left()).abs() < 1.);
 }
