@@ -194,11 +194,28 @@ fn operation() {
     use maestro_app::configuration::migrations::{
         migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
     };
+    use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
+    let previous_limit = std::env::var("STARTUP_FILE_LIMIT").ok().map(|limit| {
+        let previous = getrlimit(Resource::Fsize);
+        setrlimit(
+            Resource::Fsize,
+            Rlimit {
+                current: Some(limit.parse::<u64>().unwrap() * 1024),
+                ..previous
+            },
+        )
+        .unwrap();
+        previous
+    });
     let result = match std::env::var("STARTUP_OPERATION").unwrap().as_str() {
         "auth" => migrate_auth_to_auth_json().map(Some),
         "sessions" => migrate_sessions_from_agent_root().map(|()| None),
         _ => panic!("unknown operation"),
     };
+    // Restore before reporting errors or writing the runtime's exit profile.
+    if let Some(previous) = previous_limit {
+        setrlimit(Resource::Fsize, previous).unwrap();
+    }
     let outcome = match result {
         Ok(providers) => Outcome {
             providers,
@@ -216,25 +233,28 @@ fn operation() {
             }),
         },
     };
+    if let Some(path) = std::env::var_os("STARTUP_EXIT_WRITE") {
+        fs::write(path, [0_u8; 4096]).expect("exit-time writes exceed the operation's file limit");
+    }
     println!("\nPROBE {}", serde_json::to_string(&outcome).unwrap());
 }
 
 fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> Outcome {
     let lines = if let Some(limit) = limit {
         let output = Command::new("bash")
-            .args([
-                "-c",
-                "trap '' XFSZ; ulimit -f \"$1\"; shift; exec \"$@\"",
-                "startup",
-                &limit.to_string(),
-            ])
+            .args(["-c", "trap '' XFSZ; exec \"$@\"", "startup"])
+            .env("STARTUP_FILE_LIMIT", limit.to_string())
             .arg(std::env::current_exe().unwrap())
             .args(["--exact", name, "--nocapture", "--test-threads=1"])
             .current_dir(cwd)
             .envs(envs.iter().copied())
             .output()
             .unwrap();
-        assert!(output.status.success(), "limited child transport failed");
+        assert!(
+            output.status.success(),
+            "limited child transport failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
         String::from_utf8(output.stdout)
             .unwrap()
             .lines()
@@ -245,6 +265,41 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
     };
     assert_eq!(lines.len(), 1);
     serde_json::from_str(&lines[0]).unwrap()
+}
+
+/// Check that a limited operation leaves room for exit-time profile writes.
+pub fn check_file_limit_restoration(name: &str) {
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        operation();
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let output = scratch.join("exit-write");
+    for fail_write in [false, true] {
+        if fail_write {
+            fs::write(
+                scratch.0.join("settings.json"),
+                format!("{{\"apiKeys\":{{\"provider\":\"{}\"}}}}", "k".repeat(4096)),
+            )
+            .unwrap();
+        }
+        let outcome = invoke(
+            name,
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "auth"),
+                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+                ("STARTUP_EXIT_WRITE", &output),
+            ],
+            Some(1),
+        );
+        assert_eq!(
+            outcome.error.map(|error| error.code),
+            fail_write.then(|| "EFBIG".into())
+        );
+        assert_eq!(fs::read(&output).unwrap(), [0_u8; 4096]);
+        fs::remove_file(&output).unwrap();
+    }
 }
 
 pub fn run(name: &str) {

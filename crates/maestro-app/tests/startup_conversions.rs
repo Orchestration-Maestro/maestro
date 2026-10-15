@@ -10,6 +10,12 @@ mod startup;
 
 #[test]
 #[cfg(unix)]
+fn file_limit_is_restored_before_child_exit() {
+    startup::check_file_limit_restoration("file_limit_is_restored_before_child_exit");
+}
+
+#[test]
+#[cfg(unix)]
 fn current_auth_skips_both_legacy_sources() {
     startup::run("current_auth_skips_both_legacy_sources");
 }
