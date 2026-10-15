@@ -129,3 +129,6 @@ pub use maestro_session::export_html;
 pub use configuration::config::VERSION;
 #[cfg(not(target_arch = "wasm32"))]
 pub use configuration::config::get_agent_dir;
+
+/// Configurable application action identifiers and their shared manager.
+pub use presentation_data::keybindings::{AppKeybinding, KeybindingsManager};

@@ -92,7 +92,7 @@ impl Harness {
             inspect,
         );
         let mut options = SessionSelectorOptions {
-            keybindings: manager(Vec::new()),
+            keybindings: Some(manager(Vec::new())),
             show_rename_hint: false,
             current_session_file_path: None,
             theme: world.theme.clone(),
@@ -105,7 +105,8 @@ impl Harness {
         };
         configure(&mut options);
         let selector =
-            SessionSelectorComponent::new(current.factory(), all.factory(), callbacks, options);
+            SessionSelectorComponent::new(current.factory(), all.factory(), callbacks, options)
+                .unwrap();
         holder.replace(Some(Rc::downgrade(&selector)));
         Self {
             selector,
@@ -660,10 +661,10 @@ pub fn managers() {
                 (i.chosen_manager == "global").then_some("ctrl+x"),
             )));
             let h = Harness::configured(|o| {
-                o.keybindings = manager(binding(
+                o.keybindings = Some(manager(binding(
                     id,
                     (i.chosen_manager == "supplied").then_some("ctrl+x"),
-                ));
+                )));
             });
             h.current_default();
             assert_eq!(h.frame(120), e.before);
@@ -760,7 +761,7 @@ pub fn collisions() {
             .collect();
             set_keybindings(manager(config));
             let h = Harness::configured(|o| {
-                o.keybindings = manager(binding(command("named").0, Some("ctrl+x")));
+                o.keybindings = Some(manager(binding(command("named").0, Some("ctrl+x"))));
             });
             h.current_default();
             h.selector.handle_input("\x18");
@@ -1021,7 +1022,7 @@ pub fn manager_identity() {
         "session_selector_keeps_supplied_manager_identity",
         |_: Empty, e: Single| {
             let supplied = manager(binding(command("named").0, Some("ctrl+x")));
-            let h = Harness::configured(|o| o.keybindings = supplied.clone());
+            let h = Harness::configured(|o| o.keybindings = Some(supplied.clone()));
             h.current_default();
             supplied.set_user_bindings(binding(command("named").0, Some("ctrl+n")));
             h.selector.handle_input("\x0e");
@@ -1180,8 +1181,15 @@ pub fn definitions() {
                 session_actions,
                 [
                     "app.session.toggleNamedFilter",
+                    "app.session.new",
+                    "app.session.tree",
+                    "app.session.fork",
+                    "app.session.resume",
                     "app.session.togglePath",
                     "app.session.toggleSort",
+                    "app.session.rename",
+                    "app.session.delete",
+                    "app.session.deleteNoninvasive",
                 ]
             );
             for row in e.definitions {
@@ -1238,3 +1246,37 @@ type SlotAccess = (
     fn(&maestro_chat::SessionList) -> Option<Rc<dyn Fn()>>,
     fn(&maestro_chat::SessionList, Option<Rc<dyn Fn()>>),
 );
+
+/// Composes file-backed admission with actual named membership and a retained explicit handle.
+#[cfg(unix)]
+pub fn default_manager() {
+    let _guard = registry::REGISTRY.lock().unwrap();
+    let _restore = registry::Restore(get_keybindings());
+    set_keybindings(manager(binding(command("named").0, Some("alt+n"))));
+    let omitted = Harness::configured(|o| o.keybindings = None);
+    let supplied = manager(binding(command("named").0, Some("ctrl+y")));
+    let explicit = Harness::configured(|o| o.keybindings = Some(supplied.clone()));
+    for h in [&omitted, &explicit] {
+        let mut unnamed = session("unnamed");
+        unnamed.first_message = "Unnamed marker".into();
+        h.finish("current", vec![unnamed, named("named", "Named marker")]);
+        assert_membership(h, true);
+        h.selector.handle_input("\x18");
+    }
+    assert_membership(&omitted, false);
+    assert_membership(&explicit, true);
+    supplied.set_user_bindings(binding(command("named").0, Some("ctrl+z")));
+    explicit.selector.handle_input("\x19");
+    assert_membership(&explicit, true);
+    explicit.selector.handle_input("\x1a");
+    assert_membership(&explicit, false);
+    assert_eq!(omitted.world.runtime.futures(), 0);
+    assert_eq!(explicit.world.runtime.futures(), 0);
+}
+/// Checks both actual visible membership classes after a consuming input.
+#[cfg(unix)]
+fn assert_membership(h: &Harness, unnamed: bool) {
+    let frame = h.selector.render(120).join("\n");
+    assert_eq!(frame.contains("Unnamed marker"), unnamed);
+    assert!(frame.contains("Named marker"));
+}

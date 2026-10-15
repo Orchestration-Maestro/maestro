@@ -4,7 +4,9 @@ The `maestro-chat` library exposes session query parsing, matching and ordering
 through `components::session_selector_search` and the crate root. These operations
 are available independently of the session picker UI.
 The [session list](session-selector.md) consumes these operations for its retained
-query and membership policies.
+query and membership policies. Its optional named-filter manager defaults to
+the [application keybindings](../application/startup.md); scope, sort and path
+controls continue to use the active global manager.
 
 Queries combine ordered-character fuzzy terms with quoted contiguous phrases.
 Phrases lowercase text and collapse whitespace using the shared text predicate.
