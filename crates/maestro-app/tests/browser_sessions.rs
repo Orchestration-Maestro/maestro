@@ -637,7 +637,13 @@ fn session_load_retains_backend_selected_before_await() {
         store.set_backend(old.clone());
         let read = store.load_session::<BrowserCustom<Open>>("id");
         tokio::pin!(read);
-        assert!(futures_util::poll!(&mut read).is_pending());
+        assert!(
+            std::future::Future::poll(
+                read.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
         store.set_backend(new.clone());
         send.send(row.expected["result"]["result"].clone()).unwrap();
         let loaded = read.await.unwrap().unwrap();
