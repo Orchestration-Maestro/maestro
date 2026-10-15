@@ -33,7 +33,7 @@ mod models;
 pub use events::*;
 pub use levels::*;
 pub use models::*;
-/// Provider reasoning names, with explicit null for unsupported choices.
-pub type ThinkingLevelMap = std::collections::BTreeMap<ModelThinkingLevel, Option<String>>;
+/// Insertion-ordered provider reasoning names, with null for unsupported choices.
+pub type ThinkingLevelMap = indexmap::IndexMap<ModelThinkingLevel, Option<String>>;
 /// Retained live assistant message shared by partial and terminal observations.
 pub type SharedAssistantMessage = std::sync::Arc<std::sync::RwLock<AssistantMessage>>;

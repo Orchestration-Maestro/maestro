@@ -14,3 +14,6 @@ pub mod components;
 
 /// Executable browser tools.
 pub mod tools;
+
+/// Injected collection storage.
+pub mod storage;

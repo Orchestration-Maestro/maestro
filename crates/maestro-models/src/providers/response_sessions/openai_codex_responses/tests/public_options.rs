@@ -77,7 +77,7 @@ struct Input {
     model_reasoning: Option<bool>,
     /// Per-level spellings and disabled mappings.
     #[serde(default)]
-    thinking_level_map: Option<std::collections::BTreeMap<ModelThinkingLevel, Option<String>>>,
+    thinking_level_map: Option<crate::ThinkingLevelMap>,
     /// Token default input.
     #[serde(default)]
     model_max_tokens: Option<f64>,
@@ -577,7 +577,7 @@ async fn minimal_case(id: &str, mapped: bool) {
     let (mut model, context, mut options) = corpus_setup();
     model.id = id.into();
     if mapped {
-        model.thinking_level_map = Some(std::collections::BTreeMap::from([(
+        model.thinking_level_map = Some(crate::ThinkingLevelMap::from([(
             ModelThinkingLevel::Minimal,
             Some("low".into()),
         )]));

@@ -1,0 +1,4395 @@
+{
+  "rows": [
+    {
+      "test": "store_schemas_keep_out_of_line_keys",
+      "input": {
+        "kind": "SettingsStore"
+      },
+      "expected": {
+        "result": {
+          "name": "settings"
+        }
+      }
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "get"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "set"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "delete"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "list"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "clear"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_schemas_keep_out_of_line_keys",
+      "input": {
+        "kind": "ProviderKeysStore"
+      },
+      "expected": {
+        "result": {
+          "name": "provider-keys"
+        }
+      }
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "get"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "set"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "delete"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "list"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "has"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_schemas_keep_out_of_line_keys",
+      "input": {
+        "kind": "CustomProvidersStore"
+      },
+      "expected": {
+        "result": {
+          "name": "custom-providers"
+        }
+      }
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "get"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "set"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "delete"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "getAll"
+      },
+      "expected": {}
+    },
+    {
+      "test": "store_backend_required_for_each_operation",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "has"
+      },
+      "expected": {}
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": null
+      },
+      "expected": {
+        "result": {
+          "value": null,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              null
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": ""
+      },
+      "expected": {
+        "result": {
+          "value": "",
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              ""
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": " ﻿value "
+      },
+      "expected": {
+        "result": {
+          "value": " ﻿value ",
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              " ﻿value "
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": 0
+      },
+      "expected": {
+        "result": {
+          "value": 0,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              0
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": -0
+      },
+      "expected": {
+        "result": {
+          "value": -0,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              -0
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": 1.2345678901234567
+      },
+      "expected": {
+        "result": {
+          "value": 1.2345678901234567,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              1.2345678901234567
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": false
+      },
+      "expected": {
+        "result": {
+          "value": false,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              false
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": true
+      },
+      "expected": {
+        "result": {
+          "value": true,
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              true
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": {
+          "z": "first",
+          "a": "second",
+          "nested": [
+            null,
+            false,
+            ""
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "z": "first",
+            "a": "second",
+            "nested": [
+              null,
+              false,
+              ""
+            ]
+          },
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              {
+                "z": "first",
+                "a": "second",
+                "nested": [
+                  null,
+                  false,
+                  ""
+                ]
+              }
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_values_roundtrip_without_normalization",
+      "input": {
+        "key": " ﻿setting ",
+        "value": [
+          null,
+          0,
+          "",
+          false,
+          {
+            "inner": "x"
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "value": [
+            null,
+            0,
+            "",
+            false,
+            {
+              "inner": "x"
+            }
+          ],
+          "trace": [
+            [
+              "set",
+              "settings",
+              " ﻿setting ",
+              [
+                null,
+                0,
+                "",
+                false,
+                {
+                  "inner": "x"
+                }
+              ]
+            ],
+            [
+              "get",
+              "settings",
+              " ﻿setting "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "settings_missing_delete_list_and_clear_use_only_settings",
+      "input": {
+        "key": "absent",
+        "keys": [
+          "z",
+          "a",
+          "é"
+        ]
+      },
+      "expected": {
+        "result": {
+          "missing": null,
+          "keys": [
+            "z",
+            "a",
+            "é"
+          ],
+          "trace": [
+            [
+              "get",
+              "settings",
+              "absent"
+            ],
+            [
+              "keys",
+              "settings"
+            ],
+            [
+              "delete",
+              "settings",
+              "absent"
+            ],
+            [
+              "clear",
+              "settings"
+            ]
+          ],
+          "settings": [],
+          "other": [
+            [
+              "keep",
+              "secret"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "provider_keys_keep_empty_and_unicode_secrets",
+      "input": {
+        "provider": " Custom Provider ",
+        "key": ""
+      },
+      "expected": {
+        "result": {
+          "value": "",
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "provider-keys",
+              " Custom Provider ",
+              ""
+            ],
+            [
+              "get",
+              "provider-keys",
+              " Custom Provider "
+            ],
+            [
+              "has",
+              "provider-keys",
+              " Custom Provider "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "provider_keys_keep_empty_and_unicode_secrets",
+      "input": {
+        "provider": " Custom Provider ",
+        "key": "secret-α\nline"
+      },
+      "expected": {
+        "result": {
+          "value": "secret-α\nline",
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "provider-keys",
+              " Custom Provider ",
+              "secret-α\nline"
+            ],
+            [
+              "get",
+              "provider-keys",
+              " Custom Provider "
+            ],
+            [
+              "has",
+              "provider-keys",
+              " Custom Provider "
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "provider_key_overwrite_list_delete_and_presence_use_named_store",
+      "input": {
+        "providers": [
+          "z",
+          "a"
+        ]
+      },
+      "expected": {
+        "result": {
+          "before": null,
+          "absent": false,
+          "empty": true,
+          "overwrite": "new",
+          "keys": [
+            "z",
+            "a"
+          ],
+          "after": false,
+          "trace": [
+            [
+              "get",
+              "provider-keys",
+              "missing"
+            ],
+            [
+              "has",
+              "provider-keys",
+              "missing"
+            ],
+            [
+              "has",
+              "provider-keys",
+              "a"
+            ],
+            [
+              "set",
+              "provider-keys",
+              "z",
+              "new"
+            ],
+            [
+              "get",
+              "provider-keys",
+              "z"
+            ],
+            [
+              "keys",
+              "provider-keys"
+            ],
+            [
+              "delete",
+              "provider-keys",
+              "z"
+            ],
+            [
+              "delete",
+              "provider-keys",
+              "missing"
+            ],
+            [
+              "has",
+              "provider-keys",
+              "z"
+            ]
+          ],
+          "other": [
+            [
+              "a",
+              "keep"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "ollama",
+          "name": " Name ",
+          "type": "ollama",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "ollama",
+            "name": " Name ",
+            "type": "ollama",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "ollama",
+              {
+                "id": "ollama",
+                "name": " Name ",
+                "type": "ollama",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "ollama"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "ollama"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "ollama",
+          "name": " Name ",
+          "type": "ollama",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "ollama",
+            "name": " Name ",
+            "type": "ollama",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "ollama",
+              {
+                "id": "ollama",
+                "name": " Name ",
+                "type": "ollama",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "ollama"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "ollama"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "ollama",
+          "name": " Name ",
+          "type": "ollama",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "ollama",
+            "name": " Name ",
+            "type": "ollama",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "ollama",
+              {
+                "id": "ollama",
+                "name": " Name ",
+                "type": "ollama",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "ollama"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "ollama"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "ollama",
+          "name": " Name ",
+          "type": "ollama",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "ollama",
+            "name": " Name ",
+            "type": "ollama",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "ollama",
+              {
+                "id": "ollama",
+                "name": " Name ",
+                "type": "ollama",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "ollama"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "ollama"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "llama.cpp",
+          "name": " Name ",
+          "type": "llama.cpp",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "llama.cpp",
+            "name": " Name ",
+            "type": "llama.cpp",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "llama.cpp",
+              {
+                "id": "llama.cpp",
+                "name": " Name ",
+                "type": "llama.cpp",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "llama.cpp"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "llama.cpp"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "llama.cpp",
+          "name": " Name ",
+          "type": "llama.cpp",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "llama.cpp",
+            "name": " Name ",
+            "type": "llama.cpp",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "llama.cpp",
+              {
+                "id": "llama.cpp",
+                "name": " Name ",
+                "type": "llama.cpp",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "llama.cpp"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "llama.cpp"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "llama.cpp",
+          "name": " Name ",
+          "type": "llama.cpp",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "llama.cpp",
+            "name": " Name ",
+            "type": "llama.cpp",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "llama.cpp",
+              {
+                "id": "llama.cpp",
+                "name": " Name ",
+                "type": "llama.cpp",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "llama.cpp"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "llama.cpp"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "llama.cpp",
+          "name": " Name ",
+          "type": "llama.cpp",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "llama.cpp",
+            "name": " Name ",
+            "type": "llama.cpp",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "llama.cpp",
+              {
+                "id": "llama.cpp",
+                "name": " Name ",
+                "type": "llama.cpp",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "llama.cpp"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "llama.cpp"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "vllm",
+          "name": " Name ",
+          "type": "vllm",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "vllm",
+            "name": " Name ",
+            "type": "vllm",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "vllm",
+              {
+                "id": "vllm",
+                "name": " Name ",
+                "type": "vllm",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "vllm"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "vllm"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "vllm",
+          "name": " Name ",
+          "type": "vllm",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "vllm",
+            "name": " Name ",
+            "type": "vllm",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "vllm",
+              {
+                "id": "vllm",
+                "name": " Name ",
+                "type": "vllm",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "vllm"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "vllm"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "vllm",
+          "name": " Name ",
+          "type": "vllm",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "vllm",
+            "name": " Name ",
+            "type": "vllm",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "vllm",
+              {
+                "id": "vllm",
+                "name": " Name ",
+                "type": "vllm",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "vllm"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "vllm"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "vllm",
+          "name": " Name ",
+          "type": "vllm",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "vllm",
+            "name": " Name ",
+            "type": "vllm",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "vllm",
+              {
+                "id": "vllm",
+                "name": " Name ",
+                "type": "vllm",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "vllm"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "vllm"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "lmstudio",
+          "name": " Name ",
+          "type": "lmstudio",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "lmstudio",
+            "name": " Name ",
+            "type": "lmstudio",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "lmstudio",
+              {
+                "id": "lmstudio",
+                "name": " Name ",
+                "type": "lmstudio",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "lmstudio"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "lmstudio"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "lmstudio",
+          "name": " Name ",
+          "type": "lmstudio",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "lmstudio",
+            "name": " Name ",
+            "type": "lmstudio",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "lmstudio",
+              {
+                "id": "lmstudio",
+                "name": " Name ",
+                "type": "lmstudio",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "lmstudio"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "lmstudio"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "lmstudio",
+          "name": " Name ",
+          "type": "lmstudio",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "lmstudio",
+            "name": " Name ",
+            "type": "lmstudio",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "lmstudio",
+              {
+                "id": "lmstudio",
+                "name": " Name ",
+                "type": "lmstudio",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "lmstudio"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "lmstudio"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "lmstudio",
+          "name": " Name ",
+          "type": "lmstudio",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "lmstudio",
+            "name": " Name ",
+            "type": "lmstudio",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "lmstudio",
+              {
+                "id": "lmstudio",
+                "name": " Name ",
+                "type": "lmstudio",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "lmstudio"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "lmstudio"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-completions",
+          "name": " Name ",
+          "type": "openai-completions",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-completions",
+            "name": " Name ",
+            "type": "openai-completions",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-completions",
+              {
+                "id": "openai-completions",
+                "name": " Name ",
+                "type": "openai-completions",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-completions"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-completions"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-completions",
+          "name": " Name ",
+          "type": "openai-completions",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-completions",
+            "name": " Name ",
+            "type": "openai-completions",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-completions",
+              {
+                "id": "openai-completions",
+                "name": " Name ",
+                "type": "openai-completions",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-completions"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-completions"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-completions",
+          "name": " Name ",
+          "type": "openai-completions",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-completions",
+            "name": " Name ",
+            "type": "openai-completions",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-completions",
+              {
+                "id": "openai-completions",
+                "name": " Name ",
+                "type": "openai-completions",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-completions"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-completions"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-completions",
+          "name": " Name ",
+          "type": "openai-completions",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-completions",
+            "name": " Name ",
+            "type": "openai-completions",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-completions",
+              {
+                "id": "openai-completions",
+                "name": " Name ",
+                "type": "openai-completions",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-completions"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-completions"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-responses",
+          "name": " Name ",
+          "type": "openai-responses",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-responses",
+            "name": " Name ",
+            "type": "openai-responses",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-responses",
+              {
+                "id": "openai-responses",
+                "name": " Name ",
+                "type": "openai-responses",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-responses"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-responses"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-responses",
+          "name": " Name ",
+          "type": "openai-responses",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-responses",
+            "name": " Name ",
+            "type": "openai-responses",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-responses",
+              {
+                "id": "openai-responses",
+                "name": " Name ",
+                "type": "openai-responses",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-responses"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-responses"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-responses",
+          "name": " Name ",
+          "type": "openai-responses",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-responses",
+            "name": " Name ",
+            "type": "openai-responses",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-responses",
+              {
+                "id": "openai-responses",
+                "name": " Name ",
+                "type": "openai-responses",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-responses"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-responses"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "openai-responses",
+          "name": " Name ",
+          "type": "openai-responses",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "openai-responses",
+            "name": " Name ",
+            "type": "openai-responses",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "openai-responses",
+              {
+                "id": "openai-responses",
+                "name": " Name ",
+                "type": "openai-responses",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "openai-responses"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "openai-responses"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "anthropic-messages",
+          "name": " Name ",
+          "type": "anthropic-messages",
+          "baseUrl": "http://localhost/base/"
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "anthropic-messages",
+            "name": " Name ",
+            "type": "anthropic-messages",
+            "baseUrl": "http://localhost/base/"
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "anthropic-messages",
+              {
+                "id": "anthropic-messages",
+                "name": " Name ",
+                "type": "anthropic-messages",
+                "baseUrl": "http://localhost/base/"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "anthropic-messages"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "anthropic-messages"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "anthropic-messages",
+          "name": " Name ",
+          "type": "anthropic-messages",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": null,
+          "models": null
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "anthropic-messages",
+            "name": " Name ",
+            "type": "anthropic-messages",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": null,
+            "models": null
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "anthropic-messages",
+              {
+                "id": "anthropic-messages",
+                "name": " Name ",
+                "type": "anthropic-messages",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": null,
+                "models": null
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "anthropic-messages"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "anthropic-messages"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "anthropic-messages",
+          "name": " Name ",
+          "type": "anthropic-messages",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "",
+          "models": []
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "anthropic-messages",
+            "name": " Name ",
+            "type": "anthropic-messages",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "",
+            "models": []
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "anthropic-messages",
+              {
+                "id": "anthropic-messages",
+                "name": " Name ",
+                "type": "anthropic-messages",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "",
+                "models": []
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "anthropic-messages"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "anthropic-messages"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_records_keep_types_optional_values_and_models",
+      "input": {
+        "provider": {
+          "id": "anthropic-messages",
+          "name": " Name ",
+          "type": "anthropic-messages",
+          "baseUrl": "http://localhost/base/",
+          "apiKey": "secret",
+          "models": [
+            {
+              "id": "m",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            },
+            {
+              "id": "second",
+              "name": "M",
+              "api": "custom-api",
+              "provider": "manual",
+              "baseUrl": "http://localhost/api",
+              "reasoning": true,
+              "input": [
+                "text",
+                "image"
+              ],
+              "cost": {
+                "input": 0.5,
+                "output": 2,
+                "cacheRead": 0.1,
+                "cacheWrite": 0.2
+              },
+              "contextWindow": 128000,
+              "maxTokens": 4096,
+              "headers": {
+                "Z": "z",
+                "A": "a"
+              },
+              "thinkingLevelMap": {
+                "low": "small",
+                "high": "large"
+              },
+              "compat": {
+                "customSwitch": true,
+                "openRouterRouting": {
+                  "order": [
+                    "second",
+                    "first"
+                  ],
+                  "custom": 1
+                }
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "id": "anthropic-messages",
+            "name": " Name ",
+            "type": "anthropic-messages",
+            "baseUrl": "http://localhost/base/",
+            "apiKey": "secret",
+            "models": [
+              {
+                "id": "m",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              },
+              {
+                "id": "second",
+                "name": "M",
+                "api": "custom-api",
+                "provider": "manual",
+                "baseUrl": "http://localhost/api",
+                "reasoning": true,
+                "input": [
+                  "text",
+                  "image"
+                ],
+                "cost": {
+                  "input": 0.5,
+                  "output": 2,
+                  "cacheRead": 0.1,
+                  "cacheWrite": 0.2
+                },
+                "contextWindow": 128000,
+                "maxTokens": 4096,
+                "headers": {
+                  "Z": "z",
+                  "A": "a"
+                },
+                "thinkingLevelMap": {
+                  "low": "small",
+                  "high": "large"
+                },
+                "compat": {
+                  "customSwitch": true,
+                  "openRouterRouting": {
+                    "order": [
+                      "second",
+                      "first"
+                    ],
+                    "custom": 1
+                  }
+                }
+              }
+            ]
+          },
+          "has": true,
+          "trace": [
+            [
+              "set",
+              "custom-providers",
+              "anthropic-messages",
+              {
+                "id": "anthropic-messages",
+                "name": " Name ",
+                "type": "anthropic-messages",
+                "baseUrl": "http://localhost/base/",
+                "apiKey": "secret",
+                "models": [
+                  {
+                    "id": "m",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  },
+                  {
+                    "id": "second",
+                    "name": "M",
+                    "api": "custom-api",
+                    "provider": "manual",
+                    "baseUrl": "http://localhost/api",
+                    "reasoning": true,
+                    "input": [
+                      "text",
+                      "image"
+                    ],
+                    "cost": {
+                      "input": 0.5,
+                      "output": 2,
+                      "cacheRead": 0.1,
+                      "cacheWrite": 0.2
+                    },
+                    "contextWindow": 128000,
+                    "maxTokens": 4096,
+                    "headers": {
+                      "Z": "z",
+                      "A": "a"
+                    },
+                    "thinkingLevelMap": {
+                      "low": "small",
+                      "high": "large"
+                    },
+                    "compat": {
+                      "customSwitch": true,
+                      "openRouterRouting": {
+                        "order": [
+                          "second",
+                          "first"
+                        ],
+                        "custom": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "anthropic-messages"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "anthropic-messages"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_listing_keeps_key_order_and_skips_removed_rows",
+      "input": {
+        "keys": []
+      },
+      "expected": {
+        "result": {
+          "providers": [],
+          "trace": [
+            [
+              "keys",
+              "custom-providers"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_listing_keeps_key_order_and_skips_removed_rows",
+      "input": {
+        "keys": [
+          "third",
+          "gone",
+          "first",
+          "second"
+        ]
+      },
+      "expected": {
+        "result": {
+          "providers": [
+            {
+              "id": "third",
+              "name": "third",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            },
+            {
+              "id": "first",
+              "name": "first",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            },
+            {
+              "id": "second",
+              "name": "second",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            }
+          ],
+          "trace": [
+            [
+              "keys",
+              "custom-providers"
+            ],
+            [
+              "get",
+              "custom-providers",
+              "third"
+            ],
+            [
+              "get",
+              "custom-providers",
+              "gone"
+            ],
+            [
+              "get",
+              "custom-providers",
+              "first"
+            ],
+            [
+              "get",
+              "custom-providers",
+              "second"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_overwrite_delete_and_presence_use_named_store",
+      "input": {
+        "id": "p"
+      },
+      "expected": {
+        "result": {
+          "missing": null,
+          "absent": false,
+          "overwrite": {
+            "id": "p",
+            "name": "new",
+            "type": "ollama",
+            "baseUrl": "http://localhost"
+          },
+          "after": false,
+          "trace": [
+            [
+              "get",
+              "custom-providers",
+              "p"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "p"
+            ],
+            [
+              "set",
+              "custom-providers",
+              "p",
+              {
+                "id": "p",
+                "name": "old",
+                "type": "ollama",
+                "baseUrl": "http://localhost"
+              }
+            ],
+            [
+              "set",
+              "custom-providers",
+              "p",
+              {
+                "id": "p",
+                "name": "new",
+                "type": "ollama",
+                "baseUrl": "http://localhost"
+              }
+            ],
+            [
+              "get",
+              "custom-providers",
+              "p"
+            ],
+            [
+              "delete",
+              "custom-providers",
+              "p"
+            ],
+            [
+              "delete",
+              "custom-providers",
+              "gone"
+            ],
+            [
+              "has",
+              "custom-providers",
+              "p"
+            ]
+          ],
+          "other": [
+            [
+              "keep",
+              1
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "get"
+      },
+      "expected": {
+        "trace": [
+          [
+            "get",
+            "settings",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "set"
+      },
+      "expected": {
+        "trace": [
+          [
+            "set",
+            "settings",
+            "k",
+            "v"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "delete"
+      },
+      "expected": {
+        "trace": [
+          [
+            "delete",
+            "settings",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "list"
+      },
+      "expected": {
+        "trace": [
+          [
+            "keys",
+            "settings"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "SettingsStore",
+        "op": "clear"
+      },
+      "expected": {
+        "trace": [
+          [
+            "clear",
+            "settings"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "get"
+      },
+      "expected": {
+        "trace": [
+          [
+            "get",
+            "provider-keys",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "set"
+      },
+      "expected": {
+        "trace": [
+          [
+            "set",
+            "provider-keys",
+            "k",
+            "v"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "delete"
+      },
+      "expected": {
+        "trace": [
+          [
+            "delete",
+            "provider-keys",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "list"
+      },
+      "expected": {
+        "trace": [
+          [
+            "keys",
+            "provider-keys"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "ProviderKeysStore",
+        "op": "has"
+      },
+      "expected": {
+        "trace": [
+          [
+            "has",
+            "provider-keys",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "get"
+      },
+      "expected": {
+        "trace": [
+          [
+            "get",
+            "custom-providers",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "set"
+      },
+      "expected": {
+        "trace": [
+          [
+            "set",
+            "custom-providers",
+            "p",
+            {
+              "id": "p",
+              "name": "P",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "delete"
+      },
+      "expected": {
+        "trace": [
+          [
+            "delete",
+            "custom-providers",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "getAll"
+      },
+      "expected": {
+        "trace": [
+          [
+            "keys",
+            "custom-providers"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_failures_keep_operation_phase_and_adapter_cause",
+      "input": {
+        "kind": "CustomProvidersStore",
+        "op": "has"
+      },
+      "expected": {
+        "trace": [
+          [
+            "has",
+            "custom-providers",
+            "k"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "custom_provider_listing_stops_at_first_read_failure",
+      "input": {
+        "keys": [
+          "one",
+          "two",
+          "three"
+        ]
+      },
+      "expected": {
+        "trace": [
+          [
+            "keys",
+            "custom-providers"
+          ],
+          [
+            "get",
+            "custom-providers",
+            "one"
+          ],
+          [
+            "get",
+            "custom-providers",
+            "two"
+          ]
+        ]
+      }
+    },
+    {
+      "test": "store_binding_replaces_shared_backend_and_retains_inflight_operation",
+      "input": {
+        "kind": "SettingsStore"
+      },
+      "expected": {
+        "result": {
+          "pending": "old",
+          "latest": "new",
+          "oldTrace": [
+            [
+              "get",
+              "settings",
+              "k"
+            ]
+          ],
+          "newTrace": [
+            [
+              "get",
+              "settings",
+              "k"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "store_binding_replaces_shared_backend_and_retains_inflight_operation",
+      "input": {
+        "kind": "ProviderKeysStore"
+      },
+      "expected": {
+        "result": {
+          "pending": "old",
+          "latest": "new",
+          "oldTrace": [
+            [
+              "get",
+              "provider-keys",
+              "k"
+            ]
+          ],
+          "newTrace": [
+            [
+              "get",
+              "provider-keys",
+              "k"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "store_binding_replaces_shared_backend_and_retains_inflight_operation",
+      "input": {
+        "kind": "CustomProvidersStore"
+      },
+      "expected": {
+        "result": {
+          "pending": {
+            "id": "k",
+            "name": "old",
+            "type": "ollama",
+            "baseUrl": "http://localhost"
+          },
+          "latest": {
+            "id": "k",
+            "name": "new",
+            "type": "ollama",
+            "baseUrl": "http://localhost"
+          },
+          "oldTrace": [
+            [
+              "get",
+              "custom-providers",
+              "k"
+            ]
+          ],
+          "newTrace": [
+            [
+              "get",
+              "custom-providers",
+              "k"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "custom_provider_listing_resolves_backend_for_each_read",
+      "input": {
+        "keys": [
+          "first",
+          "second"
+        ]
+      },
+      "expected": {
+        "result": {
+          "providers": [
+            {
+              "id": "first",
+              "name": "middle backend",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            },
+            {
+              "id": "second",
+              "name": "last backend",
+              "type": "ollama",
+              "baseUrl": "http://localhost"
+            }
+          ],
+          "traces": [
+            [
+              [
+                "keys",
+                "custom-providers"
+              ]
+            ],
+            [
+              [
+                "get",
+                "custom-providers",
+                "first"
+              ]
+            ],
+            [
+              [
+                "get",
+                "custom-providers",
+                "second"
+              ]
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "storage_config_records_preserve_optional_settings",
+      "input": {
+        "config": {
+          "dbName": "minimal",
+          "version": 1,
+          "stores": [
+            {
+              "name": "plain"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "dbName": "minimal",
+            "version": 1,
+            "stores": [
+              {
+                "name": "plain"
+              }
+            ]
+          },
+          "trace": [
+            [
+              "set",
+              "settings",
+              "schema",
+              {
+                "dbName": "minimal",
+                "version": 1,
+                "stores": [
+                  {
+                    "name": "plain"
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "settings",
+              "schema"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "storage_config_records_preserve_optional_settings",
+      "input": {
+        "config": {
+          "dbName": "full",
+          "version": 2,
+          "stores": [
+            {
+              "name": "inline",
+              "keyPath": "id",
+              "autoIncrement": false,
+              "indices": [
+                {
+                  "name": "recent",
+                  "keyPath": "lastModified",
+                  "unique": false
+                },
+                {
+                  "name": "unique",
+                  "keyPath": "title",
+                  "unique": true
+                }
+              ]
+            },
+            {
+              "name": "auto",
+              "autoIncrement": true,
+              "indices": []
+            }
+          ]
+        }
+      },
+      "expected": {
+        "result": {
+          "value": {
+            "dbName": "full",
+            "version": 2,
+            "stores": [
+              {
+                "name": "inline",
+                "keyPath": "id",
+                "autoIncrement": false,
+                "indices": [
+                  {
+                    "name": "recent",
+                    "keyPath": "lastModified",
+                    "unique": false
+                  },
+                  {
+                    "name": "unique",
+                    "keyPath": "title",
+                    "unique": true
+                  }
+                ]
+              },
+              {
+                "name": "auto",
+                "autoIncrement": true,
+                "indices": []
+              }
+            ]
+          },
+          "trace": [
+            [
+              "set",
+              "settings",
+              "schema",
+              {
+                "dbName": "full",
+                "version": 2,
+                "stores": [
+                  {
+                    "name": "inline",
+                    "keyPath": "id",
+                    "autoIncrement": false,
+                    "indices": [
+                      {
+                        "name": "recent",
+                        "keyPath": "lastModified",
+                        "unique": false
+                      },
+                      {
+                        "name": "unique",
+                        "keyPath": "title",
+                        "unique": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "auto",
+                    "autoIncrement": true,
+                    "indices": []
+                  }
+                ]
+              }
+            ],
+            [
+              "get",
+              "settings",
+              "schema"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "test": "schema_reads_return_independent_owned_records",
+      "input": {
+        "kind": "SettingsStore"
+      },
+      "expected": {
+        "result": {
+          "name": "settings"
+        }
+      }
+    },
+    {
+      "test": "schema_reads_return_independent_owned_records",
+      "input": {
+        "kind": "ProviderKeysStore"
+      },
+      "expected": {
+        "result": {
+          "name": "provider-keys"
+        }
+      }
+    },
+    {
+      "test": "schema_reads_return_independent_owned_records",
+      "input": {
+        "kind": "CustomProvidersStore"
+      },
+      "expected": {
+        "result": {
+          "name": "custom-providers"
+        }
+      }
+    }
+  ]
+}

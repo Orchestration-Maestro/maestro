@@ -155,7 +155,7 @@ fn thinking(model: &Model) -> String {
                 })
                 .collect::<Vec<_>>()
                 .join(",");
-            format!("Some(std::collections::BTreeMap::from([{entries}]))")
+            format!("Some(indexmap::IndexMap::from([{entries}]))")
         },
     )
 }
