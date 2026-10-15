@@ -82,6 +82,7 @@ async fn preparation_precedes_validation_and_preserves_raw_events_case() {
         thought_signature: None,
     })];
     let tool = Arc::new(RwLock::new(AgentTool {
+        description: None,
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),
@@ -209,6 +210,7 @@ async fn tool_artifacts_keep_content_details_and_timestamps_case() {
     let history = Arc::clone(&context.messages);
     context.tools = Some(Arc::new(RwLock::new(vec![Arc::new(RwLock::new(
         AgentTool {
+            description: None,
             definition: Tool {
                 name: "echo".into(),
                 description: "Echo".into(),
@@ -550,6 +552,7 @@ fn ordered_tools(
         .map(|name| {
             let trace = Arc::clone(trace);
             Arc::new(RwLock::new(AgentTool {
+                description: None,
                 definition: Tool {
                     name: name.into(),
                     description: name.into(),

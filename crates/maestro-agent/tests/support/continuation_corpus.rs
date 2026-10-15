@@ -483,6 +483,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
         let owner = Arc::downgrade(agent);
         let t = trace.clone();
         let tool = Arc::new(RwLock::new(AgentTool {
+            description: None,
             definition: maestro_models::Tool {
                 name: "echo".into(),
                 description: "Echo".into(),

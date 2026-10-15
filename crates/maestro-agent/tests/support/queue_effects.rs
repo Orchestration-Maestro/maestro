@@ -113,6 +113,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
     let gates = Mutex::new(gates);
     let owner = Arc::downgrade(agent);
     let tool = Arc::new(RwLock::new(AgentTool {
+        description: None,
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),

@@ -176,8 +176,10 @@ factory once; a factory error is the execution's error and the body does not run
 Call id, arguments, signal and progress observer pass through, and result details
 keep the three states of `AgentToolResult` (absent, explicit null, value).
 `wrap_tool_definitions` wraps in order and keeps duplicates.
-`create_tool_definition_from_agent_tool` is the reverse and leaves prompt text and
-renderers absent. Native and browser builds differ only in whether the stored
+`create_tool_definition_from_agent_tool` returns a `Result` and snapshots the
+current live description once; a supplied callback failure is returned unchanged.
+The converted definition and subsequent wrapping retain that snapshot, with prompt
+text and renderers absent. Native and browser builds differ only in whether the stored
 callbacks must be `Send + Sync`.
 
 ## Display helpers

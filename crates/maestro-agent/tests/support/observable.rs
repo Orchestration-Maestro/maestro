@@ -127,6 +127,7 @@ pub fn calls(
 #[must_use]
 pub fn tool(name: &str, execute: maestro_agent::ExecuteTool) -> maestro_agent::SharedAgentTool {
     Arc::new(std::sync::RwLock::new(maestro_agent::AgentTool {
+        description: None,
         definition: maestro_models::Tool {
             name: name.into(),
             description: name.into(),

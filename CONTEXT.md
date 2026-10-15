@@ -18,6 +18,9 @@ From `docs/specs/maestro-port.md`.
 - **ModelRegistry:** The owner of the usable local model catalog. [Local model loading](docs/catalog.md) provides explicit-file and memory construction, overrides, shared observations, reload, request authentication, provider metadata and dynamic registration, replacement, replay and removal.
 - **Tool arguments:** The model-supplied argument object, completed from accumulated JSON before execution.
 - **Tool declaration:** A model-facing name, description and JSON Schema argument contract, distinct from an executable tool.
+- **Sandbox host:** The supplied platform owner of hidden JavaScript execution; the application keeps output and download formatting. See [browser tools](docs/application/browser-tools.md#javascript-execution).
+- **Sandbox runtime provider:** A retained source of owned globals, complete injectable function source, helper descriptions and optional lifecycle/message hooks.
+- **Sandbox value:** A caller-owned return value with fallible REPL display, without a mandatory JSON transport.
 - **Model-request projection:** The selected-model view of supplied conversation context, not the stored branch or a history write.
 - **Catalog override:** Partial nested metadata supplied by local model files over base catalog entries.
 - **ApiProvider:** Ordered protocol registration holding raw and simple invocation callbacks.

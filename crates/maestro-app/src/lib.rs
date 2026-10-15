@@ -100,3 +100,10 @@ pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 
 pub use maestro_tools::keybinding_hints::plain_key_hint;
 pub use maestro_tools::output::render_utils::num;
+
+/// Sandbox SDK provider contract.
+pub use browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
+/// Sandbox SDK download, result and URL callback records.
+pub use browser::components::sandboxed_iframe::{SandboxFile, SandboxResult, SandboxUrlProvider};
+/// JavaScript execution tool factory.
+pub use browser::tools::javascript_repl::create_javascript_repl_tool;
