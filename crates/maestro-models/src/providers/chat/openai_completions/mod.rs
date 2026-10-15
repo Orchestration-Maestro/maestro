@@ -10,21 +10,18 @@ mod sse;
 mod usage;
 
 use std::borrow::Cow;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
 
 pub use compat::ResolvedOpenAICompletionsCompat;
 
 use crate::options::resolve_api_key;
-use crate::providers::assistant_output::{fail, initial_message};
-use crate::providers::http::{
-    HttpRequest, HttpResponse, RequestFailure, endpoint_url, send, spawn_detached,
-};
+use crate::providers::assistant_output::{fail, initial_message, start_producer};
+use crate::providers::http::{HttpRequest, HttpResponse, RequestFailure, endpoint_url, send};
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
-    DoneReason, Model, ModelThinkingLevel, ProviderResponse, SharedAssistantMessage,
-    SimpleStreamOptions, StopReason, StreamOptions, ThinkingLevel, ToolChoice, build_base_options,
-    clamp_thinking_level,
+    Model, ModelThinkingLevel, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions,
+    StopReason, StreamOptions, ThinkingLevel, ToolChoice, build_base_options, clamp_thinking_level,
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
@@ -72,10 +69,7 @@ pub fn stream_openai_completions(
         stream.clone(),
         Arc::clone(&output),
     );
-    if !spawn_detached(task) {
-        let failure = RequestFailure::new("Streaming requires a running Tokio runtime.");
-        fail(&stream, &output, signal.as_ref(), failure);
-    }
+    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
     stream
 }
 
@@ -95,11 +89,8 @@ pub fn stream_simple_openai_completions(
             .and_then(|options| options.common.api_key.as_deref())
             .map(Cow::Borrowed),
     )
-    .ok_or_else(|| DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: format!("No API key for provider: {}", model.provider),
-        stack: None,
-        code: None,
+    .ok_or_else(|| {
+        DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
     let common = build_base_options(&model, options.as_ref(), Some(&api_key));
     let reasoning_effort = options
@@ -203,31 +194,21 @@ fn conclude(
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
 ) -> Result<(), RequestFailure> {
-    if signal.is_some_and(Cancellation::is_aborted) {
-        return Err(RequestFailure::new(ABORTED_TEXT));
-    }
-    let reason = {
-        let message = output.read().unwrap_or_else(PoisonError::into_inner);
-        match message.stop_reason {
-            StopReason::Stop => DoneReason::Stop,
-            StopReason::Length => DoneReason::Length,
-            StopReason::ToolUse => DoneReason::ToolUse,
-            StopReason::Aborted => return Err(RequestFailure::new(ABORTED_TEXT)),
-            StopReason::Error => {
-                let supplied = message
-                    .error_message
-                    .as_deref()
-                    .filter(|text| !text.is_empty());
-                return Err(RequestFailure::new(
-                    supplied.unwrap_or("Provider returned an error stop reason"),
-                ));
-            }
-        }
-    };
-    stream.push(AssistantMessageEvent::Done {
-        reason,
-        message: Arc::clone(output),
-    });
-    stream.end(None);
-    Ok(())
+    crate::providers::assistant_output::conclude_with(stream, output, signal, completion_error)
 }
+
+/// Preserve the chat provider's supplied text, with its cancellation and empty-text fallbacks.
+fn completion_error(message: &crate::AssistantMessage) -> &str {
+    if message.stop_reason == StopReason::Aborted {
+        ABORTED_TEXT
+    } else {
+        message
+            .error_message
+            .as_deref()
+            .filter(|text| !text.is_empty())
+            .unwrap_or("Provider returned an error stop reason")
+    }
+}
+
+#[cfg(test)]
+mod tests;

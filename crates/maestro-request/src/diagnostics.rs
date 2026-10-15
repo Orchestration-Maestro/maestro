@@ -20,7 +20,7 @@ pub struct DiagnosticErrorInfo {
     /// Optional supplied error name.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Supplied message, or the name when the message is empty.
+    /// Supplied message; formatting falls back to the name when this is empty.
     pub message: String,
     /// Optional supplied stack text.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -31,15 +31,21 @@ pub struct DiagnosticErrorInfo {
 }
 
 impl DiagnosticErrorInfo {
-    /// An error named `Error` with the given message and no stack or code.
+    /// Supplied name and message, unchanged, without a stack or code.
     #[must_use]
-    pub fn error(message: impl Into<String>) -> Self {
+    pub fn new(name: Option<String>, message: impl Into<String>) -> Self {
         Self {
-            name: Some("Error".to_owned()),
+            name,
             message: message.into(),
             stack: None,
             code: None,
         }
+    }
+
+    /// An error named `Error` with the given message and no stack or code.
+    #[must_use]
+    pub fn error(message: impl Into<String>) -> Self {
+        Self::new(Some("Error".to_owned()), message)
     }
 }
 
@@ -82,12 +88,9 @@ pub fn extract_diagnostic_error(value: DiagnosticInput<'_>) -> DiagnosticErrorIn
             stack: error.stack.clone(),
             code: error.code.clone(),
         },
-        DiagnosticInput::Text(text) => DiagnosticErrorInfo {
-            name: Some("ThrownValue".to_owned()),
-            message: text.to_owned(),
-            stack: None,
-            code: None,
-        },
+        DiagnosticInput::Text(text) => {
+            DiagnosticErrorInfo::new(Some("ThrownValue".to_owned()), text)
+        }
     }
 }
 

@@ -10,7 +10,7 @@ use super::openai_responses_shared::{
     process_responses_stream,
 };
 use crate::options::resolve_api_key;
-use crate::providers::assistant_output::{conclude, fail, initial_message};
+use crate::providers::assistant_output::{conclude, fail, initial_message, start_producer};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
@@ -20,7 +20,7 @@ use crate::providers::chat::openai_completions::{
 };
 use crate::providers::http::{
     HttpRequest, RequestFailure, SseMessages, endpoint_url, sdk_status_failure,
-    send_with_status_error, spawn_detached,
+    send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
 use crate::{
@@ -107,14 +107,7 @@ pub fn stream_openai_responses(
         stream.clone(),
         Arc::clone(&output),
     );
-    if !spawn_detached(task) {
-        fail(
-            &stream,
-            &output,
-            signal.as_ref(),
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
-    }
+    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
     stream
 }
 

@@ -311,10 +311,5 @@ mod controls;
 
 /// Construct a loop-owned diagnostic without changing caller diagnostics.
 fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }

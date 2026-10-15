@@ -38,12 +38,7 @@ pub(super) struct ActiveRun {
 }
 /// Construct an authored operation diagnostic.
 pub(super) fn failure(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: message.into(),
-        code: None,
-        stack: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 impl<C: CustomAgentMessages + 'static> Agent<C> {
     #[cfg(not(target_arch = "wasm32"))]

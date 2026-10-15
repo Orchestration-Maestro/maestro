@@ -3,7 +3,7 @@ use super::{Agent, CustomAgentMessages, lock, read, write};
 use crate::{AgentEvent, AgentMessage};
 use maestro_models::{
     AssistantContent, AssistantMessage, BoxFuture, Cancellation, DiagnosticErrorInfo, StopReason,
-    TextContent, Usage, UsageCost, timestamp_now,
+    TextContent, Usage, timestamp_now,
 };
 use std::sync::{Arc, RwLock};
 impl<C: CustomAgentMessages + 'static> Agent<C> {
@@ -46,20 +46,7 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
                 response_model: None,
                 response_id: None,
                 diagnostics: None,
-                usage: Usage {
-                    input: 0.0,
-                    output: 0.0,
-                    cache_read: 0.0,
-                    cache_write: 0.0,
-                    total_tokens: 0.0,
-                    cost: UsageCost {
-                        input: 0.0,
-                        output: 0.0,
-                        cache_read: 0.0,
-                        cache_write: 0.0,
-                        total: 0.0,
-                    },
-                },
+                usage: Usage::default(),
                 stop_reason: if signal.is_aborted() {
                     StopReason::Aborted
                 } else {

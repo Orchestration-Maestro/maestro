@@ -8,11 +8,10 @@ use super::openai_responses_shared::{
 use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
-use crate::providers::assistant_output::{fail, initial_message};
+use crate::providers::assistant_output::{fail, initial_message, start_producer};
 use crate::providers::chat::openai_completions::{copied, layer, scope_headers};
 use crate::providers::http::{
     HttpRequest, RequestFailure, SseMessages, sdk_status_failure, send_with_status_error,
-    spawn_detached,
 };
 use crate::providers::json_text::compact_json;
 use crate::{
@@ -159,20 +158,18 @@ pub fn stream_azure_openai_responses(
     let output = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
-    if !spawn_detached(run(
-        Arc::new(model),
-        context,
-        options,
-        stream.clone(),
-        Arc::clone(&output),
-    )) {
-        fail(
-            &stream,
-            &output,
-            signal.as_ref(),
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
-    }
+    start_producer(
+        &stream,
+        &output,
+        signal.as_ref(),
+        Box::pin(run(
+            Arc::new(model),
+            context,
+            options,
+            stream.clone(),
+            Arc::clone(&output),
+        )),
+    );
     stream
 }
 /// Start a cloud invocation using simple budgets and reasoning support.

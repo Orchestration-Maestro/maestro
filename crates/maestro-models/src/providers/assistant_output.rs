@@ -6,12 +6,13 @@ use std::sync::{Arc, PoisonError};
 use crate::providers::http::RequestFailure;
 use crate::records::diagnostics::timestamp_now;
 use crate::{
-    AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation,
+    AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation,
     DiagnosticErrorInfo, DoneReason, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage,
 };
 
 /// The assistant message an invocation fills in, before any response arrives.
-pub(crate) fn initial_message(model: &Model) -> AssistantMessage {
+#[must_use]
+pub fn initial_message(model: &Model) -> AssistantMessage {
     AssistantMessage {
         content: Vec::new(),
         api: model.api.clone(),
@@ -39,6 +40,17 @@ pub(crate) fn fail(
     signal: Option<&Cancellation>,
     failure: RequestFailure,
 ) {
+    publish_failure(stream, output, signal, failure.into_text());
+    stream.end(None);
+}
+
+/// Update the retained partial message before publishing failure, without explicitly ending.
+pub fn publish_failure(
+    stream: &AssistantMessageEventStream,
+    output: &SharedAssistantMessage,
+    signal: Option<&Cancellation>,
+    text: String,
+) {
     let (stop_reason, reason) = if signal.is_some_and(Cancellation::is_aborted) {
         (StopReason::Aborted, ErrorReason::Aborted)
     } else {
@@ -47,13 +59,29 @@ pub(crate) fn fail(
     {
         let mut message = output.write().unwrap_or_else(PoisonError::into_inner);
         message.stop_reason = stop_reason;
-        message.error_message = Some(failure.into_text());
+        message.error_message = Some(text);
     }
     stream.push(AssistantMessageEvent::Error {
         reason,
         error: Arc::clone(output),
     });
-    stream.end(None);
+}
+
+/// Launch an owned producer, or publish the existing native runtime failure synchronously.
+pub(crate) fn start_producer(
+    stream: &AssistantMessageEventStream,
+    output: &SharedAssistantMessage,
+    signal: Option<&Cancellation>,
+    task: BoxFuture<()>,
+) {
+    if !crate::providers::http::spawn_detached(task) {
+        fail(
+            stream,
+            output,
+            signal,
+            RequestFailure::new("Streaming requires a running Tokio runtime."),
+        );
+    }
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.
@@ -62,19 +90,28 @@ pub(crate) fn conclude(
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
 ) -> Result<(), RequestFailure> {
+    conclude_with(events, output, signal, |_| "An unknown error occurred")
+}
+
+/// Classify one retained state using the protocol's synchronous failure-text selector.
+pub(crate) fn conclude_with(
+    events: &AssistantMessageEventStream,
+    output: &SharedAssistantMessage,
+    signal: Option<&Cancellation>,
+    failure_message: fn(&AssistantMessage) -> &str,
+) -> Result<(), RequestFailure> {
     if signal.is_some_and(Cancellation::is_aborted) {
         return Err(RequestFailure::new("Request was aborted"));
     }
-    let reason = match output
-        .read()
-        .unwrap_or_else(PoisonError::into_inner)
-        .stop_reason
-    {
-        StopReason::Stop => DoneReason::Stop,
-        StopReason::Length => DoneReason::Length,
-        StopReason::ToolUse => DoneReason::ToolUse,
-        StopReason::Error | StopReason::Aborted => {
-            return Err(RequestFailure::new("An unknown error occurred"));
+    let reason = {
+        let message = output.read().unwrap_or_else(PoisonError::into_inner);
+        match message.stop_reason {
+            StopReason::Stop => DoneReason::Stop,
+            StopReason::Length => DoneReason::Length,
+            StopReason::ToolUse => DoneReason::ToolUse,
+            StopReason::Error | StopReason::Aborted => {
+                return Err(RequestFailure::new(failure_message(&message)));
+            }
         }
     };
     events.push(AssistantMessageEvent::Done {
@@ -84,3 +121,6 @@ pub(crate) fn conclude(
     events.end(None);
     Ok(())
 }
+
+#[cfg(test)]
+pub(crate) mod tests;

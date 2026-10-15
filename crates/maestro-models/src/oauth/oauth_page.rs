@@ -152,12 +152,7 @@ fn escape_html(value: &str) -> String {
 
 /// Retain the native parse or resolution message without supplied diagnostic fields.
 fn diagnostic(error: &BrandError) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        message: error.to_string(),
-        name: None,
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, error.to_string())
 }
 
 #[cfg(test)]

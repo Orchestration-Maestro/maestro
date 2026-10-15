@@ -2,8 +2,8 @@
 use super::{MistralOptions, request};
 use crate::options::resolve_api_key;
 use crate::providers::{
-    assistant_output::{conclude, fail, initial_message},
-    http::{RequestFailure, spawn_detached},
+    assistant_output::{conclude, fail, initial_message, start_producer},
+    http::RequestFailure,
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
@@ -41,12 +41,10 @@ pub fn stream_simple_mistral(
     )
     .map(Cow::into_owned);
     if options.common.api_key.is_none() {
-        return Err(DiagnosticErrorInfo {
-            message: format!("No API key for provider: {}", model.provider),
-            name: None,
-            stack: None,
-            code: None,
-        });
+        return Err(DiagnosticErrorInfo::new(
+            None,
+            format!("No API key for provider: {}", model.provider),
+        ));
     }
     let (raw, effort) = request::simple_options(&model, &options);
     Ok(start(model, context, raw, effort))
@@ -63,26 +61,25 @@ fn start(
     let output = Arc::new(RwLock::new(initial_message(&model)));
     let producer = stream.clone();
     let message = Arc::clone(&output);
-    if !spawn_detached(async move {
-        let model = Arc::new(model);
-        let result = async {
-            let prepared =
-                request::prepare(Arc::clone(&model), &context, &options, effort.as_deref()).await?;
-            let body = request::send(prepared).await?;
-            produce(&producer, &message, &model, body, &options).await
-        }
-        .await;
-        if let Err(error) = result {
-            fail(&producer, &message, options.common.signal.as_ref(), error);
-        }
-    }) {
-        fail(
-            &stream,
-            &output,
-            None,
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
-    }
+    start_producer(
+        &stream,
+        &output,
+        None,
+        Box::pin(async move {
+            let model = Arc::new(model);
+            let result = async {
+                let prepared =
+                    request::prepare(Arc::clone(&model), &context, &options, effort.as_deref())
+                        .await?;
+                let body = request::send(prepared).await?;
+                produce(&producer, &message, &model, body, &options).await
+            }
+            .await;
+            if let Err(error) = result {
+                fail(&producer, &message, options.common.signal.as_ref(), error);
+            }
+        }),
+    );
     stream
 }
 

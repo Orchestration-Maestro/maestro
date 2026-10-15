@@ -19,12 +19,7 @@ pub struct Pkce {
 /// Returns the system entropy error with its native message.
 pub fn generate_pkce() -> Result<Pkce, DiagnosticErrorInfo> {
     generate_with_entropy(|bytes| {
-        getrandom::fill(bytes).map_err(|error| DiagnosticErrorInfo {
-            message: error.to_string(),
-            name: None,
-            stack: None,
-            code: None,
-        })
+        getrandom::fill(bytes).map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))
     })
 }
 

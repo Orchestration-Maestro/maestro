@@ -417,12 +417,8 @@ fn replay_content(
 
 /// Convert a tool call, rendering its arguments as compact JSON text.
 fn wire_tool_call(call: &ToolCall) -> Result<ChatCompletionMessageToolCall, DiagnosticErrorInfo> {
-    let arguments = compact_object(&call.arguments).map_err(|error| DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: error.to_string(),
-        stack: None,
-        code: None,
-    })?;
+    let arguments = compact_object(&call.arguments)
+        .map_err(|error| DiagnosticErrorInfo::error(error.to_string()))?;
     Ok(ChatCompletionMessageToolCall {
         id: call.id.clone(),
         name: call.name.clone(),

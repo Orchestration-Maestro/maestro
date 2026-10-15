@@ -111,13 +111,7 @@ impl std::error::Error for OAuthError {
 impl OAuthError {
     /// Construct an authored message without inventing diagnostic details.
     pub(crate) fn message(message: impl Into<String>) -> Self {
-        crate::DiagnosticErrorInfo {
-            message: message.into(),
-            name: None,
-            stack: None,
-            code: None,
-        }
-        .into()
+        crate::DiagnosticErrorInfo::new(None, message).into()
     }
 
     /// Format supplied fields, with nested cause before supplied stack text.

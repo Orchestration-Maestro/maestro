@@ -24,7 +24,12 @@ use std::sync::{Arc, RwLock};
 use indexmap::IndexMap;
 
 use crate::options::token_base;
-use crate::providers::assistant_output::{fail, initial_message};
+#[cfg(target_arch = "wasm32")]
+use crate::providers::assistant_output::fail;
+use crate::providers::assistant_output::initial_message;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::providers::assistant_output::start_producer;
+#[cfg(target_arch = "wasm32")]
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
 use crate::{
@@ -162,10 +167,7 @@ fn start(
         env: proxy::Environment::capture(),
     };
     let task = native::run(call, stream.clone(), Arc::clone(output));
-    if !crate::providers::http::spawn_detached(task) {
-        let failure = RequestFailure::new("Streaming requires a running Tokio runtime.");
-        fail(stream, output, signal.as_ref(), failure);
-    }
+    start_producer(stream, output, signal.as_ref(), Box::pin(task));
 }
 
 /// The native request: payload, SDK send and event reduction.

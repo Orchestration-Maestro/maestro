@@ -8,12 +8,7 @@ use crate::providers::json_text::{member, or_zero, raw_number};
 
 /// A failure that keeps the message of the JSON reader that raised it.
 pub(crate) fn native(error: &serde_json::Error) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: error.to_string(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, error.to_string())
 }
 
 /// Read a numeric usage member, defaulting only absent, null and zero values to zero.

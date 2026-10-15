@@ -81,12 +81,9 @@ pub(super) fn spawn(future: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
             .enable_time()
             .build()
     });
-    let runtime = runtime.as_ref().map_err(|error| DiagnosticErrorInfo {
-        name: None,
-        message: error.to_string(),
-        stack: None,
-        code: None,
-    })?;
+    let runtime = runtime
+        .as_ref()
+        .map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))?;
     runtime.spawn(future);
     Ok(())
 }
@@ -98,25 +95,15 @@ pub(super) fn spawn(future: BoxFuture<()>) {
 #[cfg(not(target_arch = "wasm32"))]
 /// Wait for the supplied duration through the target timer.
 async fn delay(seconds: f64) -> Result<(), DiagnosticErrorInfo> {
-    let duration =
-        std::time::Duration::try_from_secs_f64(seconds).map_err(|error| DiagnosticErrorInfo {
-            name: None,
-            message: error.to_string(),
-            stack: None,
-            code: None,
-        })?;
+    let duration = std::time::Duration::try_from_secs_f64(seconds)
+        .map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))?;
     tokio::time::sleep(duration).await;
     Ok(())
 }
 #[cfg(target_arch = "wasm32")]
 /// Retain a browser binding failure as diagnostic data.
 fn browser_error(error: &wasm_bindgen::JsValue) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: format!("{error:?}"),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, format!("{error:?}"))
 }
 /// Invoke the browser's global timer through existing JavaScript bindings.
 #[cfg(target_arch = "wasm32")]

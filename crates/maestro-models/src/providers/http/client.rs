@@ -216,12 +216,7 @@ fn connection(message: String) -> FetchError {
         .and_then(|(_, exception)| exception.split_once(": "))
         .map_or("FetchError", |(name, _)| name)
         .to_owned();
-    FetchError::Connection(DiagnosticErrorInfo {
-        name: Some(name),
-        message,
-        stack: None,
-        code: None,
-    })
+    FetchError::Connection(DiagnosticErrorInfo::new(Some(name), message))
 }
 
 /// Classify a client error as a timeout or a connection failure.
