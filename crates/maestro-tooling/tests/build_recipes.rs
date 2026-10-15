@@ -837,6 +837,10 @@ fn prepare_tooling_owner(workspace: &Workspace) {
         &source.join("../../vendor/yaml-rust2"),
         &workspace.0.join("vendor/yaml-rust2"),
     );
+    copy_tree(
+        &source.join("../../vendor/hayro-interpret"),
+        &workspace.0.join("vendor/hayro-interpret"),
+    );
     let main = root.join("src/bin/development.rs");
     let contents = fs::read_to_string(&main).unwrap().replace(
         "fn main() -> std::process::ExitCode {",

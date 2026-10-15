@@ -286,3 +286,66 @@ pub fn synthetic(content: &str, inherited: bool) -> Vec<u8> {
     .unwrap();
     pdf.into_bytes()
 }
+
+/// One decoded-show observation through the public loader.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TextShow {
+    /// Selecting regression name.
+    pub test: String,
+    /// Literal filename override.
+    name: String,
+    /// Real content producer.
+    input: TextShowInput,
+    /// Independently recorded full page wrapper.
+    expected_text: String,
+}
+/// Authored content or a committed binary PDF.
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
+enum TextShowInput {
+    /// Build content with valid stream lengths and cross references.
+    Content {
+        /// PDF content operators.
+        content: String,
+    },
+    /// Read an existing encoded producer.
+    File {
+        /// Committed PDF filename.
+        file: String,
+    },
+}
+/// Read the complete text-show corpus.
+pub fn text_shows() -> Vec<TextShow> {
+    serde_json::from_str(include_str!("../fixtures/pdf/text-shows.json")).unwrap()
+}
+/// Assert each selected row and return the attachments for extra pixel checks.
+pub fn check_text_shows(test: &str, count: usize) -> Vec<Attachment> {
+    let rows: Vec<_> = text_shows()
+        .into_iter()
+        .filter(|row| row.test == test)
+        .collect();
+    assert_eq!(rows.len(), count, "selected corpus row count");
+    rows.into_iter()
+        .map(|row| {
+            let data = match row.input {
+                TextShowInput::Content { content } => synthetic(&content, false),
+                TextShowInput::File { file } => bytes(&file),
+            };
+            let fetch: Fetch = Arc::new(|_| panic!("local input fetched"));
+            let attachment = run(load_attachment(
+                AttachmentSource::Buffer(&data),
+                Some(&row.name),
+                &fetch,
+            ))
+            .unwrap();
+            assert_eq!(
+                attachment.extracted_text.as_deref(),
+                Some(row.expected_text.as_str()),
+                "{}",
+                row.name
+            );
+            attachment
+        })
+        .collect()
+}

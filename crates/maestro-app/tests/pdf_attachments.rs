@@ -221,6 +221,11 @@ fn pdf_font_and_text_corpus_keeps_approved_engine_results() {
             "documents.json".into(),
             "routes.json".into(),
             "runs.json".into(),
+            "text-shows.json".into(),
+            "show-form-clip.pdf".into(),
+            "show-form-repeat.pdf".into(),
+            "show-compressed.pdf".into(),
+            "show-unicode.pdf".into(),
             "LICENSE".into(),
         ])
         .collect();
@@ -245,26 +250,10 @@ fn pdf_preview_encoding_failure_keeps_text() {
 
 #[test]
 fn pdf_text_modes_keep_one_run_and_repeated_show_operations() {
-    for mode in [1, 2, 3, 6] {
-        let bytes = support::pdf::synthetic(
-            &format!("BT /F1 12 Tf {mode} Tr 5 30 Td (Page A) Tj (Page A) Tj ET"),
-            false,
-        );
-        let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
-        let attachment = support::pdf::run(load_attachment(
-            AttachmentSource::Buffer(&bytes),
-            Some("runs.pdf"),
-            &fetch,
-        ))
-        .unwrap();
-        assert_eq!(
-            attachment.extracted_text.as_deref(),
-            Some(
-                "<pdf filename=\"runs.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
-            ),
-            "mode {mode}"
-        );
-    }
+    support::pdf::check_text_shows(
+        "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+        16,
+    );
 }
 
 #[test]
@@ -308,4 +297,70 @@ fn pdf_preview_preserves_full_precision_direct_and_inherited_boxes() {
             "inherited {inherited}"
         );
     }
+}
+
+#[test]
+fn pdf_clip_only_text_is_extracted() {
+    support::pdf::check_text_shows("pdf_clip_only_text_is_extracted", 1);
+}
+
+#[test]
+fn pdf_separate_fill_then_stroke_runs_are_retained() {
+    support::pdf::check_text_shows("pdf_separate_fill_then_stroke_runs_are_retained", 1);
+}
+
+#[test]
+fn pdf_text_show_operators_keep_their_boundaries() {
+    support::pdf::check_text_shows("pdf_text_show_operators_keep_their_boundaries", 4);
+}
+
+#[test]
+fn pdf_text_show_order_retains_distinct_and_repeated_runs() {
+    support::pdf::check_text_shows("pdf_text_show_order_retains_distinct_and_repeated_runs", 1);
+}
+
+#[test]
+fn pdf_empty_text_shows_leave_no_output() {
+    support::pdf::check_text_shows("pdf_empty_text_shows_leave_no_output", 1);
+}
+
+#[test]
+fn pdf_form_text_shows_use_the_same_extractor() {
+    support::pdf::check_text_shows("pdf_form_text_shows_use_the_same_extractor", 2);
+}
+
+#[test]
+fn pdf_compressed_stream_keeps_clip_text() {
+    support::pdf::check_text_shows("pdf_compressed_stream_keeps_clip_text", 1);
+}
+
+#[test]
+fn pdf_text_show_preserves_multi_scalar_unicode_mapping() {
+    support::pdf::check_text_shows("pdf_text_show_preserves_multi_scalar_unicode_mapping", 1);
+}
+
+#[test]
+fn pdf_clip_only_text_does_not_paint() {
+    let attachments = support::pdf::check_text_shows("pdf_clip_only_text_does_not_paint", 1);
+    let pixels = support::pdf::pixels(attachments[0].preview.as_deref().unwrap());
+    assert_eq!((pixels.width(), pixels.height()), (64, 160));
+    assert!(
+        pixels
+            .data()
+            .iter()
+            .all(|pixel| pixel.to_u8_array() == [255, 255, 255, 255])
+    );
+}
+
+#[test]
+fn pdf_stroke_then_fill_runs_are_retained() {
+    support::pdf::check_text_shows("pdf_stroke_then_fill_runs_are_retained", 1);
+}
+
+#[test]
+fn pdf_outlined_shows_at_identical_positions_remain_distinct() {
+    support::pdf::check_text_shows(
+        "pdf_outlined_shows_at_identical_positions_remain_distinct",
+        2,
+    );
 }
