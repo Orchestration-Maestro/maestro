@@ -448,6 +448,11 @@ DEALINGS IN THE SOFTWARE.
 ## PDF processing
 
 hayro 0.8.0 and hayro-interpret 0.8.0 are used under Apache-2.0.
+The complete published hayro-interpret package is preserved in
+[vendor/hayro-interpret](vendor/hayro-interpret), including its original licenses,
+font notices and color profile. A local patch adds a default decoded text-show
+hook and forwards it through the stencil and shape-glyph adapters; the application
+uses it for text extraction without altering paint dispatch.
 Their resolved dependencies and selected license alternatives are documented in
 [document-format libraries](docs/libraries/document-formats.md#pdf-processing).
 

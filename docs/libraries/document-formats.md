@@ -43,7 +43,11 @@ Source attribution is in the [third-party notices](../../THIRD-PARTY-NOTICES.md#
 ## PDF processing
 
 The application uses `hayro =0.8.0` and `hayro-interpret =0.8.0` with default
-embedded fonts/CMaps and native SIMD. Text interpretation uses the glyph device;
+embedded fonts/CMaps and native SIMD. The complete published interpreter is kept
+in [vendor/hayro-interpret](../../vendor/hayro-interpret), outside workspace membership,
+with a local patch adding a decoded text-show observation before paint dispatch
+and forwarding it through the existing stencil and shape-glyph adapters.
+Text extraction consumes that observation independently of rendering;
 previews reuse `render_into` with f64 transforms and the native pixmap PNG encoder.
 No separate extraction or PNG library is introduced. The native engine's text
 segmentation, Type3 text, bidirectional ordering and rasterization are retained.

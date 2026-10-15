@@ -1,0 +1,290 @@
+[
+  {
+    "test": "pdf_clip_only_text_is_extracted",
+    "name": "clip.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"clip.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_separate_fill_then_stroke_runs_are_retained",
+    "name": "repeat.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 5 30 Td 0 Tr (Page A) Tj 1 0 0 1 5 30 Tm 1 Tr (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"repeat.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-0-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 0 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-0-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-0-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 0 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-0-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-1-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 1 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-1-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-1-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 1 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-1-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-2-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 2 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-2-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-2-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 2 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-2-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-3-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 3 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-3-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-3-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 3 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-3-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-4-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 4 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-4-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-4-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 4 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-4-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-5-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 5 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-5-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-5-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 5 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-5-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-6-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 6 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-6-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-6-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 6 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-6-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-7-single.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-7-single.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_modes_keep_one_run_and_repeated_show_operations",
+    "name": "mode-7-repeated.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td (Page A) Tj (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"mode-7-repeated.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_operators_keep_their_boundaries",
+    "name": "array-2.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 2 Tr 5 30 Td [(Page) -200 ( A)] TJ ET"
+    },
+    "expected_text": "<pdf filename=\"array-2.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_operators_keep_their_boundaries",
+    "name": "array-7.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td [(Page) -200 ( A)] TJ ET"
+    },
+    "expected_text": "<pdf filename=\"array-7.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_operators_keep_their_boundaries",
+    "name": "quote.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 50 Td 14 TL (Page A) ' ET"
+    },
+    "expected_text": "<pdf filename=\"quote.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_operators_keep_their_boundaries",
+    "name": "doublequote.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 50 Td 14 TL 0 0 (Page A) \" ET"
+    },
+    "expected_text": "<pdf filename=\"doublequote.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_order_retains_distinct_and_repeated_runs",
+    "name": "order.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 80 Td (B) Tj 0 -14 Td (A) Tj 0 -14 Td (B) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"order.pdf\">\n<page number=\"1\">\nB A B\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_empty_text_shows_leave_no_output",
+    "name": "empty.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td () Tj [] TJ ( ) Tj (A) Tj () Tj ET"
+    },
+    "expected_text": "<pdf filename=\"empty.pdf\">\n<page number=\"1\">\nA\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_form_text_shows_use_the_same_extractor",
+    "name": "form-clip.pdf",
+    "input": {
+      "kind": "file",
+      "file": "show-form-clip.pdf"
+    },
+    "expected_text": "<pdf filename=\"form-clip.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_form_text_shows_use_the_same_extractor",
+    "name": "form-repeat.pdf",
+    "input": {
+      "kind": "file",
+      "file": "show-form-repeat.pdf"
+    },
+    "expected_text": "<pdf filename=\"form-repeat.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_compressed_stream_keeps_clip_text",
+    "name": "compressed.pdf",
+    "input": {
+      "kind": "file",
+      "file": "show-compressed.pdf"
+    },
+    "expected_text": "<pdf filename=\"compressed.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_show_preserves_multi_scalar_unicode_mapping",
+    "name": "unicode.pdf",
+    "input": {
+      "kind": "file",
+      "file": "show-unicode.pdf"
+    },
+    "expected_text": "<pdf filename=\"unicode.pdf\">\n<page number=\"1\">\nBC\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_clip_only_text_does_not_paint",
+    "name": "clip-preview.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 7 Tr 5 30 Td (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"clip-preview.pdf\">\n<page number=\"1\">\nPage A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_stroke_then_fill_runs_are_retained",
+    "name": "reverse.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 5 30 Td 1 Tr (Page A) Tj 1 0 0 1 5 30 Tm 0 Tr (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"reverse.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_outlined_shows_at_identical_positions_remain_distinct",
+    "name": "outlined-2.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 2 Tr 5 30 Td (Page A) Tj 1 0 0 1 5 30 Tm (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"outlined-2.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_outlined_shows_at_identical_positions_remain_distinct",
+    "name": "outlined-6.pdf",
+    "input": {
+      "kind": "content",
+      "content": "BT /F1 12 Tf 6 Tr 5 30 Td (Page A) Tj 1 0 0 1 5 30 Tm (Page A) Tj ET"
+    },
+    "expected_text": "<pdf filename=\"outlined-6.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  }
+]
