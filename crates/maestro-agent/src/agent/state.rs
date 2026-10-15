@@ -9,7 +9,10 @@ use std::sync::{Arc, OnceLock, RwLock};
 /// use maestro_agent::AgentInitialState;
 /// let initial: AgentInitialState = AgentInitialState { is_streaming: true, ..Default::default() };
 /// ```
-pub struct AgentInitialState<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecution = Threaded> {
+pub struct AgentInitialState<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Optional instruction text.
     pub system_prompt: Option<String>,
     /// Optional shared model descriptor.
@@ -33,7 +36,10 @@ impl<C: CustomAgentMessages, E: AgentExecution> Default for AgentInitialState<C,
     }
 }
 /// Live caller fields with private collection slots and runtime observations.
-pub struct AgentState<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecution = Threaded> {
+pub struct AgentState<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Instruction text.
     pub system_prompt: String,
     /// Selected shared model descriptor.

@@ -23,7 +23,10 @@ use std::{
 mod state;
 pub use state::{AgentInitialState, AgentState};
 /// Construction options for conversation state and queues.
-pub struct AgentOptions<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecution = Threaded> {
+pub struct AgentOptions<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Context conversion captured at admission.
     pub convert_to_llm: Option<ConvertToLlm<C, E>>,
     /// Context transformation captured at admission.

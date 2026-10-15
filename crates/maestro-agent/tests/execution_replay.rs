@@ -8,7 +8,6 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
-    convert::Infallible,
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
@@ -146,7 +145,7 @@ macro_rules! replay {
                 check(case, json!({"final":final_result,"items":items}));
             }
             /// Snapshot every retained message field in source order.
-            fn history(agent: &Agent<Infallible, Mode>) -> Vec<Value> {
+            fn history(agent: &Agent<NoCustomMessages, Mode>) -> Vec<Value> {
                 agent
                     .state()
                     .read()
@@ -235,7 +234,7 @@ macro_rules! replay {
                 trace: Trace,
                 requests: Trace,
                 signals: Signals,
-            ) -> AgentOptions<Infallible, Mode> {
+            ) -> AgentOptions<NoCustomMessages, Mode> {
                 let before_trace = trace.clone();
                 let before_signals = signals.clone();
                 let before_behavior = behavior.to_owned();
@@ -312,7 +311,7 @@ macro_rules! replay {
                 options.tool_execution = Some(serde_json::from_value(mode).unwrap());
                 let scheduled = tasks.clone();
                 options.spawn = Some(Owner::new(move |task| scheduled.lock().unwrap().push(task)));
-                let agent = Owner::new(Agent::<Infallible, Mode>::$new(options));
+                let agent = Owner::new(Agent::<NoCustomMessages, Mode>::$new(options));
                 let observed = events.clone();
                 let progress = trace.clone();
                 let weak = Owner::downgrade(&agent);
@@ -400,11 +399,11 @@ macro_rules! replay {
                 trace: &Trace,
                 tool: AgentToolRecord<Mode>,
                 hook_wait: Waiter,
-            ) -> Owner<Agent<Infallible, Mode>> {
+            ) -> Owner<Agent<NoCustomMessages, Mode>> {
                 let scheduled = tasks.clone();
                 let before = trace.clone();
                 let after = trace.clone();
-                Owner::new(Agent::<Infallible, Mode>::$new(
+                Owner::new(Agent::<NoCustomMessages, Mode>::$new(
                     AgentOptions {
                         initial_state: AgentInitialState {
                             model: Some(Arc::new(RwLock::new(support::model()))),
@@ -452,7 +451,7 @@ macro_rules! replay {
                 events: &Trace,
                 trace: &Trace,
                 gates: (Waiter, Waiter, Release),
-            ) -> AgentListener<Infallible, Mode> {
+            ) -> AgentListener<NoCustomMessages, Mode> {
                 let (progress_wait, end_wait, first_release) = gates;
                 let observed = events.clone();
                 let seen = trace.clone();
@@ -556,7 +555,7 @@ macro_rules! replay {
             /// Check complete output after every admitted future has settled.
             fn suspended_output(
                 case: &Case,
-                agent: &Agent<Infallible, Mode>,
+                agent: &Agent<NoCustomMessages, Mode>,
                 trace: &Trace,
                 events: &Trace,
                 phases: (Vec<Value>, Vec<Value>, Value),
@@ -615,10 +614,10 @@ macro_rules! replay {
                 assert_eq!(Owner::strong_count(&description), 1);
             }
             /// Construct a test-owned task queue with a terminating offline response.
-            fn simple_agent() -> (Owner<Agent<Infallible, Mode>>, Owner<Mutex<Vec<Task>>>) {
+            fn simple_agent() -> (Owner<Agent<NoCustomMessages, Mode>>, Owner<Mutex<Vec<Task>>>) {
                 let tasks = Owner::new(Mutex::new(Vec::<Task>::new()));
                 let scheduled = tasks.clone();
-                let agent = Owner::new(Agent::<Infallible, Mode>::$new(
+                let agent = Owner::new(Agent::<NoCustomMessages, Mode>::$new(
                     AgentOptions {
                         spawn: Some(Owner::new(move |task| scheduled.lock().unwrap().push(task))),
                         stream_fn: Some(Owner::new(|_, _, _, _| {
@@ -683,18 +682,18 @@ macro_rules! replay {
             }
             /// Install live insertion/removal with weak captures of the enclosing owner.
             fn live_listeners(
-                agent: &Owner<Agent<Infallible, Mode>>,
+                agent: &Owner<Agent<NoCustomMessages, Mode>>,
                 order: &Owner<Mutex<Vec<String>>>,
             ) -> (
-                Owner<Mutex<Option<AgentListener<Infallible, Mode>>>>,
-                Owner<Mutex<Option<Subscription<Infallible, Mode>>>>,
+                Owner<Mutex<Option<AgentListener<NoCustomMessages, Mode>>>>,
+                Owner<Mutex<Option<Subscription<NoCustomMessages, Mode>>>>,
             ) {
                 let first = Owner::new(Mutex::new(true));
-                let remove_a = Owner::new(Mutex::new(None::<Subscription<Infallible, Mode>>));
-                let remove_b = Owner::new(Mutex::new(None::<Subscription<Infallible, Mode>>));
-                let a_slot = Owner::new(Mutex::new(None::<AgentListener<Infallible, Mode>>));
+                let remove_a = Owner::new(Mutex::new(None::<Subscription<NoCustomMessages, Mode>>));
+                let remove_b = Owner::new(Mutex::new(None::<Subscription<NoCustomMessages, Mode>>));
+                let a_slot = Owner::new(Mutex::new(None::<AgentListener<NoCustomMessages, Mode>>));
                 let seen = order.clone();
-                let c: AgentListener<Infallible, Mode> = Owner::new(move |event, _| {
+                let c: AgentListener<NoCustomMessages, Mode> = Owner::new(move |event, _| {
                     if matches!(*event.read().unwrap(), AgentEvent::AgentStart) {
                         seen.lock().unwrap().push("c".into());
                     }
@@ -705,7 +704,7 @@ macro_rules! replay {
                 let a_remove = remove_a.clone();
                 let b_remove = remove_b.clone();
                 let a_weak = Owner::downgrade(&a_slot);
-                let a: AgentListener<Infallible, Mode> = Owner::new(move |event, _| {
+                let a: AgentListener<NoCustomMessages, Mode> = Owner::new(move |event, _| {
                     if matches!(*event.read().unwrap(), AgentEvent::AgentStart) {
                         seen.lock().unwrap().push("a".into());
                         let initial = std::mem::replace(&mut *first.lock().unwrap(), false);
@@ -879,11 +878,11 @@ macro_rules! replay {
             }
             /// Borrow and observe each completed turn before deciding whether to stop.
             fn stop_config(
-                original: &Owner<AgentContextRecord<Infallible, Mode>>,
+                original: &Owner<AgentContextRecord<NoCustomMessages, Mode>>,
                 trace: &Trace,
                 mode: Value,
                 stop: bool,
-            ) -> AgentLoopConfigRecord<Infallible, Mode> {
+            ) -> AgentLoopConfigRecord<NoCustomMessages, Mode> {
                 let before = original.clone();
                 let observations = trace.clone();
                 AgentLoopConfigRecord {
@@ -933,7 +932,7 @@ macro_rules! replay {
                 let events = Owner::new(Mutex::new(vec![]));
                 let requests = Owner::new(Mutex::new(0));
                 let tool = stop_tool();
-                let original = Owner::new(AgentContextRecord::<Infallible, Mode> {
+                let original = Owner::new(AgentContextRecord::<NoCustomMessages, Mode> {
                     system_prompt: String::new(),
                     messages: Arc::new(RwLock::new(vec![])),
                     tools: Some(Owner::new(RwLock::new(vec![Owner::new(RwLock::new(tool))]))),

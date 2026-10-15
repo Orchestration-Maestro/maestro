@@ -1,9 +1,7 @@
 //! Conversation inputs and model-boundary callbacks.
 use super::{AgentMessage, CustomAgentMessages, SharedAgentTool};
 use maestro_models::{JsonObject, Model, ProviderObjects, SimpleStreamOptions};
-use std::{
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 /// Instructions and retained conversation inputs for one operation.
 pub struct AgentContextRecord<
