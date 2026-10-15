@@ -4,6 +4,8 @@
 mod support {
     /// Summary operation consumer.
     pub mod generation;
+    /// Consuming request control assertions.
+    pub mod summary_options;
     /// Numeric-aware recorded value comparison.
     pub mod value;
 }

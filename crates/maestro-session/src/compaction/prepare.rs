@@ -31,27 +31,11 @@ fn messages(entries: &[Value]) -> Result<Vec<Value>, serde_json::Error> {
     }
     Ok(messages)
 }
-/// Carry built-in details, selecting the two arrays independently.
+/// Carry built-in details from the preceding compaction.
 fn prior_files(previous: Option<&Value>) -> Result<FileOperations, serde_json::Error> {
     let mut ops = super::create_file_ops();
-    let Some(previous) = previous else {
-        return Ok(ops);
-    };
-    if previous.get("fromHook").is_some_and(is_truthy) {
-        return Ok(ops);
-    }
-    let Some(details) = previous.get("details").filter(|value| is_truthy(value)) else {
-        return Ok(ops);
-    };
-    for (field, set) in [
-        ("readFiles", &mut ops.read),
-        ("modifiedFiles", &mut ops.edited),
-    ] {
-        if let Some(Value::Array(paths)) = details.get(field) {
-            for path in paths {
-                set.insert(String::deserialize(path)?);
-            }
-        }
+    if let Some(previous) = previous {
+        super::utils::carry_file_ops(previous, &mut ops)?;
     }
     Ok(ops)
 }

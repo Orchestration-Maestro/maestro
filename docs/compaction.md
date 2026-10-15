@@ -1,7 +1,10 @@
 # Compaction
 
 `maestro_session::compaction` prepares summary input and generates history or split-turn
-summaries without mutating history or persisting entries. Its operations are also
+summaries without mutating history or persisting entries.
+[Abandoned-branch generation](branch_summary.md) is a separate interface with its own
+budget and result policy. The [complete guide](sessions/compaction.md) covers retained
+spans, navigation, formats, settings and caller-owned extension integration. Its operations are also
 re-exported at the crate root and available on native and browser targets. Session traversal and storage remain with the
 [session manager](sessions/session_manager.md).
 

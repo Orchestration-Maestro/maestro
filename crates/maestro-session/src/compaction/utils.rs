@@ -1,6 +1,8 @@
 //! Shared file tracking and conversation text for summaries.
 pub use maestro_entry::compaction::FileOperations;
+use maestro_json::is_truthy;
 use maestro_models::{AssistantContent, Message, UserBlock, UserContent};
+use serde::Deserialize;
 use serde_json::Value;
 use std::borrow::Cow;
 /// Create empty insertion-ordered file-operation sets.
@@ -216,3 +218,27 @@ pub(super) fn serialize_raw_conversation(messages: &[Value]) -> Result<String, s
 pub const SUMMARIZATION_SYSTEM_PROMPT: &str = r"You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.
 
 Do NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.";
+
+/// Carry built-in summary file arrays independently, ignoring hook-generated details.
+pub(super) fn carry_file_ops(
+    previous: &Value,
+    ops: &mut FileOperations,
+) -> Result<(), serde_json::Error> {
+    if previous.get("fromHook").is_some_and(is_truthy) {
+        return Ok(());
+    }
+    let Some(details) = previous.get("details").filter(|value| is_truthy(value)) else {
+        return Ok(());
+    };
+    for (field, set) in [
+        ("readFiles", &mut ops.read),
+        ("modifiedFiles", &mut ops.edited),
+    ] {
+        if let Some(Value::Array(paths)) = details.get(field) {
+            for path in paths {
+                set.insert(String::deserialize(path)?);
+            }
+        }
+    }
+    Ok(())
+}
