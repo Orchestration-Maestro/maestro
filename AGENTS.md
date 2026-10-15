@@ -163,7 +163,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
-Pure retained session-tree ordering and geometry belong to `maestro-session`,
+Pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`,
 re-exported through `maestro-app`; frontend filter, fold and selection state stay
 with their frontend.
 
