@@ -147,6 +147,7 @@ mod message_thinking_disabled;
 #[path = "support/messages.rs"]
 mod messages;
 mod missing_tool_results;
+mod model_guide_examples;
 mod model_history_projection;
 mod model_invocation;
 mod model_records;
