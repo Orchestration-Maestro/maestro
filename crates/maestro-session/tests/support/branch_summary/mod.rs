@@ -44,6 +44,12 @@ pub fn group(name: &str) {
         .collect();
     assert!(!rows.is_empty());
     for row in rows {
+        if row.id == "untrimmed-canonical-input" {
+            let zero = row.args["entries"][1]["message"]["content"][1]["arguments"]["n"]
+                .as_f64()
+                .unwrap();
+            assert!(zero == 0.0 && zero.is_sign_negative());
+        }
         match row.operation.as_str() {
             "collect" => collect(&row),
             "prepare" => {
@@ -95,6 +101,7 @@ fn collect(row: &Row) {
             session.get_entry(entry["id"].as_str().unwrap()).unwrap()
         ));
     }
+    assert_eq!(row.expected["kind"], "value");
     super::value::assert_value(
         &serde_json::to_value(result).unwrap(),
         &row.expected["value"],

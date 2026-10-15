@@ -30,8 +30,11 @@ struct Case {
 }
 /// Decodes all rows belonging to one witness, retaining strict typed payloads.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
-    let all: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/session-picker.json")).unwrap();
+    decode_cases(include_str!("../fixtures/session-picker.json"), name)
+}
+/// Strict shared decoder for both session-picker corpora.
+fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(text: &str, name: &str) -> Vec<(I, E)> {
+    let all: Vec<Case> = serde_json::from_str(text).unwrap();
     let rows: Vec<_> = all
         .into_iter()
         .filter(|c| c.test == name)

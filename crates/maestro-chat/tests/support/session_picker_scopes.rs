@@ -163,20 +163,7 @@ impl Harness {
 }
 /// Strict fixture decoding retains every member of each group.
 fn rows<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(I, E)> {
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/session-picker-scopes.json")).unwrap();
-    let result: Vec<_> = cases
-        .into_iter()
-        .filter(|c| c.test == name)
-        .map(|c| {
-            (
-                serde_json::from_value(c.input).unwrap(),
-                serde_json::from_value(c.expected).unwrap(),
-            )
-        })
-        .collect();
-    assert!(!result.is_empty());
-    result
+    decode_cases(include_str!("../fixtures/session-picker-scopes.json"), name)
 }
 /// One constructor population.
 #[derive(Deserialize)]
@@ -195,23 +182,23 @@ struct Startup {
 }
 /// Witnesses synchronous factory admission and settled-empty cancellation.
 pub fn initial() {
-    let _guard = registry::REGISTRY.lock().unwrap();
-    let _restore = registry::Restore(get_keybindings());
-    for (i, e) in rows::<Size, Startup>("session_scope_starts_current_and_cancels_only_empty_all") {
-        set_keybindings(manager(Vec::new()));
-        let h = Harness::new();
-        assert_eq!(h.frame(120), e.initial);
-        h.finish(
-            "current",
-            (0..i.size).map(|n| session(&format!("c{n}"))).collect(),
-        );
-        assert_eq!(h.frame(120), e.loaded);
-        h.selector.handle_input("\t");
-        h.finish("all", Vec::new());
-        assert_eq!(h.frame(120), e.all);
-        h.calls(&e.calls);
-        assert_eq!(h.world.runtime.futures(), 0);
-    }
+    replay(
+        "session_scope_starts_current_and_cancels_only_empty_all",
+        |i: Size, e: Startup| {
+            let h = Harness::new();
+            assert_eq!(h.frame(120), e.initial);
+            h.finish(
+                "current",
+                (0..i.size).map(|n| session(&format!("c{n}"))).collect(),
+            );
+            assert_eq!(h.frame(120), e.loaded);
+            h.selector.handle_input("\t");
+            h.finish("all", Vec::new());
+            assert_eq!(h.frame(120), e.all);
+            h.calls(&e.calls);
+            assert_eq!(h.world.runtime.futures(), 0);
+        },
+    );
 }
 
 /// Standard named record, independent of the production selector.
