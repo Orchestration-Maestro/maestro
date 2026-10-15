@@ -271,6 +271,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
             ],
+            &[],
         );
         for file in [alias, referent] {
             assert_eq!(
@@ -317,6 +318,7 @@ fn relative_session_link_replaces_a_dangling_destination() {
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
             ],
+            &[],
         );
         assert_eq!(
             fs::symlink_metadata(scratch.0.join("alias.jsonl"))
@@ -364,6 +366,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
             ],
+            &[],
         );
         assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
         assert_eq!(fs::read_link(&destination).unwrap(), referent);
@@ -511,6 +514,7 @@ fn check_resolution_chain(
                 ("STARTUP_OPERATION", "sessions"),
                 ("MAESTRO_CODING_AGENT_DIR", "."),
             ],
+            &[],
         );
         for (index, path) in paths.iter().enumerate() {
             if index < paths.len() - 1 && path.extension().unwrap() == "data" && moving != "none" {

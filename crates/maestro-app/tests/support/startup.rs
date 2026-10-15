@@ -241,7 +241,7 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
             .filter_map(|line| line.strip_prefix("PROBE ").map(str::to_owned))
             .collect()
     } else {
-        child::probe(name, cwd, envs)
+        child::probe(name, cwd, envs, &[])
     };
     assert_eq!(lines.len(), 1);
     serde_json::from_str(&lines[0]).unwrap()
