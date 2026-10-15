@@ -100,7 +100,9 @@ impl<'input> DocumentParser<'_, 'input> {
     }
     /// Build a paragraph whose run parents keep this arena identity.
     fn paragraph(&mut self, element: XmlElement<'_, 'input>) -> usize {
-        let id = self.push(Data::Paragraph);
+        let id = self.push(Data::Paragraph {
+            properties: Box::default(),
+        });
         self.tree.nodes[id].base.children = self.paragraph_children(element, id);
         id
     }
@@ -115,10 +117,13 @@ impl<'input> DocumentParser<'_, 'input> {
                     self.tree.nodes[field].base.children = self.paragraph_children(child, field);
                     children.push(field);
                 }
-                "pPr" => self.tree.nodes[parent]
-                    .base
-                    .properties
-                    .push(self.input.slice(child)),
+                "pPr" => {
+                    properties::parse_paragraph_properties(
+                        self.xml,
+                        child,
+                        &mut self.tree.nodes[parent].data,
+                    );
+                }
                 "sdt" => children.extend(
                     self.xml
                         .element(child, "sdtContent")
@@ -195,21 +200,23 @@ impl<'input> DocumentParser<'_, 'input> {
     }
     /// Build a run and its ordered inline text.
     fn run(&mut self, element: XmlElement<'_, 'input>, parent: Option<usize>) -> usize {
-        let id = self.push(Data::Run { field_run: false });
+        let id = self.push(Data::Run {
+            field_run: false,
+            properties: super::RunProperties::default(),
+        });
         self.tree.nodes[id].base.parent = parent;
         for child in self.xml.elements(element, None) {
             if child.local_name() == "rPr" {
-                self.tree.nodes[id]
-                    .base
-                    .properties
-                    .push(self.input.slice(child));
+                properties::parse_run_properties(self.xml, child, &mut self.tree.nodes[id].data);
                 continue;
             }
             let Some(data) = self.run_child(child) else {
                 continue;
             };
-            if matches!(data, Data::ComplexField { .. } | Data::Instruction { .. }) {
-                self.tree.nodes[id].data = Data::Run { field_run: true };
+            if matches!(data, Data::ComplexField { .. } | Data::Instruction { .. })
+                && let Data::Run { field_run, .. } = &mut self.tree.nodes[id].data
+            {
+                *field_run = true;
             }
             let child = self.push(data);
             self.tree.nodes[id].base.children.push(child);
@@ -315,3 +322,5 @@ mod formatting;
 
 mod table_style;
 pub use table_style::{TableStyle, parse_table_style};
+
+mod properties;

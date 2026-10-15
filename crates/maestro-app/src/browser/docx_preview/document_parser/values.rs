@@ -1,5 +1,5 @@
 //! Border shorthand values.
-use super::super::{LengthUsage, XmlElement, XmlParser};
+use super::super::{LengthUsage, VerticalAlign, XmlElement, XmlParser};
 use super::xml_util::color_attr;
 
 /// Render one border, leaving absent components to CSS defaults.
@@ -109,4 +109,47 @@ pub(super) fn theme_value<'doc, 'input: 'doc>(
     xml.attr(element, attr)
         .filter(|value| !value.is_empty())
         .map(|value| format!("var(--docx-{value}-font)"))
+}
+
+/// Select conditional classes from an authoritative mask or the document flags.
+pub(super) fn class_name_of_cnf_style(xml: &XmlParser<'_>, element: XmlElement<'_, '_>) -> String {
+    let classes = [
+        ("first-row", "firstRow"),
+        ("last-row", "lastRow"),
+        ("first-col", "firstColumn"),
+        ("last-col", "lastColumn"),
+        ("odd-col", "oddVBand"),
+        ("even-col", "evenVBand"),
+        ("odd-row", "oddHBand"),
+        ("even-row", "evenHBand"),
+        ("ne-cell", "firstRowLastColumn"),
+        ("nw-cell", "firstRowFirstColumn"),
+        ("se-cell", "lastRowLastColumn"),
+        ("sw-cell", "lastRowFirstColumn"),
+    ];
+    let mask = xml.attr(element, "val");
+    classes
+        .iter()
+        .enumerate()
+        .filter(|(index, (_, flag))| {
+            mask.map_or_else(
+                || xml.bool_attr(element, flag, Some(false)) == Some(true),
+                |value| value.as_bytes().get(*index) == Some(&b'1'),
+            )
+        })
+        .map(|(_, (class, _))| *class)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Select the supported run alignment tag, leaving other values null.
+pub(super) fn value_of_vert_align(
+    xml: &XmlParser<'_>,
+    element: XmlElement<'_, '_>,
+) -> Option<VerticalAlign> {
+    match xml.attr(element, "val") {
+        Some("subscript") => Some(VerticalAlign::Sub),
+        Some("superscript") => Some(VerticalAlign::Sup),
+        _ => None,
+    }
 }
