@@ -271,3 +271,5 @@ fn navigate_list(selected: &Cell<usize>, count: usize, up: bool) -> bool {
 
 pub mod scoped_models_selector;
 pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
+
+pub mod tool_execution;

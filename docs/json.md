@@ -14,7 +14,8 @@ defaults, duplicate-member policy and error wording.
   ascending numeric order and leaves every other entry in the order given; it never drops
   or merges entries.
 - **Text.** `compact_json`, `compact_object` and `compact_members` write compact text;
-  `pretty_object` writes two-space indentation with no final newline. Keys follow
+  `pretty_object` writes objects and `pretty_json` accepts any JSON root, both with
+  two-space indentation and no final newline. Keys follow
   `canonical_entries` at every depth and every number is the double it names, in
   ECMAScript spelling (`1e+21`, `1e-7`, `0` for negative zero). A nonfinite host float is
   already `null` in a `Value`. Ordinary serde output elsewhere is unchanged.

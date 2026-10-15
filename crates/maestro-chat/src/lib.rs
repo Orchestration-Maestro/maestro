@@ -57,3 +57,7 @@ pub use components::session_selector::*;
 #[cfg(test)]
 extern crate self as maestro_chat;
 pub use components::bash_execution::BashExecutionComponent;
+
+pub use components::tool_execution::{
+    ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams, ToolExecutionResult,
+};

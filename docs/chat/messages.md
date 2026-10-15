@@ -75,3 +75,37 @@ expansion keys at completion-display rebuild. Missing themes omit theme colours
 while preserving existing decorations, including the bold command header.
 `invalidate` first invalidates existing children and then rebuilds the content.
 The inherited editable `Container` child array remains available through `Deref`.
+
+## Tool execution rows
+
+`ToolExecutionComponent::new` accepts a `ToolExecutionParams` record: the tool
+name and call ID, optional raw JSON arguments, image options, independently
+supplied custom/native `ToolRendererBinding`s, session cwd, render environment
+and a render-request callback. Use the writer's `weak_render_request()` for that
+callback. The application exports the native read/edit/write definition factories
+and their options; call `ToolDef::renderer_binding()` to obtain their projections.
+The row composes renderers, never executes a tool.
+
+Each custom callback overrides only its own slot; an absent slot inherits the
+native callback. Shell precedence is custom, native, then the padded default.
+A self-rendered shell supplies its own framing. Only a row without either
+binding displays generic arguments with [`pretty_json`](../json.md).
+Callback failures fall back in that slot; failures from a returned child's
+`try_render` propagate. Call and result slots share typed state but retain separate
+previous components.
+
+`update_args`, `mark_execution_started`, `set_args_complete`, `update_result`,
+`set_expanded`, `set_show_images` and `set_image_width_cells` rebuild the retained
+shell. Raw details and absent versus null arguments stay distinct. Result updates
+may precede complete arguments; streaming and error flags remain independent.
+Started/complete updates request rendering. Invalidation rebuilds against the live
+theme and retains a formatting failure for `try_render`. The inherited `Container`
+interface keeps outer edits and existing child-array aliases.
+
+Images use the [terminal image owner](../terminal/images.md). Defaults show images
+at a maximum of 60 cells. Both constructor widths and setter widths are floored
+and clamped to at least one integral cell at the image boundary. Visibility and
+terminal support are independent. Kitty conversion uses the existing synchronous
+PNG converter; successful cache entries match both payload and MIME, and replaced
+results discard stale entries. Image conversion schedules no deferred work.
+Native edit previews retain their existing runtime and read-only preflight.
