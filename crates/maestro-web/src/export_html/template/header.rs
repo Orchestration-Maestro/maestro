@@ -8,7 +8,10 @@ use maestro_theme::BrandPresentation;
 use std::{io, rc::Rc};
 /// Prepare only the reached identity, leaving other document fields unread.
 fn prepare(document: &SessionDocument) -> io::Result<String> {
-    let id = &document.data["header"]["id"];
+    let id = &document
+        .data
+        .get("header")
+        .unwrap_or(&serde_json::Value::Null)["id"];
     let identity = if maestro_app::is_truthy(id) {
         id.as_str()
             .ok_or_else(|| super::document::invalid("nonstring session identity"))?

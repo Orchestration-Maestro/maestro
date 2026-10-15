@@ -7,6 +7,7 @@ use crate::browser::{
     },
     event_subscription::EventSubscription,
 };
+use js_sys::Reflect;
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, closure::Closure};
@@ -193,14 +194,20 @@ impl BrowserAttachmentHost {
                 .ok_or_else(|| AttachmentUiError::Host("Surface is not reading content".into()))?;
             let transform = self.transform(r.pixels)?;
             let saved = target.wrapper.get_attribute("style").unwrap_or_default();
-            let scroll = (target.wrapper.scroll_left(), target.wrapper.scroll_top());
+            // Element's integer bindings would truncate native subpixel offsets.
+            let left =
+                Reflect::get(&target.wrapper, &"scrollLeft".into()).map_err(|e| host_error(&e))?;
+            let top =
+                Reflect::get(&target.wrapper, &"scrollTop".into()).map_err(|e| host_error(&e))?;
             let measured = attr(&target.wrapper, &r.measurement).map(|()| ReadingLayout {
                 height: transform.height(r.root.element.get_bounding_client_rect().height()),
             });
             let restored = attr(&target.wrapper, &saved);
-            target.wrapper.set_scroll_left(scroll.0);
-            target.wrapper.set_scroll_top(scroll.1);
-            measured.and_then(|layout| restored.map(|()| layout))
+            let horizontal = Reflect::set(&target.wrapper, &"scrollLeft".into(), &left)
+                .map_err(|e| host_error(&e));
+            let vertical = Reflect::set(&target.wrapper, &"scrollTop".into(), &top)
+                .map_err(|e| host_error(&e));
+            measured.and_then(|layout| restored.and(horizontal).and(vertical).map(|_| layout))
         })();
         if result.is_err() {
             drop(surface.pending.take());

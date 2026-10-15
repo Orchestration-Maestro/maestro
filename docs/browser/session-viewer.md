@@ -46,7 +46,8 @@ not narrowed to a second history schema or coerced into numeric/string values.
 Retain a `HeaderState::new(host)` and call
 `render_header(ui, &document, &mut state, HeaderView { presentation })` through
 `maestro_web::export_html::template`. This fallible operation renders only
-`Session: <id>` as literal browser text, with `unknown` for an absent or falsy ID.
+`Session: <id>` as literal browser text, with `unknown` for an absent header or
+an absent or falsy ID.
 It does not interpret markup, trim the ID or inspect deferred prompt/tool fields.
 A truthy nonstring identity returns an invalid-data error.
 
@@ -55,7 +56,8 @@ reuse the owned native factory; changed identities commit only after successful
 measurement and placement. Dropping the state removes only its own surface.
 Horizontal, vertical and wrapped parents all use an independent top-down child;
 the native viewport is bounded by available height, without a second canvas
-scroller or painted reading text.
+scroller or painted reading text. A transparent flow container includes the
+panel's trailing spacing in that allocation without extending its background.
 
 Metadata, help and canvas actions are tracked in
 [#1090](https://github.com/Orchestration-Maestro/maestro/issues/1090), and native

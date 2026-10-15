@@ -74,7 +74,9 @@ root. `reading_layout(id)` reads unclipped natural height in canvas points;
 `ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
 are valid. Failed measurement/publication discards the candidate and retains the
 previous root, native selection, scroll and placement without remounting it.
-Measurement restores the wrapper's prior style and scroll position.
+Measurement restores the wrapper's prior style and fractional scroll positions
+on both axes. Feature roots must contain their trailing flow spacing within
+the measured root, rather than leaving an external margin outside its bounds.
 
 The full viewport, including typography, uses the existing canvas's separate
 axis scales exactly once. Native resize and scroll callbacks request repaint

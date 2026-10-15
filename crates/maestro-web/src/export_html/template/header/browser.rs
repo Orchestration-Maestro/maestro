@@ -16,5 +16,9 @@ pub(super) fn mount(document: &Document, title: &str) -> Result<ReadingRoot, Att
     let heading = document.create_element("h1").map_err(|e| host_error(&e))?;
     heading.set_text_content(Some(title));
     root.append_child(&heading).map_err(|e| host_error(&e))?;
-    Ok(ReadingRoot { element: root })
+    let flow = document.create_element("div").map_err(|e| host_error(&e))?;
+    flow.set_attribute("style", "display:flow-root")
+        .map_err(|e| host_error(&e))?;
+    flow.append_child(&root).map_err(|e| host_error(&e))?;
+    Ok(ReadingRoot { element: flow })
 }

@@ -233,3 +233,28 @@ fn header_scope_uses_shared_theme_and_preserves_caller_style() {
         }
     }
 }
+/// Documents accepted without a header still draw the fallback identity.
+#[test]
+fn header_absent_from_loaded_document_renders_without_panicking() {
+    use base64::Engine as _;
+    let doc = maestro_web::export_html::template::load_document(
+        &base64::engine::general_purpose::STANDARD.encode(r#"{"entries":[]}"#),
+        "",
+        None,
+    )
+    .unwrap();
+    let host = Rc::new(Host::default());
+    let mut state = HeaderState::new(host.clone());
+    let pack = pack();
+    let presentation = pack.presentation(BrandMode::Dark).unwrap();
+    draw(
+        &mut state,
+        &doc,
+        &presentation,
+        egui::Layout::top_down(egui::Align::Min),
+        egui::vec2(400., 200.),
+    )
+    .0
+    .unwrap();
+    assert_eq!(host.published.borrow().len(), 1);
+}
