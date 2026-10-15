@@ -3503,6 +3503,7 @@ dependencies = [
  "serde_json",
  "usvg",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
 ]
 

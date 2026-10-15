@@ -17,11 +17,15 @@ font bundle; native tests enable the dev-only egui default fonts.
 | serde_json | 1.0.151 | workspace preserve_order, float_roundtrip | MIT |
 | wasm-bindgen | 0.2.129 | wasm-only, default/std | MIT |
 | js-sys | 0.3.106 | wasm-only, default/std | MIT |
+| wasm-bindgen-futures | 0.4.79 | wasm-only, default/std; native request promises | MIT |
 | web-sys | 0.3.106 | wasm-only browser platform operations | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
 Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
-BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement and DomRect. Storage and reload errors remain fallible. Legacy locale access uses the platform property
+BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
+DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
+IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction and
+IdbTransactionMode. Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
 
@@ -47,7 +51,12 @@ Lucide 0.544.0 icon geometry uses ISC with Feather MIT portions. Browser
 translation data uses MIT. Their full texts are retained in
 [third-party notices](../../THIRD-PARTY-NOTICES.md).
 
-See [browser utility use](../browser/frontend.md) for the delivered API boundary.
+See [browser utility use](../browser/frontend.md) and
+[browser-native record storage](../browser/storage.md) for the delivered API boundaries.
+IndexedDB uses the browser platform and the existing application configuration
+records, with no new codec, executor or JavaScript storage implementation. The
+added request-future declaration and platform features change no locked
+third-party package version.
 
 Application attachment loading reuses already-landed native libraries: serde
 1.0.229 (derive, MIT), base64 0.23.1 (defaults off/std, MIT), rand 0.10.3

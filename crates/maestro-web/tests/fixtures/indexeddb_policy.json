@@ -1,0 +1,186 @@
+{
+  "rows": [
+    {
+      "id": "schema-created-options",
+      "test": "schema_creation_plan_preserves_order_and_existing_stores",
+      "input": {
+        "stores": [
+          "inline",
+          "plain"
+        ],
+        "existing": []
+      },
+      "expected": [
+        "inline",
+        "plain"
+      ]
+    },
+    {
+      "id": "schema-existing-is-untouched",
+      "test": "schema_creation_plan_preserves_order_and_existing_stores",
+      "input": {
+        "stores": [
+          "old",
+          "new"
+        ],
+        "existing": [
+          "old"
+        ]
+      },
+      "expected": [
+        "new"
+      ]
+    },
+    {
+      "id": "schema-duplicate-sees-earlier-create",
+      "test": "schema_creation_plan_observes_prior_creations",
+      "input": {
+        "stores": [
+          "same",
+          "same"
+        ],
+        "existing": []
+      },
+      "expected": [
+        "same"
+      ]
+    },
+    {
+      "id": "schema-index-defaults",
+      "test": "schema_creation_plan_preserves_order_and_existing_stores",
+      "input": {
+        "stores": [
+          "one"
+        ],
+        "existing": []
+      },
+      "expected": [
+        "one"
+      ]
+    },
+    {
+      "id": "get-missing",
+      "test": "schema_creation_plan_preserves_order_and_existing_stores",
+      "input": {
+        "stores": [],
+        "existing": []
+      },
+      "expected": []
+    },
+    {
+      "id": "put-outline",
+      "test": "put_key_selection_uses_the_live_store_path",
+      "input": {
+        "inline": false,
+        "key": "key"
+      },
+      "expected": "key"
+    },
+    {
+      "id": "put-inline",
+      "test": "put_key_selection_uses_the_live_store_path",
+      "input": {
+        "inline": true,
+        "key": "key"
+      },
+      "expected": null
+    },
+    {
+      "id": "put-empty-key",
+      "test": "put_key_selection_uses_the_live_store_path",
+      "input": {
+        "inline": false,
+        "key": ""
+      },
+      "expected": ""
+    },
+    {
+      "id": "open-shared-failure",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "VersionError"
+      },
+      "expected": "InvalidInput"
+    },
+    {
+      "id": "open-shared-sync-failure",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "SecurityError"
+      },
+      "expected": "PermissionDenied"
+    },
+    {
+      "id": "failure-get-NotFoundError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "NotFoundError"
+      },
+      "expected": "NotFound"
+    },
+    {
+      "id": "failure-put-DataError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "DataError"
+      },
+      "expected": "InvalidInput"
+    },
+    {
+      "id": "failure-delete-ReadOnlyError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "ReadOnlyError"
+      },
+      "expected": "PermissionDenied"
+    },
+    {
+      "id": "failure-transaction-InvalidStateError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "InvalidStateError"
+      },
+      "expected": "Other"
+    },
+    {
+      "id": "failure-put-ConstraintError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "ConstraintError"
+      },
+      "expected": "AlreadyExists"
+    },
+    {
+      "id": "failure-put-QuotaExceededError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "QuotaExceededError"
+      },
+      "expected": "StorageFull"
+    },
+    {
+      "id": "failure-get-AbortError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "AbortError"
+      },
+      "expected": "Interrupted"
+    },
+    {
+      "id": "failure-get-UnknownError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "UnknownError"
+      },
+      "expected": "Other"
+    },
+    {
+      "id": "failure-put-DataCloneError",
+      "test": "browser_storage_error_categories_keep_failure_kinds",
+      "input": {
+        "name": "DataCloneError"
+      },
+      "expected": "InvalidData"
+    }
+  ]
+}

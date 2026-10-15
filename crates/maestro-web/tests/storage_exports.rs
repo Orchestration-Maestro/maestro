@@ -385,3 +385,20 @@ fn browser_session_records() -> (maestro_app::SessionData, maestro_app::SessionM
         serde_json::from_value::<SessionMetadata>(row["input"]["metadata"].clone()).unwrap();
     (data, metadata)
 }
+
+/// Compile the concrete SDK without narrowing values to JSON.
+#[cfg(target_arch = "wasm32")]
+#[test]
+fn indexeddb_backend_exports_keep_raw_values() {
+    use maestro_web::IndexedDBStorageBackend;
+    use wasm_bindgen::JsValue;
+    let backend = IndexedDBStorageBackend::new(maestro_app::IndexedDBConfig {
+        db_name: "native-values".into(),
+        version: 1.0,
+        stores: vec![],
+    });
+    fn output<T>(_: impl Future<Output = io::Result<T>>) {}
+    output::<Option<JsValue>>(backend.get("records", "key"));
+    output::<()>(backend.set("records", "key", JsValue::NULL));
+    output::<()>(backend.delete("records", "key"));
+}

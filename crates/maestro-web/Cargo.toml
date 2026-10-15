@@ -20,7 +20,8 @@ resvg = { version = "=0.48.1", default-features = false }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "=0.2.129"
 js-sys = "=0.3.106"
-web-sys = { version = "=0.3.106", features = ["Window", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect"] }
+wasm-bindgen-futures = "=0.4.79"
+web-sys = { version = "=0.3.106", features = ["Window", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
