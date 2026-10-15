@@ -33,3 +33,29 @@ the active global manager; callers can install a shared handle using
 
 File factories, reload and stored paths are native-only. Pure defaults, direct
 configuration and raw name conversion are also available on browser targets.
+
+## Native legacy conversions
+
+`configuration::migrations::migrate_auth_to_auth_json()` reads the call-time
+[configuration root](configuration.md#identity-and-roots). Existing `auth.json`
+skips conversion. Otherwise it combines legacy `oauth.json` records with string
+`settings.json` API keys, preferring OAuth providers and retaining open record
+fields. It returns converted provider names in source order. Each unreadable
+legacy source is skipped independently.
+
+Credential output is published before either source is retired. Publication
+errors propagate and a failed new output target is removed for retry, retaining
+its authored links. Successful publication writes through links, creating new
+Unix targets with mode `0600` subject to umask. OAuth retirement renames its entry
+to `oauth.json.migrated`; settings retirement writes in place, preserving existing
+links and target permissions. Retirement failures are tolerated. Empty admitted
+sources can retire without creating auth output. This is not a crash transaction
+or concurrent-writer protocol.
+
+`migrate_sessions_from_agent_root()` scans direct `.jsonl` children. An admitted
+first-line session header with a nonempty string cwd selects the existing
+[session directory encoding](../sessions/session_manager.md). The original entry
+is renamed using its native basename; transcript bytes are not rewritten.
+Existing destinations are preserved; scan and individual-file failures are
+ignored. Configuration-root lookup errors propagate from both operations.
+These operations are native-only and do not install startup orchestration.
