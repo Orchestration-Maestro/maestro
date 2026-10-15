@@ -486,7 +486,10 @@ mod child;
 #[test]
 fn native_agent_root_reads_disposable_environment() {
     if std::env::var_os("MAESTRO_CONFIGURATION_CHILD").is_some() {
-        println!("\nPROBE {}", maestro_app::get_agent_dir().unwrap());
+        let matches_expected = maestro_app::get_agent_dir().unwrap()
+            == std::env::var("MAESTRO_CONFIGURATION_EXPECTED").unwrap();
+        assert!(matches_expected);
+        println!("\nPROBE agent-directory-ok");
         println!("PROBE {}", maestro_app::VERSION);
         return;
     }
@@ -502,10 +505,11 @@ fn native_agent_root_reads_disposable_environment() {
             &scratch.0,
             &[
                 ("MAESTRO_CONFIGURATION_CHILD", "1"),
+                ("MAESTRO_CONFIGURATION_EXPECTED", &expected),
                 ("HOME", &home),
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
             ],
         );
-        assert_eq!(output, [expected, env!("CARGO_PKG_VERSION").to_owned()]);
+        assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }
 }
