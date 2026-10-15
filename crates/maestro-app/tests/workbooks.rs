@@ -131,6 +131,7 @@ fn check_book(mut book: ssf::WorkBook, record: Record, ok: Expected, file: &str,
     assert_eq!(record.file, file);
     assert_eq!(book.date1904, record.date1904);
     assert_eq!(book.ssf, record.ssf.into_iter().collect::<BTreeMap<_, _>>());
+    assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
     assert_eq!(
         book.sheets.keys().collect::<Vec<_>>(),
         ok.sheets.iter().map(|s| &s.name).collect::<Vec<_>>()
@@ -255,4 +256,23 @@ fn workbook_archive_and_xml_failures_keep_context() {
     for file in ["truncated.xlsx", "malformed-style.xlsx"] {
         check(file);
     }
+}
+
+#[test]
+fn workbook_date_cells_accept_date_local_datetime_and_time_forms() {
+    for file in ["iso-forms-False.xlsx", "iso-forms-True.xlsx"] {
+        check(file);
+    }
+}
+
+#[test]
+fn workbook_blank_templates_keep_declared_rectangles() {
+    for file in ["blank-template.xlsx", "blank-default.xlsx"] {
+        check(file);
+    }
+}
+
+#[test]
+fn workbook_error_cells_load_implicit_formats_into_live_and_snapshot_tables() {
+    check("error-implicit-format.xlsx");
 }

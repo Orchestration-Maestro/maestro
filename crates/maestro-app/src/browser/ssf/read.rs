@@ -177,11 +177,9 @@ fn sheet_range(
 ) -> Result<(), WorkbookError> {
     result.range = xml
         .element_attr(xml.root(), "dimension", "ref")
+        .filter(|s| s.contains(':') || !result.cells.is_empty())
         .map(decode_range)
         .transpose()?;
-    if result.cells.is_empty() {
-        result.range = None;
-    }
     if result.range.is_none() {
         for address in result.cells.keys() {
             let p = decode_cell(address)?;
@@ -208,25 +206,23 @@ fn cell(
     style: Option<usize>,
     format: (&[u32], &Ssf, bool),
 ) -> Option<CellObject> {
-    if let Some(label) = error {
+    let (kind, value, cached) = if let Some(label) = error {
         let value = ERRORS
             .iter()
             .find(|(_, s)| *s == label)
             .map_or(CellValue::Missing, |(n, _)| {
                 CellValue::Number(f64::from(*n))
             });
-        return Some(CellObject {
-            t: Some(ExcelDataType::Error),
-            v: value,
-            w: Some(label),
-        });
-    }
-    let value = value?;
-    let kind = match &value {
-        CellValue::Number(_) => ExcelDataType::Number,
-        CellValue::Text(_) => ExcelDataType::Text,
-        CellValue::Boolean(_) => ExcelDataType::Boolean,
-        CellValue::Missing | CellValue::Null => return None,
+        (ExcelDataType::Error, value, Some(label))
+    } else {
+        let value = value?;
+        let kind = match &value {
+            CellValue::Number(_) => ExcelDataType::Number,
+            CellValue::Text(_) => ExcelDataType::Text,
+            CellValue::Boolean(_) => ExcelDataType::Boolean,
+            CellValue::Missing | CellValue::Null => return None,
+        };
+        (kind, value, None)
     };
     let id = style
         .and_then(|index| format.0.get(index))
@@ -255,7 +251,7 @@ fn cell(
                 .to_owned()
         });
     }
-    let shown = format.1.format(id, value.scalar(), format.2).ok();
+    let shown = cached.or_else(|| format.1.format(id, value.scalar(), format.2).ok());
     Some(CellObject {
         t: Some(kind),
         v: value,

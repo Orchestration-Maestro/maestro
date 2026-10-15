@@ -1,10 +1,34 @@
-//! ISO instants converted to spreadsheet serials.
+//! ISO dates, local clocks and instants converted to spreadsheet serials.
 use super::WorkbookError;
 use num_traits::ToPrimitive;
-/// Convert a real UTC instant without treating February 1900 as a leap month.
+/// Convert UTC dates or epoch-relative clocks without a synthetic leap month.
 pub(super) fn datenum(value: &str, date1904: bool) -> Result<f64, WorkbookError> {
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+    if let Some(time) = ["%H:%M:%S%.f", "%H:%M"]
+        .iter()
+        .find_map(|f| NaiveTime::parse_from_str(value, f).ok())
+    {
+        return Ok((f64::from(time.num_seconds_from_midnight())
+            + f64::from(time.nanosecond() / 1_000_000) / 1000.0)
+            / 86_400.0);
+    }
     let instant = chrono::DateTime::parse_from_rfc3339(value)
-        .map_err(|e| WorkbookError::Reader(format!("invalid date {value}: {e}")))?;
+        .map(|d| d.naive_utc())
+        .or_else(|_| {
+            NaiveDate::parse_from_str(value, "%Y-%m-%d").map(|d| d.and_time(NaiveTime::MIN))
+        })
+        .or_else(|_| {
+            [
+                "%Y-%m-%dT%H:%M:%S%.f",
+                "%Y-%m-%d %H:%M:%S%.f",
+                "%Y-%m-%dT%H:%M",
+                "%Y-%m-%d %H:%M",
+            ]
+            .iter()
+            .find_map(|f| NaiveDateTime::parse_from_str(value, f).ok())
+            .ok_or_else(|| WorkbookError::Reader(format!("invalid date {value}")))
+        })?;
+    let instant = instant.and_utc();
     let milliseconds = instant
         .timestamp_millis()
         .to_f64()

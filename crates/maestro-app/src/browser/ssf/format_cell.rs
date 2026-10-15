@@ -83,6 +83,9 @@ pub fn format_cell(cell: Option<&mut CellObject>, ssf: &Ssf) -> CellValue {
             cell.w = Some(text.clone());
             CellValue::Text(text)
         }
-        Err(_) => CellValue::Text(general(cell.v.scalar())),
+        Err(_) => CellValue::Text(match cell.v {
+            CellValue::Number(n) => super::write_num::spelling(n),
+            _ => general(cell.v.scalar()),
+        }),
     }
 }

@@ -15,7 +15,7 @@ pub(super) fn round(value: f64) -> f64 {
 }
 
 /// Shortest binary64 decimal spelling.
-fn spelling(value: f64) -> String {
+pub(super) fn spelling(value: f64) -> String {
     ryu_js::Buffer::new().format(value).to_owned()
 }
 

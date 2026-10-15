@@ -178,4 +178,4 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Artifact:** A mutable dated file retained by the browser application command owner; its ordered map and record handles can outlive a command. See [artifact commands](docs/application/artifacts.md).
 
 - **Workbook:** The application-owned ordered worksheet collection, numeric date epoch and detached number-format table snapshot returned by the XLSX reader. See [spreadsheet values and workbooks](docs/application/document-formats.md).
-- **Worksheet:** Ordered populated spreadsheet cells with retained raw values, optional formatted text, used range and ordered merged regions.
+- **Worksheet:** Ordered populated spreadsheet cells with retained raw values, optional formatted text, declared or observed range and ordered merged regions.

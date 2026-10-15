@@ -144,16 +144,16 @@
       "cell": {
         "t": "n",
         "v": {
-          "number": "1.25"
+          "number": "1.23456789012345"
         }
       },
       "default_code": "Q0"
     },
     "expected": {
-      "text": "1.25",
+      "text": "1.23456789012345",
       "w": null,
       "v_after": {
-        "number": "1.25"
+        "number": "1.23456789012345"
       }
     }
   },
