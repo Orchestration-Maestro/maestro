@@ -6,6 +6,9 @@ pub mod dialogs;
 pub use components::attachment_tile::AttachmentTile;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod icons;
+pub mod storage;
+#[cfg(target_arch = "wasm32")]
+pub use storage::backends::indexeddb_storage_backend::IndexedDBStorageBackend;
 pub mod utils;
 pub use utils::format::{format_cost, format_model_cost, format_token_count, format_usage};
 #[cfg(target_arch = "wasm32")]
