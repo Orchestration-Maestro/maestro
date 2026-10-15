@@ -108,11 +108,16 @@ pub enum UnparsedKind {
 #[derive(Debug)]
 pub enum OpenXmlElementData {
     /// Paragraph content.
-    Paragraph,
+    Paragraph {
+        /// Completed paragraph properties.
+        properties: Box<super::paragraph::ParagraphProperties>,
+    },
     /// Run content.
     Run {
         /// Whether instructions or complex field markers were encountered.
         field_run: bool,
+        /// Completed run properties.
+        properties: super::run::RunProperties,
     },
     /// Text content.
     Text {
@@ -190,20 +195,18 @@ pub enum OpenXmlElementData {
         element: OwnedXmlElement,
     },
 }
-/// Common document links and raw property elements.
+/// Common document links.
 #[derive(Debug, Default)]
 pub struct OpenXmlElementBase {
     /// Ordered child arena positions.
     pub children: Vec<usize>,
     /// Parent arena position when assigned by the parser.
     pub parent: Option<usize>,
-    /// Ordered uninterpreted property elements.
-    pub properties: Vec<OwnedXmlElement>,
 }
 /// One owned arena element.
 #[derive(Debug)]
 pub struct OpenXmlElement {
-    /// Links and property inputs.
+    /// Arena links.
     pub base: OpenXmlElementBase,
     /// Typed element content.
     pub data: OpenXmlElementData,
@@ -221,7 +224,7 @@ impl OpenXmlElement {
                 kind: UnparsedKind::Element(kind),
                 ..
             } => Some(kind),
-            OpenXmlElementData::Paragraph => Some(DomType::Paragraph),
+            OpenXmlElementData::Paragraph { .. } => Some(DomType::Paragraph),
             OpenXmlElementData::Run { .. } => Some(DomType::Run),
             OpenXmlElementData::Text { .. } => Some(DomType::Text),
             OpenXmlElementData::DeletedText { .. } => Some(DomType::DeletedText),

@@ -67,3 +67,7 @@ pub use document_parser::{
     parse_border_properties, parse_default_properties, parse_paragraph, parse_run,
     parse_table_style,
 };
+
+pub use document::common::CommonProperties;
+pub use document::paragraph::{LineSpacing, Numbering, ParagraphProperties, TabStop};
+pub use document::run::{RunProperties, VerticalAlign};

@@ -90,9 +90,19 @@ invalid or missing flag values default to false independently of `dirty`.
 Symbol font-family values preserve valid CSS spellings and quote invalid names
 through the [shared CSS string serializer](../text.md), including escaping `<`.
 
-Raw property elements and recognized foreign branches retain shared complete XML
-source with selected byte ranges, preserving ancestor namespaces. These slots do
-not yet interpret formatting, tables, links, bookmarks, drawings, math or comments.
+Paragraph and run payloads carry owned properties, including style references,
+numbering, tabs, line spacing, alignment, keep/break flags and run tag alignment.
+Common paragraph metadata retains raw colors and converted font sizes. Each
+property group replaces its ordered CSS map without clearing unrelated metadata.
+Paragraph spacing and alignment update both metadata and CSS through the shared
+property dispatcher. Conditional classes use a present bit-string before Boolean
+flags, including an authoritative empty mask. Parsed tabs are retained independently
+of experimental positioning. Section parsing follows in
+[section properties](https://github.com/Orchestration-Maestro/maestro/issues/1059).
+
+Recognized foreign branches retain shared complete XML source with selected byte
+ranges, preserving ancestor namespaces. Tables, links, bookmarks, drawings, math
+and comments remain uninterpreted here.
 The tree is a partial semantic parser, not a rendered preview or attachment-text
 extractor. Package loading remains separate from element parsing.
 
@@ -108,8 +118,8 @@ Both operations share color selection: nonempty literal colors precede theme
 fallbacks, auto is black, document color names use their defined RGB values and
 none is transparent. Border styles default to solid; nil/none produces only none.
 Absent width/color components are omitted, allowing CSS defaults. Widths use the
-existing length conversion. These operations do not wire formatting into the
-owned element tree or render a document.
+existing length conversion. These operations also supply the shared property
+dispatcher; they do not render a document.
 
 ## Word default properties and conditional table styles
 
@@ -130,5 +140,5 @@ families, using the existing font enclosure. Position writes the valid
 `parse_table_style` prepares owned `TableStyle` selector/modifier/value records
 for first/last rows and columns and horizontal/vertical banding. Property-child
 order, duplicates and empty maps are retained. Unsupported regions return no
-records. These parsers do not integrate formatting into the owned element tree
-or render a preview.
+records. Table-style preparation remains separate from the owned element tree;
+neither operation renders a preview.

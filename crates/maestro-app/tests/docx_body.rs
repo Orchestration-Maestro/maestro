@@ -3,7 +3,7 @@
 mod docx_support;
 use docx_support::cases;
 #[path = "docx_support/body_tree.rs"]
-mod body_tree;
+pub mod body_tree;
 use maestro_app::browser::docx_preview::{
     DocxError, OwnedXmlElement, parse_body_elements, parse_paragraph, parse_run, parse_xml_string,
 };
@@ -38,14 +38,11 @@ fn check(name: &str) {
             _ => panic!("unknown framing"),
         }
         .unwrap();
-        let mut observed = if case.expected.get("foreign_slots").is_some() {
+        let observed = if case.expected.get("foreign_slots").is_some() {
             json!({"foreign_slots":body_tree::foreign(&tree, &case.input.operation)})
         } else {
             body_tree::graph(&tree)
         };
-        if case.expected.get("property_slots").is_some() {
-            observed["property_slots"] = body_tree::properties(&tree);
-        }
         assert_eq!(observed, case.expected);
     }
 }
@@ -218,16 +215,6 @@ fn body_and_paragraph_local_names_ignore_prefix() {
 }
 
 #[test]
-fn paragraph_properties_keep_raw_slots_without_defaults() {
-    check("paragraph_properties_keep_raw_slots_without_defaults");
-}
-
-#[test]
-fn run_properties_keep_raw_slots_without_defaults() {
-    check("run_properties_keep_raw_slots_without_defaults");
-}
-
-#[test]
 fn body_foreign_branches_remain_owned() {
     check("body_foreign_branches_remain_owned");
 }
@@ -277,11 +264,11 @@ fn owned_xml_slices_keep_source_and_namespaces() {
     );
     let tree = parse_run(&owned).unwrap();
     let root = &tree.nodes[tree.roots[0]];
-    assert_eq!(root.base.properties.len(), 1);
-    assert_eq!(
-        body_tree::raw(&root.base.properties[0])["namespace"],
-        "urn:w"
-    );
+    let maestro_app::browser::docx_preview::OpenXmlElementData::Run { properties, .. } = &root.data
+    else {
+        panic!("run missing")
+    };
+    assert!(properties.css_style.as_ref().unwrap().is_empty());
     assert_eq!(
         body_tree::graph(&tree),
         json!({"roots":[0],"nodes":[{"type":"run","parent":null,"children":[1]},{"type":"text","text":"retained"}]})
@@ -293,7 +280,7 @@ fn parsed_tree_survives_source_release() {
     use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
     let tree = {
         let source =
-            "<w:p xmlns:w=\"urn:w\"><w:pPr/><w:r><w:rPr/><w:t>kept</w:t><w:drawing/></w:r></w:p>"
+            "<w:p xmlns:w=\"urn:w\"><w:pPr><w:pStyle val=\"outer\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inner\"/></w:rPr><w:t>kept</w:t><w:drawing/></w:r></w:p>"
                 .to_owned();
         let xml = parse_xml_string(&source, false).unwrap();
         let input = OwnedXmlElement::new(xml.root());
@@ -310,19 +297,22 @@ fn parsed_tree_survives_source_release() {
     let Data::Unparsed { element, .. } = &tree.nodes[run.base.children[1]].data else {
         panic!("drawing missing")
     };
-    assert!(std::ptr::eq(
-        paragraph.base.properties[0].source().as_ptr(),
-        element.source().as_ptr()
-    ));
-    assert!(std::ptr::eq(
-        run.base.properties[0].source().as_ptr(),
-        element.source().as_ptr()
-    ));
-    assert_eq!(body_tree::raw(element)["local_name"], "drawing");
+    let Data::Paragraph { properties } = &paragraph.data else {
+        panic!("paragraph missing")
+    };
     assert_eq!(
-        body_tree::raw(&run.base.properties[0])["namespace"],
-        "urn:w"
+        properties.style_name.as_ref().unwrap().as_deref(),
+        Some("outer")
     );
+    let Data::Run { properties, .. } = &run.data else {
+        panic!("run missing")
+    };
+    assert_eq!(
+        properties.style_name.as_ref().unwrap().as_deref(),
+        Some("inner")
+    );
+    assert_eq!(body_tree::raw(element)["local_name"], "drawing");
+    assert_eq!(body_tree::raw(element)["namespace"], "urn:w");
 }
 
 #[test]

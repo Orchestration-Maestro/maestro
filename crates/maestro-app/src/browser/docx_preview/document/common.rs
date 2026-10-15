@@ -1,4 +1,5 @@
 //! Scalar values used by Word XML properties.
+use super::super::{XmlElement, XmlParser};
 use maestro_text::is_whitespace_scalar;
 
 /// Unit policy for an integer-valued Word property.
@@ -117,3 +118,32 @@ pub(crate) fn float_prefix(value: &str) -> f64 {
     }
     value[..end].parse().unwrap_or(f64::NAN)
 }
+
+/// Common paragraph and nested run metadata.
+#[derive(Debug, Default)]
+pub struct CommonProperties {
+    /// Encountered raw color, including a missing attribute.
+    pub color: Option<Option<String>>,
+    /// Encountered half-point size converted to CSS length.
+    pub font_size: Option<Option<String>>,
+}
+
+/// Read a namespace-qualified common property, reporting whether it was consumed.
+pub(crate) fn parse_common_property(
+    xml: &XmlParser<'_>,
+    element: XmlElement<'_, '_>,
+    props: &mut CommonProperties,
+) -> bool {
+    if element.namespace() != Some(WORDML_NAMESPACE) {
+        return false;
+    }
+    match element.local_name() {
+        "color" => props.color = Some(xml.attr(element, "val").map(str::to_owned)),
+        "sz" => props.font_size = Some(xml.length_attr(element, "val", LengthUsage::FontSize)),
+        _ => return false,
+    }
+    true
+}
+/// Namespace of `WordprocessingML` property metadata.
+pub(crate) const WORDML_NAMESPACE: &str =
+    "http://schemas.openxmlformats.org/wordprocessingml/2006/main";

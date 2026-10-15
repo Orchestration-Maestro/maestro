@@ -1,0 +1,5984 @@
+[
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color></w:color><w:sz></w:sz></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": null,
+          "fontSize": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color val=\"\"></w:color><w:sz val=\"\"></w:sz></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": "",
+          "fontSize": "NaNpt"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color val=\"ABCDEF\"></w:color><w:sz val=\"ABCDEF\"></w:sz></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": "ABCDEF",
+          "fontSize": "NaNpt"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color val=\"auto\"></w:color><w:sz val=\"auto\"></w:sz></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": "auto",
+          "fontSize": "NaNpt"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color val=\"A&amp;B\"></w:color><w:sz val=\"A&amp;B\"></w:sz></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": "A&B",
+          "fontSize": "NaNpt"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_common_records_keep_raw_color_and_font_size",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:color val=\"ABCDEF\"/><w:color/><w:sz val=\"24\"/><w:sz/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "color": null,
+          "fontSize": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines></w:keepLines><w:keepNext></w:keepNext><w:pageBreakBefore></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"\"></w:keepLines><w:keepNext val=\"\"></w:keepNext><w:pageBreakBefore val=\"\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"1\"></w:keepLines><w:keepNext val=\"1\"></w:keepNext><w:pageBreakBefore val=\"1\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"0\"></w:keepLines><w:keepNext val=\"0\"></w:keepNext><w:pageBreakBefore val=\"0\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": false,
+          "keepNext": false,
+          "pageBreakBefore": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"on\"></w:keepLines><w:keepNext val=\"on\"></w:keepNext><w:pageBreakBefore val=\"on\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"off\"></w:keepLines><w:keepNext val=\"off\"></w:keepNext><w:pageBreakBefore val=\"off\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": false,
+          "keepNext": false,
+          "pageBreakBefore": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"true\"></w:keepLines><w:keepNext val=\"true\"></w:keepNext><w:pageBreakBefore val=\"true\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"false\"></w:keepLines><w:keepNext val=\"false\"></w:keepNext><w:pageBreakBefore val=\"false\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": false,
+          "keepNext": false,
+          "pageBreakBefore": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"TRUE\"></w:keepLines><w:keepNext val=\"TRUE\"></w:keepNext><w:pageBreakBefore val=\"TRUE\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"yes\"></w:keepLines><w:keepNext val=\"yes\"></w:keepNext><w:pageBreakBefore val=\"yes\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"true\"/><w:keepNext val=\"false\"/><w:pageBreakBefore val=\"true\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": false,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"false\"/><w:keepNext val=\"true\"/><w:pageBreakBefore val=\"false\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": false,
+          "keepNext": true,
+          "pageBreakBefore": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"false\"></w:keepLines><w:keepNext val=\"true\"></w:keepNext><w:pageBreakBefore val=\"true\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": false,
+          "keepNext": true,
+          "pageBreakBefore": true
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_flags_keep_defaults_without_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:keepLines val=\"true\"></w:keepLines><w:keepNext val=\"true\"></w:keepNext><w:pageBreakBefore val=\"false\"></w:pageBreakBefore></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "keepLines": true,
+          "keepNext": true,
+          "pageBreakBefore": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId></w:numId><w:ilvl></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": null,
+            "level": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"\"></w:numId><w:ilvl val=\"\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "",
+            "level": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"0\"></w:numId><w:ilvl val=\"0\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "0",
+            "level": 0
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"-0\"></w:numId><w:ilvl val=\"-0\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "-0",
+            "level": {
+              "$number": "-0"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"1\"></w:numId><w:ilvl val=\"1\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "1",
+            "level": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"-20\"></w:numId><w:ilvl val=\"-20\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "-20",
+            "level": -20
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"+42tail\"></w:numId><w:ilvl val=\"+42tail\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "+42tail",
+            "level": 42
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"1.5\"></w:numId><w:ilvl val=\"1.5\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "1.5",
+            "level": 1
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"0x20\"></w:numId><w:ilvl val=\"0x20\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "0x20",
+            "level": 32
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"﻿20\"></w:numId><w:ilvl val=\"﻿20\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "﻿20",
+            "level": 20
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"20\"></w:numId><w:ilvl val=\"20\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "20",
+            "level": {
+              "$number": "NaN"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"junk\"></w:numId><w:ilvl val=\"junk\"></w:ilvl></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": "junk",
+            "level": {
+              "$number": "NaN"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"0007\"/><w:unknown><w:ilvl val=\"8\"/></w:unknown><w:ilvl val=\"2\"/><w:numId/><w:ilvl/></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {
+            "id": null,
+            "level": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {}
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_numbering_keeps_id_and_level_domains",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:numPr><w:numId val=\"7\"/><w:ilvl val=\"2\"/></w:numPr><w:numPr/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "numbering": {}
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"0\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"-0\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": {
+            "$number": "-0"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"1\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 1
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"-20\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": -20
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"+42tail\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 42
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"1.5\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 1
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"0x20\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 32
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"﻿20\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": 20
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"20\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": {
+            "$number": "NaN"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_outline_levels_use_shared_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:outlineLvl val=\"junk\"></w:outlineLvl></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "outlineLevel": {
+            "$number": "NaN"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": null,
+              "style": null
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"\"  val=\"\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"\"  val=\"\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "",
+              "style": ""
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "",
+              "style": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"left\"  val=\"left\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"left\"  val=\"left\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "left",
+              "style": "left"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "left",
+              "style": "left"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"decimal\"  val=\"decimal\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"decimal\"  val=\"decimal\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "decimal",
+              "style": "decimal"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "decimal",
+              "style": "decimal"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"clear\"  val=\"clear\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"clear\"  val=\"clear\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "clear",
+              "style": "clear"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "clear",
+              "style": "clear"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"bar\"  val=\"bar\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"bar\"  val=\"bar\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "bar",
+              "style": "bar"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "bar",
+              "style": "bar"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"custom\"  val=\"custom\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"custom\"  val=\"custom\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "custom",
+              "style": "custom"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "custom",
+              "style": "custom"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"  leader=\"A&amp;B\"  val=\"A&amp;B\"></w:tab><w:unknown><w:tab pos=\"999\"/></w:unknown><w:tab pos=\"40\"  leader=\"dot\"  val=\"right\"></w:tab><w:tab pos=\"20\"  leader=\"A&amp;B\"  val=\"A&amp;B\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "A&B",
+              "style": "A&B"
+            },
+            {
+              "position": "2.00pt",
+              "leader": "dot",
+              "style": "right"
+            },
+            {
+              "position": "1.00pt",
+              "leader": "A&B",
+              "style": "A&B"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": null,
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "NaNpt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"0\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "0.00pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"-20\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "-1.00pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"1.5\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "0.05pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"12px\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "12px",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"1.25pt\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.25pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"33%\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "33%",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"﻿20\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "NaNpt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tab_positions_share_length_conversion",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"junk\"></w:tab></w:tabs></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "NaNpt",
+              "leader": null,
+              "style": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_tabs_keep_all_records_even_without_experimental_layout",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><w:tab pos=\"20\"/></w:tabs><w:tabs/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "12pt"
+            ],
+            [
+              "line-height",
+              "12pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "18pt"
+            ],
+            [
+              "line-height",
+              "18pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "NaNpt"
+            ],
+            [
+              "line-height",
+              "NaNpt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "12pt"
+            ],
+            [
+              "line-height",
+              "12pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "18pt"
+            ],
+            [
+              "line-height",
+              "18pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"  lineRule=\"\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "NaNpt"
+            ],
+            [
+              "line-height",
+              "NaNpt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": ""
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "0.00"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "0.00"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "1.00"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "1.50"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"  lineRule=\"auto\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "NaN"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": "auto"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "calc(100% + 0pt)"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "calc(100% + 0pt)"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "calc(100% + 12pt)"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "calc(100% + 18pt)"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"  lineRule=\"atLeast\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "line-height",
+              "calc(100% + NaNpt)"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": "atLeast"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "12pt"
+            ],
+            [
+              "line-height",
+              "12pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "18pt"
+            ],
+            [
+              "line-height",
+              "18pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"  lineRule=\"exact\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "NaNpt"
+            ],
+            [
+              "line-height",
+              "NaNpt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": "exact"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": null,
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"0\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 0,
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"-0\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "0pt"
+            ],
+            [
+              "line-height",
+              "0pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "-0"
+            },
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"240\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "12pt"
+            ],
+            [
+              "line-height",
+              "12pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 240,
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"360\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "18pt"
+            ],
+            [
+              "line-height",
+              "18pt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_spacing_updates_metadata_and_the_same_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:spacing before=\"20\"  after=\"40\"  line=\"junk\"  lineRule=\"custom\"></w:spacing></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "margin-bottom",
+              "2.00pt"
+            ],
+            [
+              "min-height",
+              "NaNpt"
+            ],
+            [
+              "line-height",
+              "NaNpt"
+            ]
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": {
+              "$number": "NaN"
+            },
+            "lineRule": "custom"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              null
+            ]
+          ],
+          "textAlignment": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              ""
+            ]
+          ],
+          "textAlignment": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"auto\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "baseline"
+            ]
+          ],
+          "textAlignment": "auto"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"baseline\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "baseline"
+            ]
+          ],
+          "textAlignment": "baseline"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"top\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "top"
+            ]
+          ],
+          "textAlignment": "top"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"center\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "middle"
+            ]
+          ],
+          "textAlignment": "center"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"bottom\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "bottom"
+            ]
+          ],
+          "textAlignment": "bottom"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_text_alignment_updates_both_views",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:textAlignment val=\"custom\"></w:textAlignment></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "custom"
+            ]
+          ],
+          "textAlignment": "custom"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle></w:pStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle></w:rStyle></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"\"></w:pStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"\"></w:rStyle></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"Body\"></w:pStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "Body"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"Body\"></w:rStyle></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "Body",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"0\"></w:pStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "0"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"0\"></w:rStyle></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "0",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\" A&amp;B \"></w:pStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": " A&B "
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\" A&amp;B \"></w:rStyle></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": " A&B ",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color></w:color><w:sz></w:sz><w:b/><w:rStyle val=\"ignored\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": null,
+            "fontSize": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color val=\"\"></w:color><w:sz val=\"\"></w:sz><w:b/><w:rStyle val=\"ignored\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": "",
+            "fontSize": "NaNpt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color val=\"ABCDEF\"></w:color><w:sz val=\"ABCDEF\"></w:sz><w:b/><w:rStyle val=\"ignored\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": "ABCDEF",
+            "fontSize": "NaNpt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color val=\"24\"></w:color><w:sz val=\"24\"></w:sz><w:b/><w:rStyle val=\"ignored\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": "24",
+            "fontSize": "12.00pt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color val=\"junk\"></w:color><w:sz val=\"junk\"></w:sz><w:b/><w:rStyle val=\"ignored\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": "junk",
+            "fontSize": "NaNpt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {}
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_run_properties_keep_common_metadata_only",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><w:color val=\"ABCDEF\"/><w:sz val=\"24\"/></w:rPr><w:rPr><w:sz val=\"28\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "fontSize": "14.00pt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"first\"/><w:pStyle/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_and_run_style_names_keep_nullable_text",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"first\"/><w:rStyle/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"\"></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"drop\"></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "float",
+              "left"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"margin\"></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"none\"></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"DROP\"></w:framePr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_frames_float_only_drop",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:framePr dropCap=\"drop\"/><w:framePr dropCap=\"none\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "float",
+              "left"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"first\"/><w:keepNext/><w:b/><w:cnfStyle val=\"100000000000\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "styleName": "first",
+          "keepNext": true,
+          "className": "first-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"first\"/><w:keepNext/><w:b/><w:cnfStyle val=\"100000000000\"/></w:pPr><w:r><w:t>kept</w:t></w:r><w:pPr><w:i/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ],
+          "cssStyle": [
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "styleName": "first",
+          "keepNext": true,
+          "className": "first-row"
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:r><w:t>no property group</w:t></w:r></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "no property group"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"first\"/><w:b/></w:pPr><w:pPr/></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "first"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"first\"/><w:vertAlign val=\"superscript\"/><w:b/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "styleName": "first",
+          "verticalAlign": "sup",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"first\"/><w:vertAlign val=\"superscript\"/><w:b/></w:rPr><w:t>kept</w:t><w:rPr><w:i/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "cssStyle": [
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "styleName": "first",
+          "verticalAlign": "sup",
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "kept"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:t>no property group</w:t></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1
+          ],
+          "parent": null
+        },
+        {
+          "type": "text",
+          "text": "no property group"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_property_groups_reset_css_not_metadata",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"first\"/><w:b/></w:rPr><w:rPr/></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "first",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"subscript\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": "sub",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"superscript\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": "sup",
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"baseline\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"super\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"SUBSCRIPT\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"custom\"></w:vertAlign></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_vertical_alignment_keeps_present_null_and_tag_choices",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:vertAlign val=\"subscript\"/><w:vertAlign val=\"custom\"/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [],
+          "verticalAlign": null,
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_namespace_gates_metadata_not_generic_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><q:color val=\"ABCDEF\"/><q:sz val=\"24\"/><q:pStyle val=\"foreign-style\"/><q:keepNext/><q:spacing line=\"360\" lineRule=\"auto\"/><q:textAlignment val=\"top\"/><q:rPr><w:color val=\"ignored\"/></q:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "color",
+              "#ABCDEF"
+            ],
+            [
+              "min-height",
+              "12.00pt"
+            ],
+            [
+              "font-size",
+              "12.00pt"
+            ],
+            [
+              "line-height",
+              "1.50"
+            ],
+            [
+              "vertical-align",
+              "top"
+            ]
+          ],
+          "styleName": "foreign-style"
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_namespace_gates_metadata_not_generic_css",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:rPr><q:color val=\"bad\"/><q:sz val=\"99\"/><w:color val=\"good\"/><w:sz val=\"24\"/></w:rPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "runProps": {
+            "color": "good",
+            "fontSize": "12.00pt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_selection_ignores_nested_unknown_nodes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr>text<!--skip--><?q ignored?><w:unknown><w:keepNext/><w:b/><w:tabs><w:tab pos=\"20\"/></w:tabs></w:unknown></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_selection_uses_first_local_attribute",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle xmlns:a=\"urn:a\" a:val=\"first\" w:val=\"second\"/><w:numPr><w:numId xmlns:a=\"urn:a\" a:val=\"0007\" w:val=\"999\"/></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "first",
+          "numbering": {
+            "id": "0007"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_selection_uses_first_local_attribute",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:tabs><q:tab pos=\"20\" leader=\"dot\" val=\"decimal\"/></w:tabs><w:numPr><q:numId val=\"0007\"/><q:ilvl val=\"3\"/></w:numPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "dot",
+              "style": "decimal"
+            }
+          ],
+          "numbering": {
+            "id": "0007",
+            "level": 3
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"100000000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"010000000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "last-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"001000000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000100000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "last-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000010000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "odd-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000001000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "even-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000100000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "odd-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000010000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "even-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000001000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "ne-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000000100\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "nw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000000010\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "se-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000000001\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "sw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000000000\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"111111111111\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row last-row first-col last-col odd-col even-col odd-row even-row ne-cell nw-cell se-cell sw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"101\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row first-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"x1x01\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "last-row odd-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_strings_keep_class_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"0000000000001\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRow=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "last-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRow=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "last-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle oddVBand=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "odd-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle oddVBand=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle evenVBand=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "even-col"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle evenVBand=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle oddHBand=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "odd-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle oddHBand=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle evenHBand=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "even-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle evenHBand=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRowLastColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "ne-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRowLastColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRowFirstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "nw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRowFirstColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRowLastColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "se-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRowLastColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRowFirstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "sw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle lastRowFirstColumn=\"false\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"\"  lastRow=\"\"  firstColumn=\"\"  lastColumn=\"\"  oddVBand=\"\"  evenVBand=\"\"  oddHBand=\"\"  evenHBand=\"\"  firstRowLastColumn=\"\"  firstRowFirstColumn=\"\"  lastRowLastColumn=\"\"  lastRowFirstColumn=\"\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"1\"  lastRow=\"1\"  firstColumn=\"1\"  lastColumn=\"1\"  oddVBand=\"1\"  evenVBand=\"1\"  oddHBand=\"1\"  evenHBand=\"1\"  firstRowLastColumn=\"1\"  firstRowFirstColumn=\"1\"  lastRowLastColumn=\"1\"  lastRowFirstColumn=\"1\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row last-row first-col last-col odd-col even-col odd-row even-row ne-cell nw-cell se-cell sw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"0\"  lastRow=\"0\"  firstColumn=\"0\"  lastColumn=\"0\"  oddVBand=\"0\"  evenVBand=\"0\"  oddHBand=\"0\"  evenHBand=\"0\"  firstRowLastColumn=\"0\"  firstRowFirstColumn=\"0\"  lastRowLastColumn=\"0\"  lastRowFirstColumn=\"0\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"on\"  lastRow=\"on\"  firstColumn=\"on\"  lastColumn=\"on\"  oddVBand=\"on\"  evenVBand=\"on\"  oddHBand=\"on\"  evenHBand=\"on\"  firstRowLastColumn=\"on\"  firstRowFirstColumn=\"on\"  lastRowLastColumn=\"on\"  lastRowFirstColumn=\"on\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row last-row first-col last-col odd-col even-col odd-row even-row ne-cell nw-cell se-cell sw-cell"
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"off\"  lastRow=\"off\"  firstColumn=\"off\"  lastColumn=\"off\"  oddVBand=\"off\"  evenVBand=\"off\"  oddHBand=\"off\"  evenHBand=\"off\"  firstRowLastColumn=\"off\"  firstRowFirstColumn=\"off\"  lastRowLastColumn=\"off\"  lastRowFirstColumn=\"off\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"TRUE\"  lastRow=\"TRUE\"  firstColumn=\"TRUE\"  lastColumn=\"TRUE\"  oddVBand=\"TRUE\"  evenVBand=\"TRUE\"  oddHBand=\"TRUE\"  evenHBand=\"TRUE\"  firstRowLastColumn=\"TRUE\"  firstRowFirstColumn=\"TRUE\"  lastRowLastColumn=\"TRUE\"  lastRowFirstColumn=\"TRUE\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_attribute_flags_use_the_shared_correction",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle firstRow=\"yes\"  lastRow=\"yes\"  firstColumn=\"yes\"  lastColumn=\"yes\"  oddVBand=\"yes\"  evenVBand=\"yes\"  oddHBand=\"yes\"  evenHBand=\"yes\"  firstRowLastColumn=\"yes\"  firstRowFirstColumn=\"yes\"  lastRowLastColumn=\"yes\"  lastRowFirstColumn=\"yes\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_string_presence_overrides_flags",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"\"  firstRow=\"true\"  lastRow=\"true\"  lastRowFirstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_string_presence_overrides_flags",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"000000000000\"  firstRow=\"true\"  lastRow=\"true\"  lastRowFirstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_bit_string_presence_overrides_flags",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:cnfStyle val=\"100000000000\"  firstRow=\"true\"  lastRow=\"true\"  lastRowFirstColumn=\"true\"></w:cnfStyle></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "className": "first-row"
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_run_updates_preserve_previously_parsed_properties",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:rStyle val=\"retained\"/><w:vertAlign val=\"superscript\"/><w:b/></w:rPr><w:instrText>DATE</w:instrText><w:fldChar fldCharType=\"begin\"/></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2
+          ],
+          "cssStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "styleName": "retained",
+          "verticalAlign": "sup",
+          "fieldRun": true,
+          "parent": null
+        },
+        {
+          "type": "instruction",
+          "text": "DATE"
+        },
+        {
+          "type": "complexField",
+          "charType": "begin",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "field_run_updates_preserve_previously_parsed_properties",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:instrText>DATE</w:instrText><w:fldChar fldCharType=\"begin\"/><w:rPr><w:rStyle val=\"retained\"/><w:vertAlign val=\"superscript\"/><w:b/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2
+          ],
+          "fieldRun": true,
+          "cssStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "styleName": "retained",
+          "verticalAlign": "sup",
+          "parent": null
+        },
+        {
+          "type": "instruction",
+          "text": "DATE"
+        },
+        {
+          "type": "complexField",
+          "charType": "begin",
+          "lock": false,
+          "dirty": false
+        }
+      ]
+    }
+  },
+  {
+    "test": "body_and_hidden_paragraph_routes_keep_owned_properties",
+    "input": {
+      "operation": "body",
+      "xml": "<w:body xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:p><w:pPr><w:pStyle val=\"root\"/></w:pPr><w:sdt><w:sdtContent><w:pPr><w:pStyle val=\"hidden-control\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inside-control\"/></w:rPr><w:t>A</w:t></w:r></w:sdtContent></w:sdt><w:ins><w:pPr><w:pStyle val=\"hidden-change\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inside-change\"/></w:rPr><w:t>B</w:t></w:r></w:ins></w:p></w:body>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            4
+          ],
+          "cssStyle": [],
+          "styleName": "root"
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "cssStyle": [],
+          "styleName": "inside-control",
+          "parent": 3
+        },
+        {
+          "type": "text",
+          "text": "A"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ],
+          "cssStyle": [],
+          "styleName": "hidden-control"
+        },
+        {
+          "type": "inserted",
+          "children": [
+            5
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            6
+          ],
+          "cssStyle": [],
+          "styleName": "inside-change",
+          "parent": 7
+        },
+        {
+          "type": "text",
+          "text": "B"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            5
+          ],
+          "cssStyle": [],
+          "styleName": "hidden-change"
+        }
+      ]
+    }
+  },
+  {
+    "test": "paragraph_css_reuses_the_existing_formatting_owner",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:ind firstLine=\"40\" hanging=\"20\" left=\"60\" start=\"999\" end=\"80\"/><w:jc val=\"both\"/><w:b/><w:i/><w:u val=\"double\" color=\"ABCDEF\"/><w:rFonts ascii=\"Arial\" eastAsia=\"MS Mincho\"/><w:color val=\"ABCDEF\"/><w:sz val=\"24\"/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "text-indent",
+              "-1.00pt"
+            ],
+            [
+              "margin-inline-start",
+              "3.00pt"
+            ],
+            [
+              "margin-inline-end",
+              "4.00pt"
+            ],
+            [
+              "text-align",
+              "justify"
+            ],
+            [
+              "font-weight",
+              "bold"
+            ],
+            [
+              "font-style",
+              "italic"
+            ],
+            [
+              "text-decoration",
+              "underline double"
+            ],
+            [
+              "text-decoration-color",
+              "#ABCDEF"
+            ],
+            [
+              "font-family",
+              "Arial, 'MS Mincho'"
+            ]
+          ],
+          "color": "ABCDEF",
+          "fontSize": "12.00pt"
+        }
+      ]
+    }
+  },
+  {
+    "test": "run_css_reuses_the_existing_formatting_owner",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:color val=\"ABCDEF\"/><w:sz val=\"24\"/><w:b/><w:i/><w:u val=\"double\"/><w:rFonts ascii=\"Arial\"/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [
+            [
+              "color",
+              "#ABCDEF"
+            ],
+            [
+              "min-height",
+              "12.00pt"
+            ],
+            [
+              "font-size",
+              "12.00pt"
+            ],
+            [
+              "font-weight",
+              "bold"
+            ],
+            [
+              "font-style",
+              "italic"
+            ],
+            [
+              "text-decoration",
+              "underline double"
+            ],
+            [
+              "font-family",
+              "Arial"
+            ]
+          ],
+          "parent": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "integrated_formatting_keeps_landed_root_corrections",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:rPr><w:position val=\"4\"/><w:highlight val=\"green\"/><w:bdr/><w:rFonts ascii=\"A&lt;B\"/></w:rPr></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [],
+          "cssStyle": [
+            [
+              "vertical-align",
+              "2.00pt"
+            ],
+            [
+              "background-color",
+              "#00FF00"
+            ],
+            [
+              "border",
+              "solid"
+            ],
+            [
+              "font-family",
+              "\"A\\3c B\""
+            ]
+          ],
+          "parent": null
+        }
+      ]
+    }
+  }
+]
