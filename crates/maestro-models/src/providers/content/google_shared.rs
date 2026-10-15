@@ -548,12 +548,10 @@ pub fn map_stop_reason(reason: &str) -> Result<StopReason, DiagnosticErrorInfo> 
     if FINISH_REASONS.contains(&reason) {
         Ok(map_stop_reason_string(reason))
     } else {
-        Err(DiagnosticErrorInfo {
-            name: None,
-            message: format!("Unhandled stop reason: {reason}"),
-            stack: None,
-            code: None,
-        })
+        Err(DiagnosticErrorInfo::new(
+            None,
+            format!("Unhandled stop reason: {reason}"),
+        ))
     }
 }
 

@@ -1675,3 +1675,145 @@ async fn agent_scenario(
     backend.release();
     backend.join();
 }
+
+/// Shared publication uses the very handle a controlled proxy start exposes.
+#[test]
+fn proxy_shared_owners_preserve_recorded_state() {
+    support::run_io(async {
+        let rows: Vec<Value> =
+            serde_json::from_str(include_str!("fixtures/assistant-output.json")).unwrap();
+        for row in rows.iter().filter(|row| row["kind"] != "synthetic_failure") {
+            let (proxy, partial) = recorded_proxy_start(row).await;
+            if row["kind"] != "proxy_initial" {
+                recorded_proxy_failure(row, proxy, partial).await;
+            }
+        }
+    });
+}
+
+/// Capture initial state and fully join its controlled producer before returning its handles.
+async fn recorded_proxy_start(
+    row: &Value,
+) -> (
+    maestro_models::AssistantMessageEventStream,
+    maestro_models::SharedAssistantMessage,
+) {
+    use maestro_models::AssistantMessageEvent;
+    use std::sync::Arc;
+    let tasks = Arc::new(support::owned::Tasks::default());
+    let (fetch, _, mut gate) = support::proxy::gated();
+    let mut model = support::model();
+    if row["kind"] == "proxy_initial" {
+        model.api = row["input"]["model"]["api"].as_str().unwrap().into();
+        model.provider = row["input"]["model"]["provider"].as_str().unwrap().into();
+        model.id = row["input"]["model"]["id"].as_str().unwrap().into();
+    }
+    let before = maestro_models::timestamp_now();
+    let proxy = maestro_agent::stream_proxy(
+        model,
+        support::proxy::context(),
+        support::proxy::proxy(support::proxy::with_fetch(fetch)),
+        tasks.spawner(),
+    );
+    let producer = tokio::spawn(tasks.take());
+    gate.reads.recv().await.unwrap();
+    gate.send
+        .send(Some(Ok(line(r#"{"type":"start"}"#))))
+        .unwrap();
+    gate.reads.recv().await.unwrap();
+    let Some(AssistantMessageEvent::Start { partial }) = proxy.next().await else {
+        panic!("missing start")
+    };
+    if row["kind"] == "proxy_initial" {
+        let mut actual = partial.read().unwrap().clone();
+        assert!((before..=maestro_models::timestamp_now()).contains(&actual.timestamp));
+        actual.timestamp = row["input"]["timestamp"].as_f64().unwrap();
+        let expected: maestro_models::AssistantMessage =
+            serde_json::from_value(row["expected"].clone()).unwrap();
+        assert_eq!(actual, expected);
+    }
+    gate.send.send(Some(Ok(done("stop")))).unwrap();
+    gate.send.send(None).unwrap();
+    producer.await.unwrap();
+    gate.dropped.await.unwrap();
+    assert!(Arc::ptr_eq(&proxy.result().await, &partial));
+    (proxy, partial)
+}
+
+/// Inject authored failure text at its public publication boundary, not at the aborting producer.
+async fn recorded_proxy_failure(
+    row: &Value,
+    proxy: maestro_models::AssistantMessageEventStream,
+    partial: maestro_models::SharedAssistantMessage,
+) {
+    use maestro_models::providers::assistant_output::publish_failure;
+    use maestro_models::{AssistantMessageEventStream, Cancellation};
+    use std::sync::Arc;
+    let result = proxy.result().await;
+    let signal = Cancellation::new();
+    if row["input"]["aborted"].as_bool().unwrap() {
+        signal.abort();
+    }
+    let expected = &row["expected"];
+    partial.write().unwrap().content =
+        serde_json::from_value(expected["output"]["content"].clone()).unwrap();
+    let publication = if row["kind"] == "proxy_after_terminal" {
+        proxy
+    } else {
+        AssistantMessageEventStream::new()
+    };
+    publish_failure(
+        &publication,
+        &partial,
+        Some(&signal),
+        row["input"]["message"].as_str().unwrap().into(),
+    );
+    let events = recorded_publication_events(&publication, &partial).await;
+    assert!(Arc::ptr_eq(&publication.result().await, &result));
+    let actual = partial.read().unwrap();
+    assert_eq!(
+        serde_json::to_value(&actual.content).unwrap(),
+        expected["output"]["content"]
+    );
+    assert_eq!(
+        serde_json::to_value(&actual.stop_reason).unwrap(),
+        expected["output"]["stopReason"]
+    );
+    assert_eq!(
+        json!(actual.error_message),
+        expected["output"]["errorMessage"]
+    );
+    if row["kind"] == "proxy_after_terminal" {
+        assert_eq!(json!(events), expected["eventTypes"]);
+        assert_eq!(
+            json!(Arc::ptr_eq(&result, &partial)),
+            expected["sameMessage"]
+        );
+    } else {
+        assert_eq!(json!(events), expected["events"]);
+        assert_eq!(expected["ended"], true);
+    }
+}
+
+/// Collect terminal events after producer completion, retaining identity observations.
+async fn recorded_publication_events(
+    publication: &maestro_models::AssistantMessageEventStream,
+    partial: &maestro_models::SharedAssistantMessage,
+) -> Vec<Value> {
+    use maestro_models::AssistantMessageEvent;
+    use std::sync::Arc;
+    let mut events = Vec::new();
+    while let Some(event) = publication.next().await {
+        match event {
+            AssistantMessageEvent::Done { message, .. } => {
+                assert!(Arc::ptr_eq(&message, partial));
+                events.push(json!("done"));
+            }
+            AssistantMessageEvent::Error { reason, error } => events.push(
+                json!({"type":"error", "reason":reason,"sameMessage":Arc::ptr_eq(&error, partial)}),
+            ),
+            _ => panic!("unexpected publication"),
+        }
+    }
+    events
+}

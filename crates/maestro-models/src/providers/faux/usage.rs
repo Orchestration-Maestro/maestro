@@ -11,12 +11,7 @@ pub(super) fn tokens(text: &str) -> f64 {
 }
 /// Serialize compact JSON using native insertion order and number spelling.
 pub(super) fn json<T: serde::Serialize>(value: &T) -> Result<String, DiagnosticErrorInfo> {
-    serde_json::to_string(value).map_err(|error| DiagnosticErrorInfo {
-        name: None,
-        message: error.to_string(),
-        stack: None,
-        code: None,
-    })
+    serde_json::to_string(value).map_err(|error| DiagnosticErrorInfo::new(None, error.to_string()))
 }
 /// Project a user text or image block into estimated prompt text.
 fn user_block(block: &UserBlock) -> Cow<'_, str> {

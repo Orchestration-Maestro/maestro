@@ -150,13 +150,7 @@ impl ModelResolverOutput<'_> {
 }
 /// Own a selection diagnostic in the catalog error type.
 fn diagnostic(message: String) -> CatalogError {
-    DiagnosticErrorInfo {
-        message,
-        name: None,
-        stack: None,
-        code: None,
-    }
-    .into()
+    DiagnosticErrorInfo::new(None, message).into()
 }
 /// Format a descriptor's `provider/id`, holding its read guard only while formatting.
 fn label(handle: &Arc<RwLock<Model>>) -> String {

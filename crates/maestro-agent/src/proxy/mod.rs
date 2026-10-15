@@ -4,14 +4,14 @@ mod request;
 use crate::AgentSpawner;
 pub use events::ProxyAssistantMessageEvent;
 use futures_util::StreamExt;
+use maestro_models::providers::assistant_output::{initial_message, publish_failure};
 use maestro_models::providers::http::{Raced, race};
 use maestro_models::{
-    AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context,
-    ErrorReason, HttpRequest, HttpResponse, Model, SharedAssistantMessage, StopReason, Usage,
-    UsageCost, timestamp_now,
+    AssistantMessageEventStream, Cancellation, Context, HttpRequest, HttpResponse, Model,
+    SharedAssistantMessage,
 };
 pub use request::ProxyStreamOptions;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, RwLock};
 
 /// Diagnostic of a cancelled request, whether it was waiting or reading.
 const ABORTED: &str = "Request aborted by user";
@@ -30,7 +30,7 @@ pub fn stream_proxy(
     spawn(Box::pin(async move {
         let signal = options.options.common.signal.as_ref();
         if let Err(error) = produce(&model, &context, &options, &partial, &producer).await {
-            fail(&partial, &producer, signal, error);
+            publish_failure(&producer, &partial, signal, error);
         }
         producer.end(None);
     }));
@@ -40,55 +40,7 @@ pub fn stream_proxy(
 
 /// Start the shared assistant message that every update reconstructs.
 fn initial_partial(model: &Model) -> SharedAssistantMessage {
-    let cost = UsageCost {
-        input: 0.0,
-        output: 0.0,
-        cache_read: 0.0,
-        cache_write: 0.0,
-        total: 0.0,
-    };
-    Arc::new(RwLock::new(AssistantMessage {
-        content: vec![],
-        api: model.api.clone(),
-        provider: model.provider.clone(),
-        model: model.id.clone(),
-        response_model: None,
-        response_id: None,
-        diagnostics: None,
-        usage: Usage {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total_tokens: 0.0,
-            cost,
-        },
-        stop_reason: StopReason::Stop,
-        error_message: None,
-        timestamp: timestamp_now(),
-    }))
-}
-
-/// Mark the shared message failed and publish the failure; a settled stream ignores it.
-fn fail(
-    partial: &SharedAssistantMessage,
-    stream: &AssistantMessageEventStream,
-    signal: Option<&Cancellation>,
-    error: String,
-) {
-    let (reason, stop_reason) = if signal.is_some_and(Cancellation::is_aborted) {
-        (ErrorReason::Aborted, StopReason::Aborted)
-    } else {
-        (ErrorReason::Error, StopReason::Error)
-    };
-    let mut message = partial.write().unwrap_or_else(PoisonError::into_inner);
-    message.stop_reason = stop_reason;
-    message.error_message = Some(error);
-    drop(message);
-    stream.push(AssistantMessageEvent::Error {
-        reason,
-        error: Arc::clone(partial),
-    });
+    Arc::new(RwLock::new(initial_message(model)))
 }
 
 /// Perform the request and reduce its body; the body stays owned until a read fails or ends.

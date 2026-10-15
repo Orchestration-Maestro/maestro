@@ -53,12 +53,10 @@ fn with_registry<T>(operation: impl FnOnce(&mut IndexMap<String, Registration>) 
 fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFunction<O> {
     Arc::new(move |model, context, options| {
         if model.api != api {
-            return Err(DiagnosticErrorInfo {
-                name: Some("Error".into()),
-                message: format!("Mismatched api: {} expected {api}", model.api),
-                stack: None,
-                code: None,
-            });
+            return Err(DiagnosticErrorInfo::error(format!(
+                "Mismatched api: {} expected {api}",
+                model.api
+            )));
         }
         callback(model, context, options)
     })

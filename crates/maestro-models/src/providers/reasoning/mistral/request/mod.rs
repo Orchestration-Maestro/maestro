@@ -17,12 +17,7 @@ fn trim(text: &str) -> &str {
 
 /// Keep a native failure's message.
 fn native_error(error: impl std::fmt::Display) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: error.to_string(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, error.to_string())
 }
 
 /// Borrowed callback fields, distinct from the post-hook wire records.

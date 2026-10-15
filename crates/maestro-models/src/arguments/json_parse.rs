@@ -61,12 +61,7 @@ pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::Di
                 strict(&repaired)
             }
         })
-        .map_err(|error| crate::DiagnosticErrorInfo {
-            name: None,
-            message: error.to_string(),
-            stack: None,
-            code: None,
-        })
+        .map_err(|error| crate::DiagnosticErrorInfo::new(None, error.to_string()))
 }
 
 /// Project validated JSON after preserving the native reader's error priority.

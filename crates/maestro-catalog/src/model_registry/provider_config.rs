@@ -91,13 +91,7 @@ impl ProviderConfigInput {
                 })
         };
         failure.map_or(Ok(()), |message| {
-            Err(DiagnosticErrorInfo {
-                message,
-                name: None,
-                stack: None,
-                code: None,
-            }
-            .into())
+            Err(DiagnosticErrorInfo::new(None, message).into())
         })
     }
 }

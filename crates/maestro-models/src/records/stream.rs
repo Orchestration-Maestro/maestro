@@ -10,11 +10,8 @@ use super::types::{
 
 /// Resolve the registered provider or report the missing API.
 fn resolve(api: &str) -> Result<ApiProvider, DiagnosticErrorInfo> {
-    get_api_provider(api).ok_or_else(|| DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: format!("No API provider registered for api: {api}"),
-        stack: None,
-        code: None,
+    get_api_provider(api).ok_or_else(|| {
+        DiagnosticErrorInfo::error(format!("No API provider registered for api: {api}"))
     })
 }
 /// Immediately invoke the registered raw adapter with unchanged inputs.

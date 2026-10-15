@@ -1,0 +1,231 @@
+[
+  {
+    "kind": "proxy_initial",
+    "input": {
+      "model": {
+        "api": "custom-api",
+        "provider": "custom-provider",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "stopReason": "stop",
+      "content": [],
+      "api": "custom-api",
+      "provider": "custom-provider",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "proxy_initial",
+    "input": {
+      "model": {
+        "api": "another-api",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "stopReason": "stop",
+      "content": [],
+      "api": "another-api",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "synthetic_failure",
+    "input": {
+      "model": {
+        "api": "custom-api",
+        "provider": "custom-provider",
+        "id": "model-one"
+      },
+      "timestamp": 1234567,
+      "aborted": false,
+      "message": "supplied failure"
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "api": "custom-api",
+      "provider": "custom-provider",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "error",
+      "errorMessage": "supplied failure",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "synthetic_failure",
+    "input": {
+      "model": {
+        "api": "custom-api",
+        "provider": "custom-provider",
+        "id": "model-one"
+      },
+      "timestamp": 1234567,
+      "aborted": true,
+      "message": "supplied failure"
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": ""
+        }
+      ],
+      "api": "custom-api",
+      "provider": "custom-provider",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "aborted",
+      "errorMessage": "supplied failure",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "proxy_failure",
+    "input": {
+      "aborted": false,
+      "message": "proxy failure"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "proxy failure"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "proxy_failure",
+    "input": {
+      "aborted": true,
+      "message": "proxy failure"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "proxy failure"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "proxy_after_terminal",
+    "input": {
+      "message": "late failure",
+      "aborted": true
+    },
+    "expected": {
+      "eventTypes": [
+        "done"
+      ],
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kept"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "late failure"
+      },
+      "sameMessage": true
+    }
+  }
+]

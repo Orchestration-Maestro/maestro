@@ -11,9 +11,11 @@ use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
 
 use crate::options::{resolve_api_key, token_base};
-use crate::providers::assistant_output::{callback_failure, conclude, fail, initial_message};
+use crate::providers::assistant_output::{
+    callback_failure, conclude, fail, initial_message, start_producer,
+};
 use crate::providers::http::{
-    HttpResponse, RequestFailure, envelope_failure, send_with_status_error, spawn_detached,
+    HttpResponse, RequestFailure, envelope_failure, send_with_status_error,
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
@@ -183,11 +185,8 @@ pub fn stream_simple_anthropic(
         options.common.api_key.take().map(Cow::Owned),
     )
     .map(Cow::into_owned)
-    .ok_or_else(|| DiagnosticErrorInfo {
-        name: Some("Error".to_owned()),
-        message: format!("No API key for provider: {}", model.provider),
-        stack: None,
-        code: None,
+    .ok_or_else(|| {
+        DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
     let mut raw = AnthropicOptions {
         common: build_base_options(&model, Some(&options), Some(&key)),
@@ -245,10 +244,7 @@ fn start(model: Model, context: Context, options: CallOptions) -> AssistantMessa
         stream.clone(),
         Arc::clone(&output),
     );
-    if !spawn_detached(task) {
-        let failure = RequestFailure::new("Streaming requires a running Tokio runtime.");
-        fail(&stream, &output, signal.as_ref(), failure);
-    }
+    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
     stream
 }
 

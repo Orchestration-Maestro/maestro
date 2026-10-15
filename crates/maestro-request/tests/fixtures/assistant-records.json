@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "zero_usage",
+    "input": {},
+    "expected": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 0,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0
+      }
+    }
+  },
+  {
+    "kind": "diagnostic_text",
+    "input": {
+      "text": ""
+    },
+    "expected": {
+      "name": "ThrownValue",
+      "message": ""
+    }
+  },
+  {
+    "kind": "diagnostic_text",
+    "input": {
+      "text": "supplied"
+    },
+    "expected": {
+      "name": "ThrownValue",
+      "message": "supplied"
+    }
+  },
+  {
+    "kind": "diagnostic_text",
+    "input": {
+      "text": "﻿ \n🙂"
+    },
+    "expected": {
+      "name": "ThrownValue",
+      "message": "﻿ \n🙂"
+    }
+  }
+]

@@ -23,12 +23,10 @@ impl AuthStorage {
         callbacks: OAuthCallbacks,
     ) -> Result<(), OAuthError> {
         let Some(provider) = get_oauth_provider(provider_id) else {
-            return Err(DiagnosticErrorInfo {
-                name: None,
-                message: format!("Unknown OAuth provider: {provider_id}"),
-                stack: None,
-                code: None,
-            }
+            return Err(DiagnosticErrorInfo::new(
+                None,
+                format!("Unknown OAuth provider: {provider_id}"),
+            )
             .into());
         };
         let credentials = provider.login(callbacks, None).await?;

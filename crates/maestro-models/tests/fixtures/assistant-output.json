@@ -1,0 +1,2068 @@
+[
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "chat",
+      "model": {
+        "api": "chat-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "chat-api",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "chat",
+      "model": {
+        "api": "chat-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "chat-other",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Provider returned an error stop reason",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "Provider returned an error stop reason",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "chat",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "supplied",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "chat",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "chat",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "messages",
+      "model": {
+        "api": "messages-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "messages-api",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "messages",
+      "model": {
+        "api": "messages-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "messages-other",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "messages",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "messages",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "messages",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "responses",
+      "model": {
+        "api": "responses-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "responses-api",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "responses",
+      "model": {
+        "api": "responses-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "responses-other",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "responses",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "responses",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "responses",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "sessions",
+      "model": {
+        "api": "openai-codex-responses",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "openai-codex-responses",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "sessions",
+      "model": {
+        "api": "openai-codex-responses",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "openai-codex-responses",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "sessions",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "sessions",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "sessions",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "sessions",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "sessions",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "sessions",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "conversation",
+      "model": {
+        "api": "conversation-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "conversation-api",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "conversation",
+      "model": {
+        "api": "conversation-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "conversation-other",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "conversation",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "conversation",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "conversation",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "content",
+      "model": {
+        "api": "content-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "google-generative-ai",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "content",
+      "model": {
+        "api": "content-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "google-generative-ai",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "content",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "content",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "content",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "azure",
+      "model": {
+        "api": "azure-openai-responses",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "azure-openai-responses",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "azure",
+      "model": {
+        "api": "azure-openai-responses",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "azure-openai-responses",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "azure",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "azure",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "azure",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "bedrock",
+      "model": {
+        "api": "bedrock-api",
+        "provider": "provider-one",
+        "id": "model-one"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "provider-one",
+      "model": "model-one",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "initial",
+    "input": {
+      "owner": "bedrock",
+      "model": {
+        "api": "bedrock-other",
+        "provider": "供給元",
+        "id": "model/🙂"
+      },
+      "timestamp": 1234567
+    },
+    "expected": {
+      "role": "assistant",
+      "content": [],
+      "api": "bedrock-converse-stream",
+      "provider": "供給元",
+      "model": "model/🙂",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1234567
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "stop",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "stop",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "length",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "length",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "toolUse",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "events": [
+        {
+          "type": "done",
+          "reason": "toolUse",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "stop",
+      "aborted": true,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "error",
+      "aborted": true,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "Request was aborted",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "aborted",
+      "aborted": false,
+      "errorMessage": "ignored"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": null
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": ""
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "conclusion",
+    "input": {
+      "owner": "bedrock",
+      "stopReason": "error",
+      "aborted": false,
+      "errorMessage": "supplied"
+    },
+    "expected": {
+      "error": "An unknown error occurred",
+      "events": [],
+      "ended": false
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "bedrock",
+      "aborted": false,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "error",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "error",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  },
+  {
+    "kind": "failure",
+    "input": {
+      "owner": "bedrock",
+      "aborted": true,
+      "message": "failure\n supplied"
+    },
+    "expected": {
+      "output": {
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "stopReason": "aborted",
+        "errorMessage": "failure\n supplied"
+      },
+      "events": [
+        {
+          "type": "error",
+          "reason": "aborted",
+          "sameMessage": true
+        }
+      ],
+      "ended": true
+    }
+  }
+]

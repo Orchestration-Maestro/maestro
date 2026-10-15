@@ -237,8 +237,7 @@ pub fn stream_google(
     context: Context,
     options: Option<GoogleOptions>,
 ) -> crate::AssistantMessageEventStream {
-    use crate::providers::assistant_output::{fail, initial_message};
-    use crate::providers::http::{RequestFailure, spawn_detached};
+    use crate::providers::assistant_output::{fail, initial_message, start_producer};
     use std::sync::{Arc, RwLock};
     let options = options.unwrap_or_default();
     let default_base_url = endpoint_default();
@@ -260,18 +259,16 @@ pub fn stream_google(
     let output = Arc::new(RwLock::new(initial_message(&invocation.model)));
     let producer = events.clone();
     let message = Arc::clone(&output);
-    if !spawn_detached(async move {
-        if let Err(error) = invoke(invocation, &options, &producer, &message).await {
-            fail(&producer, &message, options.common.signal.as_ref(), error);
-        }
-    }) {
-        fail(
-            &events,
-            &output,
-            None,
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
-    }
+    start_producer(
+        &events,
+        &output,
+        None,
+        Box::pin(async move {
+            if let Err(error) = invoke(invocation, &options, &producer, &message).await {
+                fail(&producer, &message, options.common.signal.as_ref(), error);
+            }
+        }),
+    );
     events
 }
 

@@ -7,8 +7,8 @@ use super::{
 };
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
-use crate::providers::assistant_output::{fail, initial_message};
-use crate::providers::http::{RequestFailure, spawn_detached};
+use crate::providers::assistant_output::{fail, initial_message, start_producer};
+use crate::providers::http::RequestFailure;
 use crate::{
     AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ModelThinkingLevel,
     SharedAssistantMessage, SimpleStreamOptions, build_base_options, clamp_thinking_level,
@@ -43,14 +43,7 @@ pub fn stream_openai_codex_responses(
         stream.clone(),
         Arc::clone(&output),
     );
-    if !spawn_detached(task) {
-        fail(
-            &stream,
-            &output,
-            signal.as_ref(),
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
-    }
+    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
     stream
 }
 

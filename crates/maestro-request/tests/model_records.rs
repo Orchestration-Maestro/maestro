@@ -261,3 +261,64 @@ mod tests {
         );
     }
 }
+
+#[test]
+fn usage_defaults_preserve_zero_fields() {
+    use maestro_request::types::Usage;
+    let rows: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/assistant-records.json")).unwrap();
+    let usage = Usage::default();
+    assert_eq!(rows[0]["kind"], "zero_usage");
+    assert_eq!(rows[0]["input"], serde_json::json!({}));
+    let expected: Usage = serde_json::from_value(rows[0]["expected"].clone()).unwrap();
+    assert_eq!(usage, expected);
+    for value in [
+        usage.input,
+        usage.output,
+        usage.cache_read,
+        usage.cache_write,
+        usage.total_tokens,
+        usage.cost.input,
+        usage.cost.output,
+        usage.cost.cache_read,
+        usage.cost.cache_write,
+        usage.cost.total,
+    ] {
+        assert_eq!(value.to_bits(), 0_f64.to_bits());
+    }
+}
+
+#[test]
+fn message_diagnostic_constructors_preserve_fields() {
+    use maestro_request::diagnostics::{
+        DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
+    };
+    for name in [
+        None,
+        Some(""),
+        Some("Error"),
+        Some("ThrownValue"),
+        Some("Named"),
+    ] {
+        for text in ["", "supplied"] {
+            let error = DiagnosticErrorInfo::new(name.map(str::to_owned), text);
+            assert_eq!(error.name.as_deref(), name);
+            assert_eq!(error.message, text);
+            assert_eq!(error.stack, None);
+            assert_eq!(error.code, None);
+        }
+    }
+    assert_eq!(
+        DiagnosticErrorInfo::error(""),
+        DiagnosticErrorInfo::new(Some("Error".into()), "")
+    );
+    let rows: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/assistant-records.json")).unwrap();
+    for row in rows.as_array().unwrap().iter().skip(1) {
+        assert_eq!(row["kind"], "diagnostic_text");
+        let actual = extract_diagnostic_error(DiagnosticInput::Text(
+            row["input"]["text"].as_str().unwrap(),
+        ));
+        assert_eq!(serde_json::to_value(actual).unwrap(), row["expected"]);
+    }
+}

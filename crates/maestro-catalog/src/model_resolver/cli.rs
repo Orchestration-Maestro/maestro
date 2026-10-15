@@ -12,15 +12,7 @@ use std::{
 /// Own a selection diagnostic in the existing catalog error type.
 fn failure(message: String) -> ResolveCliModelResult {
     ResolveCliModelResult {
-        error: Some(
-            DiagnosticErrorInfo {
-                message,
-                name: None,
-                stack: None,
-                code: None,
-            }
-            .into(),
-        ),
+        error: Some(DiagnosticErrorInfo::new(None, message).into()),
         ..Default::default()
     }
 }

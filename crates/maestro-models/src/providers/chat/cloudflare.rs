@@ -59,10 +59,7 @@ pub fn resolve_cloudflare_base_url(model: &Model) -> Result<String, DiagnosticEr
 
 /// Build the failure for an unset placeholder variable.
 fn missing_variable(name: &str, provider: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: format!("{name} is required for provider {provider} but is not set."),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(format!(
+        "{name} is required for provider {provider} but is not set."
+    ))
 }

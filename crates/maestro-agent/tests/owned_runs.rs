@@ -898,3 +898,49 @@ fn assert_native_history(messages: &[AgentMessage]) {
         matches!(messages.last().unwrap(), AgentMessage::ToolResult(result) if matches!(&result.read().unwrap().content[0], maestro_models::UserBlock::Text(text) if text.text == "native final"))
     );
 }
+
+/// Callback rejection retains the complete synthetic assistant record.
+#[test]
+fn synthetic_failure_defaults_preserve_content() {
+    support::run(synthetic_failure_case());
+}
+
+/// Exercise both callback error classifications on admitted producers.
+async fn synthetic_failure_case() {
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("fixtures/assistant-output.json")).unwrap();
+    for row in rows.iter().filter(|row| row["kind"] == "synthetic_failure") {
+        let (agent, tasks) = agent();
+        {
+            let state = agent.state().read().unwrap();
+            let mut model = state.model.write().unwrap();
+            model.api = row["input"]["model"]["api"].as_str().unwrap().into();
+            model.provider = row["input"]["model"]["provider"].as_str().unwrap().into();
+            model.id = row["input"]["model"]["id"].as_str().unwrap().into();
+        }
+        let text = row["input"]["message"].as_str().unwrap().to_owned();
+        let aborted = row["input"]["aborted"].as_bool().unwrap();
+        *agent.stream_fn.write().unwrap() = Some(Arc::new(move |_, _, _, signal| {
+            let error = failure(&text);
+            if aborted {
+                signal.common.signal.as_ref().unwrap().abort();
+            }
+            Box::pin(async move { Err(error) })
+        }));
+        let before = maestro_models::timestamp_now();
+        let observer = agent.prompt(input("hello"));
+        tasks.take().await;
+        observer.await.unwrap();
+        let state = agent.state().read().unwrap();
+        let history = state.messages().read().unwrap();
+        let AgentMessage::Assistant(output) = history.last().unwrap() else {
+            panic!("missing synthetic message")
+        };
+        let mut actual = output.read().unwrap().clone();
+        assert!((before..=maestro_models::timestamp_now()).contains(&actual.timestamp));
+        actual.timestamp = row["input"]["timestamp"].as_f64().unwrap();
+        let expected: maestro_models::AssistantMessage =
+            serde_json::from_value(row["expected"].clone()).unwrap();
+        assert_eq!(actual, expected);
+    }
+}
