@@ -110,8 +110,10 @@ top-level entry created after startup is watched only after a restart.
 Each change is compared literally with Cargo's current target directory before
 compiling, so nested target directories and later target switches are handled by
 that dynamic filter. Restart the watcher to update its registered roots after a
-target switch. `dev` covers delivered owners; `dev-compile` and
-`models-dev-compile` select models only. Missing owners fail.
+target switch. `native-dev` covers delivered Rust owners. `dev` composes it with
+the browser author server through native parallel recipe dependencies;
+`dev-compile` combines models with the browser compile-only watch, while
+`models-dev-compile` selects models only. Missing owners fail.
 Decision tests use literal watcher events to prove that configured target writes
 are skipped, including bracketed paths; mixed source events and pathless events
 compile. The decision also compiles delayed events under an old target after a
@@ -145,8 +147,9 @@ the builder leaves normal Rustup selection unchanged.
 Clearing a child's environment does not remove the fixture's declaration. Required
 components and targets are provisioned before tests, never installed by fixtures.
 
-Compiler watches do not run catalog generation or copy assets. Browser selections
-are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
+Native compiler watches do not run catalog generation or copy assets. The
+[browser author graph](browser-build.md) also watches its stylesheet and shared
+identity inputs through Trunk, without a second watcher implementation.
 `models-build` invokes catalog generation once before its explicit Cargo build; ordinary
 Cargo compilation, tests and watches remain generation-free.
 
@@ -226,6 +229,9 @@ controlled processes, without provider calls or operator credentials.
 terminal toolkit. These commands fail when their owning crate is absent; no
 placeholder product package is installed.
 
+Browser author build, check, clean, watch and preview commands are available; see
+[the browser author guide](browser-build.md) for their fixture-only boundary.
+
 The following command groups are unavailable until delivered by their owners:
 
 | Command group | Corresponding command | Owning issue | Availability |
@@ -233,7 +239,7 @@ The following command groups are unavailable until delivered by their owners:
 | Profiling and diagnostics | `profile:tui`, `profile:rpc` | [#241](https://github.com/Orchestration-Maestro/maestro/issues/241) | unavailable until delivered |
 | Version, publish and release | `version:patch/minor/major/set`, `publish`, `publish:dry`, `release:patch/minor/major` | [#81](https://github.com/Orchestration-Maestro/maestro/issues/81) | unavailable until delivered |
 | Real platform archives | `build-binaries.sh` | [#111](https://github.com/Orchestration-Maestro/maestro/issues/111) | unavailable until delivered |
-| Browser library and example builds | Library `clean/build/dev/dev:tsc/check`; example `clean/build/dev/preview/check` | [#113](https://github.com/Orchestration-Maestro/maestro/issues/113) | unavailable until delivered |
+
 
 - `maestro-models`: model interfaces, providers and catalog data.
 - `maestro-agent`: [live conversation state and queued input](agent.md), with

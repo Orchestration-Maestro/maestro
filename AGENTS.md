@@ -244,6 +244,11 @@ Use shared records directly, without bit-encoded numbers, numeric transport
 wrappers or added Presence wrappers. Preserve existing shared optional-field
 semantics and the missing/null distinctions of unshared event fields.
 
+Browser author recipes and the standalone editable fixture are documented in
+[the browser author guide](docs/browser-build.md). The fixture is not a workspace
+member or shipped application. Whole shared fonts retain their family notices;
+external author tools stay in mise, not product dependencies or install hooks.
+
 ## Public text
 
 Describe Maestro in its own words. Name no other agent tool.
