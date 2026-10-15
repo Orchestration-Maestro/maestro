@@ -145,3 +145,41 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
         Content::Text(_, maestro_web::browser::attachment_content::TextView::Plain)
     ));
 }
+
+#[test]
+fn attachment_color_errors_use_shared_presentation_route() {
+    use maestro_web::browser::attachment_content::AttachmentUiError;
+    let host = Rc::new(Host::default());
+    let record = attachment();
+    record.borrow_mut().preview = Some("preview".into());
+    let mut tile = AttachmentTile::new(record, host.clone());
+    let mut overlay = AttachmentOverlay::open(attachment(), None, host.clone());
+    let mut frame = Frame::default();
+    let tile_result = frame.run(vec![], |ctx, i, p| {
+        let mut p = p.clone();
+        p.colors.insert("background", "not-a-color");
+        let mut ui = egui::Ui::new(
+            ctx.clone(),
+            egui::Id::new("bad-color"),
+            egui::UiBuilder::new().max_rect(ctx.content_rect()),
+        );
+        tile.render(&mut ui, i, &p)
+    });
+    assert!(matches!(
+        tile_result,
+        Err(AttachmentUiError::Presentation(_))
+    ));
+    assert!(host.surfaces.borrow().is_empty());
+    let overlay_result = frame.run(vec![], |ctx, i, p| {
+        let mut p = p.clone();
+        p.colors.insert("background", "not-a-color");
+        overlay.render(ctx, i, &p)
+    });
+    assert!(matches!(
+        overlay_result,
+        Err(AttachmentUiError::Presentation(_))
+    ));
+    assert!(host.surfaces.borrow().is_empty());
+    frame.tile(&mut tile, vec![]).unwrap();
+    assert_eq!(host.surfaces.borrow().len(), 1);
+}

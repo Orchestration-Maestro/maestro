@@ -5,7 +5,7 @@ use crate::{
 };
 use maestro_theme::BrandPresentation;
 use num_traits::ToPrimitive as _;
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{cell::RefCell, fmt, io, rc::Rc};
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
@@ -127,6 +127,11 @@ impl From<I18nError> for AttachmentUiError {
         Self::I18n(e)
     }
 }
+impl From<io::Error> for AttachmentUiError {
+    fn from(error: io::Error) -> Self {
+        Self::Presentation(error.to_string())
+    }
+}
 /// Replaceable browser content and download effects.
 pub trait AttachmentHost {
     /// Update one retained content element.
@@ -157,15 +162,12 @@ pub(crate) fn points(n: f64) -> f32 {
     n.to_f32().unwrap_or_default()
 }
 /// Resolve a caller-selected color.
-pub(crate) fn color(
-    p: &BrandPresentation<'_>,
-    role: &str,
-) -> Result<egui::Color32, AttachmentUiError> {
+pub(crate) fn color(p: &BrandPresentation<'_>, role: &str) -> io::Result<egui::Color32> {
     egui::Color32::from_hex(p.colors.get(role).copied().unwrap_or(""))
-        .map_err(|e| AttachmentUiError::Host(format!("{e:?}")))
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("{e:?}")))
 }
 /// Apply the caller's control roles without installing fonts.
-pub(crate) fn style(ui: &mut egui::Ui, p: &BrandPresentation<'_>) -> Result<(), AttachmentUiError> {
+pub(crate) fn style(ui: &mut egui::Ui, p: &BrandPresentation<'_>) -> io::Result<()> {
     let v = ui.visuals_mut();
     v.override_text_color = None;
     v.panel_fill = color(p, "background")?;
