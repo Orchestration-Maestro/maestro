@@ -33,6 +33,22 @@ fn error_kind(name: &str) -> std::io::ErrorKind {
     }
 }
 
+/// Settle the request bridge before releasing its platform callbacks.
+#[cfg(any(target_arch = "wasm32", test))]
+struct RequestTeardown {
+    /// Complete a pending bridge; already completed promises ignore settlement.
+    settle: Box<dyn FnMut()>,
+    /// Remove the platform's callback roots.
+    detach: Box<dyn FnMut()>,
+}
+#[cfg(any(target_arch = "wasm32", test))]
+impl Drop for RequestTeardown {
+    fn drop(&mut self) {
+        (self.settle)();
+        (self.detach)();
+    }
+}
+
 #[cfg(test)]
 mod tests;
 

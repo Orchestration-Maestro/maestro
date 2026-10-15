@@ -35,8 +35,12 @@ database.delete("records", "greeting").await?;
 # }
 ```
 
-Native policy tests cover store selection, explicit-key selection and failure
-categories. The WebAssembly build checks platform bindings and the SDK signatures;
+Dropping the final request owner settles its bridge before detaching callbacks.
+Dropping an opening waiter does not settle or detach the backend's retained request.
+
+Native tests cover store selection, explicit-key selection, failure categories
+and teardown ordering through the platform-independent ownership seam.
+The WebAssembly build checks platform bindings and the SDK signatures;
 it does not prove browser persistence, upgrade, request teardown or rollback.
 Real-browser qualification is tracked in [#1061](https://github.com/Orchestration-Maestro/maestro/issues/1061)
 without a separate browser runner.

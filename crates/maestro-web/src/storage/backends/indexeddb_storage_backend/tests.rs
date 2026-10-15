@@ -139,3 +139,32 @@ fn browser_storage_error_categories_keep_failure_kinds() {
     assert_eq!(error_kind("Error"), std::io::ErrorKind::Other);
     assert_eq!(error_kind("unrecognized"), std::io::ErrorKind::Other);
 }
+
+#[test]
+fn final_request_owner_settles_before_detaching() {
+    let events = std::rc::Rc::new(RefCell::new(Vec::new()));
+    let settled = events.clone();
+    let detached = events.clone();
+    let owner = RequestTeardown {
+        settle: Box::new(move || settled.borrow_mut().push("settle")),
+        detach: Box::new(move || detached.borrow_mut().push("detach")),
+    };
+    drop(owner);
+    assert_eq!(*events.borrow(), ["settle", "detach"]);
+}
+
+#[test]
+fn retained_opening_waiter_drop_keeps_request_pending() {
+    let events = std::rc::Rc::new(RefCell::new(Vec::new()));
+    let settled = events.clone();
+    let detached = events.clone();
+    let opening = std::rc::Rc::new(RequestTeardown {
+        settle: Box::new(move || settled.borrow_mut().push("settle")),
+        detach: Box::new(move || detached.borrow_mut().push("detach")),
+    });
+    let waiter = opening.clone();
+    drop(waiter);
+    assert!(events.borrow().is_empty());
+    drop(opening);
+    assert_eq!(*events.borrow(), ["settle", "detach"]);
+}

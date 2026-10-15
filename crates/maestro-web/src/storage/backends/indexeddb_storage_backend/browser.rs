@@ -1,5 +1,5 @@
 //! Native request handles and their callback lifetimes.
-use super::{error_kind, explicit_key, missing_stores};
+use super::{RequestTeardown, error_kind, explicit_key, missing_stores};
 use js_sys::{Promise, Reflect};
 use maestro_app::IndexedDBConfig;
 use std::{cell::RefCell, fmt, io, rc::Rc};
@@ -54,23 +54,27 @@ fn detach(request: &IdbRequest) {
 }
 /// Request callbacks remain owned even if a retained opening waiter is dropped.
 struct Request {
-    /// Platform operation.
-    handle: IdbRequest,
     /// Shared result, including rejection.
     promise: Promise,
+    /// Final-owner settlement runs before releasing the Rust callbacks.
+    _teardown: Option<RequestTeardown>,
     /// Rust closures retained until the request owner is released.
     _callbacks: Vec<Closure<dyn FnMut()>>,
-}
-impl Drop for Request {
-    fn drop(&mut self) {
-        detach(&self.handle);
-    }
 }
 impl Request {
     /// Install callbacks synchronously, before returning a future to the caller.
     fn new(request: IdbRequest, config: Option<&Rc<IndexedDBConfig>>) -> Self {
         let mut callbacks = Vec::new();
+        let mut teardown = None;
         let promise = Promise::new(&mut |resolve, reject| {
+            let handle = request.clone();
+            let finish = resolve.clone();
+            teardown = Some(RequestTeardown {
+                settle: Box::new(move || {
+                    let _ = finish.call1(&JsValue::UNDEFINED, &JsValue::UNDEFINED);
+                }),
+                detach: Box::new(move || detach(&handle)),
+            });
             let settle = settlement_callback(request.clone(), resolve, reject.clone());
             request.set_onsuccess(Some(settle.as_ref().unchecked_ref()));
             request.set_onerror(Some(settle.as_ref().unchecked_ref()));
@@ -82,8 +86,8 @@ impl Request {
             }
         });
         Self {
-            handle: request,
             promise,
+            _teardown: teardown,
             _callbacks: callbacks,
         }
     }
@@ -183,7 +187,7 @@ impl IndexedDBStorageBackend {
             opening: RefCell::new(None),
         }
     }
-    /// Open once, retaining both synchronous failures and the shared promise.
+    /// Start opening with the retained configuration.
     fn open(&self) -> Result<Rc<Request>, JsValue> {
         let factory: IdbFactory =
             Reflect::get(&js_sys::global(), &"indexedDB".into())?.dyn_into()?;
