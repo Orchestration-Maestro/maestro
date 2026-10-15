@@ -34,7 +34,61 @@ fn browser_clean_preserves_authored_inputs() {
 #[path = "fixtures/browser_support.rs"]
 mod browser_support;
 use browser_support::{Browser, success};
+use egui::{self, Color32};
 use std::fs;
+#[path = "fixtures/browser_author/src/editor.rs"]
+mod editor;
+
+#[test]
+fn browser_editor_focus_selection_caret_and_composition_use_identity() {
+    let browser = Browser::new();
+    for pack in ["assets/brand/brand.json", "assets/brand/packs/signal.json"] {
+        let data: serde_json::Value =
+            serde_json::from_slice(&fs::read(browser.path(pack)).unwrap()).unwrap();
+        for mode in ["dark", "light"] {
+            let colors = [
+                "text",
+                "background",
+                "panel",
+                "border",
+                "accent",
+                "on-accent",
+            ]
+            .map(|role| {
+                let key = data["modes"][mode]["colors"][role].as_str().unwrap();
+                Color32::from_hex(data["palette"][key].as_str().unwrap()).unwrap()
+            });
+            let visuals = editor::visuals(colors);
+            assert_eq!(visuals.selection.stroke.color, colors[5]);
+            let context = egui::Context::default();
+            let mut fonts = fixture_fonts(&browser);
+            fonts
+                .families
+                .insert(egui::FontFamily::Proportional, vec!["Barlow".into()]);
+            context.set_fonts(fonts);
+            context.set_visuals(visuals.clone());
+            let mut text = "selected author text".to_owned();
+            let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+                let id = ui.make_persistent_id("author-input");
+                ui.memory_mut(|memory| memory.request_focus(id));
+                assert!(editor::show(ui, &mut text).has_focus());
+            });
+            output.textures_delta.clear();
+            assert!(output.shapes.iter().any(|shape| matches!(&shape.shape,
+                egui::Shape::Rect(rect) if rect.stroke.color == colors[4] && rect.stroke.width.to_bits() == 2.0_f32.to_bits()
+            )), "{pack} {mode}: focus frame must use accent, not selected-text foreground");
+            assert_eq!(visuals.text_cursor.stroke.color, colors[0]);
+            assert_eq!(
+                visuals.ime_composition.active_underline_stroke.color,
+                colors[0]
+            );
+            assert_eq!(
+                visuals.ime_composition.inactive_underline_stroke.color,
+                colors[0]
+            );
+        }
+    }
+}
 
 #[test]
 fn browser_build_emits_wasm_and_prepared_assets() {
@@ -100,7 +154,8 @@ fn browser_build_emits_wasm_and_prepared_assets() {
 fn browser_development_runs_build_and_example() {
     let workspace = Workspace::new();
     success(&workspace.run("browser-dev"));
-    assert!(workspace.log().starts_with("trunk serve|"));
+    assert!(workspace.log().starts_with("cargo check|"));
+    assert!(workspace.log().contains("trunk serve|"));
     assert!(!workspace.log().contains("clear"));
 }
 
@@ -109,9 +164,25 @@ fn browser_compile_watch_starts_no_server() {
     let workspace = Workspace::new();
     success(&workspace.run("browser-dev-compile"));
     let log = workspace.log();
-    assert!(log.starts_with("trunk watch|"));
-    assert_eq!(log.lines().count(), 1);
+    assert!(log.starts_with("cargo check|"));
+    assert!(log.contains("trunk watch|"));
+    assert_eq!(log.lines().count(), 2);
     assert!(!log.contains("serve") && !log.contains("clear"));
+}
+
+#[test]
+fn browser_check_repairs_formatting() {
+    let browser = Browser::new();
+    browser.workspace_sources();
+    for path in [
+        browser.fixture("src/main.rs"),
+        browser.path("crates/maestro-web/src/lib.rs"),
+    ] {
+        let original = fs::read_to_string(&path).unwrap();
+        fs::write(&path, format!("\n\n{original}")).unwrap();
+        success(&browser.run("browser-check"));
+        assert_eq!(fs::read_to_string(path).unwrap(), original);
+    }
 }
 
 #[test]
@@ -133,19 +204,15 @@ fn browser_checks_reject_invalid_sources() {
 }
 
 #[test]
-fn browser_example_development_serves_rebuilt_assets() {
+fn browser_example_development_serves_rebuilt_external_assets() {
     use browser_support::{get, start_output, wait_for};
     let browser = Browser::new();
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
     drop(listener);
+    let pack = external_identity(&browser);
     let mut command = browser.command("browser-example-dev");
-    command.args([
-        browser.path("assets/brand/brand.json").to_str().unwrap(),
-        "dark",
-        "--port",
-        &port.to_string(),
-    ]);
+    command.args([pack.to_str().unwrap(), "dark", "--port", &port.to_string()]);
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "127.0.0.1:");
     let output = browser.path("target/maestro-browser/example");
@@ -174,7 +241,6 @@ fn browser_example_development_serves_rebuilt_assets() {
             .unwrap()
             .contains("outline-style:dotted")
     );
-    let pack = browser.path("assets/brand/brand.json");
     let contents = fs::read_to_string(&pack).unwrap().replace(
         "\"wordmark\": \"Maestro\"",
         "\"wordmark\": \"Edited author wordmark\"",
@@ -183,9 +249,69 @@ fn browser_example_development_serves_rebuilt_assets() {
     wait_for(&receive, "✅ success");
     let (_, changed) = get(port, wasm.file_name().unwrap().to_str().unwrap());
     assert!(String::from_utf8_lossy(&changed).contains("Edited author wordmark"));
+    let mark = browser.path("external mark.svg");
+    let contents = fs::read_to_string(&mark)
+        .unwrap()
+        .replace("<svg", "<svg data-edited=\"yes\"");
+    fs::write(mark, contents).unwrap();
+    wait_for(&receive, "✅ success");
+    let (_, changed) = get(port, wasm.file_name().unwrap().to_str().unwrap());
+    assert!(String::from_utf8_lossy(&changed).contains("data-edited=\"yes\""));
     drop(child);
     drop(receive);
     thread.join().unwrap();
+}
+
+#[test]
+fn browser_compile_watch_rebuilds_external_identity() {
+    use browser_support::{start_output, wait_for};
+    let browser = Browser::new();
+    let pack = external_identity(&browser);
+    let mut command = browser.command("browser-dev-compile");
+    command.args([pack.to_str().unwrap(), "light"]);
+    let (child, receive, thread) = start_output(command);
+    wait_for(&receive, "✅ success");
+    let wasm = browser.path("target/maestro-browser/library/maestro-browser-author_bg.wasm");
+    for (path, from, to) in [
+        (
+            pack,
+            "\"wordmark\": \"Maestro\"",
+            "\"wordmark\": \"Compiled external identity\"",
+        ),
+        (
+            browser.path("external mark.svg"),
+            "<svg",
+            "<svg data-compiled=\"yes\"",
+        ),
+    ] {
+        let contents = fs::read_to_string(&path).unwrap().replace(from, to);
+        fs::write(path, contents).unwrap();
+        wait_for(&receive, "✅ success");
+        let bytes = fs::read(&wasm).unwrap();
+        let expected = if to.contains("wordmark") {
+            "Compiled external identity"
+        } else {
+            "data-compiled=\"yes\""
+        };
+        assert!(String::from_utf8_lossy(&bytes).contains(expected));
+    }
+    drop(child);
+    drop(receive);
+    thread.join().unwrap();
+}
+
+/// Keep the selected pack and mark outside both existing watch roots.
+fn external_identity(browser: &Browser) -> std::path::PathBuf {
+    let pack = browser.path("external identity/pack.json");
+    fs::create_dir_all(pack.parent().unwrap()).unwrap();
+    let mark = browser.path("external mark.svg");
+    fs::copy(browser.path("assets/brand/mark.svg"), &mark).unwrap();
+    let mut data: serde_json::Value =
+        serde_json::from_slice(&fs::read(browser.path("assets/brand/brand.json")).unwrap())
+            .unwrap();
+    data["mark"]["template"] = "../external mark.svg".into();
+    fs::write(&pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
+    pack
 }
 
 #[test]
@@ -451,7 +577,7 @@ fn browser_debug_build_keeps_source_locations() {
 }
 
 #[test]
-fn browser_assets_follow_selected_identity() {
+fn browser_assets_follow_relative_selected_identity() {
     let browser = Browser::new();
     for (pack, body) in [
         ("assets/brand/brand.json", "Barlow"),
@@ -463,7 +589,7 @@ fn browser_assets_follow_selected_identity() {
             success(
                 &browser
                     .command("browser-library-build")
-                    .arg(browser.path(pack))
+                    .arg(pack)
                     .arg(mode)
                     .output()
                     .unwrap(),
@@ -703,7 +829,7 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     );
     assert_eq!(
         fs::read_to_string(workspace.0.join("brand-result")).unwrap(),
-        "pack's 東京 path\nlight"
+        format!("{}/pack's 東京 path\nlight", workspace.0.display())
     );
     let log = workspace.log();
     assert!(log.contains("|--public-url|/a space/"));

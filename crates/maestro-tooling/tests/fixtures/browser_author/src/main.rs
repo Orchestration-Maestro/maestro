@@ -1,5 +1,6 @@
 //! Editable browser author fixture using prepared shared presentation.
 use eframe::egui;
+mod editor;
 use wasm_bindgen::JsCast;
 
 /// Editable state retained by the framework's application owner.
@@ -9,7 +10,7 @@ struct AuthorInput(String);
 impl eframe::App for AuthorInput {
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
         ui.label(include_str!(concat!(env!("OUT_DIR"), "/wordmark.txt")));
-        ui.text_edit_singleline(&mut self.0);
+        editor::show(ui, &mut self.0);
         ui.label(&self.0);
     }
 }
@@ -73,25 +74,9 @@ fn style(context: &egui::Context) -> std::io::Result<()> {
     let border = color(include_str!(concat!(env!("OUT_DIR"), "/border.txt")))?;
     let accent = color(include_str!(concat!(env!("OUT_DIR"), "/accent.txt")))?;
     let on_accent = color(include_str!(concat!(env!("OUT_DIR"), "/on-accent.txt")))?;
-    let mut visuals = egui::Visuals::dark();
-    visuals.override_text_color = Some(text);
-    visuals.panel_fill = background;
-    visuals.extreme_bg_color = panel;
-    visuals.selection.bg_fill = accent;
-    visuals.selection.stroke.color = on_accent;
-    for widget in [
-        &mut visuals.widgets.noninteractive,
-        &mut visuals.widgets.inactive,
-        &mut visuals.widgets.hovered,
-        &mut visuals.widgets.active,
-        &mut visuals.widgets.open,
-    ] {
-        widget.bg_fill = panel;
-        widget.weak_bg_fill = panel;
-        widget.fg_stroke.color = text;
-        widget.bg_stroke.color = border;
-    }
-    context.set_visuals(visuals);
+    context.set_visuals(editor::visuals([
+        text, background, panel, border, accent, on_accent,
+    ]));
     let size = include_str!(concat!(env!("OUT_DIR"), "/body-size.txt"))
         .parse()
         .map_err(std::io::Error::other)?;
