@@ -109,7 +109,7 @@ handles remain independent of later publication or registration changes.
 its fallback resolver disabled, then tries the configured nonempty provider key.
 A present empty credential key suppresses the configured fallback.
 `get_api_key_and_headers(model, operations)` accepts a shared descriptor, including
-one outside the catalog, and returns `ResolvedRequestAuth::Success` or
+one outside the catalog, and returns `ResolvedRequestAuth::Ok` or
 `ResolvedRequestAuth::Error` with the winning resolution message.
 
 Configured values have three forms:

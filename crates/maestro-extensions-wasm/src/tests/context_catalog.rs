@@ -484,6 +484,8 @@ async fn auth_outcomes(driver: &mut impl Driver) -> Result<(), String> {
         json!({"headers":[]}),
         json!({"error":missing}),
         json!({"error":"auth failed 雪"}),
+        json!({"error":""}),
+        json!({"error":"auth failed 雪\nretry"}),
         json!({"error":shell}),
     ] {
         control(

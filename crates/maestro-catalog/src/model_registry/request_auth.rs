@@ -17,21 +17,7 @@ pub(super) struct ProviderRequestConfig {
     /// Synthesize Authorization after header resolution.
     pub auth_header: bool,
 }
-/// Resolved request values or the winning resolution failure.
-pub enum ResolvedRequestAuth {
-    /// Successfully selected optional request values.
-    Success {
-        /// Selected key, retaining present empty values.
-        api_key: Option<String>,
-        /// Merged headers, absent when empty.
-        headers: Option<IndexMap<String, String>>,
-    },
-    /// Resolution stopped at this error.
-    Error {
-        /// Original resolution message.
-        error: String,
-    },
-}
+pub use maestro_request::model_registry::ResolvedRequestAuth;
 impl ModelRegistry {
     /// Select a provider key with the credentials fallback disabled.
     ///
@@ -64,7 +50,7 @@ impl ModelRegistry {
         operations: &dyn ConfigValueOperations,
     ) -> ResolvedRequestAuth {
         match self.resolve_request(model, operations).await {
-            Ok((api_key, headers)) => ResolvedRequestAuth::Success { api_key, headers },
+            Ok((api_key, headers)) => ResolvedRequestAuth::Ok { api_key, headers },
             Err(error) => ResolvedRequestAuth::Error { error },
         }
     }

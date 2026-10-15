@@ -152,7 +152,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   and `Skill`.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper.
-  It also owns the resolved request-auth record, default zero usage and the
+  It also owns `model_registry::ResolvedRequestAuth`, re-exported by the native
+  catalog and guest authoring library, default zero usage and the
   shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, catalog, session, entry, tool and guest authoring)
   may depend on it; it has no internal dependencies. Keep existing models/resources public paths as re-exports.
