@@ -127,13 +127,7 @@ pub fn header_constructor(name: &str) {
 /// Installs recorded outer application actions without adding widget registration policy.
 fn manager(overrides: maestro_tui::KeybindingsConfig) -> KeybindingsManager {
     let mut definitions = KEYBINDINGS.clone();
-    for (id, key) in [
-        ("toggleSort", "ctrl+s"),
-        ("toggleNamedFilter", "ctrl+n"),
-        ("delete", "ctrl+d"),
-        ("togglePath", "ctrl+p"),
-        ("rename", "ctrl+r"),
-    ] {
+    for (id, key) in [("delete", "ctrl+d"), ("rename", "ctrl+r")] {
         definitions.push((
             format!("app.session.{id}"),
             maestro_tui::KeybindingDefinition {
@@ -537,6 +531,7 @@ struct Record {
     id: Value,
     cwd: String,
     modified: f64,
+    created: Option<f64>,
     message_count: usize,
     first_message: String,
     all_messages_text: String,
@@ -565,7 +560,7 @@ impl Record {
                 Some(Value::Null) => maestro_app::Presence::Null,
                 Some(v) => maestro_app::Presence::Present(v),
             },
-            created: 0.0,
+            created: self.created.unwrap_or(0.0),
         }
     }
 }
@@ -1398,3 +1393,10 @@ pub fn status_drop() {
             .is_empty()
     );
 }
+
+/// Retained selector replay using the same palette, registry and host.
+#[allow(
+    dead_code,
+    reason = "Scope witnesses run in their own integration target."
+)]
+pub mod session_picker_scopes;

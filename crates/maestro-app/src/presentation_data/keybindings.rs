@@ -23,6 +23,21 @@ pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
             ),
             ("app.editor.external", "ctrl+g", "Open external editor"),
             (
+                "app.session.togglePath",
+                "ctrl+p",
+                "Toggle session path display",
+            ),
+            (
+                "app.session.toggleSort",
+                "ctrl+s",
+                "Toggle session sort mode",
+            ),
+            (
+                "app.session.toggleNamedFilter",
+                "ctrl+n",
+                "Toggle named session filter",
+            ),
+            (
                 "app.tree.filter.default",
                 "ctrl+d",
                 "Tree filter: default view",

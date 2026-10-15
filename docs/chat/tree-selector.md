@@ -42,8 +42,8 @@ Callers install a `maestro_tui::KeybindingsManager` built from
 [`maestro_app::presentation_data::keybindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/keybindings.rs)
 using `maestro_tui::set_keybindings`. The list reads the active manager on input;
 construction does not install one. The application table extends toolkit defaults
-with seven tree-filter actions, two fold/segment actions, label-edit notification
-and label timestamp toggling.
+with seven tree-filter actions, two fold/segment actions, label-edit notification,
+label timestamp toggling and three [session display controls](session-selector.md#discovery).
 
 Up/down wrap; page actions and left/right aliases clamp by the supplied visible
 line count. Confirm calls `on_select` with the selected entry identity when both

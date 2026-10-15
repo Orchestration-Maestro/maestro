@@ -40,7 +40,10 @@
     "app.tree.filter.labeledOnly",
     "app.tree.filter.all",
     "app.tree.filter.cycleForward",
-    "app.tree.filter.cycleBackward"
+    "app.tree.filter.cycleBackward",
+    "app.session.togglePath",
+    "app.session.toggleSort",
+    "app.session.toggleNamedFilter"
   ],
   "filters": [
     [
