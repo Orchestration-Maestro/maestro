@@ -1,3 +1,6 @@
+// Modified by Maestro on 2026-10-15.
+// Notify the device of decoded text shows before clipping or painting.
+
 use crate::context::Context;
 use crate::device::Device;
 use crate::font::{Glyph, GlyphRun, PositionedGlyph, UNITS_PER_EM};

@@ -1,3 +1,6 @@
+// Modified by Maestro on 2026-10-15.
+// Forward text-show observations through the shape-glyph device.
+
 use crate::CMapResolverFn;
 use crate::context::Context;
 use crate::device::Device;

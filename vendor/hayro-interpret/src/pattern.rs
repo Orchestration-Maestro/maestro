@@ -1,3 +1,6 @@
+// Modified by Maestro on 2026-10-15.
+// Forward text-show observations through the stencil pattern device.
+
 //! PDF patterns.
 
 use crate::cache::Cache;

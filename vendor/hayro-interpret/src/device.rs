@@ -1,3 +1,6 @@
+// Modified by Maestro on 2026-10-15.
+// Added the decoded text-show observation hook.
+
 use crate::font::GlyphRun;
 use crate::x_object::soft_mask::SoftMask;
 use crate::{BlendMode, ClipPath, FillRule, Image};
