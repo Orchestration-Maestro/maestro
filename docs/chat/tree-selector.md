@@ -1,7 +1,8 @@
 # Session-tree navigation
 
 [`TreeList`](../../crates/maestro-chat/src/components/tree_selector/tree_list.rs)
-retains a presentation of the supplied [session tree records](../sessions/session_format.md).
+uses the shared [session-tree projection owner](../sessions/tree-projection.md) through
+`maestro_app::export_html::template` to retain a presentation of the supplied [session tree records](../sessions/session_format.md).
 Its selected-node getter returns a shared occurrence handle; an empty view returns `None`.
 Handles and their ordered children remain usable after the list and input containers
 are dropped. Distinct occurrences stay distinct even when their records are equal.

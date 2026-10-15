@@ -163,6 +163,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
 
+Pure retained session-tree ordering and geometry belong to `maestro-session`,
+re-exported through `maestro-app`; frontend filter, fold and selection state stay
+with their frontend.
+
 The guest authoring crate may depend on the request, entry, tool and JSON
 owners and never imports native session, tool or catalog runtimes. The terminal
 adapter requires the toolkit and `maestro-text` as direct dependencies; `maestro-text` is
