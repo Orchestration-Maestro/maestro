@@ -1,7 +1,8 @@
 //! Browser subscriptions, raw responses and registered-window admission.
-use super::{Context, MessageConsumer, Providers, Registry};
+use super::{MessageConsumer, Providers, Registry, SandboxContext};
+use crate::browser::event_subscription::EventSubscription;
 use crate::browser::sandbox_value::{BrowserSandboxValue, diagnostic};
-use js_sys::{Array, Function, Object, Promise, Reflect};
+use js_sys::{Function, Object, Promise, Reflect};
 use maestro_app::DiagnosticErrorInfo;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond;
 use std::{
@@ -16,37 +17,15 @@ use web_sys::{HtmlIFrameElement, MessageEvent};
 /// Browser-local shared registry.
 type State = Registry<BrowserSandboxValue, HtmlIFrameElement>;
 /// Browser-local captured context.
-type Sandbox = Rc<Context<BrowserSandboxValue, HtmlIFrameElement>>;
+type Sandbox = Rc<SandboxContext<BrowserSandboxValue, HtmlIFrameElement>>;
 /// Both browser hosts supply at most three callback arguments.
 type Callback = Closure<dyn FnMut(JsValue, JsValue, JsValue) -> JsValue>;
-/// Exact subscription target retained until successful removal.
-struct Listener {
-    /// Window or extension event source.
-    target: JsValue,
-    /// Callback whose lifetime follows registration.
-    callback: Callback,
-    /// Window event name; extension events have dedicated methods.
-    event: Option<&'static str>,
-}
-impl Listener {
-    /// Apply the channel's registration or removal operation.
-    fn update(&self, add: bool) -> Result<(), JsValue> {
-        let name = match (self.event, add) {
-            (Some(_), true) => "addEventListener",
-            (Some(_), _) => "removeEventListener",
-            (None, true) => "addListener",
-            (None, _) => "removeListener",
-        };
-        let args = Array::new();
-        if let Some(event) = self.event {
-            args.push(&event.into());
-        }
-        args.push(self.callback.as_ref());
-        Reflect::get(&self.target, &name.into())?
-            .dyn_into::<Function>()?
-            .apply(&self.target, &args)?;
-        Ok(())
-    }
+/// Apply only the extension host's callback transport operation.
+fn extension_update(target: &JsValue, callback: &Callback, method: &str) -> Result<(), JsValue> {
+    Reflect::get(target, &method.into())?
+        .dyn_into::<Function>()?
+        .call1(target, callback.as_ref())?;
+    Ok(())
 }
 /// Central owner of live sandbox contexts and channel subscriptions.
 /// Explicitly unregister sandboxes to detach listeners when the registry empties.
@@ -54,8 +33,10 @@ impl Listener {
 pub struct RuntimeMessageRouter {
     /// State captured weakly by global listeners.
     state: Rc<State>,
-    /// One listener per available channel.
-    listeners: RefCell<Vec<Listener>>,
+    /// Retained window subscription.
+    window: RefCell<Option<EventSubscription<Callback>>>,
+    /// Retained optional extension transport subscription.
+    extension: RefCell<Option<(JsValue, Callback)>>,
 }
 impl RuntimeMessageRouter {
     /// Create an empty router without installing listeners.
@@ -111,57 +92,44 @@ impl RuntimeMessageRouter {
             context.remove(consumer);
         }
     }
-    /// Install missing channels synchronously before returning registration.
+    /// Install each missing channel only when its native target is available.
     fn install(&self) -> Result<(), JsValue> {
-        let mut listeners = self.listeners.take();
-        let result = self.install_missing(&mut listeners);
-        self.listeners.replace(listeners);
-        result
-    }
-    /// Register each currently available channel once.
-    fn install_missing(&self, listeners: &mut Vec<Listener>) -> Result<(), JsValue> {
-        for event in [Some("message"), None] {
-            if listeners.iter().any(|listener| listener.event == event) {
-                continue;
-            }
-            let target = if event.is_some() {
-                Some(js_sys::global().into())
-            } else {
-                extension_target()?
-            };
-            let Some(target) = target else {
-                continue;
-            };
-            let callback = callback(Rc::downgrade(&self.state), event);
-            let listener = Listener {
-                target,
-                callback,
-                event,
-            };
-            listener.update(true)?;
-            listeners.push(listener);
+        if self.window.borrow().is_none() {
+            let listener = EventSubscription::new(
+                js_sys::global().dyn_into()?,
+                "message",
+                callback(Rc::downgrade(&self.state), Some("message")),
+            )?;
+            self.window.replace(Some(listener));
+        }
+        if self.extension.borrow().is_none()
+            && let Some(target) = extension_target()?
+        {
+            let callback = callback(Rc::downgrade(&self.state), None);
+            extension_update(&target, &callback, "addListener")?;
+            self.extension.replace(Some((target, callback)));
         }
         Ok(())
     }
-    /// Remove each callback from its original target outside any borrow.
+    /// Retain failed removals for retry before releasing their callbacks.
     fn detach(&self) -> Result<(), JsValue> {
-        let mut listeners = self.listeners.take();
-        while let Some(listener) = listeners.pop() {
-            if let Err(error) = listener.update(false) {
-                listeners.push(listener);
-                self.listeners.replace(listeners);
-                return Err(error);
-            }
+        if let Some(listener) = self.window.borrow().as_ref() {
+            listener.detach()?;
         }
+        self.window.take();
+        if let Some((target, callback)) = self.extension.borrow().as_ref() {
+            extension_update(target, callback, "removeListener")?;
+        }
+        self.extension.take();
         Ok(())
     }
 }
 impl Drop for RuntimeMessageRouter {
     fn drop(&mut self) {
-        if self.detach().is_err() {
-            for listener in self.listeners.take() {
-                listener.callback.forget();
-            }
+        if self.detach().is_err()
+            && let Some((_, callback)) = self.extension.take()
+        {
+            callback.forget();
         }
     }
 }

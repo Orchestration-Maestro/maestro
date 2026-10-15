@@ -17,8 +17,8 @@ mod routing {
     pub(super) type Providers<V> = Rc<RefCell<Vec<Arc<dyn SandboxRuntimeProvider<V>>>>>;
     /// Mutable frame retained independently by response callbacks.
     type Frame<F> = Rc<RefCell<Option<Rc<F>>>>;
-    /// Context captured by an admitted message.
-    pub(super) struct Context<V: SandboxValue, F> {
+    /// Sandbox context captured by an admitted message.
+    pub(super) struct SandboxContext<V: SandboxValue, F> {
         /// Current reply destination.
         pub(super) frame: Frame<F>,
         /// Caller-owned provider collection.
@@ -31,7 +31,7 @@ mod routing {
     /// Registry shared by both message channels.
     pub(super) struct Registry<V: SandboxValue, F> {
         /// Replaceable entries; admitted contexts survive replacement.
-        pub(super) sandboxes: RefCell<HashMap<String, Rc<Context<V, F>>>>,
+        pub(super) sandboxes: RefCell<HashMap<String, Rc<SandboxContext<V, F>>>>,
     }
     impl<V: SandboxValue, F> Default for Registry<V, F> {
         fn default() -> Self {
@@ -52,7 +52,7 @@ mod routing {
             providers: Providers<V>,
             consumers: Vec<Arc<dyn MessageConsumer<V>>>,
         ) {
-            let context = Rc::new(Context {
+            let context = Rc::new(SandboxContext {
                 frame: Rc::new(RefCell::new(None)),
                 providers,
                 consumers: RefCell::new(Vec::new()),
@@ -78,7 +78,7 @@ mod routing {
             }
         }
         /// Capture a context only for a nonempty string identifier.
-        pub(super) fn context(&self, id: Option<&str>) -> Option<Rc<Context<V, F>>> {
+        pub(super) fn context(&self, id: Option<&str>) -> Option<Rc<SandboxContext<V, F>>> {
             self.sandboxes
                 .borrow()
                 .get(id.filter(|id| !id.is_empty())?)
@@ -90,14 +90,14 @@ mod routing {
             id: Option<&str>,
             source: Option<&S>,
             window: impl FnOnce(&F) -> Option<S>,
-        ) -> Option<Rc<Context<V, F>>> {
+        ) -> Option<Rc<SandboxContext<V, F>>> {
             let context = self.context(id)?;
             let frame = context.frame.borrow().clone()?;
             let expected = window(&frame)?;
             (source == Some(&expected)).then_some(context)
         }
     }
-    impl<V: SandboxValue, F> Context<V, F> {
+    impl<V: SandboxValue, F> SandboxContext<V, F> {
         /// Remove identity without shifting any visitation position.
         pub(super) fn remove(&self, consumer: &Arc<dyn MessageConsumer<V>>) {
             let key = Arc::as_ptr(consumer).cast::<()>() as usize;
@@ -121,7 +121,7 @@ mod routing {
     }
 }
 #[cfg(any(target_arch = "wasm32", test))]
-impl<V: SandboxValue + Clone, F> Context<V, F> {
+impl<V: SandboxValue + Clone, F> SandboxContext<V, F> {
     /// Walk current providers, then stable live consumer positions.
     pub(super) async fn dispatch(
         &self,
@@ -154,7 +154,7 @@ impl<V: SandboxValue + Clone, F> Context<V, F> {
 #[cfg(any(target_arch = "wasm32", test))]
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond;
 #[cfg(any(target_arch = "wasm32", test))]
-use routing::{Context, Providers, Registry};
+use routing::{Providers, Registry, SandboxContext};
 #[cfg(test)]
 mod tests;
 

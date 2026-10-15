@@ -54,7 +54,8 @@ Call `unregister_sandbox` explicitly when a sandbox is destroyed. The final
 removal detaches the global channel listeners; registration and removal errors
 are returned as diagnostics. Dropping a router also attempts removal. Listeners
 hold the registry weakly, and response callbacks retain only the frame slot,
-not the provider graph.
+not the provider graph. Window subscriptions share the browser event-registration
+owner used by native input controls; extension transport stays with the router.
 
 `browser::sandbox_value::BrowserSandboxValue` owns a native JavaScript handle.
 Clones share that value: callbacks do not JSON-round-trip it. Its application

@@ -7,3 +7,7 @@ pub mod timer;
 /// Native sandbox values.
 #[cfg(target_arch = "wasm32")]
 pub mod sandbox_value;
+
+/// Retained browser event subscriptions.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod event_subscription;

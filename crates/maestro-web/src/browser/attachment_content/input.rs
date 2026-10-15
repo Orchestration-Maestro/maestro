@@ -1,49 +1,27 @@
 //! Native editing capabilities within the retained content owner.
 use super::{AttachmentUiError, browser::host_error};
+use crate::browser::event_subscription::EventSubscription;
 use crate::components::input::{InputProps, InputRef, InputSize, InputType};
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, Event, HtmlInputElement, KeyboardEvent};
-/// One native listener with deterministic teardown.
-struct Listener {
-    /// Actual element whose registration is retained.
-    element: HtmlInputElement,
-    /// Native event name.
+/// Native input subscription with a typed browser event callback.
+type InputSubscription = EventSubscription<Closure<dyn FnMut(Event)>>;
+/// Adapt typed input callbacks to the shared browser subscription owner.
+fn listen(
+    element: &HtmlInputElement,
     name: &'static str,
-    /// Retained native callable.
-    callback: Closure<dyn FnMut(Event)>,
-}
-impl Listener {
-    /// Register a callback without reconstructing the event.
-    fn new(
-        element: &HtmlInputElement,
-        name: &'static str,
-        callback: Rc<dyn Fn(Event)>,
-    ) -> Result<Self, AttachmentUiError> {
-        let handler = Closure::wrap(Box::new(move |e| callback(e)) as Box<dyn FnMut(Event)>);
-        element
-            .add_event_listener_with_callback(name, handler.as_ref().unchecked_ref())
-            .map_err(|e| host_error(&e))?;
-        Ok(Self {
-            element: element.clone(),
-            name,
-            callback: handler,
-        })
-    }
-}
-impl Drop for Listener {
-    fn drop(&mut self) {
-        let _ = self
-            .element
-            .remove_event_listener_with_callback(self.name, self.callback.as_ref().unchecked_ref());
-    }
+    callback: Rc<dyn Fn(Event)>,
+) -> Result<InputSubscription, AttachmentUiError> {
+    let handler = Closure::wrap(Box::new(move |e| callback(e)) as Box<dyn FnMut(Event)>);
+    EventSubscription::new(element.clone().into(), name, handler).map_err(|e| host_error(&e))
 }
 /// Per-element callbacks and the reference assignment this element owns.
 pub(super) struct DomInput {
     /// Actual element whose registration is retained.
     element: HtmlInputElement,
     /// Current event registrations.
-    listeners: Vec<Listener>,
+    listeners: Vec<InputSubscription>,
     /// Reference assignment owned by this field.
     slot: Option<InputRef>,
     /// Whether this native instance has received its first value.
@@ -91,12 +69,12 @@ impl DomInput {
         for (name, callback) in [("input", &props.on_input), ("change", &props.on_change)] {
             if let Some(callback) = callback {
                 self.listeners
-                    .push(Listener::new(&self.element, name, Rc::clone(callback))?);
+                    .push(listen(&self.element, name, Rc::clone(callback))?);
             }
         }
         let key_down = props.on_key_down.clone();
         let drawing = (*context).clone();
-        self.listeners.push(Listener::new(
+        self.listeners.push(listen(
             &self.element,
             "keydown",
             Rc::new(move |e| {
@@ -114,7 +92,7 @@ impl DomInput {
         )?);
         if let Some(callback) = &props.on_key_up {
             let callback = Rc::clone(callback);
-            self.listeners.push(Listener::new(
+            self.listeners.push(listen(
                 &self.element,
                 "keyup",
                 Rc::new(move |e| {
