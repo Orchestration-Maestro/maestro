@@ -3,7 +3,11 @@ use super::*;
 use crate as maestro_app;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::sync::Mutex;
+use std::{
+    future::Future,
+    sync::Mutex,
+    task::{Context, Waker},
+};
 
 /// Strict recorded command corpus.
 #[derive(Deserialize)]
@@ -906,10 +910,11 @@ async fn timer_witness(recreate_before_completion: bool) -> (bool, Value, State,
         &tool,
         json!({"command":"create","filename":"p.html","content":"x"}),
     ));
-    assert!(futures_util::poll!(&mut future).is_pending());
+    let mut context = Context::from_waker(Waker::noop());
+    assert!(future.as_mut().poll(&mut context).is_pending());
     let captured = Arc::clone(&host.views.lock().unwrap()["p.html"].logs);
     advance(&clock, 1499);
-    let pending = futures_util::poll!(&mut future).is_pending();
+    let pending = future.as_mut().poll(&mut context).is_pending();
     *captured.lock().unwrap() = "[log] late log".into();
     panel.delete("p.html");
     let mut output = None;
@@ -932,7 +937,7 @@ async fn timer_witness(recreate_before_completion: bool) -> (bool, Value, State,
         .await;
     *host.views.lock().unwrap()["p.html"].logs.lock().unwrap() = "[log] wrong new log".into();
     if recreate_before_completion {
-        assert!(futures_util::poll!(&mut future).is_pending());
+        assert!(future.as_mut().poll(&mut context).is_pending());
         advance(&clock, 1);
     }
     let output = match output {
