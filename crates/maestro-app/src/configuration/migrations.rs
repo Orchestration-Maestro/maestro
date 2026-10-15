@@ -35,6 +35,8 @@ struct PreparedSession {
     cwd: String,
     /// Resolved final referent for symbolic links.
     referent: Option<PathBuf>,
+    /// Target paths traversed, including the final referent.
+    chain: Vec<PathBuf>,
 }
 
 /// Read a legacy JSON value with native decoding boundaries.
@@ -163,7 +165,7 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
     let prepared: Vec<_> = entries
         .into_iter()
         .filter(|entry| entry.file_name().to_string_lossy().ends_with(".jsonl"))
-        .filter_map(|entry| prepare_session(entry.path()).ok().flatten())
+        .filter_map(|entry| prepare_session(&entry.path()).ok().flatten())
         .collect();
     let mut moved = BTreeMap::new();
     let mut links = Vec::new();
@@ -177,7 +179,8 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
             continue;
         }
         if let Some(referent) = session.referent {
-            links.push((path, target, referent));
+            moved.insert(path.clone(), target.clone());
+            links.push((path, target, referent, session.chain));
         } else if let Ok(identity) = fs::canonicalize(&path)
             && fs::rename(&path, &target).is_ok()
             && let Ok(target) = fs::canonicalize(target)
@@ -185,8 +188,8 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
             moved.insert(identity, target);
         }
     }
-    for (path, target, referent) in links {
-        if !moved.contains_key(&referent)
+    for (path, target, referent, chain) in links {
+        if !chain.iter().any(|hop| moved.contains_key(hop))
             && fs::read_link(&path).is_ok_and(|link| link.is_absolute())
         {
             let _ = fs::rename(path, target);
@@ -198,7 +201,8 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
 }
 
 /// Capture header admission and link identity before any source can move.
-fn prepare_session(path: PathBuf) -> io::Result<Option<PreparedSession>> {
+fn prepare_session(path: &Path) -> io::Result<Option<PreparedSession>> {
+    let path = canonical_entry_path(path)?;
     let content = fs::read(&path)?;
     let text = String::from_utf8_lossy(&content);
     let line = text.split('\n').next().unwrap_or_default();
@@ -217,11 +221,25 @@ fn prepare_session(path: PathBuf) -> io::Result<Option<PreparedSession>> {
         .ok()
         .map(|_| fs::canonicalize(&path))
         .transpose()?;
+    let mut chain = Vec::new();
+    let mut hop = path.clone();
+    while let Ok(payload) = fs::read_link(&hop) {
+        hop = hop.parent().unwrap_or(Path::new(".")).join(payload);
+        hop = canonical_entry_path(&hop)?;
+        chain.push(hop.clone());
+    }
     Ok(Some(PreparedSession {
         path,
         cwd: cwd.into(),
         referent,
+        chain,
     }))
+}
+
+/// Normalize a directory identity without following the final entry's link.
+fn canonical_entry_path(path: &Path) -> io::Result<PathBuf> {
+    Ok(fs::canonicalize(path.parent().unwrap_or(Path::new(".")))?
+        .join(path.file_name().unwrap_or_default()))
 }
 
 /// Publish a re-anchored link with native replacement, retaining the source on failure.

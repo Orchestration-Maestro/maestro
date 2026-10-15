@@ -375,3 +375,158 @@ fn unchanged_absolute_session_link_moves_by_rename() {
         );
     }
 }
+
+#[test]
+#[cfg(unix)]
+fn session_link_resolution_matrix() {
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        println!("PROBE done");
+        return;
+    }
+    for depth in 1..=3 {
+        for payload in ["absolute", "relative"] {
+            for moving in ["none", "final", "intermediate", "deep"]
+                .into_iter()
+                .filter(|moving| {
+                    !(depth == 1 && *moving == "intermediate" || depth < 3 && *moving == "deep")
+                })
+            {
+                check_resolution_orders(depth, payload, moving);
+            }
+        }
+    }
+}
+
+#[cfg(unix)]
+fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
+    let mut orders = std::collections::BTreeSet::new();
+    for arrangement in 0..2 * (depth + 1) {
+        let (scratch, paths) = resolution_chain(depth, payload, moving, arrangement);
+        let entries: Vec<_> = std::fs::read_dir(&scratch.0)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect();
+        let next = if moving == "deep" { depth - 1 } else { 1 };
+        orders.insert(
+            entries.iter().position(|path| path == &paths[0])
+                < entries.iter().position(|path| path == &paths[next]),
+        );
+        check_resolution_chain(&scratch, &paths, payload, moving);
+        if moving == "none" || orders.len() == 2 {
+            break;
+        }
+    }
+    if moving != "none" {
+        assert_eq!(
+            orders.len(),
+            2,
+            "both native orders: {depth}/{payload}/{moving}"
+        );
+    }
+}
+
+#[cfg(unix)]
+fn resolution_chain(
+    depth: usize,
+    payload: &str,
+    moving: &str,
+    arrangement: usize,
+) -> (child::Scratch, Vec<std::path::PathBuf>) {
+    let scratch = child::Scratch::new();
+    let paths: Vec<_> = (0..=depth)
+        .map(|index| {
+            let relocates = index == 0
+                || (index == depth && moving == "final")
+                || (index < depth && matches!(moving, "intermediate" | "final"))
+                || (index == depth - 1 && moving == "deep");
+            let index_in_order = if arrangement.is_multiple_of(2) {
+                index
+            } else {
+                depth - index
+            };
+            let number = (index_in_order + arrangement / 2) % (depth + 1);
+            scratch.0.join(format!(
+                "{number}.{}",
+                if relocates { "jsonl" } else { "data" }
+            ))
+        })
+        .collect();
+    let mut entries: Vec<_> = paths.iter().enumerate().collect();
+    entries.sort_by_key(|(_, path)| *path);
+    for (index, path) in entries {
+        if index == depth {
+            std::fs::write(
+                path,
+                b"{\"type\":\"session\",\"cwd\":\"/work\"}\ntranscript",
+            )
+            .unwrap();
+        } else {
+            let target = &paths[index + 1];
+            let target = if payload == "absolute" {
+                target.as_path()
+            } else {
+                std::path::Path::new(target.file_name().unwrap())
+            };
+            std::os::unix::fs::symlink(target, path).unwrap();
+        }
+    }
+    (scratch, paths)
+}
+
+#[cfg(unix)]
+fn check_resolution_chain(
+    scratch: &child::Scratch,
+    paths: &[std::path::PathBuf],
+    payload: &str,
+    moving: &str,
+) {
+    use std::{fs, os::unix::fs::MetadataExt};
+    let identity = fs::symlink_metadata(&paths[0]).unwrap().ino();
+    let authored = fs::read_link(&paths[0]).unwrap();
+    for _ in 0..2 {
+        child::probe(
+            "session_link_resolution_matrix",
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "sessions"),
+                ("MAESTRO_CODING_AGENT_DIR", "."),
+            ],
+        );
+        for (index, path) in paths.iter().enumerate() {
+            if index < paths.len() - 1 && path.extension().unwrap() == "data" && moving != "none" {
+                continue;
+            }
+            let destination = if path.extension().unwrap() == "jsonl" {
+                assert_eq!(
+                    fs::symlink_metadata(path).unwrap_err().kind(),
+                    std::io::ErrorKind::NotFound
+                );
+                scratch
+                    .0
+                    .join("sessions/--work--")
+                    .join(path.file_name().unwrap())
+            } else {
+                path.clone()
+            };
+            assert_eq!(
+                fs::read(&destination).unwrap_or_else(|error| panic!(
+                    "{paths:?}/{payload}/{moving} at {destination:?}: {error}"
+                )),
+                b"{\"type\":\"session\",\"cwd\":\"/work\"}\ntranscript",
+                "{paths:?}/{payload}/{moving}"
+            );
+        }
+        let destination = scratch
+            .0
+            .join("sessions/--work--")
+            .join(paths[0].file_name().unwrap());
+        assert!(fs::symlink_metadata(&destination).unwrap().is_symlink());
+        if payload == "absolute" && moving == "none" {
+            assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
+            assert_eq!(fs::read_link(&destination).unwrap(), authored);
+        } else {
+            assert!(fs::read_link(&destination).unwrap().is_absolute());
+        }
+    }
+}
