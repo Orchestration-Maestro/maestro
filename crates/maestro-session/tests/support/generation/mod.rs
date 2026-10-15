@@ -149,6 +149,7 @@ fn run(row: &Row) {
     let model = model(row, &state.api);
     let options = options(&row.args);
     let preparation = preparation(&row.args);
+    let preparation_before = serde_json::to_value(&preparation).unwrap();
     let before = maestro_models::timestamp_now();
     let future = match row.operation.as_str() {
         "generateSummary" => {
@@ -188,6 +189,10 @@ fn run(row: &Row) {
         }
         _ => panic!("unknown outcome"),
     }
+    assert_eq!(
+        serde_json::to_value(&preparation).unwrap(),
+        preparation_before
+    );
     let after = maestro_models::timestamp_now();
     compare_calls(row, &state, &options, before..=after);
 }
@@ -218,7 +223,6 @@ fn compare_calls(
             .contains("This is the PREFIX of a turn");
         assert_eq!(expected["kind"], if prefix { "prefix" } else { "history" });
         compare_options(options, &expected["options"]);
-        assert_eq!(expected["sameSignal"], true);
     }
     if let Some(signal) = &supplied.signal {
         signal.abort();

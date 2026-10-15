@@ -487,17 +487,7 @@ fn warning_callback_reenters_after_state_is_committed() {
         let target = std::rc::Rc::new(std::cell::RefCell::new(std::rc::Weak::<
             maestro_tui::SettingsList,
         >::new()));
-        let weak = target.clone();
-        let transcript = events.clone();
-        callbacks.on_warnings_change = std::rc::Rc::new(move |value| {
-            original(value);
-            let list = weak.borrow().upgrade().unwrap();
-            let lines = list.render(80);
-            transcript.0.borrow_mut().push(vec![
-                "during-callback".into(),
-                serde_json::to_value(lines).unwrap(),
-            ]);
-        });
+        callbacks.on_warnings_change = observing(original, target.clone(), events.clone());
         let selector = maestro_chat::SettingsSelectorComponent::new(
             config(),
             callbacks,

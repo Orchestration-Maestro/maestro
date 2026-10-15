@@ -1,5 +1,4 @@
 {
-  "proxyReadAfterConstructionBindingDropped": true,
   "requests": [
     {
       "url": "https://example.test/retained.txt"

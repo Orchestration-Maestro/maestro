@@ -374,20 +374,25 @@ fn export_wrapped_native_edit_keeps_shared_row_state() {
         .render_call("first", "edit", Some(&args))
         .unwrap()
         .unwrap();
+    let result = |id, details| {
+        renderer
+            .render_result(
+                id,
+                "edit",
+                ToolHtmlResultInput {
+                    content: None,
+                    details: Some(details),
+                    is_error: false,
+                },
+            )
+            .unwrap()
+            .unwrap()
+    };
     let details = serde_json::json!({"diff":"+1 persisted","firstChangedLine":1.25});
-    let output = renderer
-        .render_result(
-            "first",
-            "edit",
-            ToolHtmlResultInput {
-                content: None,
-                details: Some(&details),
-                is_error: false,
-            },
-        )
-        .unwrap()
-        .unwrap();
+    let output = result("first", &details);
     assert_eq!(output.expanded.as_deref(), Some(""));
+    let fractional = serde_json::json!({"diff":"+1 persisted","firstChangedLine":1.75});
+    assert_eq!(result("first", &fractional).expanded.as_deref(), Some(""));
     let settled = renderer
         .render_call("first", "edit", Some(&args))
         .unwrap()
@@ -398,21 +403,11 @@ fn export_wrapped_native_edit_keeps_shared_row_state() {
         .unwrap()
         .unwrap();
     assert!(!other.contains("persisted"));
-    renderer
-        .render_result(
-            "second",
-            "edit",
-            ToolHtmlResultInput {
-                content: None,
-                details: Some(&details),
-                is_error: false,
-            },
-        )
-        .unwrap()
-        .unwrap();
+    result("second", &details);
     let states = states.borrow();
     assert!(Rc::ptr_eq(&states[0], &states[1]));
-    assert!(!Rc::ptr_eq(&states[0], &states[2]));
+    assert!(Rc::ptr_eq(&states[0], &states[3]));
+    assert!(!Rc::ptr_eq(&states[0], &states[4]));
 }
 
 /// A custom state wrapper delegates both slots to the native edit state owner.
@@ -430,17 +425,35 @@ fn wrapped_edit(
     };
     let mut tool = component_support::definition::<(), (), serde_json::Value, u32>();
     let seen = Rc::clone(states);
+    let retained = Rc::new(RefCell::new(None));
+    let call_slot = Rc::clone(&retained);
     tool.render_call = Some(Rc::new(move |args, theme, row| {
         *row.state.borrow_mut() += 1;
         let state = row.renderer_state().unwrap().state::<EditRenderState>();
-        native_call(args, theme, &row.with_state(state))
+        let call = native_call(args, theme, &row.with_state(state))?;
+        call_slot.replace(Some(Rc::clone(&call)));
+        Ok(call)
     }));
     tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
         move |result, options, theme, row| {
             assert_eq!(*row.state.borrow(), 1);
             let state = row.renderer_state().unwrap().state::<EditRenderState>();
             seen.borrow_mut().push(Rc::clone(&state));
-            native_result(result, options, theme, &row.with_state(state))
+            let fractional_change = result
+                .details
+                .and_then(|d| d.get("firstChangedLine"))
+                .and_then(serde_json::Value::as_f64)
+                == Some(1.75);
+            let alternate = native_palette(3);
+            let theme = if fractional_change { &alternate } else { theme };
+            let output = native_result(result, options, theme, &row.with_state(state))?;
+            if fractional_change {
+                let call = retained.borrow().as_ref().unwrap().clone();
+                let html = maestro_export::ansi_lines_to_html(&call.render(80));
+                assert!(html.contains("#808000"));
+                assert!(html.contains("persisted"));
+            }
+            Ok(output)
         },
     )));
     tool
@@ -451,7 +464,23 @@ fn native_environment() -> (
     Rc<maestro_theme::Theme>,
     Rc<maestro_tools::ToolRenderEnvironment>,
 ) {
-    let theme = Rc::new(
+    let theme = native_palette(2);
+    let state = maestro_theme::ThemeState::new(
+        maestro_theme::ThemeDirectories {
+            themes_dir: String::new(),
+            custom_themes_dir: String::new(),
+        },
+        Rc::new(maestro_theme::NativeThemeOperations),
+    );
+    state.set_theme_instance(Rc::clone(&theme)).unwrap();
+    let mut environment = component_support::environment();
+    Rc::get_mut(&mut environment).unwrap().live_theme = state.theme();
+    (theme, environment)
+}
+
+/// Controlled foreground palette for observing callback rebuilds.
+fn native_palette(color: u8) -> Rc<maestro_theme::Theme> {
+    Rc::new(
         maestro_theme::Theme::new(
             [
                 "toolTitle",
@@ -466,7 +495,7 @@ fn native_environment() -> (
             .map(|key| {
                 (
                     maestro_theme::ThemeColor::Named(key.into()),
-                    maestro_theme::ColorValue::Index(2),
+                    maestro_theme::ColorValue::Index(color),
                 )
             }),
             ["toolPendingBg", "toolSuccessBg", "toolErrorBg"]
@@ -481,16 +510,5 @@ fn native_environment() -> (
             maestro_theme::ThemeOptions::default(),
         )
         .unwrap(),
-    );
-    let state = maestro_theme::ThemeState::new(
-        maestro_theme::ThemeDirectories {
-            themes_dir: String::new(),
-            custom_themes_dir: String::new(),
-        },
-        Rc::new(maestro_theme::NativeThemeOperations),
-    );
-    state.set_theme_instance(Rc::clone(&theme)).unwrap();
-    let mut environment = component_support::environment();
-    Rc::get_mut(&mut environment).unwrap().live_theme = state.theme();
-    (theme, environment)
+    )
 }

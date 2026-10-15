@@ -92,25 +92,7 @@ pub fn set_numeric(config: &mut maestro_chat::SettingsConfig, field: &str, value
     }
 }
 
-/// Callback reentry target kept non-owning to avoid retaining the list.
-pub type Target = std::rc::Rc<std::cell::RefCell<std::rc::Weak<maestro_tui::SettingsList>>>;
-/// Records the live list after the original typed notification.
-fn observing<T: 'static>(
-    original: std::rc::Rc<dyn Fn(T)>,
-    target: Target,
-    events: super::settings_selection_support::Events,
-) -> std::rc::Rc<dyn Fn(T)> {
-    use maestro_tui::Component;
-    std::rc::Rc::new(move |value| {
-        original(value);
-        let list = target.borrow().upgrade().unwrap();
-        let lines = list.render(80);
-        events.0.borrow_mut().push(vec![
-            "during-callback".into(),
-            serde_json::to_value(lines).unwrap(),
-        ]);
-    })
-}
+pub use super::settings_selection_support::{Target, observing};
 /// Wraps only the selected callback, preserving its real typed payload.
 pub fn observe_callback(
     callbacks: &mut maestro_chat::SettingsCallbacks,
