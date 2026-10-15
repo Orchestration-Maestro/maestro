@@ -1,0 +1,107 @@
+[
+  {
+    "mode": "text",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "text",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "text",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "email",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "email",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "email",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "password",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "password",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "password",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "number",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "number",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "number",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "url",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "url",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "url",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "tel",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "tel",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "tel",
+    "size": "lg",
+    "height": 40
+  },
+  {
+    "mode": "search",
+    "size": "sm",
+    "height": 32
+  },
+  {
+    "mode": "search",
+    "size": "md",
+    "height": 36
+  },
+  {
+    "mode": "search",
+    "size": "lg",
+    "height": 40
+  }
+]

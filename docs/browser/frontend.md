@@ -47,8 +47,8 @@ XML parsing. Custom and empty primitive lists are also accepted.
 
 Sizes xs/sm/md/lg/xl are 12/16/20/24/32 pixels at a 16px root; md is the default.
 DOM callers install `ICON_STYLES` and supply their class suffix/color. Canvas
-callers resolve colors from the [brand presentation](../theme.md); this library
-has no hover, focus, busy, disabled or selected state, font, mark or animation.
+callers resolve colors from the [brand presentation](../theme.md); the
+icon utility has no hover, focus, busy, disabled or selected state, font, mark or animation.
 
 Shared CI compiles the library for WebAssembly through its wasm crate registration.
 Controlled native tests prove utility results and host decision ordering, not
@@ -66,3 +66,9 @@ The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 `is_user_message_with_attachments` and `is_artifact_message`. Input enums and
 supporting records remain in the public application modules. See
 [application attachment policy](../application/browser-attachments.md).
+
+## Input and timers
+
+[Browser input and timers](components.md) reuse the attachment content host for
+native editing and owned timer callbacks. The retained browser `Input` is
+distinct from the terminal toolkit input.

@@ -46,6 +46,17 @@ pub enum TextView {
 }
 /// Borrowed operands for one platform content update.
 pub enum AttachmentContent<'a> {
+    /// Browser-native editable input.
+    Input {
+        /// Live native field configuration.
+        props: &'a crate::components::input::InputProps,
+        /// Assign the caller's changed value, preserving native edits otherwise.
+        value_changed: bool,
+        /// Containing modal, when placed in a foreground layer.
+        modal: Option<egui::Id>,
+        /// Drawing context notified by native keyboard activity.
+        context: &'a egui::Context,
+    },
     /// Browser-native image.
     Image {
         /// Complete image URL.
@@ -152,6 +163,19 @@ pub trait AttachmentHost {
     fn hover_capable(&self) -> Result<bool, AttachmentUiError>;
     /// Release the named surface.
     fn remove(&self, id: egui::Id);
+    /// Consume Escape delivered by a native input outside canvas focus.
+    fn take_escape(&self) -> bool;
+    /// Register a native callback whose handle revokes delivery on drop.
+    /// # Errors
+    /// Returns native timer registration failures.
+    fn timer(
+        &self,
+        delay_ms: i32,
+        repeat: bool,
+        callback: Rc<dyn Fn()>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
+    /// Dispatch owned browser-local asynchronous work.
+    fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>);
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.
@@ -307,3 +331,6 @@ fn style_targets(
     ids.take(if previous == current { 0 } else { usize::MAX })
         .chain(placed.filter(move |_| previous == current))
 }
+
+#[cfg(target_arch = "wasm32")]
+mod input;
