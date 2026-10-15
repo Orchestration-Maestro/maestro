@@ -9,9 +9,7 @@ pub fn is_install_telemetry_enabled(
 ) -> bool {
     telemetry_env.map_or_else(
         || settings_manager.get_enable_install_telemetry(),
-        |value| {
-            value == "1" || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("yes")
-        },
+        |value| maestro_text::is_truthy_env_flag(Some(value)),
     )
 }
 
