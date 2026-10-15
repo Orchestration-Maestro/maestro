@@ -56,12 +56,14 @@ or concurrent-writer protocol.
 first-line session header with a nonempty string cwd selects the existing
 [session directory encoding](../sessions/session_manager.md). The original entry
 is relocated using its native basename; transcript bytes are not rewritten.
-The scan captures headers and complete link resolution chains before moving any
-entry. Absolute links are renamed unchanged only when no target path in their
-chain relocates, without requiring symbolic-link creation privileges. Relative
-links and links through relocating entries are re-anchored to their final
-referent's new location after a successful move, or its original location if it
-did not move.
+The scan captures headers and final link referents before moving any entry.
+Relative links are re-anchored because relocation changes their resolution base.
+Absolute links are renamed first, then read at their destinations after the moves.
+Only unreadable links are re-anchored to the captured referent's new location
+after a successful move, or its original location if it did not move. Readable
+absolute links retain their original entries without requiring link creation
+privileges. Successful conversion leaves every relocated session readable; file
+operation failures remain tolerated as described below.
 Non-link entries are renamed unchanged.
 Existing readable destinations are preserved; dangling destination links are
 replaced, not followed. Re-anchored links are staged beside their source with a

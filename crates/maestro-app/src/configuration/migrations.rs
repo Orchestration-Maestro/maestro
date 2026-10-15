@@ -35,8 +35,6 @@ struct PreparedSession {
     cwd: String,
     /// Resolved final referent for symbolic links.
     referent: Option<PathBuf>,
-    /// Target paths traversed, including the final referent.
-    chain: Vec<PathBuf>,
 }
 
 /// Read a legacy JSON value with native decoding boundaries.
@@ -179,8 +177,7 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
             continue;
         }
         if let Some(referent) = session.referent {
-            moved.insert(path.clone(), target.clone());
-            links.push((path, target, referent, session.chain));
+            links.push((path, target, referent));
         } else if let Ok(identity) = fs::canonicalize(&path)
             && fs::rename(&path, &target).is_ok()
             && let Ok(target) = fs::canonicalize(target)
@@ -188,12 +185,17 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
             moved.insert(identity, target);
         }
     }
-    for (path, target, referent, chain) in links {
-        if !chain.iter().any(|hop| moved.contains_key(hop))
-            && fs::read_link(&path).is_ok_and(|link| link.is_absolute())
-        {
-            let _ = fs::rename(path, target);
+    for (path, target, referent) in &mut links {
+        if fs::read_link(&path).is_ok_and(|link| link.is_absolute()) {
+            if fs::rename(&path, &target).is_ok() {
+                path.clone_from(target);
+            }
         } else {
+            let _ = publish_session_link(path, target, moved.get(referent).unwrap_or(referent));
+        }
+    }
+    for (path, target, referent) in links {
+        if path == target && fs::read(&target).is_err() {
             let _ = publish_session_link(&path, &target, moved.get(&referent).unwrap_or(&referent));
         }
     }
@@ -221,18 +223,10 @@ fn prepare_session(path: &Path) -> io::Result<Option<PreparedSession>> {
         .ok()
         .map(|_| fs::canonicalize(&path))
         .transpose()?;
-    let mut chain = Vec::new();
-    let mut hop = path.clone();
-    while let Ok(payload) = fs::read_link(&hop) {
-        hop = hop.parent().unwrap_or(Path::new(".")).join(payload);
-        hop = canonical_entry_path(&hop)?;
-        chain.push(hop.clone());
-    }
     Ok(Some(PreparedSession {
         path,
         cwd: cwd.into(),
         referent,
-        chain,
     }))
 }
 
@@ -251,5 +245,8 @@ fn publish_session_link(path: &Path, target: &Path, referent: &Path) -> io::Resu
         let _ = fs::remove_file(temporary);
     }
     result?;
-    fs::remove_file(path)
+    if path != target {
+        fs::remove_file(path)?;
+    }
+    Ok(())
 }

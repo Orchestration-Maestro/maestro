@@ -385,11 +385,13 @@ fn session_link_resolution_matrix() {
         return;
     }
     for depth in 1..=3 {
-        for payload in ["absolute", "relative"] {
-            for moving in ["none", "final", "intermediate", "deep"]
+        for payload in ["absolute", "relative", "absolute-relative", "mixed-case"] {
+            for moving in ["none", "final", "intermediate", "deep", "blocked"]
                 .into_iter()
                 .filter(|moving| {
-                    !(depth == 1 && *moving == "intermediate" || depth < 3 && *moving == "deep")
+                    !(depth == 1 && matches!(*moving, "intermediate" | "blocked")
+                        || depth < 3 && *moving == "deep"
+                        || payload == "mixed-case" && *moving == "blocked")
                 })
             {
                 check_resolution_orders(depth, payload, moving);
@@ -403,6 +405,14 @@ fn check_resolution_orders(depth: usize, payload: &str, moving: &str) {
     let mut orders = std::collections::BTreeSet::new();
     for arrangement in 0..2 * (depth + 1) {
         let (scratch, paths) = resolution_chain(depth, payload, moving, arrangement);
+        if payload == "mixed-case"
+            && !scratch
+                .0
+                .join(paths[1].file_name().unwrap().to_ascii_uppercase())
+                .exists()
+        {
+            return;
+        }
         let entries: Vec<_> = std::fs::read_dir(&scratch.0)
             .unwrap()
             .map(|entry| entry.unwrap().path())
@@ -438,7 +448,7 @@ fn resolution_chain(
         .map(|index| {
             let relocates = index == 0
                 || (index == depth && moving == "final")
-                || (index < depth && matches!(moving, "intermediate" | "final"))
+                || (index < depth && matches!(moving, "intermediate" | "final" | "blocked"))
                 || (index == depth - 1 && moving == "deep");
             let index_in_order = if arrangement.is_multiple_of(2) {
                 index
@@ -447,7 +457,7 @@ fn resolution_chain(
             };
             let number = (index_in_order + arrangement / 2) % (depth + 1);
             scratch.0.join(format!(
-                "{number}.{}",
+                "session-{number}.{}",
                 if relocates { "jsonl" } else { "data" }
             ))
         })
@@ -463,12 +473,21 @@ fn resolution_chain(
             .unwrap();
         } else {
             let target = &paths[index + 1];
-            let target = if payload == "absolute" {
-                target.as_path()
+            let target = if payload == "mixed-case" {
+                scratch
+                    .0
+                    .join(target.file_name().unwrap().to_ascii_uppercase())
+            } else if payload != "relative"
+                && !(index > 0 && (moving == "blocked" || payload == "absolute-relative"))
+            {
+                target.clone()
             } else {
-                std::path::Path::new(target.file_name().unwrap())
+                std::path::PathBuf::from(target.file_name().unwrap())
             };
             std::os::unix::fs::symlink(target, path).unwrap();
+            if moving == "blocked" && index > 0 {
+                std::fs::write(path.with_extension("jsonl.migrating"), b"occupied").unwrap();
+            }
         }
     }
     (scratch, paths)
@@ -497,18 +516,19 @@ fn check_resolution_chain(
             if index < paths.len() - 1 && path.extension().unwrap() == "data" && moving != "none" {
                 continue;
             }
-            let destination = if path.extension().unwrap() == "jsonl" {
-                assert_eq!(
-                    fs::symlink_metadata(path).unwrap_err().kind(),
-                    std::io::ErrorKind::NotFound
-                );
-                scratch
-                    .0
-                    .join("sessions/--work--")
-                    .join(path.file_name().unwrap())
-            } else {
-                path.clone()
-            };
+            let destination =
+                if path.extension().unwrap() == "jsonl" && !(moving == "blocked" && index > 0) {
+                    assert_eq!(
+                        fs::symlink_metadata(path).unwrap_err().kind(),
+                        std::io::ErrorKind::NotFound
+                    );
+                    scratch
+                        .0
+                        .join("sessions/--work--")
+                        .join(path.file_name().unwrap())
+                } else {
+                    path.clone()
+                };
             assert_eq!(
                 fs::read(&destination).unwrap_or_else(|error| panic!(
                     "{paths:?}/{payload}/{moving} at {destination:?}: {error}"
@@ -522,7 +542,7 @@ fn check_resolution_chain(
             .join("sessions/--work--")
             .join(paths[0].file_name().unwrap());
         assert!(fs::symlink_metadata(&destination).unwrap().is_symlink());
-        if payload == "absolute" && moving == "none" {
+        if payload != "relative" && matches!(moving, "none" | "blocked") {
             assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
             assert_eq!(fs::read_link(&destination).unwrap(), authored);
         } else {
