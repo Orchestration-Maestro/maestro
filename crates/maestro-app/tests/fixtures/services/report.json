@@ -1,0 +1,232 @@
+[
+  {
+    "input": {
+      "version": "1.2.3"
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": " 1.2.3+meta/?#%\u00e9!~*'() "
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=%201.2.3%2Bmeta%2F%3F%23%25%C3%A9!~*'()%20",
+          "headers": {
+            "user-agent": "maestro/ 1.2.3+meta/?#%\u00e9!~*'()  (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_OFFLINE": "0"
+      }
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_OFFLINE": ""
+      }
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_SKIP_VERSION_CHECK": "1"
+      }
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_TELEMETRY": ""
+      }
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_TELEMETRY": "yes"
+      },
+      "setting": false
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "setting": false
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "response": "FETCH_ERROR"
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "response": "BODY_ERROR"
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "status": 503
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "env": {
+        "MAESTRO_OFFLINE": "1",
+        "MAESTRO_TELEMETRY": "yes"
+      }
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "setting": true,
+      "env": {
+        "MAESTRO_TELEMETRY": "no"
+      }
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "setting": false,
+      "settingAfterPrepare": true
+    },
+    "output": {
+      "calls": [],
+      "jsonReads": 0
+    }
+  },
+  {
+    "input": {
+      "version": "1.2.3",
+      "setting": true,
+      "settingAfterPrepare": false
+    },
+    "output": {
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/report-install?version=1.2.3",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)"
+          }
+        }
+      ],
+      "jsonReads": 0
+    }
+  }
+]

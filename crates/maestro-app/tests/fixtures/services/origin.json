@@ -1,0 +1,37 @@
+[
+  {
+    "input": {
+      "origin": "",
+      "version": "1.2.3",
+      "gist": "abc123",
+      "releaseBody": {
+        "version": "1.2.4"
+      }
+    },
+    "output": {
+      "release": null,
+      "urls": [],
+      "share": null
+    }
+  },
+  {
+    "input": {
+      "origin": "https://controlled.invalid:9443",
+      "version": "1.2.3",
+      "gist": "abc123",
+      "releaseBody": {
+        "version": "1.2.4"
+      }
+    },
+    "output": {
+      "release": {
+        "version": "1.2.4"
+      },
+      "urls": [
+        "https://controlled.invalid:9443/api/latest-version",
+        "https://controlled.invalid:9443/api/report-install?version=1.2.3"
+      ],
+      "share": "https://controlled.invalid:9443/session/#abc123"
+    }
+  }
+]

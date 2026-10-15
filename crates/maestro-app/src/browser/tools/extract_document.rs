@@ -123,7 +123,7 @@ async fn execute(
             let Some(proxy) = proxy.filter(|value| !value.is_empty()) else {
                 return Err(DiagnosticErrorInfo::error(NO_PROXY));
             };
-            download(&format!("{proxy}{}", crate::browser::utils::proxy_utils::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
+            download(&format!("{proxy}{}", crate::utils::uri::encode_uri_component(url)), fetch, signal.as_ref()).await.map_err(|error| DiagnosticErrorInfo::error(format!("TELL USER: Unable to fetch the document due to CORS restrictions.\n\nTried with proxy but it also failed: {}\n\n{MANUAL_ATTACHMENT}", error.message)))?
         }
     };
     let path = url.split(['?', '#']).next().unwrap_or(url);

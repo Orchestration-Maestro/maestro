@@ -1,0 +1,317 @@
+[
+  {
+    "input": {
+      "setting": null,
+      "env": null
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": ""
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "1"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "true"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "TRUE"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "TrUe"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "yes"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "YES"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "YeS"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "0"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "false"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "no"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": " true "
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "\ufefftrue"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": null,
+      "env": "2"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": null
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": ""
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "1"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "true"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "TRUE"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "TrUe"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "yes"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "YES"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "YeS"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "0"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "false"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "no"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": " true "
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "\ufefftrue"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": false,
+      "env": "2"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": null
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": ""
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "1"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "true"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "TRUE"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "TrUe"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "yes"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "YES"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "YeS"
+    },
+    "output": true
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "0"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "false"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "no"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": " true "
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "\ufefftrue"
+    },
+    "output": false
+  },
+  {
+    "input": {
+      "setting": true,
+      "env": "2"
+    },
+    "output": false
+  }
+]

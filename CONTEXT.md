@@ -47,6 +47,8 @@ From `docs/specs/maestro-port.md`.
 
 ## Application foundation
 
+- **Hosted-service origin:** The single supplied origin for release checks, install reports and session-viewer links; an empty value disables those operations. It is separate from model-request attribution. See [hosted services](docs/application/services.md).
+
 From `docs/specs/maestro-port.md`. Manifest governance and settings value locks
 are later scope, not active foundation concepts.
 

@@ -1,0 +1,482 @@
+[
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4"
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": " \ufeff1.2.4\ufeff ",
+        "packageName": " @scope/renamed "
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4",
+        "packageName": "@scope/renamed"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": ""
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": "\u0085name\u0085"
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4",
+        "packageName": "\u0085name\u0085"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": "\ufeff"
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {}
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": ""
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": null
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": 7
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": true
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": {}
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": []
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": null
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": 7
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": true
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": {}
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "1.2.4",
+        "packageName": []
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "1.2.4"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": {
+        "version": "\u0085"
+      }
+    },
+    "output": {
+      "branch": "ok",
+      "result": {
+        "version": "\u0085"
+      },
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": null
+    },
+    "output": {
+      "branch": "error",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": []
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": 4
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": true
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "payload": "1.2.4"
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  }
+]

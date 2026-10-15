@@ -33,3 +33,14 @@ pub fn get_agent_dir() -> std::io::Result<String> {
     let value = std::env::var(&*ENV_AGENT_DIR).ok();
     paths::get_agent_dir(value.as_deref(), || maestro_tools::expand_path("~"))
 }
+
+/// Join an enabled hosted-service origin with its literal path.
+pub(super) fn service_endpoint(service_origin: &str, path: &str) -> Option<String> {
+    (!service_origin.is_empty()).then(|| format!("{service_origin}{path}"))
+}
+
+/// Build a literal viewer fragment when the supplied hosted origin is enabled.
+#[must_use]
+pub fn get_share_viewer_url(gist_id: &str, service_origin: &str) -> Option<String> {
+    service_endpoint(service_origin, "/session/").map(|url| format!("{url}#{gist_id}"))
+}
