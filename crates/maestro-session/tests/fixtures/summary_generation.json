@@ -75,8 +75,7 @@
               "x-first": "one"
             },
             "reasoning": "medium"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -144,8 +143,7 @@
             "maxTokens": 1600,
             "apiKey": "",
             "headers": {}
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -161,7 +159,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "medium"
       },
       "responses": {},
@@ -213,8 +210,7 @@
             "maxTokens": 1600,
             "apiKey": "controlled-key",
             "reasoning": "medium"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -230,7 +226,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "off"
       },
       "responses": {},
@@ -281,8 +276,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -298,7 +292,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "medium"
       },
       "responses": {},
@@ -349,8 +342,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -365,8 +357,7 @@
             "content": "Summarize this.",
             "timestamp": 17
           }
-        ],
-        "reasoning": false
+        ]
       },
       "responses": {},
       "expected": {
@@ -416,8 +407,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -433,7 +423,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "off"
       },
       "responses": {},
@@ -484,8 +473,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -501,7 +489,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "minimal"
       },
       "responses": {},
@@ -552,8 +539,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -569,7 +555,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "low"
       },
       "responses": {},
@@ -620,76 +605,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-false-medium",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
           }
-        ],
-        "reasoning": false,
-        "level": "medium"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": false,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
         }
       ]
     },
@@ -705,7 +621,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "high"
       },
       "responses": {},
@@ -756,8 +671,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -773,7 +687,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "xhigh"
       },
       "responses": {},
@@ -824,494 +737,13 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
     {
       "id": "reason-true-missing",
       "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-off",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "off"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-minimal",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "minimal"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key",
-            "reasoning": "minimal"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-low",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "low"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key",
-            "reasoning": "low"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-medium",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "medium"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key",
-            "reasoning": "medium"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-high",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "high"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key",
-            "reasoning": "high"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "reason-true-xhigh",
-      "test": "reasoning_gate_covers_every_level",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "reasoning": true,
-        "level": "xhigh"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key",
-            "reasoning": "xhigh"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "prompt-19",
-      "test": "summary_update_and_focus_use_nonempty_text",
       "operation": "generateSummary",
       "args": {
         "messages": [
@@ -1370,8 +802,275 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reason-true-minimal",
+      "test": "reasoning_gate_covers_every_level",
+      "operation": "generateSummary",
+      "args": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Summarize this.",
+            "timestamp": 17
+          }
+        ],
+        "level": "minimal"
+      },
+      "responses": {},
+      "expected": {
+        "kind": "value",
+        "value": "## Goal\nControlled summary"
+      },
+      "calls": [
+        {
+          "kind": "history",
+          "model": {
+            "id": "controlled-model",
+            "name": "Controlled Model",
+            "api": "controlled",
+            "provider": "controlled",
+            "baseUrl": "https://invalid.example",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192,
+            "headers": {
+              "model-header": "keep"
+            }
           },
-          "sameSignal": true
+          "context": {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                  }
+                ],
+                "timestamp": 1710000000123
+              }
+            ]
+          },
+          "options": {
+            "maxTokens": 1600,
+            "apiKey": "controlled-key",
+            "reasoning": "minimal"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reason-true-low",
+      "test": "reasoning_gate_covers_every_level",
+      "operation": "generateSummary",
+      "args": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Summarize this.",
+            "timestamp": 17
+          }
+        ],
+        "level": "low"
+      },
+      "responses": {},
+      "expected": {
+        "kind": "value",
+        "value": "## Goal\nControlled summary"
+      },
+      "calls": [
+        {
+          "kind": "history",
+          "model": {
+            "id": "controlled-model",
+            "name": "Controlled Model",
+            "api": "controlled",
+            "provider": "controlled",
+            "baseUrl": "https://invalid.example",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192,
+            "headers": {
+              "model-header": "keep"
+            }
+          },
+          "context": {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                  }
+                ],
+                "timestamp": 1710000000123
+              }
+            ]
+          },
+          "options": {
+            "maxTokens": 1600,
+            "apiKey": "controlled-key",
+            "reasoning": "low"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reason-true-high",
+      "test": "reasoning_gate_covers_every_level",
+      "operation": "generateSummary",
+      "args": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Summarize this.",
+            "timestamp": 17
+          }
+        ],
+        "level": "high"
+      },
+      "responses": {},
+      "expected": {
+        "kind": "value",
+        "value": "## Goal\nControlled summary"
+      },
+      "calls": [
+        {
+          "kind": "history",
+          "model": {
+            "id": "controlled-model",
+            "name": "Controlled Model",
+            "api": "controlled",
+            "provider": "controlled",
+            "baseUrl": "https://invalid.example",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192,
+            "headers": {
+              "model-header": "keep"
+            }
+          },
+          "context": {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                  }
+                ],
+                "timestamp": 1710000000123
+              }
+            ]
+          },
+          "options": {
+            "maxTokens": 1600,
+            "apiKey": "controlled-key",
+            "reasoning": "high"
+          }
+        }
+      ]
+    },
+    {
+      "id": "reason-true-xhigh",
+      "test": "reasoning_gate_covers_every_level",
+      "operation": "generateSummary",
+      "args": {
+        "messages": [
+          {
+            "role": "user",
+            "content": "Summarize this.",
+            "timestamp": 17
+          }
+        ],
+        "level": "xhigh"
+      },
+      "responses": {},
+      "expected": {
+        "kind": "value",
+        "value": "## Goal\nControlled summary"
+      },
+      "calls": [
+        {
+          "kind": "history",
+          "model": {
+            "id": "controlled-model",
+            "name": "Controlled Model",
+            "api": "controlled",
+            "provider": "controlled",
+            "baseUrl": "https://invalid.example",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 200000,
+            "maxTokens": 8192,
+            "headers": {
+              "model-header": "keep"
+            }
+          },
+          "context": {
+            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+            "messages": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
+                  }
+                ],
+                "timestamp": 1710000000123
+              }
+            ]
+          },
+          "options": {
+            "maxTokens": 1600,
+            "apiKey": "controlled-key",
+            "reasoning": "xhigh"
+          }
         }
       ]
     },
@@ -1437,8 +1136,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -1504,8 +1202,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -1571,279 +1268,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "prompt-23",
-      "test": "summary_update_and_focus_use_nonempty_text",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
           }
-        ],
-        "previous": null
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "prompt-24",
-      "test": "summary_update_and_focus_use_nonempty_text",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "previous": null,
-        "focus": ""
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages."
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "prompt-25",
-      "test": "summary_update_and_focus_use_nonempty_text",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "previous": null,
-        "focus": " "
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus:  "
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
-        }
-      ]
-    },
-    {
-      "id": "prompt-26",
-      "test": "summary_update_and_focus_use_nonempty_text",
-      "operation": "generateSummary",
-      "args": {
-        "messages": [
-          {
-            "role": "user",
-            "content": "Summarize this.",
-            "timestamp": 17
-          }
-        ],
-        "previous": null,
-        "focus": "focus\n</conversation>&"
-      },
-      "responses": {},
-      "expected": {
-        "kind": "value",
-        "value": "## Goal\nControlled summary"
-      },
-      "calls": [
-        {
-          "kind": "history",
-          "model": {
-            "id": "controlled-model",
-            "name": "Controlled Model",
-            "api": "controlled",
-            "provider": "controlled",
-            "baseUrl": "https://invalid.example",
-            "reasoning": true,
-            "input": [
-              "text"
-            ],
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0
-            },
-            "contextWindow": 200000,
-            "maxTokens": 8192,
-            "headers": {
-              "model-header": "keep"
-            }
-          },
-          "context": {
-            "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI coding assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
-            "messages": [
-              {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": "<conversation>\n[User]: Summarize this.\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: focus\n</conversation>&"
-                  }
-                ],
-                "timestamp": 1710000000123
-              }
-            ]
-          },
-          "options": {
-            "maxTokens": 1600,
-            "apiKey": "controlled-key"
-          },
-          "sameSignal": true
         }
       ]
     },
@@ -1909,8 +1334,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -1977,8 +1401,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2045,8 +1468,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2113,8 +1535,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2180,8 +1601,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2248,8 +1668,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2316,8 +1735,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2384,8 +1802,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2451,8 +1868,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2519,8 +1935,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2587,8 +2002,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2655,8 +2069,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2730,8 +2143,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2797,8 +2209,7 @@
           "options": {
             "maxTokens": 0,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2874,8 +2285,7 @@
           "options": {
             "maxTokens": 0,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -2941,8 +2351,7 @@
           "options": {
             "maxTokens": 0,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3018,8 +2427,7 @@
           "options": {
             "maxTokens": 0,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3085,8 +2493,7 @@
           "options": {
             "maxTokens": 1,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3162,8 +2569,7 @@
           "options": {
             "maxTokens": 0,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3229,8 +2635,7 @@
           "options": {
             "maxTokens": 1,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3306,8 +2711,7 @@
           "options": {
             "maxTokens": 1,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3373,8 +2777,7 @@
           "options": {
             "maxTokens": 2,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3450,8 +2853,7 @@
           "options": {
             "maxTokens": 1,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3517,8 +2919,7 @@
           "options": {
             "maxTokens": 3,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3594,8 +2995,7 @@
           "options": {
             "maxTokens": 2,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3661,8 +3061,7 @@
           "options": {
             "maxTokens": 4,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3738,8 +3137,7 @@
           "options": {
             "maxTokens": 2,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3805,8 +3203,7 @@
           "options": {
             "maxTokens": 16,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3882,8 +3279,7 @@
           "options": {
             "maxTokens": 10,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -3949,8 +3345,7 @@
           "options": {
             "maxTokens": 13107,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4026,8 +3421,7 @@
           "options": {
             "maxTokens": 8192,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4116,8 +3510,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4216,8 +3609,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4306,8 +3698,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4406,8 +3797,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4496,8 +3886,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4596,8 +3985,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4686,8 +4074,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4786,8 +4173,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4881,8 +4267,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -4986,8 +4371,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5081,8 +4465,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5186,8 +4569,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5281,8 +4663,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5386,8 +4767,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5481,8 +4861,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5586,8 +4965,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5701,8 +5079,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5826,8 +5203,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -5941,8 +5317,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6066,8 +5441,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6181,8 +5555,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6306,8 +5679,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6421,8 +5793,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6546,8 +5917,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6649,8 +6019,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6762,8 +6131,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6865,8 +6233,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -6978,8 +6345,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7081,8 +6447,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7194,8 +6559,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7297,8 +6661,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7410,8 +6773,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7505,8 +6867,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7610,8 +6971,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7705,8 +7065,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7810,8 +7169,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -7905,8 +7263,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8010,8 +7367,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8105,8 +7461,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8210,8 +7565,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8305,8 +7659,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8402,8 +7755,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8498,8 +7850,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8596,8 +7947,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8692,8 +8042,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8790,8 +8139,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8886,8 +8234,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -8984,8 +8331,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9054,8 +8400,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9126,8 +8471,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9302,8 +8646,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9401,8 +8744,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9524,8 +8866,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9596,8 +8937,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9841,8 +9181,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9911,8 +9250,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -9981,8 +9319,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10051,8 +9388,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10121,8 +9457,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10215,8 +9550,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10276,34 +9610,6 @@
           "provider": "controlled",
           "model": "controlled",
           "timestamp": 1710000000124
-        },
-        "prefix": {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "text",
-              "text": "P"
-            }
-          ],
-          "stopReason": "stop",
-          "usage": {
-            "input": 10,
-            "output": 10,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 20,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "api": "controlled",
-          "provider": "controlled",
-          "model": "controlled",
-          "timestamp": 1710000000124
         }
       },
       "expected": {
@@ -10368,8 +9674,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10396,34 +9701,6 @@
             {
               "type": "text",
               "text": "H"
-            }
-          ],
-          "stopReason": "stop",
-          "usage": {
-            "input": 10,
-            "output": 10,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 20,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "api": "controlled",
-          "provider": "controlled",
-          "model": "controlled",
-          "timestamp": 1710000000124
-        },
-        "prefix": {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "text",
-              "text": "P"
             }
           ],
           "stopReason": "stop",
@@ -10509,8 +9786,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10564,34 +9840,6 @@
           "provider": "controlled",
           "model": "controlled",
           "timestamp": 1710000000124
-        },
-        "prefix": {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "text",
-              "text": "P"
-            }
-          ],
-          "stopReason": "stop",
-          "usage": {
-            "input": 10,
-            "output": 10,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 20,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "api": "controlled",
-          "provider": "controlled",
-          "model": "controlled",
-          "timestamp": 1710000000124
         }
       },
       "expected": {
@@ -10656,8 +9904,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10684,34 +9931,6 @@
             {
               "type": "text",
               "text": "H"
-            }
-          ],
-          "stopReason": "stop",
-          "usage": {
-            "input": 10,
-            "output": 10,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 20,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "api": "controlled",
-          "provider": "controlled",
-          "model": "controlled",
-          "timestamp": 1710000000124
-        },
-        "prefix": {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "text",
-              "text": "P"
             }
           ],
           "stopReason": "stop",
@@ -10797,8 +10016,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -10950,8 +10168,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -11002,8 +10219,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11030,34 +10246,6 @@
         "level": "high"
       },
       "responses": {
-        "history": {
-          "role": "assistant",
-          "content": [
-            {
-              "type": "text",
-              "text": "H"
-            }
-          ],
-          "stopReason": "stop",
-          "usage": {
-            "input": 10,
-            "output": 10,
-            "cacheRead": 0,
-            "cacheWrite": 0,
-            "totalTokens": 20,
-            "cost": {
-              "input": 0,
-              "output": 0,
-              "cacheRead": 0,
-              "cacheWrite": 0,
-              "total": 0
-            }
-          },
-          "api": "controlled",
-          "provider": "controlled",
-          "model": "controlled",
-          "timestamp": 1710000000124
-        },
         "prefix": {
           "role": "assistant",
           "content": [
@@ -11149,8 +10337,7 @@
               "x-order": "one"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11174,7 +10361,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "signal": "aborted",
         "headers": {
           "z-header": "z",
@@ -11301,8 +10487,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -11353,8 +10538,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11378,7 +10562,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "off",
         "signal": "aborted",
         "headers": {
@@ -11506,8 +10689,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -11558,8 +10740,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11583,7 +10764,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "minimal",
         "signal": "aborted",
         "headers": {
@@ -11711,8 +10891,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -11763,8 +10942,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11788,7 +10966,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "low",
         "signal": "aborted",
         "headers": {
@@ -11916,8 +11093,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -11968,8 +11144,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -11993,7 +11168,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "medium",
         "signal": "aborted",
         "headers": {
@@ -12121,8 +11295,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -12173,8 +11346,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -12198,7 +11370,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "high",
         "signal": "aborted",
         "headers": {
@@ -12326,8 +11497,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -12378,8 +11548,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -12403,7 +11572,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": false,
         "level": "xhigh",
         "signal": "aborted",
         "headers": {
@@ -12531,8 +11699,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -12583,8 +11750,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -12608,7 +11774,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "signal": "aborted",
         "headers": {
           "z-header": "z",
@@ -12735,8 +11900,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -12787,8 +11951,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -12812,7 +11975,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "off",
         "signal": "aborted",
         "headers": {
@@ -12940,8 +12102,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -12992,8 +12153,7 @@
               "z-header": "z",
               "a-header": "a"
             }
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -13017,7 +12177,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "minimal",
         "signal": "aborted",
         "headers": {
@@ -13146,8 +12305,7 @@
               "a-header": "a"
             },
             "reasoning": "minimal"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -13199,8 +12357,7 @@
               "a-header": "a"
             },
             "reasoning": "minimal"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -13224,7 +12381,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "low",
         "signal": "aborted",
         "headers": {
@@ -13353,8 +12509,7 @@
               "a-header": "a"
             },
             "reasoning": "low"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -13406,8 +12561,7 @@
               "a-header": "a"
             },
             "reasoning": "low"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -13431,7 +12585,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "medium",
         "signal": "aborted",
         "headers": {
@@ -13560,8 +12713,7 @@
               "a-header": "a"
             },
             "reasoning": "medium"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -13613,8 +12765,7 @@
               "a-header": "a"
             },
             "reasoning": "medium"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -13638,7 +12789,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "high",
         "signal": "aborted",
         "headers": {
@@ -13767,8 +12917,7 @@
               "a-header": "a"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -13820,8 +12969,7 @@
               "a-header": "a"
             },
             "reasoning": "high"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -13845,7 +12993,6 @@
             "timestamp": 17
           }
         ],
-        "reasoning": true,
         "level": "xhigh",
         "signal": "aborted",
         "headers": {
@@ -13974,8 +13121,7 @@
               "a-header": "a"
             },
             "reasoning": "xhigh"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -14027,8 +13173,7 @@
               "a-header": "a"
             },
             "reasoning": "xhigh"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14129,8 +13274,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14238,8 +13382,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14350,8 +13493,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14474,8 +13616,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14570,8 +13711,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14662,8 +13802,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14759,8 +13898,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -14888,8 +14026,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -14933,8 +14070,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -15038,8 +14174,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         },
         {
           "kind": "prefix",
@@ -15083,8 +14218,7 @@
           "options": {
             "maxTokens": 1000,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     },
@@ -15153,8 +14287,7 @@
           "options": {
             "maxTokens": 1600,
             "apiKey": "controlled-key"
-          },
-          "sameSignal": true
+          }
         }
       ]
     }

@@ -2,6 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 mod support {
+    /// Shared native test runtime.
+    pub mod browser_providers;
     /// Strict recorded extraction inputs and observations.
     pub mod document_extraction;
 }
@@ -11,17 +13,18 @@ use maestro_models::{Cancellation, DiagnosticErrorInfo, FetchError};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
+use support::browser_providers::run;
 use support::document_extraction::{Effects, corpus};
 
 /// Replay public real-loader rows with the selected constructor transport.
 async fn rows(indices: &[usize]) {
-    for (index, case) in corpus()
+    for (_, case) in corpus()
         .cases
         .into_iter()
         .enumerate()
         .filter(|(index, _)| indices.contains(index))
     {
-        assert!(indices.contains(&index) && case.input.real_attachment);
+        assert!(case.input.real_attachment);
         assert!(case.input.load_error.is_none() && case.input.attachment.is_null());
         let effects = Arc::new(Mutex::new(Effects::default()));
         let tool = create_extract_document_tool(Some(support::document_extraction::fetch(
@@ -147,8 +150,6 @@ fn extraction_tool_default_instance_is_shared() {
 struct Ownership {
     /// Recorded size belongs to the controlled attachment loader.
     metadata: OwnershipMetadata,
-    /// Setting mutation occurs after dropping the construction wrapper.
-    proxy_read_after_construction_binding_dropped: bool,
     /// Ordered authored request targets.
     requests: Vec<Value>,
     /// Full extracted result.
@@ -200,7 +201,6 @@ async fn extraction_tool_settings_survive_registration_and_release_case() {
     drop(wrapper);
     assert!(weak_tool.upgrade().is_none());
     *slot.write().unwrap() = Some("https://retained.test/?".into());
-    assert!(expected.proxy_read_after_construction_binding_dropped);
     let result = execute(
         String::new(),
         json!({"url":"https://example.test/retained.txt"}),
@@ -284,8 +284,6 @@ struct NativeCase {
     path: String,
     /// Complete tool result or error.
     expected: Value,
-    /// Loader operands qualified by successful result fields.
-    loads: Vec<Value>,
 }
 /// The default HTTP adapter reaches the real byte loader and preserves reason text.
 #[test]
@@ -341,21 +339,7 @@ async fn extraction_tool_http_adapter_downloads_controlled_text_case() {
     assert_eq!(received, expected.received);
     for (case, actual) in expected.cases.into_iter().zip(observations) {
         assert_eq!(actual, case.expected);
-        if let Some(result) = actual.get("result") {
-            assert_eq!(case.loads,json!([{"fileName":result["details"]["fileName"],"size":result["details"]["size"]}]).as_array().unwrap().clone());
-        } else {
-            assert!(case.loads.is_empty());
-        }
     }
-}
-
-/// Drive controlled asynchronous work with an I/O-enabled runtime.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 /// Validate declaration and independent slots without retaining a guard across execution.

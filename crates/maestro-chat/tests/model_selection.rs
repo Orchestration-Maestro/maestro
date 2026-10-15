@@ -565,17 +565,47 @@ fn extra_observations(test: &str, selector: &ModelSelectorComponent) {
 }
 
 /// Real registry whose file notice is superseded by the consumed fallback failure.
-fn failing_registry(input: &mut selector_failure_support::Input) -> maestro_app::ModelRegistry {
+fn failing_registry(
+    input: &mut selector_failure_support::Input,
+) -> (
+    maestro_app::ModelRegistry,
+    Arc<std::sync::atomic::AtomicBool>,
+) {
     let query: Query = serde_json::from_value(serde_json::json!({"available":[], "readFailure":{"message":input.notice.take().unwrap(), "path":"<models-file>"}})).unwrap();
-    let (registry, _) = registry(&query);
+    let (mut registry, _) = registry(&query);
     assert!(registry.get_error().is_some());
+    registry
+        .register_provider(
+            "maestro-unconfigured",
+            Arc::new(RwLock::new(maestro_app::ProviderConfigInput {
+                oauth: Some(Arc::new(RejectingModels)),
+                models: Some(vec![
+                    Descriptor {
+                        provider: "maestro-unconfigured".into(),
+                        id: "m".into(),
+                        name: "Model m".into(),
+                    }
+                    .definition(),
+                ]),
+                base_url: Some("https://example.invalid".into()),
+                api: Some("openai-completions".into()),
+                ..Default::default()
+            })),
+        )
+        .unwrap();
+    let reached = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let observed = Arc::clone(&reached);
     let message = input.message.take().unwrap();
-    registry.auth_storage().set_fallback_resolver(move |_| {
+    registry.auth_storage().set_fallback_resolver(move |id| {
+        if id != "maestro-unconfigured" {
+            return Ok(None);
+        }
+        observed.store(true, std::sync::atomic::Ordering::SeqCst);
         let mut error = selector_failure_support::errors::failure();
         error.diagnostic.message.clone_from(&message);
         Err(error)
     });
-    registry
+    (registry, reached)
 }
 /// Original scope and initial query, independently of whether loading succeeds.
 fn failed_picker_options(input: &mut selector_failure_support::Input) -> ModelSelectorOptions {
@@ -609,7 +639,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
     for case in selector_failure_support::cases(name) {
         bindings(std::collections::BTreeMap::default());
         let mut input = case.input;
-        let mut registry = failing_registry(&mut input);
+        let (mut registry, reached) = failing_registry(&mut input);
         let runtime = runtime_spy::Spy::default();
         let tui = TUI::new(
             recording_terminal::RecordingTerminal::new(100, 24).handle(),
@@ -636,6 +666,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
             options,
         )
         .unwrap();
+        assert!(reached.load(std::sync::atomic::Ordering::SeqCst));
         let width = input.width.unwrap();
         let mut frames =
             vec![serde_json::json!({"lines":selector.render(width),"events":*events.borrow()})];

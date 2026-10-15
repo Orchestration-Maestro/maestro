@@ -441,18 +441,24 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         let before = call.render(80);
         assert!(before.join("\n").contains("beta"));
         row.last_component = None;
-        let output = binding.render_result.unwrap()(
-            &raw(Some(&json!(["+1 persisted"]))),
-            ToolRenderResultOptions {
-                expanded: false,
-                is_partial: false,
-            },
-            &env.theme,
-            &row,
-        )
-        .unwrap();
+        let render_result = binding.render_result.unwrap();
+        let settle = |line: &str, theme: &maestro_theme::Theme| {
+            render_result(
+                &raw(Some(&json!(["+1 persisted", line]))),
+                ToolRenderResultOptions {
+                    expanded: false,
+                    is_partial: false,
+                },
+                theme,
+                &row,
+            )
+            .unwrap()
+        };
+        let output = settle("1.25", &env.theme);
         assert!(output.render(80).is_empty());
         assert!(call.render(80).join("\n").contains("persisted"));
+        assert_fractional_line_rebuild(settle, &call);
+
         let state = row
             .state
             .borrow_mut()
@@ -469,6 +475,19 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         assert_eq!(std::fs::read(dir.0.join("file")).unwrap(), b"alpha\n");
     });
 }
+/// An unchanged identity keeps the captured title; a different fraction rebuilds it.
+fn assert_fractional_line_rebuild(
+    settle: impl Fn(&str, &maestro_theme::Theme) -> maestro_tui::tui::ComponentHandle,
+    call: &maestro_tui::tui::ComponentHandle,
+) {
+    let unchanged = call.render(80);
+    let changed_theme = crate::edit_render_support::palette(1);
+    for (line, rebuild) in [("1.25", false), ("1.75", true)] {
+        settle(line, &changed_theme);
+        assert_eq!(call.render(80) != unchanged, rebuild);
+    }
+}
+
 #[test]
 fn renderer_projection_wrong_selected_fields_use_absent_fallback() {
     let env = crate::renderer_projection_support::environment();
@@ -507,7 +526,7 @@ fn renderer_projection_wrong_selected_fields_use_absent_fallback() {
         ),
         ("find", vec!["truncated", "maxBytes", "resultLimitReached"]),
         ("ls", vec!["truncated", "maxBytes", "entryLimitReached"]),
-        ("edit", vec!["diff", "firstChangedLine"]),
+        ("edit", vec!["diff"]),
     ] {
         for field in fields {
             check_wrong_field(tool, field, &env);
@@ -530,11 +549,7 @@ fn check_wrong_field(tool: &str, field: &str, env: &Env) {
     .contains(&field);
     let mut base = json!({"tool":tool,"args":{"path":"notes.txt"},"details":{},"options":{"expanded":false,"isPartial":false},"isError":false,"content":[{"type":"text","text":"body"}]});
     if nested {
-        base["details"]["truncation"] =
-            json!({"truncated":true,"truncatedBy":"lines","outputLines":2,"totalLines":3});
-    }
-    if field == "firstChangedLine" {
-        base["details"]["diff"] = json!("+1 after");
+        base["details"]["truncation"] = json!({"truncated":true,"truncatedBy":if field == "maxBytes" { "bytes" } else { "lines" },"outputLines":2,"totalLines":3});
     }
     let target = if nested {
         &mut base["details"]["truncation"]
@@ -553,6 +568,15 @@ fn check_wrong_field(tool: &str, field: &str, env: &Env) {
         target[field] = wrong;
         let input: Input = serde_json::from_value(base.clone()).unwrap();
         assert_eq!(render(&input, env), expected, "{tool} {field}");
+    }
+    if field == "maxBytes" {
+        base["details"]["truncation"][field] = json!(1024);
+        let input: Input = serde_json::from_value(base).unwrap();
+        assert_ne!(
+            render(&input, env),
+            expected,
+            "{tool} byte limit is consumed"
+        );
     }
 }
 
@@ -584,7 +608,7 @@ fn wrapped_edit(cwd: &str) -> maestro_tools::ToolDefinition<(), (), Vec<String>,
                 .state::<maestro_tools::EditRenderState>();
             ToolRenderResult::<Vec<String>, maestro_tools::EditRenderState>::Raw(Rc::clone(&result))
                 .invoke_native((value, options), theme, &row.with_state(state), |details| {
-                    Ok(json!({"diff":details[0],"firstChangedLine":1.25}))
+                    Ok(json!({"diff":details[0],"firstChangedLine":details[1].parse::<f64>().unwrap()}))
                 })
         },
     )));
@@ -612,4 +636,65 @@ fn renderer_state_defaults_can_read_the_same_row_map() {
     DEFAULT_ROW.with(|row| row.borrow_mut().take());
     assert_eq!(state.borrow().0, 73);
     assert!(Rc::ptr_eq(&state, &owner.state::<MapReader>()));
+}
+
+#[test]
+fn retained_edit_malformed_line_uses_absent_fallback() {
+    let env = Env::with(
+        Rc::new(crate::edit_render_support::palette(0)),
+        Rc::new(crate::display_support::NoLanguages),
+    );
+    let args = json!({"path":"notes.txt"});
+    let setup = Setup::from(&json!({"readme":"/docs/README.md","bindings":[]}));
+    let native = maestro_tools::create_edit_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let call = native.render_call.unwrap();
+    let ToolRenderResult::Raw(result) = native.render_result.unwrap() else {
+        panic!("raw callback")
+    };
+    let row = context::<maestro_tools::EditRenderState>(&args, &setup, &env, None);
+    let retained = call(Some(&args), &env.theme, &row).unwrap();
+    let unchanged = retained.render(80);
+    let mut details = json!({"diff":"+1 after"});
+    result(
+        &raw(Some(&details)),
+        ToolRenderResultOptions {
+            expanded: false,
+            is_partial: false,
+        },
+        &env.theme,
+        &row,
+    )
+    .unwrap();
+    let expected = retained.render(80);
+    assert_ne!(expected, unchanged);
+    let changed_theme = crate::edit_render_support::palette(1);
+    for wrong in [json!({"wrong":true}), json!(["wrong"])] {
+        details["firstChangedLine"] = wrong;
+        result(
+            &raw(Some(&details)),
+            ToolRenderResultOptions {
+                expanded: false,
+                is_partial: false,
+            },
+            &changed_theme,
+            &row,
+        )
+        .unwrap();
+        assert_eq!(retained.render(80), expected);
+    }
+    details["firstChangedLine"] = json!(1.25);
+    result(
+        &raw(Some(&details)),
+        ToolRenderResultOptions {
+            expanded: false,
+            is_partial: false,
+        },
+        &changed_theme,
+        &row,
+    )
+    .unwrap();
+    assert_ne!(retained.render(80), expected);
 }

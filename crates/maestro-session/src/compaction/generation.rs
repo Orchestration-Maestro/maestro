@@ -130,7 +130,9 @@ fn request(
 
 /// Start prepared compaction without writing or modifying history.
 ///
-/// Both split requests start eagerly. A first failure does not cancel its sibling.
+/// Both split requests start eagerly when history and prefix are nonempty.
+/// Empty history with a nonempty prefix starts only the prefix request; an empty
+/// prefix starts only the history request. A first failure does not cancel its sibling.
 /// Generation failures precede the empty retained-ID diagnostic.
 #[must_use]
 pub fn compact(

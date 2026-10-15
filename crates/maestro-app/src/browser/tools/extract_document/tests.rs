@@ -7,6 +7,13 @@ mod support {
         "/tests/support/document_extraction.rs"
     ));
 }
+mod runtime {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/support/browser_providers.rs"
+    ));
+}
+use runtime::run;
 use std::sync::Mutex;
 use support::{Effects, Input};
 
@@ -43,13 +50,12 @@ fn controlled(input: &Input, effects: &Arc<Mutex<Effects>>) -> ExtractDocumentTo
 async fn rows(indices: &[usize]) {
     let corpus = support::corpus();
     assert_eq!(corpus.metadata.value()["name"], "extract_document");
-    for (index, case) in corpus
+    for (_, case) in corpus
         .cases
         .into_iter()
         .enumerate()
         .filter(|(index, _)| indices.contains(index))
     {
-        assert!(indices.contains(&index));
         let effects = Arc::new(Mutex::new(Effects::default()));
         let tool = controlled(&case.input, &effects);
         *tool.cors_proxy_url.write().unwrap() = case.input.proxy.clone();
@@ -214,15 +220,6 @@ async fn extraction_tool_finishes_attachment_load_after_download_cancellation_ca
     let actual = support::outcome(work.await);
     let actual = support::transcript(actual, &effects.lock().unwrap());
     assert_eq!(actual, case.expected);
-}
-
-/// Drive controlled asynchronous work with an I/O-enabled runtime.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 /// Build one controlled attachment using only explicit loader overrides.

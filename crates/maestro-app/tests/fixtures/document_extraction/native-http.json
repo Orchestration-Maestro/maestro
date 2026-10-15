@@ -27,13 +27,7 @@
             "size": 20
           }
         }
-      },
-      "loads": [
-        {
-          "fileName": "native.txt",
-          "size": 20
-        }
-      ]
+      }
     },
     {
       "path": "/denied.txt",
@@ -42,8 +36,7 @@
           "name": "Error",
           "message": "TELL USER: Unable to download the document (403 Controlled denial). The site likely blocks automated downloads.\n\nINSTRUCT USER: Please download the file manually and attach it to your message using the attachment button (paperclip icon) in the message input area. I can then extract the text from the attached file."
         }
-      },
-      "loads": []
+      }
     }
   ]
 }

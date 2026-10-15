@@ -567,3 +567,23 @@ pub fn no_images() -> maestro_tui::TerminalImage {
     terminal.set_capabilities(maestro_tui::TerminalCapabilities::default());
     terminal
 }
+
+/// Callback reentry target kept non-owning to avoid retaining the list.
+pub type Target = std::rc::Rc<std::cell::RefCell<std::rc::Weak<maestro_tui::SettingsList>>>;
+/// Records the live list after the original typed notification.
+pub fn observing<T: 'static>(
+    original: std::rc::Rc<dyn Fn(T)>,
+    target: Target,
+    events: super::settings_selection_support::Events,
+) -> std::rc::Rc<dyn Fn(T)> {
+    use maestro_tui::Component;
+    std::rc::Rc::new(move |value| {
+        original(value);
+        let list = target.borrow().upgrade().unwrap();
+        let lines = list.render(80);
+        events.0.borrow_mut().push(vec![
+            "during-callback".into(),
+            serde_json::to_value(lines).unwrap(),
+        ]);
+    })
+}
