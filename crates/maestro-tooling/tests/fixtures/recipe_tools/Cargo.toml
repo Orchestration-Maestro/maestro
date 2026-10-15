@@ -1,0 +1,10 @@
+[package]
+name = "maestro-recipe-tools"
+version = "0.0.0"
+edition = "2024"
+
+[workspace]
+
+[[bin]]
+name = "recipe-command"
+path = "../recipe_command.rs"

@@ -35,3 +35,14 @@ Build-recipe tests in `maestro-tooling` use the existing `toml =1.1.6`
 `path` sources from the root manifest's `[patch]` tables into disposable build
 fixtures. Registry/git patches need no local copy; production watching is
 unchanged.
+## External browser author tools
+
+Mise pins Trunk 0.21.14 and wasm-bindgen-cli 0.2.129 (MIT OR Apache-2.0),
+Binaryen/wasm-opt 133 (Apache-2.0), and miniserve 0.35.0 (MIT). Native release
+checksums are retained in `mise.lock`. These are external development binaries,
+not workspace Cargo dependencies or consumer lifecycle hooks. The checked
+non-development Linux-musl closures contain 394, 168 and 296 packages for Trunk,
+wasm-bindgen-cli and miniserve respectively. Trunk's mandatory
+lockfree-object-pool 0.1.6 uses the Boost Software License 1.0; its
+[notice](../licenses/author-tools/lockfree-object-pool.txt) is retained alongside
+these author-tool records. See [browser author commands](../browser-build.md).

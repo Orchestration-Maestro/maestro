@@ -5,89 +5,12 @@ use crate::toolchain_support;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::sync::atomic::{AtomicU64, Ordering};
 
-struct Workspace(PathBuf);
-
-/// Copies an executable through a child `install`, so this process never holds a
-/// writable descriptor to a file it later runs (a concurrent fork would otherwise
-/// make `exec` fail with "Text file busy").
-fn install_executable(source: &Path, target: &Path) {
-    let status = Command::new("install")
-        .args(["-m", "0700"])
-        .arg(source)
-        .arg(target)
-        .status()
-        .unwrap();
-    assert!(status.success());
-}
-
-impl Workspace {
-    fn new() -> Self {
-        static NEXT: AtomicU64 = AtomicU64::new(0);
-        let root = std::env::temp_dir().join(format!(
-            "maestro-recipes-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, Ordering::Relaxed)
-        ));
-        fs::create_dir_all(root.join("bin")).unwrap();
-        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
-            .unwrap();
-        fs::copy(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
-            root.join("justfile"),
-        )
-        .unwrap();
-        let source = root.join("tool.rs");
-        fs::write(&source, include_str!("fixtures/recipe_command.rs")).unwrap();
-        let tool = root.join("bin/cargo");
-        assert!(
-            toolchain_support::command("rustc")
-                .current_dir(&root)
-                .arg(source)
-                .arg("-o")
-                .arg(&tool)
-                .status()
-                .unwrap()
-                .success()
-        );
-        for name in ["mise", "prek", "watchexec"] {
-            install_executable(&tool, &root.join("bin").join(name));
-        }
-        Self(root)
-    }
-
-    fn command(&self, recipe: &str) -> Command {
-        let mut command = toolchain_support::command("just");
-        command
-            .current_dir(&self.0)
-            .arg(recipe)
-            .env("MAESTRO_LOG", self.0.join("log"))
-            .env("MAESTRO_CWD", self.0.join("cwd"))
-            .env(
-                "PATH",
-                format!(
-                    "{}:{}",
-                    self.0.join("bin").display(),
-                    std::env::var("PATH").unwrap()
-                ),
-            );
-        command
-    }
-
-    fn run(&self, recipe: &str) -> Output {
-        self.command(recipe).output().unwrap()
-    }
-    fn log(&self) -> String {
-        fs::read_to_string(self.0.join("log")).unwrap()
-    }
-}
-
-impl Drop for Workspace {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
-    }
-}
+#[path = "fixtures/recipe_support.rs"]
+mod recipe_support;
+#[cfg(unix)]
+use recipe_support::ProcessGroup;
+use recipe_support::{Workspace, install_executable};
 
 #[test]
 fn maestro_workspace_recipes_keep_phase_order() {
@@ -496,21 +419,6 @@ fn maestro_watch_survives_rebuilding_its_development_binary() {
     assert_watch_rebuild("dev", "crates/maestro-tooling/src/bin/development.rs");
 }
 
-/// Owns the recipe's process group, including watcher commands and their children.
-#[cfg(unix)]
-struct ProcessGroup(std::process::Child);
-
-#[cfg(unix)]
-impl Drop for ProcessGroup {
-    fn drop(&mut self) {
-        // The fixture disables nested watcher groups so every child inherits this group.
-        let _ = Command::new("kill")
-            .args(["-KILL", "--", &format!("-{}", self.0.id())])
-            .status();
-        let _ = self.0.wait();
-    }
-}
-
 #[cfg(unix)]
 fn assert_watch_rebuild(recipe: &str, changed: &str) {
     let workspace = Workspace::new();
@@ -538,9 +446,6 @@ fn start_watch(
     std::sync::mpsc::Receiver<String>,
     [std::thread::JoinHandle<()>; 1],
 ) {
-    use std::os::unix::process::CommandExt;
-    use std::process::Stdio;
-    use std::sync::mpsc;
     let profiles = workspace.0.join("target/watch-profiles");
     fs::create_dir_all(&profiles).unwrap();
     command.env("LLVM_PROFILE_FILE", profiles.join("watch-%p-%m.profraw"));
@@ -548,20 +453,8 @@ fn start_watch(
         .env("MAESTRO_REAL_CARGO", env!("CARGO"))
         .env("MAESTRO_DEVELOPMENT", binary)
         .env("MAESTRO_REAL_WATCHEXEC", watcher_path());
-    // Both output streams share one pipe so completion cannot overtake step output.
-    let (output, writer) = std::os::unix::net::UnixStream::pair().unwrap();
-    let stdout: std::os::fd::OwnedFd = writer.try_clone().unwrap().into();
-    let stderr: std::os::fd::OwnedFd = writer.into();
-    command
-        .stdout(Stdio::from(stdout))
-        .stderr(Stdio::from(stderr))
-        .process_group(0);
-    let child = ProcessGroup(command.spawn().unwrap());
-    drop(command);
-    let (send, receive) = mpsc::channel();
-    let threads = [capture_lines(move || output, send.clone())];
-    drop(send);
-    (child, receive, threads)
+    let (child, receive, thread) = recipe_support::start_output(command);
+    (child, receive, [thread])
 }
 
 /// Completion follows retained stdout and stderr from the same command.
@@ -1020,21 +913,6 @@ fn maestro_watch_rebuild_requires_its_mutation_marker() {
 /// Recognizes output witnessing the compilation of a changed input.
 fn has_rebuild_marker(transcript: &str, marker: &str) -> bool {
     transcript.lines().any(|line| line == marker)
-}
-
-/// Captures complete lines from the reader supplied to the thread.
-fn capture_lines<R: std::io::Read>(
-    reader: impl FnOnce() -> R + Send + 'static,
-    send: std::sync::mpsc::Sender<String>,
-) -> std::thread::JoinHandle<()> {
-    use std::io::{BufRead, BufReader};
-    std::thread::spawn(move || {
-        for line in BufReader::new(reader()).lines() {
-            if send.send(line.unwrap()).is_err() {
-                break;
-            }
-        }
-    })
 }
 
 /// Finds the pinned external watcher before fixture commands extend PATH.

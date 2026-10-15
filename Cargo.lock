@@ -3866,6 +3866,7 @@ name = "maestro-tooling"
 version = "0.1.0"
 dependencies = [
  "cargo_metadata",
+ "egui",
  "maestro-dependencies",
  "maestro-test-process",
  "serde",

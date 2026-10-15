@@ -1,0 +1,34 @@
+[package]
+name = "maestro-browser-author"
+version = "0.0.0"
+edition = "2024"
+[workspace]
+[dependencies]
+eframe = { version = "=0.36.2", default-features = false, features = ["glow", "web_screen_reader"] }
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "=0.4.79"
+web-sys = { version = "=0.3.106", features = ["Window", "Document", "Element", "HtmlCanvasElement"] }
+[build-dependencies]
+maestro-theme = { path = "../../../../maestro-theme" }
+[profile.release]
+debug = "line-tables-only"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[lints.rust]
+unsafe_code = "forbid"
+forbidden_lint_groups = "forbid"
+
+[lints.clippy]
+pedantic = { level = "forbid", priority = -1 }
+missing_docs_in_private_items = "forbid"
+redundant_clone = "forbid"
+too_many_arguments = "forbid"
+fn_params_excessive_bools = "forbid"
+too_many_lines = "forbid"
+cognitive_complexity = "forbid"
+excessive_nesting = "forbid"
+unwrap_used = "forbid"
+expect_used = "forbid"
+panic = "forbid"

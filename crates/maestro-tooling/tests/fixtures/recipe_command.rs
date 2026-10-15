@@ -26,6 +26,9 @@ fn main() {
         run_cargo(Path::new(&cargo), &args);
     }
     log_command(&args);
+    if env::var("MAESTRO_FAIL_ARG").ok().is_some_and(|value| args.contains(&value)) {
+        std::process::exit(17);
+    }
     if args.first().map(String::as_str) == Some("run") && args.iter().any(|arg| arg == "--") {
         if let Some(binary) = env::var_os("MAESTRO_DEVELOPMENT") {
             let start = args.iter().position(|arg| arg == "--").unwrap() + 1;
@@ -81,6 +84,9 @@ fn log_command(args: &[String]) {
         .open(env::var_os("MAESTRO_LOG").unwrap())
         .unwrap();
     writeln!(log, "{name} {}", args.join("|")).unwrap();
+    if let Some(path) = env::var_os("MAESTRO_BRAND_RESULT") {
+        fs::write(path, format!("{}\n{}", env::var("MAESTRO_BRAND_PACK").unwrap_or_default(), env::var("MAESTRO_BRAND_MODE").unwrap_or_default())).unwrap();
+    }
     if let Some(path) = env::var_os("MAESTRO_ENV_RESULT") {
         let auth = Path::new(&env::var_os("HOME").unwrap()).join(".maestro/agent/auth.json");
         fs::write(

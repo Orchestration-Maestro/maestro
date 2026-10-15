@@ -149,3 +149,16 @@ and its twenty `woff2` fonts are embedded and inserted once per document as data
 their MIT notice is in [third-party notices](../../THIRD-PARTY-NOTICES.md#math-stylesheet-and-fonts).
 Parsing is the shared [Markdown owner](../markdown.md), reached through the
 application edge; no browser binding feature is added.
+
+## Isolated author fixture
+
+The [browser author fixture](../browser-build.md) is a separate Cargo workspace,
+not a new `maestro-web` runtime dependency. It uses eframe `=0.36.2` (MIT), defaults
+off, with `glow` and `web_screen_reader`; wasm-bindgen `=0.2.129`,
+wasm-bindgen-futures `=0.4.79` and web-sys `=0.3.106` (MIT OR Apache-2.0).
+Web-sys selects Window, Document, Element and HtmlCanvasElement, with inherited
+Node/HtmlElement support. Its native build dependency is the existing
+`maestro-theme`; no egui default fonts enter its wasm graph. The shared whole
+font assets have OFL-1.1 notices and are registered explicitly by the fixture.
+Native tooling tests reuse egui `=0.36.2` with defaults off for actual glyph
+rendering, not a font parser or subsetting dependency.
