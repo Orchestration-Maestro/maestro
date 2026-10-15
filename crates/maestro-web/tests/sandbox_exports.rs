@@ -1,0 +1,84 @@
+//! WebAssembly signature witnesses, not executed browser observations.
+#![cfg(target_arch = "wasm32")]
+use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
+    SandboxRespond, SandboxRuntimeProvider,
+};
+use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
+use maestro_app::{BoxFuture, DiagnosticErrorInfo};
+use maestro_web::browser::sandbox_value::BrowserSandboxValue;
+use maestro_web::components::sandbox::runtime_message_bridge::{
+    MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,
+};
+use maestro_web::components::sandbox::runtime_message_router::{
+    MessageConsumer, RuntimeMessageRouter,
+};
+use maestro_web::{RUNTIME_MESSAGE_ROUTER, RuntimeMessageBridge};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+use wasm_bindgen::JsValue;
+
+/// Provider preserving raw native callbacks and values.
+struct Provider;
+impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
+    fn get_data(
+        &self,
+    ) -> Result<indexmap::IndexMap<String, BrowserSandboxValue>, DiagnosticErrorInfo> {
+        Ok(indexmap::IndexMap::new())
+    }
+    fn get_runtime(&self) -> Result<String, DiagnosticErrorInfo> {
+        Ok(String::new())
+    }
+    fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
+        Ok(String::new())
+    }
+    fn handle_message(
+        &self,
+        message: BrowserSandboxValue,
+        respond: SandboxRespond<BrowserSandboxValue>,
+    ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
+        Box::pin(async move { respond(message) })
+    }
+}
+/// Consumer accepting the same raw native handle.
+struct Consumer;
+impl MessageConsumer<BrowserSandboxValue> for Consumer {
+    fn handle_message(
+        &self,
+        _message: BrowserSandboxValue,
+    ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
+        Box::pin(async { Ok(()) })
+    }
+}
+
+#[test]
+fn sandbox_sdk_exports_retain_shared_router() {
+    let _: &std::thread::LocalKey<RuntimeMessageRouter> = &RUNTIME_MESSAGE_ROUTER;
+    let _ = [MessageType::RequestResponse, MessageType::FireAndForget];
+    let _ = RuntimeMessageBridge::generate_bridge_code(RuntimeMessageBridgeOptions {
+        context: RuntimeMessageContext::UserScript,
+        sandbox_id: "sdk",
+    });
+    let router = RuntimeMessageRouter::default();
+    let provider: Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>> = Arc::new(Provider);
+    let consumer: Arc<dyn MessageConsumer<BrowserSandboxValue>> = Arc::new(Consumer);
+    let _ = router.register_sandbox(
+        "sdk".into(),
+        Rc::new(RefCell::new(vec![provider])),
+        vec![consumer.clone()],
+    );
+    router.add_consumer("sdk", consumer.clone());
+    router.remove_consumer("sdk", &consumer);
+    let _: fn(&RuntimeMessageRouter, &str, web_sys::HtmlIFrameElement) =
+        RuntimeMessageRouter::set_sandbox_iframe;
+    let _ = router.unregister_sandbox("sdk");
+}
+
+#[test]
+fn raw_sandbox_values_reach_provider_and_consumer_contracts() {
+    let raw = BrowserSandboxValue(JsValue::UNDEFINED);
+    let cloned = raw.clone();
+    let _: &JsValue = &cloned.0;
+    let _ = raw.format_repl_value();
+    let reply: SandboxRespond<BrowserSandboxValue> = Arc::new(|_value| Ok(()));
+    let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Provider.handle_message(raw.clone(), reply);
+    let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Consumer.handle_message(raw);
+}

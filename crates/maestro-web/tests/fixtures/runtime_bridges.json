@@ -1,0 +1,132 @@
+[
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "sandbox",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"sandbox\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "quote\" slash\\",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"quote\\\" slash\\\\\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "\u0000\b\f\n\r\t",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"\\u0000\\b\\f\\n\\r\\t\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "é漢字🚀",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"é漢字🚀\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "﻿",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"﻿\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "  ",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"  \",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "</script><script>danger()</script>",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"</script><script>danger()</script>\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "__SANDBOX_ID__",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"__SANDBOX_ID__\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "7",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"7\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "a/b:c",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"a/b:c\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "\\u0061",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"\\\\u0061\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "sandbox-iframe",
+    "sandboxId": "__SEND_RUNTIME_MESSAGE__",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);\n\n    return new Promise((resolve, reject) => {\n        const handler = (e) => {\n            if (e.data.type === 'runtime-response' && e.data.messageId === messageId) {\n                window.removeEventListener('message', handler);\n                if (e.data.success) {\n                    resolve(e.data);\n                } else {\n                    reject(new Error(e.data.error || 'Operation failed'));\n                }\n            }\n        };\n\n        window.addEventListener('message', handler);\n\n        window.parent.postMessage({\n            ...message,\n            sandboxId: \"__SEND_RUNTIME_MESSAGE__\",\n            messageId: messageId\n        }, '*');\n\n        // Timeout after 30s\n        setTimeout(() => {\n            window.removeEventListener('message', handler);\n            reject(new Error('Runtime message timeout'));\n        }, 30000);\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "sandbox",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"sandbox\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "quote\" slash\\",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"quote\\\" slash\\\\\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "\u0000\b\f\n\r\t",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\\u0000\\b\\f\\n\\r\\t\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "é漢字🚀",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"é漢字🚀\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "﻿",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"﻿\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "  ",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"  \"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "</script><script>danger()</script>",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"</script><script>danger()</script>\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "__SANDBOX_ID__",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"__SANDBOX_ID__\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "7",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"7\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "a/b:c",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"a/b:c\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "\\u0061",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"\\\\u0061\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  },
+  {
+    "context": "user-script",
+    "sandboxId": "__SEND_RUNTIME_MESSAGE__",
+    "expected": "window.__completionCallbacks = [];\nwindow.sendRuntimeMessage = async (message) => {\n    return await chrome.runtime.sendMessage({\n        ...message,\n        sandboxId: \"__SEND_RUNTIME_MESSAGE__\"\n    });\n};\nwindow.onCompleted = (callback) => {\n    window.__completionCallbacks.push(callback);\n};"
+  }
+]

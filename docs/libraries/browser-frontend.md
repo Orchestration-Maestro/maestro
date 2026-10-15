@@ -86,3 +86,10 @@ The [offline document reader](../browser/session-viewer.md) directly reuses the
 locked base64 and URL libraries already below the application. URL form decoding
 uses form_urlencoded 1.2.2 and percent-encoding 2.3.2; its existing IDNA/ICU closure
 adds no new package versions. Unicode data retains its Unicode-3.0 requirement.
+
+Sandbox routing reuses the locked browser bindings with the `HtmlIFrameElement`,
+`MessageEvent` and `EventTarget` web-sys features. Raw values use native js-sys
+JSON/string operations; listener work uses wasm-bindgen-futures. No package
+version, executor or native dependency is added. The embedded messaging scripts
+are host-required assets, not a JavaScript frontend implementation. See
+[sandbox messaging](../browser/sandbox.md).
