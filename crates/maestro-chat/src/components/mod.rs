@@ -232,6 +232,9 @@ fn bounded_select_list(
 
 pub mod settings_selector;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod extension_editor;
+pub mod login_dialog;
 
 #[cfg(test)]
 mod tests;
@@ -267,6 +270,3 @@ fn navigate_list(selected: &Cell<usize>, count: usize, up: bool) -> bool {
 
 pub mod scoped_models_selector;
 pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
-#[cfg(not(target_arch = "wasm32"))]
-pub mod extension_editor;
-pub mod login_dialog;
