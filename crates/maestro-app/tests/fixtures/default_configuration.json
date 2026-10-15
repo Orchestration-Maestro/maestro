@@ -1,0 +1,2123 @@
+[
+  {
+    "test": "externally_removed_packages_survive_unrelated_write",
+    "input": {
+      "global": {
+        "theme": "dark",
+        "packages": [
+          "npm:sample-adapter"
+        ]
+      },
+      "externalGlobal": {
+        "theme": "dark",
+        "packages": []
+      },
+      "actions": [
+        [
+          "setTheme",
+          "light"
+        ]
+      ],
+      "reads": [
+        "getPackages",
+        "getTheme"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getPackages": [
+          "npm:sample-adapter"
+        ],
+        "getTheme": "dark"
+      },
+      "observed": {
+        "getPackages": [
+          "npm:sample-adapter"
+        ],
+        "getTheme": "light"
+      },
+      "global": {
+        "theme": "light",
+        "packages": []
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "external_extensions_survive_unrelated_write",
+    "input": {
+      "global": {
+        "theme": "dark",
+        "extensions": [
+          "/old/extension.ts"
+        ]
+      },
+      "externalGlobal": {
+        "theme": "dark",
+        "extensions": [
+          "/new/extension.ts"
+        ]
+      },
+      "actions": [
+        [
+          "setDefaultThinkingLevel",
+          "high"
+        ]
+      ],
+      "reads": [
+        "getDefaultThinkingLevel"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getDefaultThinkingLevel": null
+      },
+      "observed": {
+        "getDefaultThinkingLevel": "high"
+      },
+      "global": {
+        "theme": "dark",
+        "extensions": [
+          "/new/extension.ts"
+        ],
+        "defaultThinkingLevel": "high"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "external_project_prompts_survive_project_extension_write",
+    "input": {
+      "project": {
+        "extensions": [
+          "./old-extension.ts"
+        ],
+        "prompts": [
+          "./old-prompt.md"
+        ]
+      },
+      "externalProject": {
+        "extensions": [
+          "./old-extension.ts"
+        ],
+        "prompts": [
+          "./new-prompt.md"
+        ]
+      },
+      "actions": [
+        [
+          "setProjectExtensionPaths",
+          [
+            "./updated-extension.ts"
+          ]
+        ]
+      ],
+      "reads": [
+        "getExtensionPaths"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getExtensionPaths": [
+          "./old-extension.ts"
+        ]
+      },
+      "observed": {
+        "getExtensionPaths": [
+          "./updated-extension.ts"
+        ]
+      },
+      "global": null,
+      "project": {
+        "extensions": [
+          "./updated-extension.ts"
+        ],
+        "prompts": [
+          "./new-prompt.md"
+        ]
+      },
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "project_edits_win_over_external_same_field",
+    "input": {
+      "project": {
+        "extensions": [
+          "./initial-extension.ts"
+        ]
+      },
+      "externalProject": {
+        "extensions": [
+          "./external-extension.ts"
+        ]
+      },
+      "actions": [
+        [
+          "setProjectExtensionPaths",
+          [
+            "./in-memory-extension.ts"
+          ]
+        ]
+      ],
+      "reads": [
+        "getExtensionPaths"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getExtensionPaths": [
+          "./initial-extension.ts"
+        ]
+      },
+      "observed": {
+        "getExtensionPaths": [
+          "./in-memory-extension.ts"
+        ]
+      },
+      "global": null,
+      "project": {
+        "extensions": [
+          "./in-memory-extension.ts"
+        ]
+      },
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "external_enabled_models_survive_thinking_write",
+    "input": {
+      "global": {
+        "theme": "dark",
+        "defaultModel": "claude-sonnet"
+      },
+      "externalGlobal": {
+        "theme": "dark",
+        "defaultModel": "claude-sonnet",
+        "enabledModels": [
+          "claude-opus-4-5",
+          "gpt-5.2-codex"
+        ]
+      },
+      "actions": [
+        [
+          "setDefaultThinkingLevel",
+          "high"
+        ]
+      ],
+      "reads": [
+        "getDefaultThinkingLevel"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getDefaultThinkingLevel": null
+      },
+      "observed": {
+        "getDefaultThinkingLevel": "high"
+      },
+      "global": {
+        "theme": "dark",
+        "defaultModel": "claude-sonnet",
+        "enabledModels": [
+          "claude-opus-4-5",
+          "gpt-5.2-codex"
+        ],
+        "defaultThinkingLevel": "high"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "external_custom_settings_survive_theme_write",
+    "input": {
+      "global": {
+        "defaultModel": "claude-sonnet"
+      },
+      "externalGlobal": {
+        "defaultModel": "claude-sonnet",
+        "shellPath": "/bin/zsh",
+        "extensions": [
+          "/path/to/extension.ts"
+        ]
+      },
+      "actions": [
+        [
+          "setTheme",
+          "light"
+        ]
+      ],
+      "reads": [
+        "getTheme"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": null
+      },
+      "observed": {
+        "getTheme": "light"
+      },
+      "global": {
+        "defaultModel": "claude-sonnet",
+        "shellPath": "/bin/zsh",
+        "extensions": [
+          "/path/to/extension.ts"
+        ],
+        "theme": "light"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "global_edits_win_over_external_same_field",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "externalGlobal": {
+        "theme": "dark",
+        "defaultThinkingLevel": "low"
+      },
+      "actions": [
+        [
+          "setDefaultThinkingLevel",
+          "high"
+        ]
+      ],
+      "reads": [
+        "getDefaultThinkingLevel"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getDefaultThinkingLevel": null
+      },
+      "observed": {
+        "getDefaultThinkingLevel": "high"
+      },
+      "global": {
+        "theme": "dark",
+        "defaultThinkingLevel": "high"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "local_extensions_remain_local",
+    "input": {
+      "global": {
+        "extensions": [
+          "/local/ext.ts",
+          "./relative/ext.ts"
+        ]
+      },
+      "reads": [
+        "getPackages",
+        "getExtensionPaths"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getPackages": [],
+        "getExtensionPaths": [
+          "/local/ext.ts",
+          "./relative/ext.ts"
+        ]
+      },
+      "observed": {
+        "getPackages": [],
+        "getExtensionPaths": [
+          "/local/ext.ts",
+          "./relative/ext.ts"
+        ]
+      },
+      "global": {
+        "extensions": [
+          "/local/ext.ts",
+          "./relative/ext.ts"
+        ]
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "filtered_package_records_remain_intact",
+    "input": {
+      "global": {
+        "packages": [
+          "npm:simple-pkg",
+          {
+            "source": "npm:filtered-extensions",
+            "extensions": [
+              "extensions/oracle.ts"
+            ],
+            "skills": []
+          }
+        ]
+      },
+      "reads": [
+        "getPackages"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getPackages": [
+          "npm:simple-pkg",
+          {
+            "source": "npm:filtered-extensions",
+            "extensions": [
+              "extensions/oracle.ts"
+            ],
+            "skills": []
+          }
+        ]
+      },
+      "observed": {
+        "getPackages": [
+          "npm:simple-pkg",
+          {
+            "source": "npm:filtered-extensions",
+            "extensions": [
+              "extensions/oracle.ts"
+            ],
+            "skills": []
+          }
+        ]
+      },
+      "global": {
+        "packages": [
+          "npm:simple-pkg",
+          {
+            "source": "npm:filtered-extensions",
+            "extensions": [
+              "extensions/oracle.ts"
+            ],
+            "skills": []
+          }
+        ]
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "reload_accepts_external_global_changes",
+    "input": {
+      "global": {
+        "theme": "dark",
+        "extensions": [
+          "/before.ts"
+        ]
+      },
+      "externalGlobal": {
+        "theme": "light",
+        "extensions": [
+          "/after.ts"
+        ],
+        "defaultModel": "claude-sonnet"
+      },
+      "reload": true,
+      "reads": [
+        "getTheme",
+        "getExtensionPaths",
+        "getDefaultModel"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": "dark",
+        "getExtensionPaths": [
+          "/before.ts"
+        ],
+        "getDefaultModel": null
+      },
+      "observed": {
+        "getTheme": "light",
+        "getExtensionPaths": [
+          "/after.ts"
+        ],
+        "getDefaultModel": "claude-sonnet"
+      },
+      "global": {
+        "theme": "light",
+        "extensions": [
+          "/after.ts"
+        ],
+        "defaultModel": "claude-sonnet"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "reload_retains_previous_invalid_scope",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "externalGlobalText": "{ invalid json",
+      "reload": true,
+      "reads": [
+        "getTheme"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": "dark"
+      },
+      "observed": {
+        "getTheme": "dark"
+      },
+      "global": {
+        "unreadable": true
+      },
+      "project": null,
+      "errors": [
+        "global"
+      ],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "load_errors_drain_once_for_both_scopes",
+    "input": {
+      "globalText": "{ invalid global json",
+      "projectText": "{ invalid project json",
+      "reads": []
+    },
+    "expected": {
+      "before": {},
+      "observed": {},
+      "global": {
+        "unreadable": true
+      },
+      "project": {
+        "unreadable": true
+      },
+      "errors": [
+        "global",
+        "project"
+      ],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "reading_missing_project_config_creates_nothing",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "projectMissing": true,
+      "reads": [
+        "getTheme"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": "dark"
+      },
+      "observed": {
+        "getTheme": "dark"
+      },
+      "global": {
+        "theme": "dark"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": false
+    }
+  },
+  {
+    "test": "writing_project_config_creates_selected_directory",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "projectMissing": true,
+      "actions": [
+        [
+          "setProjectPackages",
+          [
+            {
+              "source": "npm:test-pkg"
+            }
+          ]
+        ]
+      ],
+      "reads": [
+        "getPackages"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getPackages": []
+      },
+      "observed": {
+        "getPackages": [
+          {
+            "source": "npm:test-pkg"
+          }
+        ]
+      },
+      "global": {
+        "theme": "dark"
+      },
+      "project": {
+        "packages": [
+          {
+            "source": "npm:test-pkg"
+          }
+        ]
+      },
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "shell_prefix_loads_from_selected_root",
+    "input": {
+      "global": {
+        "shellCommandPrefix": "shopt -s expand_aliases"
+      },
+      "reads": [
+        "getShellCommandPrefix"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getShellCommandPrefix": "shopt -s expand_aliases"
+      },
+      "observed": {
+        "getShellCommandPrefix": "shopt -s expand_aliases"
+      },
+      "global": {
+        "shellCommandPrefix": "shopt -s expand_aliases"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "missing_shell_prefix_stays_absent",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "reads": [
+        "getShellCommandPrefix"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getShellCommandPrefix": null
+      },
+      "observed": {
+        "getShellCommandPrefix": null
+      },
+      "global": {
+        "theme": "dark"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "shell_prefix_survives_unrelated_save",
+    "input": {
+      "global": {
+        "shellCommandPrefix": "shopt -s expand_aliases"
+      },
+      "actions": [
+        [
+          "setTheme",
+          "light"
+        ]
+      ],
+      "reads": [
+        "getShellCommandPrefix",
+        "getTheme"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getShellCommandPrefix": "shopt -s expand_aliases",
+        "getTheme": null
+      },
+      "observed": {
+        "getShellCommandPrefix": "shopt -s expand_aliases",
+        "getTheme": "light"
+      },
+      "global": {
+        "shellCommandPrefix": "shopt -s expand_aliases",
+        "theme": "light"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "missing_session_directory_stays_absent",
+    "input": {
+      "global": {
+        "theme": "dark"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": null
+      },
+      "observed": {
+        "getSessionDir": null
+      },
+      "global": {
+        "theme": "dark"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "global_session_directory_is_returned",
+    "input": {
+      "global": {
+        "sessionDir": "/tmp/sessions"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "/tmp/sessions"
+      },
+      "observed": {
+        "getSessionDir": "/tmp/sessions"
+      },
+      "global": {
+        "sessionDir": "/tmp/sessions"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "project_session_directory_overrides_global",
+    "input": {
+      "global": {
+        "sessionDir": "/global/sessions"
+      },
+      "project": {
+        "sessionDir": "./sessions"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "./sessions"
+      },
+      "observed": {
+        "getSessionDir": "./sessions"
+      },
+      "global": {
+        "sessionDir": "/global/sessions"
+      },
+      "project": {
+        "sessionDir": "./sessions"
+      },
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "session_directory_tilde_uses_isolated_home",
+    "input": {
+      "global": {
+        "sessionDir": "~/sessions"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "$ROOT/home/sessions"
+      },
+      "observed": {
+        "getSessionDir": "$ROOT/home/sessions"
+      },
+      "global": {
+        "sessionDir": "~/sessions"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "nested_scope_merge_and_writes_preserve_unedited_members",
+    "input": {
+      "global": {
+        "retry": {
+          "enabled": true,
+          "maxRetries": 7,
+          "baseDelayMs": 23
+        },
+        "compaction": {
+          "enabled": true,
+          "reserveTokens": 11,
+          "keepRecentTokens": 17
+        },
+        "unknown": {
+          "keep": [
+            "x",
+            "x"
+          ]
+        }
+      },
+      "project": {
+        "retry": {
+          "maxRetries": 2
+        },
+        "compaction": {
+          "keepRecentTokens": 19
+        }
+      },
+      "externalGlobal": {
+        "retry": {
+          "enabled": true,
+          "maxRetries": 7,
+          "baseDelayMs": 99,
+          "extra": 1
+        },
+        "compaction": {
+          "enabled": true,
+          "reserveTokens": 11,
+          "keepRecentTokens": 17
+        },
+        "unknown": {
+          "keep": [
+            "x",
+            "x"
+          ]
+        }
+      },
+      "actions": [
+        [
+          "setRetryEnabled",
+          false
+        ]
+      ],
+      "reads": [
+        "getRetrySettings",
+        "getCompactionSettings"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getRetrySettings": {
+          "enabled": true,
+          "maxRetries": 2,
+          "baseDelayMs": 23
+        },
+        "getCompactionSettings": {
+          "enabled": true,
+          "reserveTokens": 11,
+          "keepRecentTokens": 19
+        }
+      },
+      "observed": {
+        "getRetrySettings": {
+          "enabled": false,
+          "maxRetries": 2,
+          "baseDelayMs": 23
+        },
+        "getCompactionSettings": {
+          "enabled": true,
+          "reserveTokens": 11,
+          "keepRecentTokens": 19
+        }
+      },
+      "global": {
+        "retry": {
+          "enabled": false,
+          "maxRetries": 7,
+          "baseDelayMs": 99,
+          "extra": 1
+        },
+        "compaction": {
+          "enabled": true,
+          "reserveTokens": 11,
+          "keepRecentTokens": 17
+        },
+        "unknown": {
+          "keep": [
+            "x",
+            "x"
+          ]
+        }
+      },
+      "project": {
+        "retry": {
+          "maxRetries": 2
+        },
+        "compaction": {
+          "keepRecentTokens": 19
+        }
+      },
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "defaults_and_owned_reads_survive_application_root_selection",
+    "input": {
+      "global": {},
+      "reads": [
+        "getRetrySettings",
+        "getCompactionSettings",
+        "getPackages",
+        "getExtensionPaths",
+        "getTheme",
+        "getShellCommandPrefix"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getRetrySettings": {
+          "enabled": true,
+          "maxRetries": 3,
+          "baseDelayMs": 2000
+        },
+        "getCompactionSettings": {
+          "enabled": true,
+          "reserveTokens": 16384,
+          "keepRecentTokens": 20000
+        },
+        "getPackages": [],
+        "getExtensionPaths": [],
+        "getTheme": null,
+        "getShellCommandPrefix": null
+      },
+      "observed": {
+        "getRetrySettings": {
+          "enabled": true,
+          "maxRetries": 3,
+          "baseDelayMs": 2000
+        },
+        "getCompactionSettings": {
+          "enabled": true,
+          "reserveTokens": 16384,
+          "keepRecentTokens": 20000
+        },
+        "getPackages": [],
+        "getExtensionPaths": [],
+        "getTheme": null,
+        "getShellCommandPrefix": null
+      },
+      "global": {},
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "empty_session_and_shell_values_remain_present",
+    "input": {
+      "global": {
+        "sessionDir": "",
+        "shellCommandPrefix": ""
+      },
+      "reads": [
+        "getSessionDir",
+        "getShellCommandPrefix"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "",
+        "getShellCommandPrefix": ""
+      },
+      "observed": {
+        "getSessionDir": "",
+        "getShellCommandPrefix": ""
+      },
+      "global": {
+        "sessionDir": "",
+        "shellCommandPrefix": ""
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "session_directory_path_boundaries_use_the_existing_owner",
+    "input": {
+      "global": {
+        "sessionDir": "~"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "$ROOT/home"
+      },
+      "observed": {
+        "getSessionDir": "$ROOT/home"
+      },
+      "global": {
+        "sessionDir": "~"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "session_directory_path_boundaries_use_the_existing_owner",
+    "input": {
+      "global": {
+        "sessionDir": "~//nested/../sessions/"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "$ROOT/home/sessions/"
+      },
+      "observed": {
+        "getSessionDir": "$ROOT/home/sessions/"
+      },
+      "global": {
+        "sessionDir": "~//nested/../sessions/"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "session_directory_path_boundaries_use_the_existing_owner",
+    "input": {
+      "global": {
+        "sessionDir": "~other/sessions"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "~other/sessions"
+      },
+      "observed": {
+        "getSessionDir": "~other/sessions"
+      },
+      "global": {
+        "sessionDir": "~other/sessions"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "session_directory_path_boundaries_use_the_existing_owner",
+    "input": {
+      "global": {
+        "sessionDir": "relative/../sessions"
+      },
+      "reads": [
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getSessionDir": "relative/../sessions"
+      },
+      "observed": {
+        "getSessionDir": "relative/../sessions"
+      },
+      "global": {
+        "sessionDir": "relative/../sessions"
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "invalid_scope_reload_preserves_other_healthy_scope",
+    "input": {
+      "global": {
+        "theme": "dark",
+        "retry": {
+          "maxRetries": 7
+        }
+      },
+      "project": {
+        "theme": "project",
+        "retry": {
+          "enabled": false
+        }
+      },
+      "externalGlobalText": "{ bad",
+      "externalProject": {
+        "theme": "new-project",
+        "retry": {
+          "enabled": true
+        }
+      },
+      "reload": true,
+      "reads": [
+        "getTheme",
+        "getRetrySettings"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": "project",
+        "getRetrySettings": {
+          "enabled": false,
+          "maxRetries": 7,
+          "baseDelayMs": 2000
+        }
+      },
+      "observed": {
+        "getTheme": "new-project",
+        "getRetrySettings": {
+          "enabled": true,
+          "maxRetries": 7,
+          "baseDelayMs": 2000
+        }
+      },
+      "global": {
+        "unreadable": true
+      },
+      "project": {
+        "theme": "new-project",
+        "retry": {
+          "enabled": true
+        }
+      },
+      "errors": [
+        "global"
+      ],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "typed_wrong_values_fall_back_without_rewriting_raw_settings",
+    "input": {
+      "global": {
+        "theme": 42,
+        "shellCommandPrefix": false,
+        "sessionDir": null,
+        "unknown": [
+          "keep"
+        ]
+      },
+      "actions": [
+        [
+          "setQuietStartup",
+          true
+        ]
+      ],
+      "reads": [
+        "getTheme",
+        "getShellCommandPrefix",
+        "getSessionDir"
+      ]
+    },
+    "expected": {
+      "before": {
+        "getTheme": null,
+        "getShellCommandPrefix": null,
+        "getSessionDir": null
+      },
+      "observed": {
+        "getTheme": null,
+        "getShellCommandPrefix": null,
+        "getSessionDir": null
+      },
+      "global": {
+        "theme": 42,
+        "shellCommandPrefix": false,
+        "sessionDir": null,
+        "unknown": [
+          "keep"
+        ],
+        "quietStartup": true
+      },
+      "project": null,
+      "errors": [],
+      "projectDirectoryExists": true
+    }
+  },
+  {
+    "test": "required_hint_survives_resolved_prompt_discovery",
+    "input": {
+      "text": "---\ndescription: Review PRs from URLs with structured issue and code analysis\nargument-hint: \"<PR-URL>\"\n---\nYou are given one or more GitHub PR URLs: $@",
+      "name": "required_hint_survives_resolved_prompt_discovery"
+    },
+    "expected": {
+      "description": "Review PRs from URLs with structured issue and code analysis",
+      "content": "You are given one or more GitHub PR URLs: $@",
+      "argumentHint": "<PR-URL>",
+      "scope": "user"
+    }
+  },
+  {
+    "test": "optional_hint_survives_resolved_prompt_discovery",
+    "input": {
+      "text": "---\ndescription: Finish the current task end-to-end with changelog, commit, and push\nargument-hint: \"[instructions]\"\n---\nWrap it. Additional instructions: $ARGUMENTS",
+      "name": "optional_hint_survives_resolved_prompt_discovery"
+    },
+    "expected": {
+      "description": "Finish the current task end-to-end with changelog, commit, and push",
+      "content": "Wrap it. Additional instructions: $ARGUMENTS",
+      "argumentHint": "[instructions]",
+      "scope": "user"
+    }
+  },
+  {
+    "test": "missing_hint_stays_absent_after_discovery",
+    "input": {
+      "text": "---\ndescription: Audit changelog entries before release\n---\nAudit changelog entries for all commits since the last release.",
+      "name": "missing_hint_stays_absent_after_discovery"
+    },
+    "expected": {
+      "description": "Audit changelog entries before release",
+      "content": "Audit changelog entries for all commits since the last release.",
+      "scope": "user"
+    }
+  },
+  {
+    "test": "empty_hint_stays_absent_after_discovery",
+    "input": {
+      "text": "---\ndescription: A command with empty hint\nargument-hint: \"\"\n---\nDo something",
+      "name": "empty_hint_stays_absent_after_discovery"
+    },
+    "expected": {
+      "description": "A command with empty hint",
+      "content": "Do something",
+      "scope": "user"
+    }
+  },
+  {
+    "test": "special_hint_survives_resolved_prompt_discovery",
+    "input": {
+      "text": "---\ndescription: Analyze GitHub issues (bugs or feature requests)\nargument-hint: \"<issue>\"\n---\nAnalyze GitHub issue(s): $ARGUMENTS",
+      "name": "special_hint_survives_resolved_prompt_discovery"
+    },
+    "expected": {
+      "description": "Analyze GitHub issues (bugs or feature requests)",
+      "content": "Analyze GitHub issue(s): $ARGUMENTS",
+      "argumentHint": "<issue>",
+      "scope": "user"
+    }
+  },
+  {
+    "test": "discovered_prompt_arguments_stay_literal",
+    "input": {
+      "template": "$1|$ARGUMENTS|$@|${@:2}",
+      "args": [
+        "$@",
+        "${@:1}",
+        "$&",
+        "$'",
+        "$$"
+      ],
+      "command": "/literal \"$@\" \"${@:1}\" \"$&\" \"$'\" \"$$\""
+    },
+    "expected": {
+      "expanded": "$@|$@ ${@:1} $& $' $$|$@ ${@:1} $& $' $$|${@:1} $& $' $$"
+    }
+  },
+  {
+    "test": "discovered_prompt_arguments_stay_literal",
+    "input": {
+      "template": "$ARGUMENTS",
+      "args": [
+        "$1",
+        "$ARGUMENTS"
+      ],
+      "command": "/literal \"$1\" \"$ARGUMENTS\""
+    },
+    "expected": {
+      "expanded": "$1 $ARGUMENTS"
+    }
+  },
+  {
+    "test": "discovered_prompt_arguments_stay_literal",
+    "input": {
+      "template": "$@",
+      "args": [
+        "$100",
+        "$1"
+      ],
+      "command": "/literal \"$100\" \"$1\""
+    },
+    "expected": {
+      "expanded": "$100 $1"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "absent",
+      "env": null,
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/home/.maestro/agent",
+      "getSettingsPath": "$ROOT/home/.maestro/agent/settings.json",
+      "getAuthPath": "$ROOT/home/.maestro/agent/auth.json",
+      "getModelsPath": "$ROOT/home/.maestro/agent/models.json",
+      "getBinDir": "$ROOT/home/.maestro/agent/bin",
+      "getPromptsDir": "$ROOT/home/.maestro/agent/prompts",
+      "getSessionsDir": "$ROOT/home/.maestro/agent/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/home/.maestro/agent/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "empty",
+      "env": "",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/home/.maestro/agent",
+      "getSettingsPath": "$ROOT/home/.maestro/agent/settings.json",
+      "getAuthPath": "$ROOT/home/.maestro/agent/auth.json",
+      "getModelsPath": "$ROOT/home/.maestro/agent/models.json",
+      "getBinDir": "$ROOT/home/.maestro/agent/bin",
+      "getPromptsDir": "$ROOT/home/.maestro/agent/prompts",
+      "getSessionsDir": "$ROOT/home/.maestro/agent/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/home/.maestro/agent/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "absolute",
+      "env": "$ROOT/env-root",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/env-root",
+      "getSettingsPath": "$ROOT/env-root/settings.json",
+      "getAuthPath": "$ROOT/env-root/auth.json",
+      "getModelsPath": "$ROOT/env-root/models.json",
+      "getBinDir": "$ROOT/env-root/bin",
+      "getPromptsDir": "$ROOT/env-root/prompts",
+      "getSessionsDir": "$ROOT/env-root/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/env-root/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "relative",
+      "env": "relative/../state",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "relative/../state",
+      "getSettingsPath": "state/settings.json",
+      "getAuthPath": "state/auth.json",
+      "getModelsPath": "state/models.json",
+      "getBinDir": "state/bin",
+      "getPromptsDir": "state/prompts",
+      "getSessionsDir": "state/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "state/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "tilde",
+      "env": "~/state",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/home/state",
+      "getSettingsPath": "$ROOT/home/state/settings.json",
+      "getAuthPath": "$ROOT/home/state/auth.json",
+      "getModelsPath": "$ROOT/home/state/models.json",
+      "getBinDir": "$ROOT/home/state/bin",
+      "getPromptsDir": "$ROOT/home/state/prompts",
+      "getSessionsDir": "$ROOT/home/state/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/home/state/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "spaces",
+      "env": "  ",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "  ",
+      "getSettingsPath": "  /settings.json",
+      "getAuthPath": "  /auth.json",
+      "getModelsPath": "  /models.json",
+      "getBinDir": "  /bin",
+      "getPromptsDir": "  /prompts",
+      "getSessionsDir": "  /sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "  /sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "unicode-boundary",
+      "env": "\ufeffstate\u0085",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "\ufeffstate\u0085",
+      "getSettingsPath": "\ufeffstate\u0085/settings.json",
+      "getAuthPath": "\ufeffstate\u0085/auth.json",
+      "getModelsPath": "\ufeffstate\u0085/models.json",
+      "getBinDir": "\ufeffstate\u0085/bin",
+      "getPromptsDir": "\ufeffstate\u0085/prompts",
+      "getSessionsDir": "\ufeffstate\u0085/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "\ufeffstate\u0085/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "backslash-tilde",
+      "env": "~\\state",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "~\\state",
+      "getSettingsPath": "~\\state/settings.json",
+      "getAuthPath": "~\\state/auth.json",
+      "getModelsPath": "~\\state/models.json",
+      "getBinDir": "~\\state/bin",
+      "getPromptsDir": "~\\state/prompts",
+      "getSessionsDir": "~\\state/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "~\\state/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "resolved_roots_feed_native_and_controlled_consumers",
+    "input": {
+      "override": "tilde-dot",
+      "env": "~//state/../next",
+      "cwd": "/work/a:b\\c",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/home//state/../next",
+      "getSettingsPath": "$ROOT/home/next/settings.json",
+      "getAuthPath": "$ROOT/home/next/auth.json",
+      "getModelsPath": "$ROOT/home/next/models.json",
+      "getBinDir": "$ROOT/home/next/bin",
+      "getPromptsDir": "$ROOT/home/next/prompts",
+      "getSessionsDir": "$ROOT/home/next/sessions",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/home/next/sessions/--work-a-b-c--",
+      "sessionCwd": "/work/a:b\\c"
+    }
+  },
+  {
+    "test": "explicit_root_presence_overrides_environment",
+    "input": {
+      "explicitRoot": "",
+      "env": "$ROOT/decoy",
+      "cwd": "/explicit/work",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": null,
+      "sessionDirectory": "sessions/--explicit-work--",
+      "sessionCwd": "/explicit/work",
+      "settingsPath": "settings.json",
+      "authPath": "auth.json",
+      "modelsPath": "models.json"
+    }
+  },
+  {
+    "test": "explicit_root_presence_overrides_environment",
+    "input": {
+      "explicitRoot": "$ROOT/explicit",
+      "env": "$ROOT/decoy",
+      "cwd": "/explicit/work",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "$ROOT/explicit",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "$ROOT/explicit/sessions/--explicit-work--",
+      "sessionCwd": "/explicit/work",
+      "settingsPath": "$ROOT/explicit/settings.json",
+      "authPath": "$ROOT/explicit/auth.json",
+      "modelsPath": "$ROOT/explicit/models.json"
+    }
+  },
+  {
+    "test": "explicit_root_presence_overrides_environment",
+    "input": {
+      "explicitRoot": "explicit/../literal/./root",
+      "env": "$ROOT/decoy",
+      "cwd": "/explicit/work",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "explicit/../literal/./root",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "literal/root/sessions/--explicit-work--",
+      "sessionCwd": "/explicit/work",
+      "settingsPath": "literal/root/settings.json",
+      "authPath": "literal/root/auth.json",
+      "modelsPath": "literal/root/models.json"
+    }
+  },
+  {
+    "test": "explicit_root_presence_overrides_environment",
+    "input": {
+      "explicitRoot": "~",
+      "env": "$ROOT/decoy",
+      "cwd": "/explicit/work",
+      "files": {
+        "settings": {
+          "theme": "selected-root"
+        },
+        "auth": {
+          "qualification": {
+            "type": "api_key",
+            "key": "test-only-key"
+          }
+        },
+        "models": {
+          "providers": {
+            "qualification": {
+              "api": "openai-completions",
+              "baseUrl": "https://example.invalid/v1",
+              "apiKey": "test-only-key",
+              "models": [
+                {
+                  "id": "selected-model"
+                }
+              ]
+            }
+          }
+        },
+        "prompt": "Selected root prompt body"
+      }
+    },
+    "expected": {
+      "agent": "~",
+      "theme": "selected-root",
+      "credential": {
+        "type": "api_key",
+        "key": "test-only-key"
+      },
+      "model": {
+        "id": "selected-model",
+        "provider": "qualification",
+        "baseUrl": "https://example.invalid/v1"
+      },
+      "prompt": {
+        "name": "selected-root",
+        "content": "Selected root prompt body"
+      },
+      "sessionDirectory": "~/sessions/--explicit-work--",
+      "sessionCwd": "/explicit/work",
+      "settingsPath": "~/settings.json",
+      "authPath": "~/auth.json",
+      "modelsPath": "~/models.json"
+    }
+  },
+  {
+    "test": "package_and_binary_paths_reach_real_files",
+    "input": {
+      "packageOverride": null,
+      "readmeContent": "Qualification readme\\n",
+      "toolContent": "Qualification tool\\n"
+    },
+    "expected": {
+      "packageDirectory": "$PACKAGE",
+      "readme": "$PACKAGE/README.md",
+      "readmeText": "Qualification readme\\n",
+      "bin": "$ROOT/decoy/bin",
+      "toolText": "Qualification tool\\n"
+    }
+  },
+  {
+    "test": "package_and_binary_paths_reach_real_files",
+    "input": {
+      "packageOverride": "",
+      "readmeContent": "Qualification readme\\n",
+      "toolContent": "Qualification tool\\n"
+    },
+    "expected": {
+      "packageDirectory": "$PACKAGE",
+      "readme": "$PACKAGE/README.md",
+      "readmeText": "Qualification readme\\n",
+      "bin": "$ROOT/decoy/bin",
+      "toolText": "Qualification tool\\n"
+    }
+  },
+  {
+    "test": "package_and_binary_paths_reach_real_files",
+    "input": {
+      "packageOverride": "$ROOT/package",
+      "readmeContent": "Qualification readme\\n",
+      "toolContent": "Qualification tool\\n"
+    },
+    "expected": {
+      "packageDirectory": "$ROOT/package",
+      "readme": "$ROOT/package/README.md",
+      "readmeText": "Qualification readme\\n",
+      "bin": "$ROOT/decoy/bin",
+      "toolText": "Qualification tool\\n"
+    }
+  },
+  {
+    "test": "package_and_binary_paths_reach_real_files",
+    "input": {
+      "packageOverride": "package/../assets",
+      "readmeContent": "Qualification readme\\n",
+      "toolContent": "Qualification tool\\n"
+    },
+    "expected": {
+      "packageDirectory": "package/../assets",
+      "readme": "$ROOT/assets/README.md",
+      "readmeText": "Qualification readme\\n",
+      "bin": "$ROOT/decoy/bin",
+      "toolText": "Qualification tool\\n"
+    }
+  },
+  {
+    "test": "package_and_binary_paths_reach_real_files",
+    "input": {
+      "packageOverride": "~/package",
+      "readmeContent": "Qualification readme\\n",
+      "toolContent": "Qualification tool\\n"
+    },
+    "expected": {
+      "packageDirectory": "$ROOT/home/package",
+      "readme": "$ROOT/home/package/README.md",
+      "readmeText": "Qualification readme\\n",
+      "bin": "$ROOT/decoy/bin",
+      "toolText": "Qualification tool\\n"
+    }
+  }
+]

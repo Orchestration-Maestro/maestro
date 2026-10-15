@@ -36,8 +36,18 @@ impl Drop for Scratch {
 #[cfg(unix)]
 /// Run this test binary again for the single test `name`, with `envs`, and
 /// return the `PROBE ` lines the child printed.
-pub fn probe(name: &str, current_dir: &Path, envs: &[(&str, &str)]) -> Vec<String> {
-    let output = Command::new(std::env::current_exe().expect("test binary path"))
+/// Remove `removed` keys before applying `envs`; other keys remain inherited.
+pub fn probe(
+    name: &str,
+    current_dir: &Path,
+    envs: &[(&str, &str)],
+    removed: &[&str],
+) -> Vec<String> {
+    let mut command = Command::new(std::env::current_exe().expect("test binary path"));
+    for key in removed {
+        command.env_remove(key);
+    }
+    let output = command
         .args(["--exact", name, "--nocapture", "--test-threads=1"])
         .current_dir(current_dir)
         .envs(envs.iter().copied())

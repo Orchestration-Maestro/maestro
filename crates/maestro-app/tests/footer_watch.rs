@@ -900,6 +900,7 @@ fn native_command_probe(root: &native::Scratch) {
             ("FOOTER_ASYNC_REPO", &root.join("")),
             ("PATH", &root.join("bin")),
         ],
+        &[],
     );
     assert_eq!(
         output,
@@ -916,6 +917,7 @@ fn native_command_probe(root: &native::Scratch) {
             ("PATH", &root.join("bin")),
             ("FOOTER_ASYNC_EXIT", "1"),
         ],
+        &[],
     );
     assert_eq!(
         failed,
@@ -1135,7 +1137,8 @@ os._exit(0)
         native::probe(
             "footer_async_lookup_keeps_output_until_pipe_eof",
             &root.0,
-            &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")]
+            &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
+            &[]
         )
         .is_empty()
     );

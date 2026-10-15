@@ -216,6 +216,7 @@ fn native_git_observations(args: &[String]) {
                 ("FOOTER_LOG", &log),
                 ("FOOTER_EXIT", exit),
             ],
+            &[],
         )
     };
     assert_eq!(run(&path, "0"), ["branch=feature/native"]);
@@ -1124,6 +1125,7 @@ fn native_ambient_lines() -> Vec<String> {
         AMBIENT,
         Path::new(&scratch.join("gone")),
         &[("FOOTER_PROBE_AMBIENT", &root)],
+        &[],
     )
 }
 

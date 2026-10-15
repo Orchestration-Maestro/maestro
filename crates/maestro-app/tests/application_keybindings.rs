@@ -385,6 +385,7 @@ fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
                 ("MAESTRO_KEYS_CHILD", name),
                 ("MAESTRO_CODING_AGENT_DIR", "decoy"),
             ],
+            &[],
         );
     }
 }
