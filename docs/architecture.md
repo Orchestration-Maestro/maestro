@@ -23,6 +23,10 @@ normalization. The guest authoring crate may depend on request,
 entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
 repeated here.
 
+Pure retained [session-tree projection](sessions/tree-projection.md) belongs to
+`maestro-session`, with frontend access through `maestro-app::export_html`.
+Its allowed dependency set is unchanged; it has no frontend or toolkit edge.
+
 The `maestro-export` owner may depend directly on `maestro-json` and
 `maestro-text` for shared JSON and whitespace semantics. It may not depend on
 `maestro-web`; the application supplies the viewer bundle, as described in the
