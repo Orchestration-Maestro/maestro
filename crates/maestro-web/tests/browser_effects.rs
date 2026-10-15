@@ -145,11 +145,10 @@ fn input_escape_bridge_keeps_one_keydown_route_and_releases_it() {
     let updates = Rc::new(RefCell::new(Vec::new()));
     let seen = updates.clone();
     let host = input_support::Host::new(move |s, _| {
-        let AttachmentContent::Input { props, context, .. } = &s.content else {
+        let AttachmentContent::Input { props, .. } = &s.content else {
             panic!("not input")
         };
         seen.borrow_mut().push((s.id, props.on_key_down.clone()));
-        context.request_repaint();
     });
     let callback: maestro_web::components::input::KeyCallback = Rc::new(|_| {});
     let mut input = Input::new(InputProps::default(), host.clone());
