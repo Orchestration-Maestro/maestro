@@ -9,7 +9,10 @@ use maestro_app::{
 };
 use serde_json::{Value, json};
 use std::{io, rc::Rc};
-use support::{Backend, equal, provider_equal, rows};
+#[path = "support/browser_storage_cases.rs"]
+mod cases;
+use cases::rows;
+use support::{Backend, equal, provider_equal};
 
 /// A named store using the same public operations as SDK consumers.
 enum Named {

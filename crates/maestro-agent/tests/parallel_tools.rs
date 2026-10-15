@@ -453,7 +453,7 @@ fn failure_sink(
 fn selection_hook(
     retained: std::sync::Weak<std::sync::RwLock<maestro_agent::AgentTool>>,
     lifetime: Arc<()>,
-) -> maestro_agent::BeforeToolCall<std::convert::Infallible> {
+) -> maestro_agent::BeforeToolCall<maestro_agent::NoCustomMessages> {
     Arc::new(move |c, _| {
         if c.tool_call.id == "first" {
             retained.upgrade().unwrap().write().unwrap().execute =

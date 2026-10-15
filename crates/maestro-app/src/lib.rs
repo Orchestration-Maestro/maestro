@@ -81,9 +81,10 @@ pub use maestro_models::models_are_equal;
 pub use maestro_settings::SettingsManager;
 
 pub use browser::storage::{
-    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, CustomProvidersStore,
-    IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
-    StorageBackend, StorageTransaction, Store, StoreConfig,
+    AppStorage, AutoDiscoveryProviderType, CustomProvider, CustomProviderType,
+    CustomProvidersStore, IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore,
+    SessionData, SessionMetadata, SessionsStore, SettingsStore, StorageBackend, StorageTransaction,
+    Store, StoreConfig, get_app_storage, set_app_storage,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_resources::NativeResourceOperations;

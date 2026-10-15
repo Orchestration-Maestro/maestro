@@ -13,7 +13,7 @@ font bundle; native tests enable the dev-only egui default fonts.
 | indexmap | 2.14.2 | serde, default/std | MIT |
 | ryu-js | 1.0.3 | workspace number formatting | Apache-2.0 |
 | num-traits | 0.2.19 | workspace checked canvas-size conversion | MIT |
-| serde | 1.0.229 | workspace derive | MIT |
+| serde | 1.0.229 | workspace derive; application/agent rc for retained records | MIT |
 | serde_json | 1.0.151 | workspace preserve_order, float_roundtrip | MIT |
 | wasm-bindgen | 0.2.129 | wasm-only, default/std | MIT |
 | js-sys | 0.3.106 | wasm-only, default/std | MIT |
@@ -63,3 +63,9 @@ licence exception is in `.github/ci.toml`. The egui traversal exclusion in
 Normal/build dependency trees remain font-free on the five configured native
 targets and WebAssembly; the development tree still enables real fallback fonts.
 These fonts do not establish brand-face or real-browser glyph qualification.
+
+Application session storage reuses chrono 0.4.45 (defaults off/std, MIT or
+Apache-2.0) for UTC millisecond text, the text library's native collation feature
+(ICU collator 2.3.1 and locale core 2.3.0, Unicode-3.0), and js-sys 0.3.106
+(default/std, MIT) on browser targets for default-locale comparison. These are
+existing locked libraries, with no new runtime or storage adapter dependency.

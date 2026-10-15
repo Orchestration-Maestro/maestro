@@ -23,27 +23,27 @@ type Local<'a, T> = Pin<Box<dyn Future<Output = io::Result<T>> + 'a>>;
 struct Adapter {
     /// Complete consumed arguments.
     calls: RefCell<Vec<Value>>,
-    /// One supplied key/value slot.
-    value: RefCell<Option<Value>>,
+    /// Shared collection/key records retained through transaction callbacks.
+    values: Rc<RefCell<std::collections::BTreeMap<(String, String), Value>>>,
 }
 impl StorageBackend for Adapter {
     fn get<'a>(&'a self, s: &'a str, k: &'a str) -> Local<'a, Option<Value>> {
         Box::pin(async move {
             self.calls.borrow_mut().push(json!(["get", s, k]));
-            Ok(self.value.borrow().clone())
+            Ok(self.values.borrow().get(&(s.into(), k.into())).cloned())
         })
     }
     fn set<'a>(&'a self, s: &'a str, k: &'a str, v: Value) -> Local<'a, ()> {
         Box::pin(async move {
             self.calls.borrow_mut().push(json!(["set", s, k]));
-            *self.value.borrow_mut() = Some(v);
+            self.values.borrow_mut().insert((s.into(), k.into()), v);
             Ok(())
         })
     }
     fn delete<'a>(&'a self, s: &'a str, k: &'a str) -> Local<'a, ()> {
         Box::pin(async move {
             self.calls.borrow_mut().push(json!(["delete", s, k]));
-            *self.value.borrow_mut() = None;
+            self.values.borrow_mut().remove(&(s.into(), k.into()));
             Ok(())
         })
     }
@@ -71,14 +71,14 @@ impl StorageBackend for Adapter {
     fn clear<'a>(&'a self, s: &'a str) -> Local<'a, ()> {
         Box::pin(async move {
             self.calls.borrow_mut().push(json!(["clear", s]));
-            *self.value.borrow_mut() = None;
+            self.values.borrow_mut().retain(|(name, _), _| name != s);
             Ok(())
         })
     }
     fn has<'a>(&'a self, s: &'a str, k: &'a str) -> Local<'a, bool> {
         Box::pin(async move {
             self.calls.borrow_mut().push(json!(["has", s, k]));
-            Ok(self.value.borrow().is_some())
+            Ok(self.values.borrow().contains_key(&(s.into(), k.into())))
         })
     }
     fn transaction<'a>(
@@ -95,7 +95,11 @@ impl StorageBackend for Adapter {
             self.calls
                 .borrow_mut()
                 .push(json!(["transaction", s, mode]));
-            op(Rc::new(Self::default())).await
+            op(Rc::new(Self {
+                values: self.values.clone(),
+                ..Self::default()
+            }))
+            .await
         })
     }
     fn get_quota_info(&self) -> Local<'_, QuotaInfo> {
@@ -183,6 +187,7 @@ fn browser_storage_exports_use_application_owners() {
                 ["index", "one", "recent", "desc"],
                 ["transaction", ["one", "two"], "readonly"],
                 ["transaction", ["one", "two"], "readwrite"],
+                ["set", "one", "k"],
                 ["has", "one", "k"],
                 ["delete", "one", "k"],
                 ["clear", "one"]
@@ -197,6 +202,7 @@ fn browser_storage_exports_use_application_owners() {
 async fn exercise_contract(backend: &dyn StorageBackend) {
     exercise_enumeration(backend).await;
     exercise_transactions(backend).await;
+    backend.set("one", "k", json!(true)).await.unwrap();
     assert!(backend.has("one", "k").await.unwrap());
     backend.delete("one", "k").await.unwrap();
     backend.clear("one").await.unwrap();
@@ -295,4 +301,87 @@ async fn exercise_enumeration(backend: &dyn StorageBackend) {
             vec![json!(expected)]
         );
     }
+}
+
+#[test]
+fn browser_session_exports_use_the_application_owners() {
+    use maestro_web::{AppStorage, SessionData, SessionsStore, get_app_storage, set_app_storage};
+    ready(async {
+        let (data, metadata) = browser_session_records();
+        let sessions: Rc<maestro_app::SessionsStore> = Rc::new(SessionsStore::default());
+        let backend = Rc::new(Adapter::default());
+        sessions.set_backend(backend.clone());
+        sessions.save(&data, &metadata).await.unwrap();
+        let loaded: SessionData = sessions.load_session(&data.id).await.unwrap().unwrap();
+        assert_eq!(
+            serde_json::to_value(&loaded).unwrap(),
+            serde_json::to_value(&data).unwrap()
+        );
+        assert_eq!(
+            loaded
+                .messages
+                .read()
+                .unwrap()
+                .iter()
+                .map(|m| match m {
+                    maestro_app::AgentMessage::Custom(c) =>
+                        maestro_app::CustomAgentMessages::role(&*c.read().unwrap()).to_owned(),
+                    _ => panic!("browser custom role expected"),
+                })
+                .collect::<Vec<_>>(),
+            ["user-with-attachments", "artifact"]
+        );
+        let app: Rc<maestro_app::AppStorage> = Rc::new(AppStorage::new(
+            Rc::new(SettingsStore::default()),
+            Rc::new(ProviderKeysStore::default()),
+            sessions.clone(),
+            Rc::new(CustomProvidersStore::default()),
+            backend,
+        ));
+        let set: fn(Rc<maestro_app::AppStorage>) = set_app_storage;
+        set(app.clone());
+        let get: fn() -> io::Result<Rc<maestro_app::AppStorage>> = get_app_storage;
+        assert!(Rc::ptr_eq(&get().unwrap(), &app));
+        assert!(Rc::ptr_eq(&maestro_app::get_app_storage().unwrap(), &app));
+        maestro_app::set_app_storage(app.clone());
+        assert_eq!(
+            app.get_quota_info().await.unwrap().usage.to_bits(),
+            3.0_f64.to_bits()
+        );
+        assert!(!app.request_persistence().await.unwrap());
+        assert!(Rc::ptr_eq(&app.sessions, &sessions));
+    });
+}
+
+/// Recorded browser roles decoded through the unqualified SDK default.
+fn browser_session_records() -> (maestro_app::SessionData, maestro_app::SessionMetadata) {
+    use maestro_web::{SessionData, SessionMetadata};
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../maestro-app/tests/fixtures/browser_sessions.json"
+    ))
+    .unwrap();
+    let rows = fixture["rows"].as_array().unwrap();
+    let row = rows
+        .iter()
+        .find(|r| {
+            r["test"] == "session_records_roundtrip_standard_browser_and_open_custom_history"
+                && r["input"]["data"]["messages"][0]["role"] == "user-with-attachments"
+        })
+        .unwrap();
+    let mut value = row["input"]["data"].clone();
+    let artifact = rows
+        .iter()
+        .find(|r| {
+            r["test"] == "session_records_roundtrip_standard_browser_and_open_custom_history"
+                && r["input"]["data"]["messages"][0]["role"] == "artifact"
+        })
+        .unwrap();
+    value["messages"]
+        .as_array_mut()
+        .unwrap()
+        .push(artifact["input"]["data"]["messages"][0].clone());
+    let data: maestro_app::SessionData = serde_json::from_value::<SessionData>(value).unwrap();
+    let metadata: maestro_app::SessionMetadata =
+        serde_json::from_value::<SessionMetadata>(row["input"]["metadata"].clone()).unwrap();
+    (data, metadata)
 }

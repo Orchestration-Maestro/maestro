@@ -1,19 +1,19 @@
 //! Controlled collection adapter and lossless corpus comparisons.
 use futures_util::future::LocalBoxFuture;
 use maestro_app::browser::storage::{
-    IndexDirection, QuotaInfo, StorageBackend, StorageOperation, TransactionMode,
+    IndexDirection, QuotaInfo, StorageBackend, StorageOperation, StorageTransaction,
+    TransactionMode,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::{cell::RefCell, collections::BTreeMap, io, rc::Rc, sync::Arc};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, VecDeque},
+    io,
+    rc::Rc,
+    sync::Arc,
+};
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-/// Recorded corpus envelope.
-pub struct Corpus {
-    /// Complete cases.
-    pub rows: Vec<Row>,
-}
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 /// One source-recorded operation and result.
@@ -24,53 +24,6 @@ pub struct Row {
     pub input: Value,
     /// Complete observation.
     pub expected: Value,
-}
-/// Strict cases for a named test.
-pub fn rows(name: &str) -> Vec<Row> {
-    let corpus: Corpus =
-        serde_json::from_str(include_str!("../fixtures/browser_storage.json")).unwrap();
-    assert_eq!(corpus.rows.len(), 88);
-    let rows: Vec<_> = corpus.rows.into_iter().filter(|r| r.test == name).collect();
-    assert!(!rows.is_empty());
-    for row in &rows {
-        let fields: &[&str] = match name {
-            "store_schemas_keep_out_of_line_keys"
-            | "schema_reads_return_independent_owned_records"
-            | "store_binding_replaces_shared_backend_and_retains_inflight_operation" => &["kind"],
-            "store_backend_required_for_each_operation"
-            | "store_failures_keep_operation_phase_and_adapter_cause" => &["kind", "op"],
-            "settings_values_roundtrip_without_normalization" => &["key", "value"],
-            "settings_missing_delete_list_and_clear_use_only_settings" => &["key", "keys"],
-            "provider_keys_keep_empty_and_unicode_secrets" => &["provider", "key"],
-            "provider_key_overwrite_list_delete_and_presence_use_named_store" => &["providers"],
-            "custom_provider_records_keep_types_optional_values_and_models" => &["provider"],
-            "custom_provider_overwrite_delete_and_presence_use_named_store" => &["id"],
-            "storage_config_records_preserve_optional_settings" => &["config"],
-            _ => &["keys"],
-        };
-        assert_eq!(
-            row.input
-                .as_object()
-                .unwrap()
-                .keys()
-                .map(String::as_str)
-                .collect::<Vec<_>>(),
-            fields
-        );
-        let expected = row.expected.as_object().unwrap();
-        let fields: &[&str] = if expected.contains_key("result") {
-            &["result"]
-        } else if expected.contains_key("trace") {
-            &["trace"]
-        } else {
-            &[]
-        };
-        assert_eq!(
-            expected.keys().map(String::as_str).collect::<Vec<_>>(),
-            fields
-        );
-    }
-    rows
 }
 /// Compare all members in order, keeping floating-point signs.
 pub fn equal(actual: &Value, expected: &Value) {
@@ -94,10 +47,22 @@ fn compare(actual: &Value, expected: &Value, field: &str, records: bool) {
         }
         (Value::Object(a), Value::Object(b)) => {
             let typed = records
-                && a.contains_key("baseUrl")
-                && (a.contains_key("api") || a.contains_key("type"));
+                && (a.contains_key("role")
+                    || a.contains_key("createdAt")
+                    || a.contains_key("input") && a.contains_key("output")
+                    || a.contains_key("type")
+                    || a.contains_key("baseUrl"));
             assert_eq!(a.len(), b.len());
-            if !typed || ["headers", "thinkingLevelMap", "compat"].contains(&field) {
+            if !typed
+                || [
+                    "headers",
+                    "thinkingLevelMap",
+                    "compat",
+                    "arguments",
+                    "details",
+                ]
+                .contains(&field)
+            {
                 assert_eq!(a.keys().collect::<Vec<_>>(), b.keys().collect::<Vec<_>>());
             }
             for (key, value) in a {
@@ -116,25 +81,39 @@ impl std::fmt::Display for Cause {
     }
 }
 impl std::error::Error for Cause {}
+/// One-shot callbacks at numbered observable effects.
+type EffectHooks = VecDeque<(usize, Box<dyn FnOnce()>)>;
 /// Supplied adapter with ordered observation and controllable suspension.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Backend {
+    /// Whether effects are transaction-scoped.
+    transactional: bool,
+    /// Supplied index order.
+    pub index: Rc<RefCell<Vec<Value>>>,
+    /// One-based failure position across the transcript.
+    pub fail_at: Rc<RefCell<Option<usize>>>,
+    /// Synchronous callbacks at explicit effect boundaries.
+    pub hooks: Rc<RefCell<EffectHooks>>,
+    /// Reported quota values.
+    pub quota: Rc<RefCell<Option<QuotaInfo>>>,
+    /// Persistence decision.
+    pub granted: Rc<RefCell<bool>>,
     /// Stored collections, whose object maps preserve insertion order.
-    pub data: RefCell<BTreeMap<String, serde_json::Map<String, Value>>>,
+    pub data: Rc<RefCell<BTreeMap<String, serde_json::Map<String, Value>>>>,
     /// Complete call transcript.
-    pub trace: RefCell<Vec<Value>>,
+    pub trace: Rc<RefCell<Vec<Value>>>,
     /// Supplied enumeration, independent of stored map order.
-    pub keys: RefCell<Option<Vec<String>>>,
+    pub keys: Rc<RefCell<Option<Vec<String>>>>,
     /// Failing operation.
-    pub fail: RefCell<Option<String>>,
+    pub fail: Rc<RefCell<Option<String>>>,
     /// A particular failing read.
-    pub fail_key: RefCell<Option<String>>,
+    pub fail_key: Rc<RefCell<Option<String>>>,
     /// Original adapter cause identity.
     pub cause: Arc<()>,
     /// Next read completion gate.
-    pub read_gate: RefCell<Option<tokio::sync::oneshot::Receiver<Value>>>,
+    pub read_gate: Rc<RefCell<Option<tokio::sync::oneshot::Receiver<Value>>>>,
     /// Next key enumeration completion gate.
-    pub keys_gate: RefCell<Option<tokio::sync::oneshot::Receiver<Vec<String>>>>,
+    pub keys_gate: Rc<RefCell<Option<tokio::sync::oneshot::Receiver<Vec<String>>>>>,
 }
 impl Backend {
     /// New isolated supplied adapter.
@@ -148,27 +127,37 @@ impl Backend {
         };
         self.data.borrow_mut().insert(name.into(), values);
     }
-    /// Read a complete collection as ordered key/value pairs.
-    pub fn entries(&self, name: &str) -> Value {
-        Value::Array(
-            self.data
-                .borrow()
-                .get(name)
-                .into_iter()
-                .flat_map(|m| m.iter())
-                .map(|(k, v)| json!([k, v]))
-                .collect(),
-        )
-    }
     /// Record a reached adapter effect or return its original cause.
     fn effect(&self, op: &str, args: Vec<Value>) -> io::Result<()> {
         let fail_key = self.fail_key.borrow().clone();
+        let op = if self.transactional {
+            match op {
+                "get" => "tx.get",
+                "set" => "tx.set",
+                "delete" => "tx.delete",
+                other => other,
+            }
+        } else {
+            op
+        };
         let fails = self.fail.borrow().as_deref() == Some(op)
             || (op == "get" && fail_key.as_deref().is_some_and(|key| args[1] == key));
         let mut call = vec![json!(op)];
         call.extend(args);
         self.trace.borrow_mut().push(Value::Array(call));
-        if fails {
+        let position = self.trace.borrow().len();
+        let hook = {
+            let mut hooks = self.hooks.borrow_mut();
+            if hooks.front().is_some_and(|(at, _)| *at == position) {
+                hooks.pop_front().map(|(_, hook)| hook)
+            } else {
+                None
+            }
+        };
+        if let Some(hook) = hook {
+            hook();
+        }
+        if fails || *self.fail_at.borrow() == Some(position) {
             Err(io::Error::other(Cause(self.cause.clone())))
         } else {
             Ok(())
@@ -246,24 +235,87 @@ impl StorageBackend for Backend {
     }
     fn get_all_from_index<'a>(
         &'a self,
-        _: &'a str,
-        _: &'a str,
-        _: IndexDirection,
+        s: &'a str,
+        i: &'a str,
+        d: IndexDirection,
     ) -> LocalBoxFuture<'a, io::Result<Vec<Value>>> {
-        unreachable!("not a named-store effect")
+        Box::pin(async move {
+            self.effect(
+                "getAllFromIndex",
+                vec![
+                    json!(s),
+                    json!(i),
+                    json!(if d == IndexDirection::Desc {
+                        "desc"
+                    } else {
+                        "asc"
+                    }),
+                ],
+            )?;
+            Ok(self.index.borrow().clone())
+        })
     }
     fn transaction<'a>(
         &'a self,
-        _: &'a [String],
-        _: TransactionMode,
-        _: StorageOperation<'a>,
+        names: &'a [String],
+        mode: TransactionMode,
+        operation: StorageOperation<'a>,
     ) -> LocalBoxFuture<'a, io::Result<Value>> {
-        unreachable!("not a named-store effect")
+        Box::pin(async move {
+            self.effect(
+                "transaction",
+                vec![
+                    json!(names),
+                    json!(if mode == TransactionMode::Readwrite {
+                        "readwrite"
+                    } else {
+                        "readonly"
+                    }),
+                ],
+            )?;
+            let staged = Rc::new(RefCell::new(self.data.borrow().clone()));
+            let tx = Self {
+                data: staged.clone(),
+                transactional: true,
+                ..self.clone()
+            };
+            let value = match operation(Rc::new(tx)).await {
+                Ok(value) => value,
+                Err(error) => {
+                    return Err(error);
+                }
+            };
+            self.trace.borrow_mut().push(json!(["commit"]));
+            let committed = staged.borrow().clone();
+            *self.data.borrow_mut() = committed;
+            Ok(value)
+        })
     }
     fn get_quota_info(&self) -> LocalBoxFuture<'_, io::Result<QuotaInfo>> {
-        unreachable!("not a named-store effect")
+        Box::pin(async move {
+            self.effect("getQuotaInfo", vec![])?;
+            Ok(self.quota.borrow().clone().unwrap_or(QuotaInfo {
+                usage: 23.0,
+                quota: 101.0,
+                percent: 22.772_277_227_722_77,
+            }))
+        })
     }
     fn request_persistence(&self) -> LocalBoxFuture<'_, io::Result<bool>> {
-        unreachable!("not a named-store effect")
+        Box::pin(async move {
+            self.effect("requestPersistence", vec![])?;
+            Ok(*self.granted.borrow())
+        })
+    }
+}
+impl StorageTransaction for Backend {
+    fn get<'a>(&'a self, s: &'a str, k: &'a str) -> LocalBoxFuture<'a, io::Result<Option<Value>>> {
+        StorageBackend::get(self, s, k)
+    }
+    fn set<'a>(&'a self, s: &'a str, k: &'a str, v: Value) -> LocalBoxFuture<'a, io::Result<()>> {
+        StorageBackend::set(self, s, k, v)
+    }
+    fn delete<'a>(&'a self, s: &'a str, k: &'a str) -> LocalBoxFuture<'a, io::Result<()>> {
+        StorageBackend::delete(self, s, k)
     }
 }

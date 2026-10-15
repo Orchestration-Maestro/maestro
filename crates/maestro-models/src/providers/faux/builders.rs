@@ -1,7 +1,7 @@
 use super::{FauxAssistantContent, FauxAssistantMessageOptions, FauxToolCallOptions};
 use crate::{
     AssistantContent, AssistantMessage, JsonObject, StopReason, TextContent, ThinkingContent,
-    ToolCall, Usage, UsageCost, records::diagnostics::timestamp_now,
+    ToolCall, Usage, records::diagnostics::timestamp_now,
 };
 
 /// Generate an independent clock-prefixed opaque identity.
@@ -11,23 +11,6 @@ pub(super) fn random_id(prefix: &str) -> String {
         timestamp_now(),
         rand::random::<u64>()
     )
-}
-/// Construct fresh zero token counts and costs.
-pub(super) fn zero_usage() -> Usage {
-    Usage {
-        input: 0.0,
-        output: 0.0,
-        cache_read: 0.0,
-        cache_write: 0.0,
-        total_tokens: 0.0,
-        cost: UsageCost {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total: 0.0,
-        },
-    }
 }
 /// Construct unsigned text content.
 pub fn faux_text(text: impl Into<String>) -> TextContent {
@@ -75,7 +58,7 @@ pub fn faux_assistant_message(
         response_model: None,
         response_id: options.response_id,
         diagnostics: None,
-        usage: zero_usage(),
+        usage: Usage::default(),
         stop_reason: options.stop_reason.unwrap_or(StopReason::Stop),
         error_message: options.error_message,
         timestamp: options.timestamp.unwrap_or_else(timestamp_now),

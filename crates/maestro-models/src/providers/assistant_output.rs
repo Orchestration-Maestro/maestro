@@ -8,7 +8,6 @@ use crate::records::diagnostics::timestamp_now;
 use crate::{
     AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream, Cancellation,
     DiagnosticErrorInfo, DoneReason, ErrorReason, Model, SharedAssistantMessage, StopReason, Usage,
-    UsageCost,
 };
 
 /// The assistant message an invocation fills in, before any response arrives.
@@ -21,20 +20,7 @@ pub(crate) fn initial_message(model: &Model) -> AssistantMessage {
         response_model: None,
         response_id: None,
         diagnostics: None,
-        usage: Usage {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total_tokens: 0.0,
-            cost: UsageCost {
-                input: 0.0,
-                output: 0.0,
-                cache_read: 0.0,
-                cache_write: 0.0,
-                total: 0.0,
-            },
-        },
+        usage: Usage::default(),
         stop_reason: StopReason::Stop,
         error_message: None,
         timestamp: timestamp_now(),

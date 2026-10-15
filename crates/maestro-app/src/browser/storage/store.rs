@@ -40,13 +40,30 @@ impl Store {
     }
     /// Read and decode a value after selecting the adapter.
     pub(super) async fn read<T: DeserializeOwned>(&self, key: &str) -> io::Result<Option<T>> {
+        self.read_from(&self.config.name, key).await
+    }
+    /// Read a named collection with the same absent/null decoding policy.
+    pub(super) async fn read_from<T: DeserializeOwned>(
+        &self,
+        name: &str,
+        key: &str,
+    ) -> io::Result<Option<T>> {
         let backend = self.get_backend()?;
         backend
-            .get(&self.config.name, key)
+            .get(name, key)
             .await?
             .filter(|value| !value.is_null())
-            .map(serde_json::from_value)
+            .map(Self::decode)
             .transpose()
+    }
+    /// Decode a stored value without replacing its serde cause.
+    pub(super) fn decode<T: DeserializeOwned>(value: serde_json::Value) -> io::Result<T> {
+        serde_json::from_value(value)
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+    }
+    /// Encode at the consuming write boundary.
+    pub(super) fn encode<T: Serialize + ?Sized>(value: &T) -> io::Result<serde_json::Value> {
+        serde_json::to_value(value)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
     }
     /// Encode a value after selecting the adapter, then write it.
@@ -56,8 +73,7 @@ impl Store {
         value: &T,
     ) -> io::Result<()> {
         let backend = self.get_backend()?;
-        let value = serde_json::to_value(value)
-            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+        let value = Self::encode(value)?;
         backend.set(&self.config.name, key, value).await
     }
 }

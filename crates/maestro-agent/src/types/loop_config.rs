@@ -4,15 +4,12 @@ use maestro_models::{
     AssistantMessageEventStream, BoxFuture, Cancellation, Context, DiagnosticErrorInfo, JsonObject,
     Message, Model, ProviderObjects, ProviderStreamOptions, SimpleStreamOptions,
 };
-use std::{
-    convert::Infallible,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
 /// Retained ordered conversation entries.
 pub(crate) type Messages<C> = Arc<RwLock<Vec<AgentMessage<C>>>>;
 /// Instructions and retained conversation inputs for one operation.
-pub struct AgentContext<C: CustomAgentMessages = Infallible> {
+pub struct AgentContext<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Model instructions.
     pub system_prompt: String,
     /// Mutable ordered history.
@@ -30,7 +27,7 @@ impl<C: CustomAgentMessages> Clone for AgentContext<C> {
     }
 }
 /// Model selection and callbacks for each request.
-pub struct AgentLoopConfig<C: CustomAgentMessages = Infallible> {
+pub struct AgentLoopConfig<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Optional validated-argument hook.
     pub before_tool_call: Option<super::BeforeToolCall<C>>,
     /// Optional execution-outcome hook.

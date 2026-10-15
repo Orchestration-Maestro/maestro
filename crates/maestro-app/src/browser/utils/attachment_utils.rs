@@ -2,7 +2,7 @@
 use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::{borrow::Cow, fmt};
 
@@ -10,7 +10,7 @@ use std::{borrow::Cow, fmt};
 pub(crate) mod pdf;
 
 /// Model-facing attachment classification.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum AttachmentType {
     /// Original image bytes.
@@ -19,7 +19,7 @@ pub enum AttachmentType {
     Document,
 }
 /// Original attachment bytes with derived presentation data.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Attachment {
     /// Generated identifier.

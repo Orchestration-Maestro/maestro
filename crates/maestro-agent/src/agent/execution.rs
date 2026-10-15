@@ -16,7 +16,7 @@ pub type AgentSpawner = Arc<dyn Fn(BoxFuture<()>) + Send + Sync>;
 /// Submit work to a caller-owned execution facility; dropping observation does not cancel it.
 pub type AgentSpawner = Arc<dyn Fn(BoxFuture<()>)>;
 /// Typed prompt overloads retaining supplied message identities.
-pub enum PromptInput<C: CustomAgentMessages = std::convert::Infallible> {
+pub enum PromptInput<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Text followed by ordered images.
     Text {
         /// Untrimmed text.

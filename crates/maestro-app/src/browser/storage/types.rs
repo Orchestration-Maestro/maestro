@@ -146,3 +146,47 @@ pub trait StorageBackend {
     /// Request protection from eviction.
     fn request_persistence(&self) -> LocalBoxFuture<'_, io::Result<bool>>;
 }
+
+/// Indexed session summary, retaining supplied counts and usage.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionMetadata {
+    /// Stored identity.
+    pub id: String,
+    /// Authored title.
+    pub title: String,
+    /// Authored creation timestamp.
+    pub created_at: String,
+    /// Authored modification timestamp.
+    pub last_modified: String,
+    /// Reported history size across all roles.
+    pub message_count: f64,
+    /// Reported token counts and costs.
+    pub usage: maestro_models::Usage,
+    /// Selected thinking level.
+    pub thinking_level: maestro_agent::ThinkingLevel,
+    /// Authored preview.
+    pub preview: String,
+}
+/// Full history retaining the selected model and outer message collection.
+#[derive(Serialize, Deserialize)]
+#[serde(
+    rename_all = "camelCase",
+    bound(serialize = "C: Serialize", deserialize = "C: Deserialize<'de>")
+)]
+pub struct SessionData<C: maestro_agent::CustomAgentMessages = crate::browser::components::messages::CustomAgentMessages<maestro_agent::NoCustomMessages>> {
+    /// Stored identity.
+    pub id: String,
+    /// Authored title.
+    pub title: String,
+    /// Retained model descriptor.
+    pub model: std::sync::Arc<std::sync::RwLock<maestro_models::Model>>,
+    /// Selected thinking level.
+    pub thinking_level: maestro_agent::ThinkingLevel,
+    /// Retained history, including custom entries.
+    pub messages: std::sync::Arc<std::sync::RwLock<Vec<maestro_agent::AgentMessage<C>>>>,
+    /// Authored creation timestamp.
+    pub created_at: String,
+    /// Authored modification timestamp.
+    pub last_modified: String,
+}

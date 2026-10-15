@@ -1,17 +1,14 @@
 //! Caller initialization and live conversation state.
 use crate::types::{AgentMessage, CustomAgentMessages, SharedAgentTool, ThinkingLevel};
 use maestro_models::{Model, ModelCost};
-use std::{
-    convert::Infallible,
-    sync::{Arc, OnceLock, RwLock},
-};
+use std::sync::{Arc, OnceLock, RwLock};
 /// Caller-owned initialization fields; runtime fields cannot be initialized.
 ///
 /// ```compile_fail
 /// use maestro_agent::AgentInitialState;
 /// let initial: AgentInitialState = AgentInitialState { is_streaming: true, ..Default::default() };
 /// ```
-pub struct AgentInitialState<C: CustomAgentMessages = Infallible> {
+pub struct AgentInitialState<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Optional instruction text.
     pub system_prompt: Option<String>,
     /// Optional shared model descriptor.
@@ -35,7 +32,7 @@ impl<C: CustomAgentMessages> Default for AgentInitialState<C> {
     }
 }
 /// Live caller fields with private collection slots and runtime observations.
-pub struct AgentState<C: CustomAgentMessages = Infallible> {
+pub struct AgentState<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Instruction text.
     pub system_prompt: String,
     /// Selected shared model descriptor.

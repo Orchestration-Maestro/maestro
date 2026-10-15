@@ -275,7 +275,7 @@ async fn stop_gate_case() {
 fn gated_stop(
     trace: Arc<Mutex<Vec<&'static str>>>,
     wait: tokio::sync::oneshot::Receiver<()>,
-) -> maestro_agent::ShouldStopAfterTurn<std::convert::Infallible> {
+) -> maestro_agent::ShouldStopAfterTurn<maestro_agent::NoCustomMessages> {
     let wait = Mutex::new(Some(wait));
     Arc::new(move |c| {
         assert_eq!(c.tool_results.len(), 1);

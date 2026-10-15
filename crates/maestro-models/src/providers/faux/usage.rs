@@ -1,4 +1,4 @@
-use super::{Pending, builders, lock};
+use super::{Pending, lock};
 use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
     StreamOptions, UserBlock, UserContent,
@@ -90,10 +90,12 @@ pub(super) fn estimate(
     let prompt = serialize_context(context)?;
     let prompt_tokens = tokens(&prompt);
     let output = tokens(&assistant_text(&message.content)?);
-    let mut usage = builders::zero_usage();
-    usage.input = prompt_tokens;
-    usage.output = output;
-    usage.total_tokens = prompt_tokens + output;
+    let mut usage = crate::Usage {
+        input: prompt_tokens,
+        output,
+        total_tokens: prompt_tokens + output,
+        ..Default::default()
+    };
     if let Some(session) = options
         .filter(|options| !matches!(options.cache_retention, Some(CacheRetention::None)))
         .and_then(|options| options.session_id.as_ref())

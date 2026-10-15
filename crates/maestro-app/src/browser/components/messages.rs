@@ -28,7 +28,7 @@ pub fn convert_attachments(attachments: &[Attachment]) -> Vec<UserBlock> {
 }
 
 /// Browser user input with optional attachments.
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "role", rename = "user-with-attachments")]
 pub struct UserMessageWithAttachments {
     /// Text or existing model blocks.
@@ -45,7 +45,7 @@ impl CustomMessage for UserMessageWithAttachments {
     }
 }
 /// Artifact edit classification.
-#[derive(Clone, Copy, Debug, serde::Serialize)]
+#[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ArtifactAction {
     /// Create an artifact.
@@ -56,7 +56,7 @@ pub enum ArtifactAction {
     Delete,
 }
 /// Browser artifact history entry, excluded from model input.
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "role", rename = "artifact")]
 pub struct ArtifactMessage {
     /// Edit classification.
@@ -79,13 +79,27 @@ impl CustomMessage for ArtifactMessage {
 }
 
 /// Browser records with an open caller-defined message branch.
-pub enum CustomAgentMessages<C: CustomMessage = std::convert::Infallible> {
+#[derive(serde::Deserialize)]
+#[serde(tag = "role")]
+pub enum CustomAgentMessages<C: CustomMessage = maestro_agent::NoCustomMessages> {
     /// User input with attachments.
+    #[serde(rename = "user-with-attachments")]
     UserWithAttachments(UserMessageWithAttachments),
     /// Artifact history.
+    #[serde(rename = "artifact")]
     Artifact(ArtifactMessage),
     /// Caller-defined entry.
+    #[serde(untagged)]
     Other(C),
+}
+impl<C: CustomMessage + serde::Serialize> serde::Serialize for CustomAgentMessages<C> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::UserWithAttachments(value) => value.serialize(serializer),
+            Self::Artifact(value) => value.serialize(serializer),
+            Self::Other(value) => value.serialize(serializer),
+        }
+    }
 }
 impl<C: CustomMessage> CustomMessage for CustomAgentMessages<C> {
     fn role(&self) -> &str {

@@ -75,7 +75,7 @@ pub struct ToolCall {
     pub thought_signature: Option<String>,
 }
 /// Store the five reported cost categories without recomputation.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageCost {
     /// Input.
@@ -90,7 +90,7 @@ pub struct UsageCost {
     pub total: f64,
 }
 /// Store reported token counts and their supplied costs.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Usage {
     /// Input.

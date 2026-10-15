@@ -15,14 +15,13 @@ pub use execution::{AgentSpawner, PromptInput};
 pub use listeners::{AgentListener, Subscription};
 use std::{
     collections::VecDeque,
-    convert::Infallible,
     sync::{Arc, RwLock},
 };
 /// Initialization and live state slots.
 mod state;
 pub use state::{AgentInitialState, AgentState};
 /// Construction options for conversation state and queues.
-pub struct AgentOptions<C: CustomAgentMessages = Infallible> {
+pub struct AgentOptions<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Context conversion captured at admission.
     pub convert_to_llm: Option<ConvertToLlm<C>>,
     /// Context transformation captured at admission.
@@ -82,7 +81,7 @@ impl<C: CustomAgentMessages> Default for AgentOptions<C> {
     }
 }
 /// Owner of live conversation state and independent input queues.
-pub struct Agent<C: CustomAgentMessages = Infallible> {
+pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Context conversion for subsequently admitted runs.
     pub convert_to_llm: RwLock<ConvertToLlm<C>>,
     /// Context transformation for subsequently admitted runs.
