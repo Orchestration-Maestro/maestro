@@ -95,3 +95,18 @@ source with selected byte ranges, preserving ancestor namespaces. These slots do
 not yet interpret formatting, tables, links, bookmarks, drawings, math or comments.
 The tree is a partial semantic parser, not a rendered preview or attachment-text
 extractor. Package loading remains separate from element parsing.
+
+## Word background and borders
+
+`maestro_app::browser::docx_preview::{parse_background, parse_border_properties}`
+consume borrowed XML selections. Background parsing returns a new ordered style
+map. Border parsing updates the supplied map from immediate top, bottom, left and
+right children; start/end alias left/right. Replacing a side retains its insertion
+position and leaves unrelated entries untouched.
+
+Both operations share color selection: nonempty literal colors precede theme
+fallbacks, auto is black, document color names use their defined RGB values and
+none is transparent. Border styles default to solid; nil/none produces only none.
+Absent width/color components are omitted, allowing CSS defaults. Widths use the
+existing length conversion. These operations do not wire formatting into the
+owned element tree or render a document.

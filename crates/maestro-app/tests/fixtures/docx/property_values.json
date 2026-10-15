@@ -1,0 +1,2358 @@
+[
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashDotStroked\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashSmallGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dotDash\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dotted #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dotDotDash\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dotted #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dotted\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dotted #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"double\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt double #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"doubleWave\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt double #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"inset\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt inset #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt outset #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thick\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thickThinLargeGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thickThinMediumGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thickThinSmallGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickLargeGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickMediumGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickSmallGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickThinLargeGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickThinMediumGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"thinThickThinSmallGap\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"threeDEmboss\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"threeDEngrave\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"triple\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt double #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"wave\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"custom\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_styles_cover_all_tokens",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"0\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"1\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"2\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"3\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.38pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"95\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "11.88pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"96\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "12.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"97\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "12.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"-1\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"+8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"1.5\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "0.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"0x10\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"12px\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "12px solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"1.25pt\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.25pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"33%\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "33% solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"12PX\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.50pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"﻿8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "NaNpt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"junk\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "NaNpt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_widths_keep_shared_conversion_boundaries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "NaNpt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"junk\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"junk\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"8\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"nil\" sz=\"8\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"junk\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"junk\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"8\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "none_borders_ignore_missing_or_invalid_components",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"none\" sz=\"8\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "none"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"black\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #000000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"blue\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #0000FF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"cyan\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #00FFFF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkBlue\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #000080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkCyan\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #008080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkGray\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #808080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkGreen\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #008000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkMagenta\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #800080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkRed\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #800000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"darkYellow\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #808000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"green\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #00FF00"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"lightGray\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #C0C0C0"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"magenta\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #FF00FF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"none\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid transparent"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"red\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #FF0000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"white\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #FFFFFF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "named_border_colors_use_document_rgb_values",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"yellow\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #FFFF00"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"123456\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #123456"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"00ff01\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #00ff01"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"#abc\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed ##abc"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"Black\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #Black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_auto_and_hex_spelling",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"dashed\" sz=\"8\" color=\"transparent\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #transparent"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" themeColor=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" themeColor=\"accent1\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid var(--docx-accent1-color)"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"\" themeColor=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"\" themeColor=\"accent1\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid var(--docx-accent1-color)"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"auto\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"auto\" themeColor=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"auto\" themeColor=\"accent1\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"ABCDEF\" themeColor=\"\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_colors_keep_literal_and_theme_precedence",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"16\" color=\"ABCDEF\" themeColor=\"accent1\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "2.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "outset"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" color=\"auto\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "outset black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "outset #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" sz=\"8\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "1.00pt outset"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" sz=\"8\" color=\"auto\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "1.00pt outset black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "missing_border_components_use_css_defaults",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"outset\" sz=\"8\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "1.00pt outset #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_sides_select_immediate_children_only",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"single\" sz=\"8\" color=\"ABCDEF\"/><w:bottom val=\"dashed\" sz=\"16\" color=\"ABCDEF\"/><w:left val=\"double\" sz=\"24\" color=\"ABCDEF\"/><w:right val=\"dotted\" sz=\"32\" color=\"ABCDEF\"/>text<!--skip--><?p x?><w:insideH val=\"single\"/><w:insideV val=\"single\"/><w:unknown><w:top val=\"double\" sz=\"96\" color=\"ABCDEF\"/></w:unknown></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt solid #ABCDEF"
+        ],
+        [
+          "border-bottom",
+          "2.00pt dashed #ABCDEF"
+        ],
+        [
+          "border-left",
+          "3.00pt double #ABCDEF"
+        ],
+        [
+          "border-right",
+          "4.00pt dotted #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_logical_aliases_replace_without_reordering",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:left val=\"single\" sz=\"8\" color=\"ABCDEF\"/><w:right val=\"single\" sz=\"8\" color=\"ABCDEF\"/><w:start val=\"double\" sz=\"16\" color=\"ABCDEF\"/><w:end val=\"dotted\" sz=\"24\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "old"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-top",
+          "old"
+        ],
+        [
+          "border-left",
+          "2.00pt double #ABCDEF"
+        ],
+        [
+          "border-right",
+          "3.00pt dotted #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_logical_aliases_replace_without_reordering",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:end val=\"double\" sz=\"8\" color=\"ABCDEF\"/><w:start val=\"dashed\" sz=\"8\" color=\"ABCDEF\"/><w:left val=\"single\" sz=\"16\" color=\"ABCDEF\"/><w:right val=\"dotted\" sz=\"24\" color=\"ABCDEF\"/></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-right",
+          "3.00pt dotted #ABCDEF"
+        ],
+        [
+          "border-left",
+          "2.00pt solid #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_updates_preserve_existing_style_entries",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:top val=\"double\" sz=\"24\" color=\"ABCDEF\"/><w:bottom val=\"nil\"/></w:tcBorders>",
+      "style": [
+        [
+          "unknown-property",
+          "keep"
+        ],
+        [
+          "border-bottom",
+          "old"
+        ],
+        [
+          "nullable",
+          null
+        ],
+        [
+          "border-top",
+          "oldtop"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "unknown-property",
+          "keep"
+        ],
+        [
+          "border-bottom",
+          "none"
+        ],
+        [
+          "nullable",
+          null
+        ],
+        [
+          "border-top",
+          "3.00pt double #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "empty_border_groups_leave_styles_unchanged",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"></w:tcBorders>",
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-left",
+          "existing"
+        ]
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "seed",
+          "keep"
+        ],
+        [
+          "border-left",
+          "existing"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "empty_border_groups_leave_styles_unchanged",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><w:insideH/><w:insideV/><w:diagonal/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "border_attributes_follow_local_name_and_first_attribute",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><q:top xmlns:q=\"urn:q\" xmlns:a=\"urn:a\" q:val=\"double\" a:val=\"dashed\" q:sz=\"8\" a:color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt double #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "border_attributes_follow_local_name_and_first_attribute",
+    "input": {
+      "operation": "borders",
+      "xml": "<w:tcBorders xmlns:w=\"urn:w\"><q:top xmlns:q=\"urn:q\" xmlns:a=\"urn:a\" a:val=\"dashed\" q:val=\"double\" q:sz=\"8\" a:color=\"ABCDEF\"/></w:tcBorders>",
+      "style": []
+    },
+    "expected": {
+      "style": [
+        [
+          "border-top",
+          "1.00pt dashed #ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"black\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#000000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"blue\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#0000FF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"cyan\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#00FFFF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkBlue\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#000080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkCyan\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#008080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkGray\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#808080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkGreen\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#008000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkMagenta\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#800080"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkRed\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#800000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"darkYellow\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#808000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"green\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#00FF00"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"lightGray\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#C0C0C0"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"magenta\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#FF00FF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"none\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "transparent"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"red\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#FF0000"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"white\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#FFFFFF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"yellow\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#FFFF00"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"auto\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "black"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"ABCDEF\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#ABCDEF"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_colors_share_the_color_owner",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"00ff01\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#00ff01"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" />"
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" themeColor=\"\"/>"
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" themeColor=\"accent1\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "var(--docx-accent1-color)"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"\"/>"
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"\" themeColor=\"\"/>"
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "background_missing_color_keeps_empty_style",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"\" themeColor=\"accent1\"/>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "var(--docx-accent1-color)"
+        ]
+      ]
+    }
+  },
+  {
+    "test": "background_reads_only_its_selected_element",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" fill=\"ABCDEF\"/>"
+    },
+    "expected": {
+      "style": []
+    }
+  },
+  {
+    "test": "background_reads_only_its_selected_element",
+    "input": {
+      "operation": "background",
+      "xml": "<w:background xmlns:w=\"urn:w\" color=\"ABCDEF\"><w:background color=\"000000\"/></w:background>"
+    },
+    "expected": {
+      "style": [
+        [
+          "background-color",
+          "#ABCDEF"
+        ]
+      ]
+    }
+  }
+]
