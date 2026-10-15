@@ -16,7 +16,8 @@ stacks those elements in its own column without changing caller spacing. The
 native input's accessible name includes the label and localized required marker;
 its accessible description contains the error. Updating or clearing these strings
 updates or removes the corresponding native attributes. Focus and error rings
-extend three points outside the control, bounded by the parent clip. Install the
+extend three CSS pixels outside the control at each canvas scale, bounded by the
+parent clip. Install the
 page's `dark` class for dark native-control background and invalid-ring styling.
 
 `set_props` updates the next presentation. An unchanged supplied value does not

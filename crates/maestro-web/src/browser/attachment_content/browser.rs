@@ -84,7 +84,8 @@ impl BrowserAttachmentHost {
             modal: None,
         })
     }
-    /// Map canvas points to the full viewport rectangle, clipping without resizing.
+    /// Map canvas points to viewport CSS pixels without resizing for clipping.
+    /// `bounds` is in CSS pixels, `r` in canvas points; `x`/`y` are CSS pixels per point.
     fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentUiError> {
         let bounds = self.canvas.get_bounding_client_rect();
         if self.canvas.width() == 0 || self.canvas.height() == 0 {

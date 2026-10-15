@@ -99,7 +99,7 @@ fn placements_write_once_and_modal_changes_refresh_siblings_once() {
 }
 
 #[test]
-fn input_focus_and_error_rings_keep_three_points_inside_parent_clip() {
+fn input_focus_and_error_rings_keep_three_css_pixels_inside_parent_clip() {
     let context = egui::Context::default();
     for error in ["", "Invalid address"] {
         let props = crate::components::input::InputProps {
@@ -125,10 +125,21 @@ fn input_focus_and_error_rings_keep_three_points_inside_parent_clip() {
             clip_path(&surface, (1., 1.)),
             "path(evenodd,\"M-3 -3H103V39H-3Z\")"
         );
-        surface.clip_rect = surface.rect;
         assert_eq!(
-            clip_path(&surface, (1., 1.)),
-            "path(evenodd,\"M0 0H100V36H0Z\")"
+            clip_path(&surface, (0.75, 0.75)),
+            "path(evenodd,\"M-3 -3H78V30H-3Z\")"
         );
+        assert_eq!(
+            clip_path(&surface, (0.5, 0.75)),
+            "path(evenodd,\"M-3 -3H53V30H-3Z\")"
+        );
+        surface.clip_rect = surface.rect;
+        for (scale, expected) in [
+            ((1., 1.), "path(evenodd,\"M0 0H100V36H0Z\")"),
+            ((0.75, 0.75), "path(evenodd,\"M0 0H75V27H0Z\")"),
+            ((0.5, 0.75), "path(evenodd,\"M0 0H50V27H0Z\")"),
+        ] {
+            assert_eq!(clip_path(&surface, scale), expected);
+        }
     }
 }

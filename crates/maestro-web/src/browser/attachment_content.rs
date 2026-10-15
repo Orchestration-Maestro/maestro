@@ -89,15 +89,15 @@ pub enum AttachmentContent<'a> {
 pub struct AttachmentSurface<'a> {
     /// Component identity, independent of attachment identity.
     pub id: egui::Id,
-    /// Full content bounds.
+    /// Full content bounds in canvas points.
     pub rect: egui::Rect,
-    /// Visible clip bounds, without resizing content.
+    /// Visible clip bounds in canvas points, without resizing content.
     pub clip_rect: egui::Rect,
     /// Canvas physical pixels per point.
     pub pixels_per_point: f32,
     /// Native content opacity.
     pub opacity: f32,
-    /// Disjoint canvas control rectangles to exclude from native content.
+    /// Disjoint control rectangles in canvas points to exclude from native content.
     pub occluders: Vec<egui::Rect>,
     /// Content operands copied or retained by the host.
     pub content: AttachmentContent<'a>,
