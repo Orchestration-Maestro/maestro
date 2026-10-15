@@ -10,20 +10,8 @@ pub fn should_use_proxy_for_provider(provider: &str, api_key: &str) -> bool {
     }
 }
 
+use crate::utils::uri::encode_uri_component;
 use maestro_models::Model;
-use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
-
-/// URI component punctuation left literal in a proxy target.
-const COMPONENT_ENCODING: &AsciiSet = &NON_ALPHANUMERIC
-    .remove(b'-')
-    .remove(b'_')
-    .remove(b'.')
-    .remove(b'!')
-    .remove(b'~')
-    .remove(b'*')
-    .remove(b'\'')
-    .remove(b'(')
-    .remove(b')');
 
 /// Rewrite only the model base URL when the supplied proxy is required.
 #[must_use]
@@ -92,9 +80,4 @@ pub fn create_stream_fn(get_proxy_url: GetProxyUrl) -> StreamFn {
             maestro_models::stream_simple(model, context, Some(options))
         })
     })
-}
-
-/// Encode the authored UTF-8 target as a URI component.
-pub(crate) fn encode_uri_component(text: &str) -> String {
-    utf8_percent_encode(text, COMPONENT_ENCODING).to_string()
 }

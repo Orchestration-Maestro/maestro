@@ -1,0 +1,23 @@
+[
+  {
+    "input": {
+      "gist": "abc123",
+      "origin": "https://controlled.invalid:9443"
+    },
+    "output": "https://controlled.invalid:9443/session/#abc123"
+  },
+  {
+    "input": {
+      "gist": "a/b ?#%\u00e9",
+      "origin": "https://controlled.invalid:9443"
+    },
+    "output": "https://controlled.invalid:9443/session/#a/b ?#%\u00e9"
+  },
+  {
+    "input": {
+      "gist": "",
+      "origin": "https://controlled.invalid:9443"
+    },
+    "output": "https://controlled.invalid:9443/session/#"
+  }
+]

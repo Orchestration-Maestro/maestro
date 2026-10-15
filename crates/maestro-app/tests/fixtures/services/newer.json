@@ -1,0 +1,92 @@
+[
+  {
+    "input": {
+      "candidate": "1.2.4",
+      "current": "1.2.3"
+    },
+    "output": {
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "candidate": "1.2.3",
+      "current": "1.2.3"
+    },
+    "output": {
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "candidate": "1.2.2",
+      "current": "1.2.3"
+    },
+    "output": {
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "candidate": "unparsed",
+      "current": "1.2.3"
+    },
+    "output": {
+      "result": "unparsed",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "candidate": "1.2.3-alpha",
+      "current": "1.2.3"
+    },
+    "output": {
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  }
+]

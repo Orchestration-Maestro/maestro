@@ -1,0 +1,102 @@
+[
+  {
+    "input": {
+      "response": "FETCH_ERROR"
+    },
+    "output": {
+      "lower": "error",
+      "convenience": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        },
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "response": "BODY_ERROR"
+    },
+    "output": {
+      "lower": "error",
+      "convenience": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        },
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "response": "JSON_ERROR"
+    },
+    "output": {
+      "lower": "error",
+      "convenience": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        },
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "response": null
+    },
+    "output": {
+      "lower": "error",
+      "convenience": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        },
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  }
+]

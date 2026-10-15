@@ -1,0 +1,284 @@
+[
+  {
+    "input": {
+      "timeout": null,
+      "status": 200
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": null,
+      "status": 204
+    },
+    "output": {
+      "branch": "error",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": null,
+      "status": 299
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": null,
+      "status": 300
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": null,
+      "status": 503
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 0,
+      "status": 200
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 0,
+      "status": 204
+    },
+    "output": {
+      "branch": "error",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 0,
+      "status": 299
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 0,
+      "status": 300
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 0,
+      "status": 503
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 17,
+      "status": 200
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 17,
+      "status": 204
+    },
+    "output": {
+      "branch": "error",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 17,
+      "status": 299
+    },
+    "output": {
+      "branch": "ok",
+      "result": "1.2.4",
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 17,
+      "status": 300
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "input": {
+      "timeout": 17,
+      "status": 503
+    },
+    "output": {
+      "branch": "ok",
+      "result": null,
+      "calls": [
+        {
+          "url": "https://controlled.invalid:9443/api/latest-version",
+          "headers": {
+            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
+            "accept": "application/json"
+          }
+        }
+      ]
+    }
+  }
+]

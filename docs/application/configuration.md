@@ -1,7 +1,8 @@
 # Application configuration
 
 `maestro_app::configuration` owns compiled installation identity, path queries,
-installation-method selection, the native user agent and startup timing samples.
+installation-method selection, the native user agent, startup timing samples and
+[hosted service operations](services.md).
 The SDK root exports `VERSION` and native `get_agent_dir`.
 
 ## Identity and roots
@@ -9,7 +10,9 @@ The SDK root exports `VERSION` and native `get_agent_dir`.
 `config` supplies the package/command name `maestro`, display title `Maestro`,
 configuration directory `.maestro` and the Cargo package version. It derives
 `MAESTRO_CODING_AGENT_DIR` and `MAESTRO_CODING_AGENT_SESSION_DIR` from the command
-name. `SERVICE_ORIGIN` is empty; this module performs no service requests.
+name. `SERVICE_ORIGIN` is empty; passing it to the hosted service operations
+produces no request or share link. Callers may supply one nonempty origin to
+enable those operations.
 
 `config::paths::get_agent_dir` uses a nonempty supplied override, otherwise
 `<home>/.maestro/agent`. Only exact `~` or a leading `~/` asks for home when an

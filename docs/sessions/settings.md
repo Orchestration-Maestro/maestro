@@ -167,7 +167,9 @@ Turning off the install report does not disable the version check, and the
 reverse. `--offline` or `MAESTRO_OFFLINE=1` disables every startup network
 operation listed here, including package update checks. This crate stores the
 `enableInstallTelemetry` preference only; sending and checking belong to the
-application.
+[application hosted services](../application/services.md). Reporting captures
+the preference and environment override when invoked; changing the preference
+after preparation does not change that request.
 
 ## Example
 
