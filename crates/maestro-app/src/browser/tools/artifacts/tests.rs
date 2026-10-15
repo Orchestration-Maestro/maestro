@@ -534,7 +534,8 @@ fn artifact_schema_routes_prepare_before_typed_execution() {
             assert_eq!(prepared.as_ref().map(|value| json!(value)), row.prepared);
             if let Some(prepared) = prepared {
                 let value = Value::Object(prepared);
-                let params: ArtifactsParams = serde_json::from_value(value.clone()).unwrap();
+                let params: maestro_app::ArtifactsParams =
+                    serde_json::from_value(value.clone()).unwrap();
                 assert_eq!(
                     call(&tool, value).await,
                     json!({"content":[{"type":"text", "text": format!("Error: File {} not found. No files have been created yet.", params.filename)}]})
