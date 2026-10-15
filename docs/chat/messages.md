@@ -92,7 +92,8 @@ A self-rendered shell supplies its own framing. Only a row without either
 binding displays generic arguments with [`pretty_json`](../json.md).
 Callback failures fall back in that slot; failures from a returned child's
 `try_render` propagate. Call and result slots share typed state but retain separate
-previous components.
+previous components. Result callbacks receive content and optional raw details;
+error status is carried only by the render context, not the result payload.
 
 `update_args`, `mark_execution_started`, `set_args_complete`, `update_result`,
 `set_expanded`, `set_show_images` and `set_image_width_cells` rebuild the retained

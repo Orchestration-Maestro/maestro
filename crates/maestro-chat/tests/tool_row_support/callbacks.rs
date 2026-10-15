@@ -125,11 +125,17 @@ impl Callbacks {
     }
 }
 
-/// Preserve raw content/details presence in the callback transcript.
+/// Preserve the whole result payload, including optional metadata presence.
 fn result_value(result: &maestro_app::ToolRenderResultLike<'_, Value>) -> Value {
     let mut value = json!({"content":result.content});
     if let Some(details) = result.details {
         value["details"] = details.clone();
+    }
+    if let Some(terminate) = result.terminate {
+        value["terminate"] = json!(terminate);
+    }
+    if let Some(is_error) = result.is_error {
+        value["isError"] = json!(is_error);
     }
     value
 }

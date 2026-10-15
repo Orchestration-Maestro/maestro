@@ -68,7 +68,7 @@ impl ToolExecutionResult {
             content: &self.content,
             details: self.details.as_ref(),
             terminate: None,
-            is_error: Some(self.is_error),
+            is_error: None,
         }
     }
 }

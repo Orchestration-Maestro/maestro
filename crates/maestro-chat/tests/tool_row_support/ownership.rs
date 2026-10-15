@@ -175,17 +175,23 @@ pub fn live_callback_phases() {
     let changed = super::theme(&corpus, true);
     let handle: Rc<RefCell<Option<std::rc::Weak<ToolExecutionComponent>>>> = Rc::default();
     let observed = handle.clone();
+    let errors = Rc::new(RefCell::new(Vec::new()));
+    let observed_errors = errors.clone();
     params.tool_definition = Some(ToolRendererBinding {
         render_call: Some(Rc::new(move |_, _, _| {
             publication.set_theme_instance(changed.clone()).unwrap();
-            Ok(Rc::new(maestro_tui::Text::new(
-                "installed call".into(),
-                0,
-                0,
-                None,
-            )))
+            let text = maestro_tui::Text::new("installed call".into(), 0, 0, None);
+            Ok(Rc::new(text))
         })),
-        render_result: Some(Rc::new(move |_, _, theme, _| {
+        render_result: Some(Rc::new(move |result, _, theme, context| {
+            assert!(result.content.is_empty());
+            assert!(result.details.is_none());
+            assert!(result.terminate.is_none());
+            assert!(
+                result.is_error.is_none(),
+                "result payload has no error field"
+            );
+            observed_errors.borrow_mut().push(context.is_error);
             let row = observed.borrow().as_ref().unwrap().upgrade().unwrap();
             assert!(
                 row.render(40)
@@ -202,21 +208,24 @@ pub fn live_callback_phases() {
     });
     let row = Rc::new(ToolExecutionComponent::new(params).unwrap());
     *handle.borrow_mut() = Some(Rc::downgrade(&row));
-    row.update_result(
-        ToolExecutionResult {
-            content: vec![],
-            details: None,
-            is_error: false,
-        },
-        false,
-    )
-    .unwrap();
-    assert!(
-        row.try_render(40)
-            .unwrap()
-            .iter()
-            .any(|line| line.contains("new theme"))
-    );
+    for is_error in [false, true] {
+        row.update_result(
+            ToolExecutionResult {
+                content: vec![],
+                details: None,
+                is_error,
+            },
+            false,
+        )
+        .unwrap();
+        assert!(
+            row.try_render(40)
+                .unwrap()
+                .iter()
+                .any(|line| line.contains("new theme"))
+        );
+    }
+    assert_eq!(*errors.borrow(), [false, true]);
 }
 
 /// Three consecutive replacements finish before a controlled runtime drain.
