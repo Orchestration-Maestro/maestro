@@ -5,9 +5,9 @@ use super::{
     structure::{FlatNode, Structure},
 };
 use maestro_app::export_html::template::{
-    ancestors, flatten_tree, read_message, recalculate_visual_structure,
+    ancestors, flatten_tree, has_text_content, read_message, recalculate_visual_structure,
 };
-use maestro_app::{SessionTreeNode as InputNode, is_truthy, is_whitespace_scalar};
+use maestro_app::{SessionTreeNode as InputNode, is_truthy};
 use maestro_theme::LiveTheme;
 use maestro_tui::tui::TuiRuntime;
 use serde_json::Value;
@@ -198,31 +198,6 @@ impl TreeState {
                 .map(str::to_owned);
         }
     }
-}
-
-/// Tests string and array content, stopping before unread later malformed text.
-fn has_text_content(content: &Value) -> io::Result<bool> {
-    if let Some(text) = content.as_str() {
-        return Ok(text.chars().any(|scalar| !is_whitespace_scalar(scalar)));
-    }
-    if let Some(blocks) = content.as_array() {
-        for block in blocks
-            .iter()
-            .filter(|block| block.get("type").is_some_and(|kind| kind == "text"))
-        {
-            let text = &block["text"];
-            if !is_truthy(text) {
-                continue;
-            }
-            let text = text.as_str().ok_or_else(|| {
-                io::Error::new(io::ErrorKind::InvalidData, "text block is not a string")
-            })?;
-            if text.chars().any(|scalar| !is_whitespace_scalar(scalar)) {
-                return Ok(true);
-            }
-        }
-    }
-    Ok(false)
 }
 
 /// A shared selection notification.

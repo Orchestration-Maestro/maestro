@@ -1,0 +1,4625 @@
+{
+  "cases": [
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-0",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {},
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-1",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": null
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-2",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": ""
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-3",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": "Alpha\n\t\u03b2"
+      },
+      "expected": {
+        "value": "Alpha\n\t\u03b2"
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-4",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "expected": {
+        "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-5",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": 0
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-6",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": false
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-7",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": {}
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-8",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": []
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-9",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "a"
+          },
+          {
+            "type": "image",
+            "data": "ignored"
+          },
+          {
+            "type": "text",
+            "text": "b"
+          }
+        ]
+      },
+      "expected": {
+        "value": "ab"
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-10",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text"
+          },
+          {
+            "type": "text",
+            "text": null
+          },
+          {
+            "type": "text",
+            "text": false
+          },
+          {
+            "type": "text",
+            "text": 0
+          },
+          {
+            "type": "text",
+            "text": ""
+          },
+          {
+            "type": "text",
+            "text": "tail"
+          }
+        ]
+      },
+      "expected": {
+        "value": "tail"
+      }
+    },
+    {
+      "name": "complete_content_keeps_blocks_and_raw_defaults-11",
+      "group": "complete_content_keeps_blocks_and_raw_defaults",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "  "
+          },
+          {
+            "type": "toolCall",
+            "arguments": {
+              "deep": "unread"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "value": "  "
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-0",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-1",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-2",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-3",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "type": "text",
+            "text": "BC"
+          }
+        ]
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaB"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-4",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          {
+            "type": "text",
+            "text": {
+              "bad": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-5",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          null,
+          1,
+          "skip",
+          {
+            "type": "image"
+          },
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ]
+      },
+      "expected": {
+        "value": "ok"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-6",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\ud83d\ude00"
+      },
+      "expected": {
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-7",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text"
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-8",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": null
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-9",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": 7
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-10",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": 0
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-11",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": false
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-12",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": []
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "terminal_prefix_keeps_cutoff_and_late_reads-13",
+      "group": "terminal_prefix_keeps_cutoff_and_late_reads",
+      "operation": "prefix",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          {
+            "type": "text",
+            "text": {
+              "bad": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-0",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {},
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-1",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": null
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-2",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": false
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-3",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": 0
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-4",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": {}
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-5",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": []
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-6",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": "\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-7",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": "\u0085"
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-8",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": "\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeffA\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-9",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+          }
+        ]
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-10",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": null
+          },
+          {
+            "type": "text",
+            "text": false
+          },
+          {
+            "type": "text",
+            "text": 0
+          }
+        ]
+      },
+      "expected": {
+        "value": false
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-11",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ok"
+          },
+          {
+            "type": "text",
+            "text": {
+              "bad": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-12",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "\t\n\u000b\f\r \u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+          },
+          {
+            "type": "text",
+            "text": {
+              "bad": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "content_eligibility_keeps_whitespace_and_short_circuit-13",
+      "group": "content_eligibility_keeps_whitespace_and_short_circuit",
+      "operation": "presence",
+      "input": {
+        "content": [
+          null,
+          {
+            "type": "image"
+          },
+          {
+            "type": "text",
+            "text": "ok"
+          }
+        ]
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-0",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          null
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-1",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": 7
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-2",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": true
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-3",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": {}
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-4",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": []
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-5",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          {
+            "type": "text",
+            "text": {
+              "bad": true
+            }
+          }
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "complete_content_reports_reached_invalid_blocks-6",
+      "group": "complete_content_reports_reached_invalid_blocks",
+      "operation": "extract",
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          null
+        ]
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-0",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha Beta"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-1",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "hidden"
+              },
+              {
+                "type": "text",
+                "text": "Alpha"
+              },
+              {
+                "type": "text",
+                "text": "Beta"
+              }
+            ]
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "assistant alphabeta"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-2",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": "printf Needle",
+            "content": "out"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution out printf needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-3",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "content": "tool body"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "toolresult tool body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-4",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "customType": "note",
+          "content": "long custom Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "note long custom needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-5",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "compaction",
+          "summary": "hidden Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "compaction"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-6",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": "Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-7",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": "ModelNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model modelneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-8",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": "Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-9",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": "Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-10",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": "Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-11",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": "Needle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-12",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future",
+          "data": {
+            "unread": "Needle"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-13",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "compaction",
+          "summary": "hidden Needle"
+        },
+        "query": "compaction"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "compaction"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-14",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": "Needle"
+        },
+        "query": "branch summary"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-15",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": "ModelNeedle"
+        },
+        "query": "model"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model modelneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-16",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": "Needle"
+        },
+        "query": "thinking"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-17",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": "Needle"
+        },
+        "query": "title"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-18",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": "Needle"
+        },
+        "query": "custom"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-19",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": "Needle"
+        },
+        "query": "label"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-20",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxNeedle"
+          }
+        },
+        "query": "needle",
+        "label": "badge"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "badge user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxneedle"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-21",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxNeedle"
+              }
+            ]
+          }
+        },
+        "query": "needle",
+        "label": "badge"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "badge user xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxneedle"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-22",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "customType": "note",
+          "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxNeedle"
+        },
+        "query": "needle",
+        "label": "badge"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "badge note xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-23",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "customType": "note",
+          "content": [
+            {
+              "type": "text",
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxNeedle"
+            }
+          ]
+        },
+        "query": "needle",
+        "label": "badge"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "badge note xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxneedle"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_surfaces_keep_their_own_fields_and_lengths-24",
+      "group": "search_surfaces_keep_their_own_fields_and_lengths",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future",
+          "data": {
+            "unread": "deep"
+          }
+        },
+        "query": "badge",
+        "label": "Badge Needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "badge needle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-0",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": ""
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-1",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": " \t\ufeff "
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-2",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "BETA alpha"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-3",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "Alpha absent"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-4",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "a.b [x]"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-5",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "a.*"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-6",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "i\u0307"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-7",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "\u03bf\u03c2"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "literal_search_keeps_unicode_tokens_and_empty_fast_path-8",
+      "group": "literal_search_keeps_unicode_tokens_and_empty_fast_path",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "Alpha BETA a.b [x] \u0130 \u039f\u03a3 \u0085"
+          }
+        },
+        "query": "\u0085"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user alpha beta a.b [x] i\u0307 \u03bf\u03c2 \u0085"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-0",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-1",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": null
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-2",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": ""
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-3",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": "FieldNeedle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "fieldneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-4",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": 0
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-5",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": 7
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-6",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": false
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-7",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": true
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-8",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": {}
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-9",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "query": "needle",
+        "label": []
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-10",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": " body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-11",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": " body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-12",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": " body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-13",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "fieldneedle body"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-14",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-15",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-16",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-17",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-18",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-19",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom_message",
+          "content": "body",
+          "customType": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-20",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-21",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-22",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-23",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-24",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-25",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-26",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-27",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-28",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-29",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "custom",
+          "customType": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-30",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-31",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-32",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-33",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "branch summary fieldneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-34",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-35",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-36",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-37",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-38",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-39",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "branch_summary",
+          "summary": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-40",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-41",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-42",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-43",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "model fieldneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-44",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-45",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-46",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-47",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-48",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-49",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "model_change",
+          "modelId": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-50",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-51",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-52",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking "
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-53",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "thinking fieldneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-54",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-55",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-56",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-57",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-58",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-59",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "thinking_level_change",
+          "thinkingLevel": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-60",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-61",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-62",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-63",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-64",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-65",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-66",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-67",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-68",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-69",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "session_info",
+          "name": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-70",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-71",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-72",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": ""
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-73",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": "FieldNeedle"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-74",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": 0
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-75",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": 7
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-76",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": false
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-77",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": true
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-78",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": {}
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-79",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "label",
+          "label": []
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": ""
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-80",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-81",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": null
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-82",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": ""
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-83",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": "FieldNeedle"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution fieldneedle"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-84",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": 0
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-85",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": 7
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-86",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": false
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "bashexecution"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-87",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": true
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-88",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": {}
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-89",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "bashExecution",
+            "command": []
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-90",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": " body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-91",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": null
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-92",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": ""
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": " body"
+          },
+          "terminal": {
+            "value": false
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-93",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": "FieldNeedle"
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "fieldneedle body"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-94",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": 0
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-95",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": 7
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-96",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": false
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-97",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": true
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-98",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": {}
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-99",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "content": "body",
+            "role": []
+          }
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-100",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": "body",
+            "command": {
+              "unread": true
+            }
+          }
+        },
+        "query": "user"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "value": "user body"
+          },
+          "terminal": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-101",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message"
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-102",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "terminal_search",
+      "input": {
+        "entry": {
+          "type": "message"
+        },
+        "query": ""
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-103",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "viewer_search",
+      "input": {
+        "entry": {
+          "type": "message"
+        }
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-104",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": null
+        },
+        "query": "needle"
+      },
+      "expected": {
+        "value": {
+          "viewer": {
+            "error": true
+          },
+          "terminal": {
+            "error": true
+          }
+        }
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-105",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "terminal_search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": null
+        },
+        "query": ""
+      },
+      "expected": {
+        "value": true
+      }
+    },
+    {
+      "name": "search_optional_fields_keep_defaults_and_read_phase-106",
+      "group": "search_optional_fields_keep_defaults_and_read_phase",
+      "operation": "viewer_search",
+      "input": {
+        "entry": {
+          "type": "message",
+          "message": null
+        }
+      },
+      "expected": {
+        "error": true
+      }
+    },
+    {
+      "name": "shared_search_observes_retained_label_updates-0",
+      "group": "shared_search_observes_retained_label_updates",
+      "operation": "label_search",
+      "input": {
+        "entry": {
+          "type": "future"
+        },
+        "label": "old",
+        "replacement": "New",
+        "query": "new"
+      },
+      "expected": {
+        "value": {
+          "before": false,
+          "after": true
+        }
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-0",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 0,
+          "showConnector": false,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-1",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": false,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "   "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-2",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "\u251c\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-3",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": true,
+          "isLast": true,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "\u2514\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-4",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 2,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [
+            {
+              "position": 0,
+              "show": true
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "\u2502  \u251c\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-5",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 2,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [
+            {
+              "position": 0,
+              "show": false
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "   \u251c\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-6",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [
+            {
+              "position": 0,
+              "show": true
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "\u2502  "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-7",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [
+            {
+              "position": 0,
+              "show": false
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "   "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-8",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 3,
+          "showConnector": true,
+          "isLast": true,
+          "gutters": [
+            {
+              "position": 0,
+              "show": true
+            },
+            {
+              "position": 1,
+              "show": false
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "\u2502     \u2514\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-9",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 1,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": true,
+          "multipleRoots": true
+        }
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-10",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 2,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": true
+        }
+      },
+      "expected": {
+        "value": "\u251c\u2500 "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-11",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 0,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": false,
+          "multipleRoots": true
+        }
+      },
+      "expected": {
+        "value": ""
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-12",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 2,
+          "showConnector": false,
+          "isLast": false,
+          "gutters": [],
+          "isVirtualRootChild": true,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "      "
+      }
+    },
+    {
+      "name": "plain_prefix_keeps_connectors_and_gutter_precedence-13",
+      "group": "plain_prefix_keeps_connectors_and_gutter_precedence",
+      "operation": "prefix_geometry",
+      "input": {
+        "row": {
+          "indent": 2,
+          "showConnector": true,
+          "isLast": false,
+          "gutters": [
+            {
+              "position": 0,
+              "show": false
+            },
+            {
+              "position": 0,
+              "show": true
+            },
+            {
+              "position": 5,
+              "show": true
+            }
+          ],
+          "isVirtualRootChild": false,
+          "multipleRoots": false
+        }
+      },
+      "expected": {
+        "value": "   \u251c\u2500 "
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-0",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [],
+          "active": []
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-1",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          }
+        ],
+        "target": null
+      },
+      "expected": {
+        "value": {
+          "path": [],
+          "active": []
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-2",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          }
+        ],
+        "target": "unknown"
+      },
+      "expected": {
+        "value": {
+          "path": [],
+          "active": []
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-3",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0
+          ],
+          "active": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-4",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": "missing"
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0
+          ],
+          "active": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-5",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": "a"
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0
+          ],
+          "active": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-6",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          },
+          {
+            "id": "b",
+            "parentId": "a"
+          },
+          {
+            "id": "c",
+            "parentId": "b"
+          }
+        ],
+        "target": "c"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0,
+            1,
+            2
+          ],
+          "active": [
+            "c",
+            "b",
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_reuse_finite_cycle_correction-0",
+      "group": "viewer_paths_reuse_finite_cycle_correction",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          },
+          {
+            "id": "b",
+            "parentId": "a"
+          },
+          {
+            "id": "a",
+            "parentId": "b"
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            1,
+            2
+          ],
+          "active": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-7",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": null
+          },
+          {
+            "id": "a",
+            "parentId": "x"
+          },
+          {
+            "id": "x",
+            "parentId": null
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            2,
+            1
+          ],
+          "active": [
+            "a",
+            "x"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-8",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "",
+            "parentId": null
+          },
+          {
+            "id": "a",
+            "parentId": ""
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            1
+          ],
+          "active": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_reuse_finite_cycle_correction-1",
+      "group": "viewer_paths_reuse_finite_cycle_correction",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a",
+            "parentId": "b"
+          },
+          {
+            "id": "b",
+            "parentId": "a"
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            1,
+            0
+          ],
+          "active": [
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_reuse_finite_cycle_correction-2",
+      "group": "viewer_paths_reuse_finite_cycle_correction",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "z",
+            "parentId": "a"
+          },
+          {
+            "id": "a",
+            "parentId": "b"
+          },
+          {
+            "id": "b",
+            "parentId": "a"
+          }
+        ],
+        "target": "z"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            2,
+            1,
+            0
+          ],
+          "active": [
+            "z",
+            "a",
+            "b"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-9",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "a"
+          }
+        ],
+        "target": "a"
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0
+          ],
+          "active": [
+            "a"
+          ]
+        }
+      }
+    },
+    {
+      "name": "viewer_paths_keep_last_identity_and_missing_parent_policy-10",
+      "group": "viewer_paths_keep_last_identity_and_missing_parent_policy",
+      "operation": "path",
+      "input": {
+        "entries": [
+          {
+            "id": "",
+            "parentId": null
+          }
+        ],
+        "target": ""
+      },
+      "expected": {
+        "value": {
+          "path": [
+            0
+          ],
+          "active": [
+            ""
+          ]
+        }
+      }
+    }
+  ]
+}
