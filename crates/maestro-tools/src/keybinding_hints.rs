@@ -35,8 +35,8 @@ pub fn raw_key_hint(key: &str, description: &str, theme: &LiveTheme) -> Result<S
 }
 
 /// An unstyled hint for deferred drawing when the live theme becomes unavailable.
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn plain_key_hint(keybinding: &str, description: &str) -> String {
+#[must_use]
+pub fn plain_key_hint(keybinding: &str, description: &str) -> String {
     format_key_hint(&key_text(keybinding), description, None).unwrap_or_default()
 }
 

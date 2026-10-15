@@ -252,6 +252,7 @@ fn shorten_home_path(path: &str, home: Option<&str>) -> String {
         .map_or_else(|| path.to_owned(), |rest| format!("~{rest}"))
 }
 
+pub mod bash_execution;
 pub mod session_selector;
 /// Wraps selection in nonempty results, reporting whether a redraw is needed.
 fn navigate_list(selected: &Cell<usize>, count: usize, up: bool) -> bool {

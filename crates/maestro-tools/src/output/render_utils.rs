@@ -235,7 +235,8 @@ impl AnsiStream {
 }
 
 /// Format a line number or count the way the model has always seen it.
-pub(crate) fn num(value: f64) -> String {
+#[must_use]
+pub fn num(value: f64) -> String {
     ryu_js::Buffer::new().format(value).to_owned()
 }
 
