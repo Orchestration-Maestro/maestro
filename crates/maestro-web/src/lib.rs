@@ -25,9 +25,10 @@ pub use maestro_app::browser::utils::proxy_utils::{
 };
 
 pub use maestro_app::{
-    AutoDiscoveryProviderType, CustomProvider, CustomProviderType, CustomProvidersStore,
-    IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore, SettingsStore,
-    StorageBackend, StorageTransaction, Store, StoreConfig,
+    AppStorage, AutoDiscoveryProviderType, CustomProvider, CustomProviderType,
+    CustomProvidersStore, IndexConfig, IndexedDBConfig, ManualProviderType, ProviderKeysStore,
+    SessionData, SessionMetadata, SessionsStore, SettingsStore, StorageBackend, StorageTransaction,
+    Store, StoreConfig, get_app_storage, set_app_storage,
 };
 
 pub use maestro_app::browser::storage::{

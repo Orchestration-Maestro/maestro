@@ -6,8 +6,11 @@ pub use store::Store;
 pub use stores::custom_providers_store::{
     AutoDiscoveryProviderType, CustomProvider, CustomProviderType, ManualProviderType,
 };
+pub use stores::sessions_store::SessionsStore;
 pub use stores::{
     custom_providers_store::CustomProvidersStore, provider_keys_store::ProviderKeysStore,
     settings_store::SettingsStore,
 };
 pub use types::*;
+pub mod app_storage;
+pub use app_storage::{AppStorage, get_app_storage, set_app_storage};

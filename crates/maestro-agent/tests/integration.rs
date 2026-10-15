@@ -25,3 +25,5 @@ mod tool_detail_presence;
 mod tool_record_identity;
 mod tool_turns;
 mod turn_controls;
+
+mod message_storage;

@@ -101,5 +101,8 @@ assert_eq!(retained.read().unwrap().system_prompt, "Answer concisely.");
 
 Message descriptors, tool declarations and content records use the existing
 [model records](records.md). The custom-message contract keeps caller-defined
-roles and payloads typed; it does not convert them to JSON. Tool callbacks are
+roles and payloads typed. The default `NoCustomMessages` is an empty serializable
+custom-role set. `AgentMessage<C>` supports serde when `C` does; standard role
+tags and caller-defined payloads retain their JSON shapes. Callers not using
+persistence need no serde implementation. Tool callbacks are
 retained rather than invoked by state and queue operations.

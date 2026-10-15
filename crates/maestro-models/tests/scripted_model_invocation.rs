@@ -166,6 +166,7 @@ mod tests {
         assert_eq!(message.error_message.as_deref(), Some(""));
         assert_eq!(message.response_id.as_deref(), Some("id"));
         number(message.timestamp, 0.0);
+        assert_recorded_zero_usage(&message.usage);
         let text = faux_text("text");
         let thinking = faux_thinking("thinking");
         let tool = faux_tool_call("tool", JsonObject::new(), FauxToolCallOptions::default());
@@ -187,6 +188,32 @@ mod tests {
                 .content
                 .is_empty()
         );
+    }
+
+    /// Assert every token and cost default against the recorded zero record.
+    fn assert_recorded_zero_usage(usage: &Usage) {
+        let value = serde_json::to_value(usage).unwrap();
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../maestro-app/tests/fixtures/browser_sessions.json"
+        ))
+        .unwrap();
+        let row = fixture["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["test"] == "session_alias_defaults_keep_zero_usage_and_separate_timestamps")
+            .unwrap();
+        let zero = &row["expected"]["result"]["records"]["sessions-metadata"]["alias-id"]["usage"];
+        for (actual, expected) in [(&value, zero), (&value["cost"], &zero["cost"])] {
+            for (key, expected) in expected
+                .as_object()
+                .unwrap()
+                .iter()
+                .filter(|(key, _)| *key != "cost")
+            {
+                number(actual[key].as_f64().unwrap(), expected.as_f64().unwrap());
+            }
+        }
     }
 
     #[test]

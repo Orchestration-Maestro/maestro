@@ -15,7 +15,7 @@ maestro-credentials = { path = "../maestro-credentials" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 num-traits.workspace = true
 maestro-agent = { path = "../maestro-agent" }
-serde.workspace = true
+serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 percent-encoding = "=2.3.2"
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
@@ -37,6 +37,7 @@ maestro-watch = { path = "../maestro-watch" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
+maestro-text = { path = "../maestro-text", features = ["collation"] }
 maestro-tools = { path = "../maestro-tools" }
 maestro-process = { path = "../maestro-process" }
 uuid = { version = "=1.27.0", default-features = false, features = ["std", "v4"] }
@@ -52,9 +53,12 @@ tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-t
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["rt-multi-thread", "sync"] }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "=0.3.106"
+
 [dev-dependencies]
 image = { version = "=0.24.9", default-features = false, features = ["png"] }
-serde.workspace = true
+serde = { workspace = true, features = ["rc"] }
 serde_json.workspace = true
 
 [lints]

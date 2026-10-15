@@ -4,7 +4,7 @@ use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, SharedAssistantMessage, ToolCall,
     ToolResultMessage, UserBlock,
 };
-use std::{convert::Infallible, future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin, sync::Arc};
 
 /// Decision to block an admitted call; the default permits execution.
 #[derive(Default)]
@@ -15,7 +15,7 @@ pub struct BeforeToolCallResult {
     pub reason: Option<String>,
 }
 /// Requesting records and mutable validated arguments.
-pub struct BeforeToolCallContext<'a, C: CustomAgentMessages = Infallible> {
+pub struct BeforeToolCallContext<'a, C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Assistant requesting this call.
     pub assistant_message: &'a SharedAssistantMessage,
     /// Original model-supplied call.
@@ -64,7 +64,7 @@ pub struct AfterToolCallResult {
     pub terminate: Option<bool>,
 }
 /// Executed outcome and requesting records borrowed for finalization.
-pub struct AfterToolCallContext<'a, C: CustomAgentMessages = Infallible> {
+pub struct AfterToolCallContext<'a, C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Assistant requesting this call.
     pub assistant_message: &'a SharedAssistantMessage,
     /// Original model-supplied call.
@@ -105,7 +105,7 @@ pub type AfterToolCall<C> = Arc<
 >;
 
 /// Completed turn and newly produced operation records.
-pub struct ShouldStopAfterTurnContext<'a, C: CustomAgentMessages = Infallible> {
+pub struct ShouldStopAfterTurnContext<'a, C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Completed assistant response.
     pub message: &'a SharedAssistantMessage,
     /// Tool artifacts for this turn only.

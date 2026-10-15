@@ -8,14 +8,14 @@ use std::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 /// Awaited listener receiving the shared mutable event after state reduction.
-pub type AgentListener<C = std::convert::Infallible> = Arc<
+pub type AgentListener<C = crate::NoCustomMessages> = Arc<
     dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
         + Send
         + Sync,
 >;
 #[cfg(target_arch = "wasm32")]
 /// Awaited listener receiving the shared mutable event after state reduction.
-pub type AgentListener<C = std::convert::Infallible> = Arc<
+pub type AgentListener<C = crate::NoCustomMessages> = Arc<
     dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>,
 >;
 /// Live callbacks indexed by monotonically increasing registration order.
@@ -34,7 +34,7 @@ impl<C: CustomAgentMessages> Default for Listeners<C> {
     }
 }
 /// Explicit removal handle; dropping it leaves the listener registered.
-pub struct Subscription<C: CustomAgentMessages = std::convert::Infallible> {
+pub struct Subscription<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Non-owning registry owner.
     agent: Weak<Agent<C>>,
     /// Callback identity, including subsequent re-registration.

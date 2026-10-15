@@ -112,11 +112,11 @@ fn check_continuation<C: CustomAgentMessages>(
 }
 /// Await one conversation observation.
 #[cfg(not(target_arch = "wasm32"))]
-pub type AgentEventSink<C = std::convert::Infallible> =
+pub type AgentEventSink<C = crate::NoCustomMessages> =
     Arc<dyn Fn(AgentEvent<C>) -> BoxFuture<Result<(), DiagnosticErrorInfo>> + Send + Sync>;
 /// Await one browser-local conversation observation.
 #[cfg(target_arch = "wasm32")]
-pub type AgentEventSink<C = std::convert::Infallible> =
+pub type AgentEventSink<C = crate::NoCustomMessages> =
     Arc<dyn Fn(AgentEvent<C>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>>;
 /// Request and assistant-event handling.
 mod assistant;

@@ -92,7 +92,9 @@ are later scope, not active foundation concepts.
 
 - **Browser store**: application-owned policy for a named collection behind an injected
   multi-collection backend; distinct from native raw-byte storage. See
-  [browser collection storage](docs/application/browser-storage.md).
+  [browser collection storage](docs/application/browser-storage.md). Session histories
+  and indexed session metadata occupy separate collections; `AppStorage` retains
+  their supplied stores and application adapter.
 
 ### Extensibility
 

@@ -2,7 +2,7 @@
 use maestro_request::diagnostics::{AssistantMessageDiagnostic, DiagnosticCode};
 use maestro_request::types::{
     AssistantMessage, AssistantMessageEvent, Message, Model, ModelCost, RoutingPrice, RoutingSort,
-    RoutingThreshold, StopReason, TextContent, Usage, UsageCost, UserContent, UserMessage,
+    RoutingThreshold, StopReason, TextContent, Usage, UserContent, UserMessage,
 };
 use serde_json::{from_str, to_string};
 
@@ -28,20 +28,7 @@ fn assistant(timestamp: f64) -> AssistantMessage {
         response_model: None,
         response_id: None,
         diagnostics: None,
-        usage: Usage {
-            input: 0.0,
-            output: 0.0,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total_tokens: 0.0,
-            cost: UsageCost {
-                input: 0.0,
-                output: 0.0,
-                cache_read: 0.0,
-                cache_write: 0.0,
-                total: 0.0,
-            },
-        },
+        usage: Usage::default(),
         stop_reason: StopReason::Stop,
         error_message: None,
         timestamp,

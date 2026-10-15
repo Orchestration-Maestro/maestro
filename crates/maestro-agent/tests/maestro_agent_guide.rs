@@ -322,12 +322,12 @@ fn two_echo_calls() -> FauxResponseStep {
 }
 /// An Agent whose hooks edit arguments before and details after execution.
 fn agent_with_hooks(model: &Model, tools: Vec<maestro_agent::SharedAgentTool>) -> Arc<Agent> {
-    let edit_arguments: maestro_agent::BeforeToolCall<std::convert::Infallible> =
+    let edit_arguments: maestro_agent::BeforeToolCall<maestro_agent::NoCustomMessages> =
         Arc::new(|context, _| {
             context.args["text"] = json!("EDITED");
             Box::pin(std::future::ready(Ok(None)))
         });
-    let audit: maestro_agent::AfterToolCall<std::convert::Infallible> = Arc::new(|_, _| {
+    let audit: maestro_agent::AfterToolCall<maestro_agent::NoCustomMessages> = Arc::new(|_, _| {
         let replacement = maestro_agent::AfterToolCallResult {
             details: Some(json!({"audited": true})),
             ..Default::default()

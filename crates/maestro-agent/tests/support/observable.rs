@@ -12,7 +12,7 @@ use std::{
 };
 
 /// Ordered events and terminal entries from one completed invocation.
-pub struct Recording<C: CustomAgentMessages = std::convert::Infallible> {
+pub struct Recording<C: CustomAgentMessages = maestro_agent::NoCustomMessages> {
     /// Unmodified event payloads.
     pub events: Vec<AgentEvent<C>>,
     /// Retained terminal entries.

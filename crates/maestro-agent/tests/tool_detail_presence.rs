@@ -195,7 +195,7 @@ fn calls(ids: &[&str]) -> maestro_models::SharedAssistantMessage {
 async fn drive(
     calls: maestro_models::SharedAssistantMessage,
     execute: ExecuteTool,
-    after: Option<AfterToolCall<std::convert::Infallible>>,
+    after: Option<AfterToolCall<maestro_agent::NoCustomMessages>>,
     mode: ToolExecutionMode,
     entry: Entry,
 ) -> (Arc<Mutex<Seen>>, Vec<ToolResultMessage>) {
@@ -291,7 +291,7 @@ fn assert_call_states(seen: &Seen, returned: &[ToolResultMessage], index: usize,
     assert_eq!(decoded.details, expected);
 }
 /// A hook that records its input and returns no override.
-fn recording_hook(seen: &Arc<Mutex<Seen>>) -> AfterToolCall<std::convert::Infallible> {
+fn recording_hook(seen: &Arc<Mutex<Seen>>) -> AfterToolCall<maestro_agent::NoCustomMessages> {
     let seen = Arc::clone(seen);
     Arc::new(move |context, _| {
         seen.lock()
@@ -401,7 +401,7 @@ async fn run_case(case: &Case, mode: ToolExecutionMode) {
     let hook_seen = Arc::new(Mutex::new(Seen::default()));
     let observed = Arc::clone(&hook_seen);
     let replacement = case.r#override.details.clone();
-    let after: AfterToolCall<std::convert::Infallible> = Arc::new(move |context, _| {
+    let after: AfterToolCall<maestro_agent::NoCustomMessages> = Arc::new(move |context, _| {
         observed
             .lock()
             .unwrap()
@@ -445,7 +445,7 @@ fn tool_failures_keep_present_empty_details() {
         )
         .await;
         assert_failure(&returned[0], "tool failed");
-        let failing_hook: AfterToolCall<std::convert::Infallible> =
+        let failing_hook: AfterToolCall<maestro_agent::NoCustomMessages> =
             Arc::new(|_, _| Box::pin(std::future::ready(Err(diagnostic("after failed")))));
         let (_, returned) = drive(
             calls(&["c0"]),

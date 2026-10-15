@@ -2,10 +2,9 @@
 use super::{AgentMessage, AgentToolResult, CustomAgentMessages};
 pub use maestro_models::ToolCall as AgentToolCall;
 use maestro_models::{AssistantMessageEvent, SharedAssistantMessage, ToolResultMessage};
-use std::convert::Infallible;
 
 /// An observation from the conversation operation.
-pub enum AgentEvent<C: CustomAgentMessages = Infallible> {
+pub enum AgentEvent<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// The operation begins.
     AgentStart,
     /// The operation completed with its newly admitted messages.

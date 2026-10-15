@@ -2906,6 +2906,7 @@ dependencies = [
  "hayro-interpret",
  "image 0.24.9",
  "indexmap",
+ "js-sys",
  "maestro-agent",
  "maestro-catalog",
  "maestro-credentials",
