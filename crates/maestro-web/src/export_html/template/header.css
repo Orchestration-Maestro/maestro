@@ -1,0 +1,16 @@
+.maestro-session-header {
+  box-sizing: border-box;
+  background: var(--maestro-color-panel);
+  border-radius: var(--maestro-radii-panel);
+  padding: var(--maestro-spacing-lg);
+  margin-bottom: var(--maestro-spacing-lg);
+  font-family: var(--maestro-type-body-font);
+  font-size: var(--maestro-type-body-size);
+  line-height: var(--maestro-type-body-line-height);
+}
+.maestro-session-header h1 {
+  margin: 0 0 var(--maestro-spacing-lg);
+  font-size: 1em;
+  font-weight: bold;
+  color: var(--maestro-color-accent);
+}

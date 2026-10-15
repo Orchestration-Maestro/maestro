@@ -93,3 +93,9 @@ JSON/string operations; listener work uses wasm-bindgen-futures. No package
 version, executor or native dependency is added. The embedded messaging scripts
 are host-required assets, not a JavaScript frontend implementation. See
 [sandbox messaging](../browser/sandbox.md).
+
+Owned native reading surfaces additionally enable `web-sys/ResizeObserver` on
+that same locked version. This feature adds no package dependency. The existing
+native event-subscription owner retains its scroll callback; the observer shares
+that callable and disconnects before it is released. No font or browser-runner
+package is installed for reading content.

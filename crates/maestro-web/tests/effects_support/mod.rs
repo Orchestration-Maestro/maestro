@@ -86,6 +86,12 @@ impl Host {
     }
 }
 impl AttachmentHost for Host {
+    fn reading_layout(
+        &self,
+        _: egui::Id,
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+        unreachable!("this suite does not create reading content")
+    }
     fn timer(
         &self,
         delay: i32,

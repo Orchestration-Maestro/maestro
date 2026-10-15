@@ -44,8 +44,14 @@ pub enum TextView {
     /// Presentation slide text.
     Presentation,
 }
+mod reading;
+pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
+#[cfg(target_arch = "wasm32")]
+pub use reading::{ReadingMount, ReadingRoot};
 /// Borrowed operands for one platform content update.
 pub enum AttachmentContent<'a> {
+    /// Owned native reading content.
+    Reading(ReadingPlacement<'a>),
     /// Browser-native editable input.
     Input {
         /// Live native field configuration.
@@ -147,6 +153,10 @@ impl From<io::Error> for AttachmentUiError {
 }
 /// Replaceable browser content and download effects.
 pub trait AttachmentHost {
+    /// Measure the admitted reading root in the current canvas frame.
+    /// # Errors
+    /// Returns missing-surface or native geometry failures.
+    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError>;
     /// Update one retained content element.
     /// # Errors
     /// Returns platform or file-presentation failures.
@@ -336,3 +346,13 @@ fn style_targets(
 
 #[cfg(target_arch = "wasm32")]
 mod input;
+
+#[cfg(any(target_arch = "wasm32", test))]
+/// One modal visibility projection shared by all native content.
+fn visibility_style(id: egui::Id, modal: Option<egui::Id>, top: Option<egui::Id>) -> &'static str {
+    match top {
+        None => "visibility:visible;z-index:1;",
+        Some(top) if top == id || modal == Some(top) => "visibility:visible;z-index:51;",
+        Some(_) => "visibility:hidden;z-index:1;",
+    }
+}

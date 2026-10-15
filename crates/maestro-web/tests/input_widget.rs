@@ -23,6 +23,12 @@ struct DefaultHost {
     removals: Cell<usize>,
 }
 impl AttachmentHost for DefaultHost {
+    fn reading_layout(
+        &self,
+        _: egui::Id,
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+        unreachable!("this suite does not create reading content")
+    }
     fn present(
         &self,
         surface: AttachmentSurface<'_>,

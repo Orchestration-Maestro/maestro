@@ -36,3 +36,43 @@ pub(super) fn clip_path(
     }
     format!("path(evenodd,\"{path}\")")
 }
+
+/// Single canvas-to-CSS projection shared by placement and native readback.
+pub(super) struct Transform {
+    /// Viewport CSS origin.
+    pub origin: [f64; 2],
+    /// Independent CSS pixels per canvas point.
+    pub scale: (f64, f64),
+}
+impl Transform {
+    /// Derive scales from the actual drawable canvas.
+    pub fn new(
+        bounds: [f64; 4],
+        physical: [u32; 2],
+        pixels: f32,
+    ) -> Result<Self, super::AttachmentUiError> {
+        if physical.contains(&0) || bounds[2] <= 0. || bounds[3] <= 0. {
+            return Err(super::AttachmentUiError::Host(
+                "Canvas has no drawable size".into(),
+            ));
+        }
+        Ok(Self {
+            origin: [bounds[0], bounds[1]],
+            scale: (
+                bounds[2] * f64::from(pixels) / f64::from(physical[0]),
+                bounds[3] * f64::from(pixels) / f64::from(physical[1]),
+            ),
+        })
+    }
+    /// Project a canvas point into viewport CSS pixels.
+    pub fn position(&self, p: egui::Pos2) -> [f64; 2] {
+        [
+            self.origin[0] + f64::from(p.x) * self.scale.0,
+            self.origin[1] + f64::from(p.y) * self.scale.1,
+        ]
+    }
+    /// Read a natural CSS height in canvas points.
+    pub fn height(&self, css: f64) -> f32 {
+        super::points(css / self.scale.1)
+    }
+}

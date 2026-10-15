@@ -40,3 +40,29 @@ Reached missing message receivers, malformed assistant content, truthy nonnumeri
 accounting components and truthy nonstring model/provider identities return
 invalid-data errors. Unused non-assistant content remains unread. Raw fields are
 not narrowed to a second history schema or coerced into numeric/string values.
+
+## Native identity
+
+Retain a `HeaderState::new(host)` and call
+`render_header(ui, &document, &mut state, HeaderView { presentation })` through
+`maestro_web::export_html::template`. This fallible operation renders only
+`Session: <id>` as literal browser text, with `unknown` for an absent header or
+an absent or falsy ID.
+It does not interpret markup, trim the ID or inspect deferred prompt/tool fields.
+A truthy nonstring identity returns an invalid-data error.
+
+The caller supplies the host and selected brand presentation. Equal identities
+reuse the owned native factory; changed identities commit only after successful
+measurement and placement. Dropping the state removes only its own surface.
+Horizontal, vertical and wrapped parents all use an independent top-down child;
+the native viewport is bounded by available height, without a second canvas
+scroller or painted reading text. A transparent flow container includes the
+panel's trailing spacing in that allocation without extending its background.
+
+Metadata, help and canvas actions are tracked in
+[#1090](https://github.com/Orchestration-Maestro/maestro/issues/1090), and native
+prompt/tool disclosures in
+[#1086](https://github.com/Orchestration-Maestro/maestro/issues/1086).
+Browser Find, real selection, font reflow and observer/compositor behavior remain
+qualified by [#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084);
+controlled hosts and WebAssembly compilation do not prove those observations.
