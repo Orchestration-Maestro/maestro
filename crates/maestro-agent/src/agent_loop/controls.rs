@@ -5,11 +5,11 @@ use crate::{
 };
 use maestro_models::{DiagnosticErrorInfo, SharedAssistantMessage, ToolResultMessage};
 use std::sync::{Arc, RwLock};
-impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
+impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Await an optional ordered message poll.
     pub(super) async fn poll_messages(
         &self,
-        callback: Option<&GetSteeringMessages<C>>,
+        callback: Option<&GetSteeringMessages<C, E>>,
     ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
         match callback {
             Some(callback) => callback().await,

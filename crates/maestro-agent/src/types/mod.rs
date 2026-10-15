@@ -98,3 +98,8 @@ pub use loop_config::*;
 /// Tool callback records.
 mod hooks;
 pub use hooks::*;
+
+/// Execution affinity representations.
+pub(crate) mod execution;
+pub use execution::{AgentExecution, ExecutionFor};
+pub use maestro_models::{Execution, Local, Threaded};

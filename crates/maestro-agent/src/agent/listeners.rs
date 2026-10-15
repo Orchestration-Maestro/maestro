@@ -1,31 +1,23 @@
 //! Identity-deduplicated live subscription traversal.
 use super::{Agent, CustomAgentMessages, lock};
 use crate::AgentEvent;
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+use crate::types::{AgentExecution, Threaded};
+use maestro_models::{Cancellation, DiagnosticErrorInfo};
 use std::{
     collections::BTreeMap,
-    sync::{Arc, RwLock, Weak},
+    sync::{Arc, RwLock},
 };
-#[cfg(not(target_arch = "wasm32"))]
-/// Awaited listener receiving the shared mutable event after state reduction.
-pub type AgentListener<C = crate::NoCustomMessages> = Arc<
-    dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-#[cfg(target_arch = "wasm32")]
-/// Awaited listener receiving the shared mutable event after state reduction.
-pub type AgentListener<C = crate::NoCustomMessages> = Arc<
-    dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>,
->;
+/// Awaited listener after state reduction.
+pub type AgentListener<C = crate::NoCustomMessages, E = Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as AgentExecution>::Listener<C>>;
 /// Live callbacks indexed by monotonically increasing registration order.
-pub(super) struct Listeners<C: CustomAgentMessages> {
+pub(super) struct Listeners<C: CustomAgentMessages, E: AgentExecution> {
     /// Next registration identity.
     next: u64,
     /// Current registrations.
-    entries: BTreeMap<u64, AgentListener<C>>,
+    entries: BTreeMap<u64, AgentListener<C, E>>,
 }
-impl<C: CustomAgentMessages> Default for Listeners<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> Default for Listeners<C, E> {
     fn default() -> Self {
         Self {
             next: 0,
@@ -34,71 +26,88 @@ impl<C: CustomAgentMessages> Default for Listeners<C> {
     }
 }
 /// Explicit removal handle; dropping it leaves the listener registered.
-pub struct Subscription<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct Subscription<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Non-owning registry owner.
-    agent: Weak<Agent<C>>,
+    agent: E::Weak<Agent<C, E>>,
     /// Callback identity, including subsequent re-registration.
-    listener: Weak<ListenerObject<C>>,
+    listener: E::Weak<E::Listener<C>>,
 }
-#[cfg(not(target_arch = "wasm32"))]
-/// Target-specific callback object.
-type ListenerObject<C> = dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
-    + Send
-    + Sync;
-#[cfg(target_arch = "wasm32")]
-/// Target-specific callback object.
-type ListenerObject<C> =
-    dyn Fn(Arc<RwLock<AgentEvent<C>>>, Cancellation) -> BoxFuture<Result<(), DiagnosticErrorInfo>>;
-impl<C: CustomAgentMessages> Agent<C> {
-    /// Register callback identity once; additions are visible to an active traversal.
-    pub fn subscribe(self: &Arc<Self>, listener: AgentListener<C>) -> Subscription<C> {
-        let subscription = Subscription {
-            agent: Arc::downgrade(self),
-            listener: Arc::downgrade(&listener),
-        };
+impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
+    /// Register one callback identity in source order.
+    pub(crate) fn register(&self, listener: AgentListener<C, E>) {
         let mut listeners = lock(&self.listeners);
         if !listeners
             .entries
             .values()
-            .any(|old| Arc::ptr_eq(old, &listener))
+            .any(|old| std::ptr::addr_eq(&raw const **old, &raw const *listener))
         {
             let id = listeners.next;
             listeners.next += 1;
             listeners.entries.insert(id, listener);
         }
-        subscription
     }
-}
-impl<C: CustomAgentMessages> Subscription<C> {
-    /// Remove this callback identity, including a later re-addition, idempotently.
-    pub fn unsubscribe(&self) {
-        let removed = self.agent.upgrade().and_then(|agent| {
-            let mut listeners = lock(&agent.listeners);
+    /// Remove the current registration with the retained weak identity.
+    pub(crate) fn remove_listener(&self, pointer: *const E::Listener<C>) {
+        let removed = {
+            let mut listeners = lock(&self.listeners);
             let key = listeners.entries.iter().find_map(|(key, value)| {
-                std::ptr::addr_eq(Arc::as_ptr(value), self.listener.as_ptr()).then_some(*key)
+                std::ptr::addr_eq(&raw const **value, pointer).then_some(*key)
             });
             key.and_then(|key| listeners.entries.remove(&key))
-        });
+        };
         drop(removed);
     }
 }
-impl<C: CustomAgentMessages + 'static> Agent<C> {
+/// Concrete weak references share registration and removal.
+macro_rules! entry {
+    ($mode:ty,$ptr:ident) => {
+        impl<C: CustomAgentMessages> Agent<C, $mode> {
+            /// Register a live listener without making the handle own the agent.
+            pub fn subscribe(
+                self: &$ptr<Self>,
+                listener: AgentListener<C, $mode>,
+            ) -> Subscription<C, $mode> {
+                let result = Subscription {
+                    agent: $ptr::downgrade(self),
+                    listener: $ptr::downgrade(&listener),
+                };
+                self.register(listener);
+                result
+            }
+        }
+        impl<C: CustomAgentMessages> Subscription<C, $mode> {
+            /// Remove the current registration; repeated removal does nothing.
+            pub fn unsubscribe(&self) {
+                if let Some(agent) = self.agent.upgrade() {
+                    agent.remove_listener(self.listener.as_ptr());
+                }
+            }
+        }
+    };
+}
+use std::rc::Rc;
+entry!(crate::Local, Rc);
+entry!(Threaded, Arc);
+impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
     /// Reduce and invoke the first listener now; await live successors without guards.
-    pub(super) fn emit(
-        self: &Arc<Self>,
+    pub(crate) fn emit(
+        agent: E::Shared<Self>,
         event: AgentEvent<C>,
         signal: Cancellation,
-    ) -> impl std::future::Future<Output = Result<(), DiagnosticErrorInfo>> + use<C> {
-        self.reduce(&event);
+    ) -> impl std::future::Future<Output = Result<(), DiagnosticErrorInfo>> + use<C, E> {
+        agent.reduce(&event);
         let event = Arc::new(RwLock::new(event));
         let mut next = 0;
-        let agent = Arc::clone(self);
+
         let mut invoke_next = move || {
             let listener = lock(&agent.listeners)
                 .entries
                 .range(next..)
                 .next()
-                .map(|(id, listener)| (*id, Arc::clone(listener)));
+                .map(|(id, listener)| (*id, listener.clone()));
             listener.map(|(id, listener)| {
                 next = id + 1;
                 listener(Arc::clone(&event), signal.clone())

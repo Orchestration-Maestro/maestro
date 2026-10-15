@@ -1,4 +1,5 @@
 //! Conversation state ownership and queued input.
+use crate::types::{AgentExecution, Threaded};
 use crate::types::{AgentMessage, CustomAgentMessages, QueueMode, StreamFn};
 use crate::{
     AfterToolCall, BeforeToolCall, ConvertToLlm, GetApiKey, ToolExecutionMode, TransformContext,
@@ -11,6 +12,7 @@ mod execution;
 mod lifecycle;
 /// Live ordered subscriptions.
 mod listeners;
+pub(crate) use execution::OwnedRun;
 pub use execution::{AgentSpawner, PromptInput};
 pub use listeners::{AgentListener, Subscription};
 use std::{
@@ -21,19 +23,19 @@ use std::{
 mod state;
 pub use state::{AgentInitialState, AgentState};
 /// Construction options for conversation state and queues.
-pub struct AgentOptions<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct AgentOptions<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecution = Threaded> {
     /// Context conversion captured at admission.
-    pub convert_to_llm: Option<ConvertToLlm<C>>,
+    pub convert_to_llm: Option<ConvertToLlm<C, E>>,
     /// Context transformation captured at admission.
-    pub transform_context: TransformContext<C>,
+    pub transform_context: TransformContext<C, E>,
     /// Model payload hook captured at admission.
     pub on_payload: Option<OnPayload>,
     /// Model response hook captured at admission.
     pub on_response: Option<OnResponse>,
     /// Validated tool hook captured at admission.
-    pub before_tool_call: Option<BeforeToolCall<C>>,
+    pub before_tool_call: Option<BeforeToolCall<C, E>>,
     /// Executed tool hook captured at admission.
-    pub after_tool_call: Option<AfterToolCall<C>>,
+    pub after_tool_call: Option<AfterToolCall<C, E>>,
     /// Provider session identifier captured at admission.
     pub session_id: Option<String>,
     /// Transport preference captured at admission.
@@ -43,21 +45,21 @@ pub struct AgentOptions<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Tool batch preference captured at admission.
     pub tool_execution: Option<ToolExecutionMode>,
     /// Per-request credential resolution captured at admission.
-    pub get_api_key: GetApiKey,
+    pub get_api_key: GetApiKey<E>,
     /// Retained per-level budgets captured at admission.
     pub thinking_budgets: Option<Arc<RwLock<ThinkingBudgets>>>,
     /// Caller-owned initial state.
-    pub initial_state: AgentInitialState<C>,
+    pub initial_state: AgentInitialState<C, E>,
     /// Optional steering policy.
     pub steering_mode: Option<QueueMode>,
     /// Optional follow-up policy.
     pub follow_up_mode: Option<QueueMode>,
     /// Replacement stream captured at run admission.
-    pub stream_fn: Option<StreamFn>,
+    pub stream_fn: Option<StreamFn<E>>,
     /// Caller execution facility that retains submitted work independently.
-    pub spawn: Option<AgentSpawner>,
+    pub spawn: Option<AgentSpawner<E>>,
 }
-impl<C: CustomAgentMessages> Default for AgentOptions<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> Default for AgentOptions<C, E> {
     fn default() -> Self {
         Self {
             convert_to_llm: None,
@@ -81,19 +83,19 @@ impl<C: CustomAgentMessages> Default for AgentOptions<C> {
     }
 }
 /// Owner of live conversation state and independent input queues.
-pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecution = Threaded> {
     /// Context conversion for subsequently admitted runs.
-    pub convert_to_llm: RwLock<ConvertToLlm<C>>,
+    pub convert_to_llm: RwLock<ConvertToLlm<C, E>>,
     /// Context transformation for subsequently admitted runs.
-    pub transform_context: RwLock<TransformContext<C>>,
+    pub transform_context: RwLock<TransformContext<C, E>>,
     /// Model payload hook for subsequently admitted runs.
     pub on_payload: RwLock<Option<OnPayload>>,
     /// Model response hook for subsequently admitted runs.
     pub on_response: RwLock<Option<OnResponse>>,
     /// Validated tool hook for subsequently admitted runs.
-    pub before_tool_call: RwLock<Option<BeforeToolCall<C>>>,
+    pub before_tool_call: RwLock<Option<BeforeToolCall<C, E>>>,
     /// Executed tool hook for subsequently admitted runs.
-    pub after_tool_call: RwLock<Option<AfterToolCall<C>>>,
+    pub after_tool_call: RwLock<Option<AfterToolCall<C, E>>>,
     /// Provider session identifier for subsequently admitted runs.
     pub session_id: RwLock<Option<String>>,
     /// Transport preference for subsequently admitted runs.
@@ -103,19 +105,19 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Tool batch preference for subsequently admitted runs.
     pub tool_execution: RwLock<ToolExecutionMode>,
     /// Credential resolver for subsequently admitted runs.
-    pub get_api_key: RwLock<GetApiKey>,
+    pub get_api_key: RwLock<GetApiKey<E>>,
     /// Budget handle for subsequently admitted runs.
     pub thinking_budgets: RwLock<Option<Arc<RwLock<ThinkingBudgets>>>>,
     /// Shared live state.
-    state: Arc<RwLock<AgentState<C>>>,
+    state: E::Shared<RwLock<AgentState<C, E>>>,
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
-    listeners: Mutex<listeners::Listeners<C>>,
+    listeners: Mutex<listeners::Listeners<C, E>>,
     /// Replacement stream captured at run admission.
-    pub stream_fn: RwLock<Option<StreamFn>>,
+    pub stream_fn: RwLock<Option<StreamFn<E>>>,
     /// Caller execution facility that retains submitted work independently.
-    pub spawn: RwLock<Option<AgentSpawner>>,
+    pub spawn: RwLock<Option<AgentSpawner<E>>>,
 
     /// Pending follow-up entries.
     follow_up: RwLock<VecDeque<AgentMessage<C>>>,
@@ -126,20 +128,18 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Follow-up queue policy.
     follow_up_mode: RwLock<QueueMode>,
 }
-impl<C: CustomAgentMessages> Default for Agent<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> Default for Agent<C, E> {
     fn default() -> Self {
-        Self::new(AgentOptions::default())
+        Self::from_options(AgentOptions::default())
     }
 }
-impl<C: CustomAgentMessages> Agent<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     /// Construct state without invoking tools or providers.
     #[must_use]
-    pub fn new(options: AgentOptions<C>) -> Self {
+    fn from_options(options: AgentOptions<C, E>) -> Self {
         Self {
             convert_to_llm: RwLock::new(
-                options
-                    .convert_to_llm
-                    .unwrap_or_else(execution::default_converter),
+                options.convert_to_llm.unwrap_or_else(E::default_converter),
             ),
             transform_context: RwLock::new(options.transform_context),
             on_payload: RwLock::new(options.on_payload),
@@ -162,13 +162,13 @@ impl<C: CustomAgentMessages> Agent<C> {
             spawn: RwLock::new(options.spawn),
             follow_up: RwLock::new(VecDeque::new()),
             steering: RwLock::new(VecDeque::new()),
-            state: Arc::new(RwLock::new(AgentState::new(options.initial_state))),
+            state: E::share(RwLock::new(AgentState::new(options.initial_state))),
             steering_mode: RwLock::new(options.steering_mode.unwrap_or_default()),
             follow_up_mode: RwLock::new(options.follow_up_mode.unwrap_or_default()),
         }
     }
     /// The live state handle.
-    pub fn state(&self) -> &Arc<RwLock<AgentState<C>>> {
+    pub fn state(&self) -> &E::Shared<RwLock<AgentState<C, E>>> {
         &self.state
     }
     /// The current steering policy.
@@ -214,11 +214,11 @@ impl<C: CustomAgentMessages> Agent<C> {
             .push_back(message);
     }
     /// Move steering entries according to the policy at this poll.
-    fn drain_steering(&self) -> Vec<AgentMessage<C>> {
+    pub(crate) fn drain_steering(&self) -> Vec<AgentMessage<C>> {
         Self::drain(&self.steering, self.steering_mode())
     }
     /// Move follow-up entries according to the policy at this poll.
-    fn drain_follow_up(&self) -> Vec<AgentMessage<C>> {
+    pub(crate) fn drain_follow_up(&self) -> Vec<AgentMessage<C>> {
         Self::drain(&self.follow_up, self.follow_up_mode())
     }
     /// Move entries without changing their allocation identity or order.
@@ -312,3 +312,18 @@ impl<T: Send + Sync> Native for T {}
 pub trait Native {}
 #[cfg(target_arch = "wasm32")]
 impl<T> Native for T {}
+
+impl<C: CustomAgentMessages> Agent<C, Threaded> {
+    /// Construct the existing SDK owner.
+    #[must_use]
+    pub fn new(options: AgentOptions<C, Threaded>) -> Self {
+        Self::from_options(options)
+    }
+}
+impl<C: CustomAgentMessages> Agent<C, crate::Local> {
+    /// Construct a local owner with caller-owned submission.
+    #[must_use]
+    pub fn new_local(options: AgentOptions<C, crate::Local>) -> Self {
+        Self::from_options(options)
+    }
+}

@@ -106,6 +106,26 @@ impl<T: 'static, R: Clone + 'static> EventStream<T, R> {
         Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
     }
 
+    /// Construct a native stream that may carry local items.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[must_use]
+    pub fn new_local_items(
+        is_complete: impl Fn(&T) -> bool + Send + Sync + 'static,
+        extract_result: impl Fn(&T) -> R + Send + Sync + 'static,
+    ) -> Self {
+        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+    }
+
+    /// Construct a browser stream that may carry local items.
+    #[cfg(target_arch = "wasm32")]
+    #[must_use]
+    pub fn new_local_items(
+        is_complete: impl Fn(&T) -> bool + 'static,
+        extract_result: impl Fn(&T) -> R + 'static,
+    ) -> Self {
+        Self::from_callbacks(Arc::new(is_complete), Arc::new(extract_result))
+    }
+
     /// Initialize stream state from shared callbacks.
     fn from_callbacks(is_complete: Classifier<T>, extract_result: Extractor<T, R>) -> Self {
         Self {

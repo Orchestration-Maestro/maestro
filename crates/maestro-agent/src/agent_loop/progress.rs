@@ -4,7 +4,7 @@ use crate::{
     AgentEvent, AgentToolResult, AgentToolUpdateCallback, CustomAgentMessages, ExecuteTool,
 };
 use futures_util::{StreamExt, future::join};
-use maestro_models::{BoxFuture, DiagnosticErrorInfo, EventStream, ToolCall};
+use maestro_models::{DiagnosticErrorInfo, EventStream, ToolCall};
 use std::sync::{Arc, Mutex};
 
 /// Reservations spanning synchronous observation and future admission.
@@ -16,18 +16,17 @@ struct Admission {
     pending: usize,
 }
 
-impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
+impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Admit execution immediately; close and settle progress when its future completes.
     pub(super) fn execute(
         &self,
         call: &ToolCall,
-        execute: &ExecuteTool,
+        execute: &ExecuteTool<serde_json::Value, serde_json::Value, E>,
         arguments: serde_json::Value,
-    ) -> BoxFuture<Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>> {
-        let updates = EventStream::new(
-            |_: &BoxFuture<Result<(), DiagnosticErrorInfo>>| false,
-            |_| (),
-        );
+    ) -> impl std::future::Future<
+        Output = Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>,
+    > + use<C, E> {
+        let updates = EventStream::new_local_items(|_: &E::ObservationFuture| false, |_| ());
         let admission = Arc::new(Mutex::new(Admission::default()));
         let callback =
             self.progress_callback(call.clone(), updates.clone(), Arc::clone(&admission));
@@ -37,26 +36,12 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             self.options.signal.clone(),
             Some(callback),
         );
-        let pending = futures_util::stream::unfold(updates.clone(), |updates| async move {
-            updates.next().await.map(|future| (future, updates))
-        });
-        #[cfg(not(target_arch = "wasm32"))]
-        let pending = pending.boxed();
-        #[cfg(target_arch = "wasm32")]
-        let pending = pending.boxed_local();
-        let progress = pending
-            .map(futures_util::stream::once)
-            .flatten_unordered(None);
-        #[cfg(not(target_arch = "wasm32"))]
-        let progress = progress.boxed();
-        #[cfg(target_arch = "wasm32")]
-        let progress = progress.boxed_local();
-        let progress = progress.collect::<Vec<_>>();
-        Box::pin(async move {
+        let progress = E::pending_progress(updates.clone()).collect::<Vec<_>>();
+        async move {
             let (result, progress) = join(
                 async {
                     let result = execution.await;
-                    close_progress(&admission, &updates);
+                    close_progress::<E>(&admission, &updates);
                     result
                 },
                 progress,
@@ -66,46 +51,68 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
                 settled?;
             }
             Ok(result)
-        })
+        }
     }
-    /// Reserve observation entry before invoking foreign code without a lock.
+    /// Create the mode's erased progress callback.
     fn progress_callback(
         &self,
         update_call: ToolCall,
-        admitted: EventStream<BoxFuture<Result<(), DiagnosticErrorInfo>>, ()>,
+        admitted: EventStream<E::ObservationFuture, ()>,
         reservation: Arc<Mutex<Admission>>,
-    ) -> AgentToolUpdateCallback {
-        let emit = Arc::clone(&self.emit);
-        Arc::new(move |partial_result| {
-            let mut state = reservation
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if state.closed {
-                return;
-            }
-            state.pending += 1;
-            drop(state);
-            admitted.push(emit(AgentEvent::ToolExecutionUpdate {
-                tool_call: update_call.clone(),
+    ) -> AgentToolUpdateCallback<serde_json::Value, E> {
+        E::progress(Progress {
+            emit: self.emit.clone(),
+            update_call,
+            admitted,
+            reservation,
+        })
+    }
+}
+/// Shared progress admission state.
+pub struct Progress<C: CustomAgentMessages, E: crate::AgentExecution> {
+    /// Callback admitting observations.
+    emit: crate::AgentEventSink<C, E>,
+    /// Identity of the tool producing this update.
+    update_call: ToolCall,
+    /// Existing FIFO for pending observations.
+    admitted: EventStream<E::ObservationFuture, ()>,
+    /// Admission state shared with settlement.
+    reservation: Arc<Mutex<Admission>>,
+}
+impl<C: CustomAgentMessages, E: crate::AgentExecution> Progress<C, E> {
+    /// Admit the synchronous callback prefix before queueing its future.
+    pub fn update(&self, partial_result: AgentToolResult) {
+        let mut state = self
+            .reservation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if state.closed {
+            return;
+        }
+        state.pending += 1;
+        drop(state);
+        self.admitted
+            .push((self.emit)(AgentEvent::ToolExecutionUpdate {
+                tool_call: self.update_call.clone(),
                 partial_result,
             }));
-            let mut state = reservation
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.pending -= 1;
-            let settled = state.closed && state.pending == 0;
-            drop(state);
-            if settled {
-                admitted.end(Some(()));
-            }
-        })
+        let mut state = self
+            .reservation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.pending -= 1;
+        let settled = state.closed && state.pending == 0;
+        drop(state);
+        if settled {
+            self.admitted.end(Some(()));
+        }
     }
 }
 
 /// Revoke new delivery while allowing admitted observers to finish enqueueing.
-fn close_progress(
+fn close_progress<E: crate::AgentExecution>(
     admission: &Mutex<Admission>,
-    updates: &EventStream<BoxFuture<Result<(), DiagnosticErrorInfo>>, ()>,
+    updates: &EventStream<E::ObservationFuture, ()>,
 ) {
     let mut state = admission
         .lock()

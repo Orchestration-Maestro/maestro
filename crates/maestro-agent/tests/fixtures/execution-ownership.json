@@ -1,0 +1,58 @@
+[
+  {
+    "case": "dropped-observer",
+    "before": {
+      "streaming": true,
+      "effect": false
+    },
+    "busy": "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.",
+    "aborted": true,
+    "after": {
+      "streaming": false,
+      "effect": true,
+      "signalAbsent": true
+    }
+  },
+  {
+    "case": "live-listeners",
+    "firstOrder": [
+      "a",
+      "c",
+      "a"
+    ],
+    "nextOrder": [
+      "c"
+    ]
+  },
+  {
+    "case": "mutable-event",
+    "observation": {
+      "event": "changed event",
+      "state": [
+        {
+          "type": "text",
+          "text": "original"
+        }
+      ]
+    }
+  },
+  {
+    "case": "capture-and-reset",
+    "seen": {
+      "id": "mutated captured",
+      "prompt": "captured"
+    },
+    "signalAborted": false,
+    "oldHistoryLength": 0,
+    "newHistoryLength": 2
+  },
+  {
+    "case": "fresh-signal",
+    "distinct": true,
+    "aborted": [
+      false,
+      false
+    ],
+    "idleSignalAbsent": true
+  }
+]

@@ -1,5 +1,8 @@
 //! Model invocation types with retained adapter hooks.
 pub use maestro_request::types::*;
+/// Closed ownership and future representations.
+mod execution;
+pub use execution::{Execution, Local, Threaded};
 mod options;
 use crate::Cancellation;
 use crate::records::diagnostics::DiagnosticErrorInfo;

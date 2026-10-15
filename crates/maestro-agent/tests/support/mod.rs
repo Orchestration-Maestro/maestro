@@ -211,3 +211,6 @@ pub mod binding_corpus;
 pub mod observable;
 /// Native queue effect and retirement witnesses.
 pub mod queue_effects;
+
+/// Shared lossless event projections.
+pub mod observations;
