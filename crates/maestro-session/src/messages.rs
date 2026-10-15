@@ -104,18 +104,27 @@ pub fn create_compaction_summary_message(
 
 /// Parse ISO instants, UTC calendar dates or local date-times into epoch milliseconds.
 pub(crate) fn timestamp_millis(text: &str) -> f64 {
+    parse_timestamp_millis(text).map_or(f64::NAN, millis_number)
+}
+
+/// Parses supported date text into epoch milliseconds, retaining invalid-date absence.
+#[must_use]
+pub fn parse_timestamp_millis(text: &str) -> Option<i64> {
     if let Ok(date) = DateTime::parse_from_rfc3339(text) {
-        return millis_number(date.timestamp_millis());
+        return Some(date.timestamp_millis());
     }
     if let Ok(date) = NaiveDate::parse_from_str(text, "%Y-%m-%d") {
-        return date.and_hms_opt(0, 0, 0).map_or(f64::NAN, |time| {
-            millis_number(time.and_utc().timestamp_millis())
-        });
+        return date
+            .and_hms_opt(0, 0, 0)
+            .map(|time| time.and_utc().timestamp_millis());
     }
     NaiveDateTime::parse_from_str(text, "%Y-%m-%dT%H:%M:%S%.f")
         .ok()
-        .and_then(|date| Local.from_local_datetime(&date).earliest())
-        .map_or(f64::NAN, |date| millis_number(date.timestamp_millis()))
+        .and_then(|date| match Local.from_local_datetime(&date) {
+            chrono::LocalResult::Ambiguous(a, b) => Some(a.min(b)),
+            result => result.single(),
+        })
+        .map(|date| date.timestamp_millis())
 }
 
 /// Retain injected content, visibility and details with a parsed timestamp.

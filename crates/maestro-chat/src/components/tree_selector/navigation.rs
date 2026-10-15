@@ -82,6 +82,8 @@ impl TreeState {
                     node.label().clone(),
                 )));
             }
+        } else if keys.matches(data, "app.tree.toggleLabelTimestamp") {
+            self.show_label_timestamps = !self.show_label_timestamps;
         } else if !data.is_empty() && !data.chars().any(char::is_control) {
             self.query.push_str(data);
             self.reset_folds()?;

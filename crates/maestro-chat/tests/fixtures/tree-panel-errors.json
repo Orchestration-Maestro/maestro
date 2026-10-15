@@ -1,0 +1,82 @@
+[
+  {
+    "test": "panel_construction_preserves_reached_list_errors",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "id": "a",
+            "parentId": null,
+            "type": "message",
+            "message": null
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "width": 80,
+      "leaf": "a",
+      "height": 24
+    },
+    "expected": {
+      "stage": "constructor",
+      "kind": "InvalidData"
+    }
+  },
+  {
+    "test": "panel_try_render_preserves_reached_row_errors",
+    "input": {
+      "nodes": [
+        {
+          "entry": {
+            "id": "a",
+            "parentId": null,
+            "type": "message",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call",
+                  "name": "read",
+                  "arguments": null
+                }
+              ],
+              "stopReason": "toolUse"
+            }
+          },
+          "children": [
+            1
+          ]
+        },
+        {
+          "entry": {
+            "id": "b",
+            "parentId": "a",
+            "type": "message",
+            "message": {
+              "role": "toolResult",
+              "toolCallId": "call",
+              "toolName": "read",
+              "content": [],
+              "isError": false
+            }
+          },
+          "children": []
+        }
+      ],
+      "roots": [
+        0
+      ],
+      "width": 80,
+      "leaf": "b",
+      "height": 24
+    },
+    "expected": {
+      "stage": "render",
+      "kind": "InvalidData"
+    }
+  }
+]

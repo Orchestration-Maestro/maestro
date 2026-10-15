@@ -620,3 +620,33 @@ fn yank_pop_is_undoable_without_undoing_ring_rotation() {
 fn paste_framing_preserves_order_and_literal_payload() {
     input_support::run("paste_framing_preserves_order_and_literal_payload");
 }
+
+#[test]
+fn reset_starts_fresh_editing_without_replacing_callbacks_or_focus() {
+    use maestro_tui::{Component, tui::Focusable};
+    let _guard = input_support::globals();
+    let input = Input::new();
+    let submitted = Rc::new(RefCell::new(Vec::new()));
+    let events = submitted.clone();
+    let callback: Rc<dyn Fn(&str)> = Rc::new(move |s| events.borrow_mut().push(s.to_owned()));
+    input.set_on_submit(Some(callback.clone()));
+    let escape: Rc<dyn Fn()> = Rc::new(|| {});
+    input.set_on_escape(Some(escape.clone()));
+    input.focus_flag().set(true);
+    input.handle_input("old");
+    input.handle_input("\u{1}");
+    input.handle_input("\u{b}");
+    input.handle_input("\u{1b}[200~partial");
+    input.reset("fresh".into());
+    assert!(Rc::ptr_eq(&input.on_submit().unwrap(), &callback));
+    assert!(Rc::ptr_eq(&input.on_escape().unwrap(), &escape));
+    assert!(input.render(30)[0].contains(maestro_tui::tui::CURSOR_MARKER));
+    for key in ["\u{19}", "\u{1f}"] {
+        input.handle_input(key);
+    }
+    assert_eq!(input.get_value(), "fresh");
+    input.handle_input("x");
+    assert_eq!(input.get_value(), "xfresh");
+    input.handle_input("\r");
+    assert_eq!(*submitted.borrow(), ["xfresh"]);
+}

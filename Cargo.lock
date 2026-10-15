@@ -2975,6 +2975,7 @@ dependencies = [
 name = "maestro-chat"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "indexmap",
  "maestro-app",
  "maestro-dependencies",

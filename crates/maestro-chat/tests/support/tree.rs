@@ -13,6 +13,9 @@ pub struct Node {
     /// Present labels retain explicit null.
     #[serde(default, deserialize_with = "present_value")]
     pub label: Option<Value>,
+    /// Present timestamps retain explicit null.
+    #[serde(default, rename = "labelTimestamp", deserialize_with = "present_value")]
+    pub label_timestamp: Option<Value>,
 }
 /// Distinguishes an explicitly null label from an omitted label.
 fn present_value<'de, D: Deserializer<'de>>(decoder: D) -> Result<Option<Value>, D::Error> {
@@ -38,7 +41,7 @@ pub fn tree<'a>(nodes: &'a [Node], roots: &[usize]) -> Vec<SessionTreeNode<'a>> 
                 .map(|&child| built[child].take().unwrap())
                 .collect(),
             label: node.label.as_ref(),
-            label_timestamp: None,
+            label_timestamp: node.label_timestamp.as_ref(),
         });
     }
     roots

@@ -42,7 +42,10 @@ pub use components::settings_selector::{
     BehaviorSettings, SessionSettings, SettingsCallbacks, SettingsConfig,
     SettingsSelectorComponent, TerminalDisplaySettings,
 };
-pub use components::tree_selector::{FilterMode, SessionTreeNode, TreeList};
+pub use components::tree_selector::{
+    FilterMode, SessionTreeNode, TreeList, TreeSelectorCallbacks, TreeSelectorComponent,
+    TreeSelectorOptions,
+};
 
 pub use components::login_dialog::{
     LoginDialogComponent, LoginDialogError, LoginDialogOptions, LoginDialogPlatform,

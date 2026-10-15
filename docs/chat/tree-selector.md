@@ -42,7 +42,8 @@ Callers install a `maestro_tui::KeybindingsManager` built from
 [`maestro_app::presentation_data::keybindings::KEYBINDINGS`](../../crates/maestro-app/src/presentation_data/keybindings.rs)
 using `maestro_tui::set_keybindings`. The list reads the active manager on input;
 construction does not install one. The application table extends toolkit defaults
-with seven tree-filter actions, two fold/segment actions and label-edit notification.
+with seven tree-filter actions, two fold/segment actions, label-edit notification
+and label timestamp toggling.
 
 Up/down wrap; page actions and left/right aliases clamp by the supplied visible
 line count. Confirm calls `on_select` with the selected entry identity when both
@@ -113,6 +114,42 @@ or `├⊞ ` in the existing dim prefix role; folded rows without a connector us
 Message previews use the shared [UTF-16 prefix helper](../text.md) before newline/tab
 normalization and shared-whitespace trimming. Tool summaries reuse the application's
 JSON and read-range exports; their tool-specific prefix budgets remain here.
-The search display, label editor, timestamp display and selector panel remain in
-[#957](https://github.com/Orchestration-Maestro/maestro/issues/957).
+## Panel and labels
+
+[`TreeSelectorComponent`](../../crates/maestro-chat/src/components/tree_selector/panel.rs)
+composes borders, title, navigation help, the live authored query and the retained
+list. `TreeSelectorOptions` supplies selection, filter, terminal height, theme,
+runtime, decorations and an optional wall clock. Pages use half the height, at
+least five rows. `get_tree_list` returns the same shared list through editing,
+container edits and invalidation. Constructor help captures key hints and theme;
+search, borders, rows and editor hints remain live. Initially empty roots alone
+schedule cancellation after 100 ms through the supplied runtime.
+
+The label shortcut opens a stable `Input` with fresh editing state and cursor
+zero. Confirm precedes cancel and ordinary input. Saving trims the shared
+whitespace set; an empty result removes the label. The selected entry identity
+is captured when editing starts. The row updates before `on_label_change`, and
+the editor closes only after normal callback return. A caller panic leaves the
+updated row and editor available. Cancel changes no metadata. Focus uses the
+shared toolkit forwarding flag to reach the editor's hardware cursor marker.
+
+`update_node_label` edits the first matching navigation occurrence without
+rebuilding query, filters or folds. The supplied label is written before the
+clock runs. A nonempty label uses the explicit timestamp, including an empty
+string, or generates a UTC millisecond timestamp. An empty or absent label
+clears the timestamp; a directly supplied empty label remains present.
+
+The registered `app.tree.toggleLabelTimestamp` action defaults to `shift+t`.
+It retains the view and appends ` [+label time]` after the filter badge, including
+empty views. Timestamp segments require nonempty string labels and timestamps.
+The shared [date parser](../sessions/messages.md) interprets dates; unparseable
+text suppresses only the segment without modifying metadata. Local same-day
+segments use `HH:MM`, same-year segments use `M/D HH:MM`, and other years prefix
+the last two characters of the decimal year. Visible valid segments sample the
+same supplied clock used for updates; hidden segments do not sample it.
+
+The panel implements toolkit component, input, focus and container-child
+interfaces. SDK callers use `try_render` and the inherent `handle_input` to
+retain original reached list errors; the writer's infallible trait paths serve
+valid data.
 Application startup installs the effective manager in [#217](https://github.com/Orchestration-Maestro/maestro/issues/217).

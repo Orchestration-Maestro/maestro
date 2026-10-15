@@ -29,3 +29,9 @@ For settings-panel numeric values, `maestro-chat` uses the workspace-pinned
 binary64 spelling preserves the supplied numeric value without normalization.
 It adds no active transitive dependencies and uses the Apache-2.0 license option.
 No library type appears in the settings interface.
+
+`maestro-chat` uses the already locked `chrono =0.4.45`, defaults off, with
+`std` and `clock` for label timestamp calendar conversion. Chrono is MIT OR
+Apache-2.0; its existing platform closure includes `iana-time-zone =0.1.65`
+(MIT OR Apache-2.0). No package version or public third-party type is added.
+The shared session parser remains the date-text owner.

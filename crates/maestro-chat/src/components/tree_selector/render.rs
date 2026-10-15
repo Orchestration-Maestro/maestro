@@ -96,6 +96,7 @@ impl TreeState {
             .map(|label| fg(ThemeColor::Warning, &format!("[{label}] ")))
             .transpose()?
             .unwrap_or_default();
+        let timestamp = self.label_time(node, theme)?;
         let content = if node.entry()["type"] == "message"
             && node.entry()["message"]["role"] == "toolResult"
         {
@@ -112,6 +113,7 @@ impl TreeState {
             + &fold_marker
             + &marker
             + &label
+            + &timestamp
             + &content;
         if selected {
             theme
@@ -120,6 +122,39 @@ impl TreeState {
         } else {
             Ok(line)
         }
+    }
+    /// Formats only eligible timestamp segments, with no borrow across the clock.
+    fn label_time(
+        &self,
+        node: &super::SessionTreeNode,
+        theme: &maestro_theme::Theme,
+    ) -> io::Result<String> {
+        if !self.show_label_timestamps
+            || node
+                .label()
+                .as_ref()
+                .and_then(serde_json::Value::as_str)
+                .is_none_or(str::is_empty)
+        {
+            return Ok(String::new());
+        }
+        let timestamp = node
+            .label_timestamp()
+            .as_ref()
+            .and_then(serde_json::Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned);
+        let Some(timestamp) = timestamp.and_then(|s| maestro_app::parse_timestamp_millis(&s))
+        else {
+            return Ok(String::new());
+        };
+        let now = (self.now)();
+        let Some(text) = format_label_timestamp(timestamp, now) else {
+            return Ok(String::new());
+        };
+        theme
+            .fg(&ThemeColor::Muted, &format!("{text} "))
+            .map_err(io::Error::other)
     }
     /// Three-cell levels place continuing gutters before branch connectors.
     fn prefix(&self, index: usize) -> String {
@@ -154,13 +189,42 @@ impl TreeState {
             .collect()
     }
     /// The badge for the nondefault category selection.
-    fn status(&self) -> &'static str {
-        match self.mode {
+    fn status(&self) -> String {
+        let filter = match self.mode {
             FilterMode::Default => "",
             FilterMode::NoTools => " [no-tools]",
             FilterMode::UserOnly => " [user]",
             FilterMode::LabeledOnly => " [labeled]",
             FilterMode::All => " [all]",
-        }
+        };
+        format!(
+            "{filter}{}",
+            if self.show_label_timestamps {
+                " [+label time]"
+            } else {
+                ""
+            }
+        )
     }
+}
+
+/// Projects a valid instant onto local calendar branches.
+fn format_label_timestamp(millis: i64, now: std::time::SystemTime) -> Option<String> {
+    use chrono::{Datelike, Local};
+    let date = chrono::DateTime::from_timestamp_millis(millis)?.with_timezone(&Local);
+    let now = chrono::DateTime::<Local>::from(now);
+    let time = date.format("%H:%M");
+    Some(if date.date_naive() == now.date_naive() {
+        time.to_string()
+    } else if date.year() == now.year() {
+        format!("{}/{} {time}", date.month(), date.day())
+    } else {
+        let year = date.year().to_string();
+        format!(
+            "{}/{}/{} {time}",
+            &year[year.len().saturating_sub(2)..],
+            date.month(),
+            date.day()
+        )
+    })
 }

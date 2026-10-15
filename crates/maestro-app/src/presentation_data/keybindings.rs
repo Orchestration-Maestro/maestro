@@ -81,6 +81,11 @@ pub static KEYBINDINGS: LazyLock<KeybindingDefinitions> = LazyLock::new(|| {
             "Unfold tree branch or move down",
         ),
         ("app.tree.editLabel", vec!["shift+l"], "Edit tree label"),
+        (
+            "app.tree.toggleLabelTimestamp",
+            vec!["shift+t"],
+            "Toggle tree label timestamps",
+        ),
     ] {
         definitions.push((
             id.to_owned(),

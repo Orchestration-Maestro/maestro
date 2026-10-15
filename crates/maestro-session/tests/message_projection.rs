@@ -377,3 +377,54 @@ fn conversion_observes_changes_through_retained_inputs() {
         );
     }
 }
+
+#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
+mod subprocess;
+
+/// Recorded calendar parsing across isolated local time zones.
+#[test]
+fn parse_timestamp_millis_preserves_native_date_forms() {
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct ParserCase {
+        test: String,
+        input: ParserInput,
+        expected: ParserExpected,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct ParserInput {
+        tz: String,
+        text: String,
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct ParserExpected {
+        millis: Option<i64>,
+    }
+    if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
+        for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
+            subprocess::run_child(
+                "parse_timestamp_millis_preserves_native_date_forms",
+                &[("TZ", Some(tz))],
+            );
+        }
+        return;
+    }
+    let tz = std::env::var("TZ").unwrap();
+    let cases: Vec<ParserCase> =
+        serde_json::from_str(include_str!("fixtures/timestamp-parser.json")).unwrap();
+    let mut count = 0;
+    for case in cases.into_iter().filter(|c| c.input.tz == tz) {
+        assert_eq!(
+            case.test,
+            "parse_timestamp_millis_preserves_native_date_forms"
+        );
+        assert_eq!(
+            parse_timestamp_millis(&case.input.text),
+            case.expected.millis
+        );
+        count += 1;
+    }
+    assert!(count > 0);
+}
