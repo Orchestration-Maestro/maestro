@@ -143,3 +143,78 @@ fn input_focus_and_error_rings_keep_three_css_pixels_inside_parent_clip() {
         }
     }
 }
+
+#[test]
+fn reading_geometry_shares_fractional_axis_transform() {
+    let transform =
+        super::placement::Transform::new([41.5, 19.25, 250., 75.], [200, 100], 1.).unwrap();
+    assert_eq!(
+        transform.position(egui::pos2(10., 20.)).map(f64::to_bits),
+        [54_f64, 34.25].map(f64::to_bits)
+    );
+    assert!((transform.height(90.) - 120.).abs() < f32::EPSILON);
+    let unit = super::placement::Transform::new([0., 0., 100., 100.], [100, 100], 1.).unwrap();
+    assert!((unit.height(90.) - 90.).abs() < f32::EPSILON);
+    assert_eq!(
+        unit.position(egui::pos2(10., 20.)).map(f64::to_bits),
+        [10_f64, 20.].map(f64::to_bits)
+    );
+    for physical in [[0, 100], [200, 0]] {
+        assert!(super::placement::Transform::new([0., 0., 1., 1.], physical, 1.).is_err());
+    }
+}
+
+#[test]
+fn reading_modal_style_targets_keep_reading_identity() {
+    let reading = egui::Id::new("reading");
+    let modal = egui::Id::new("modal");
+    let other = egui::Id::new("other-modal");
+    let ids = [reading, modal, other];
+    assert_eq!(
+        super::visibility_style(reading, None, None),
+        "visibility:visible;z-index:1;"
+    );
+    assert_eq!(
+        super::visibility_style(reading, Some(modal), Some(modal)),
+        "visibility:visible;z-index:51;"
+    );
+    assert_eq!(
+        super::visibility_style(reading, None, Some(reading)),
+        "visibility:visible;z-index:51;"
+    );
+    assert_eq!(
+        super::visibility_style(reading, Some(modal), Some(other)),
+        "visibility:hidden;z-index:1;"
+    );
+    assert_eq!(
+        super::visibility_style(reading, Some(modal), None),
+        "visibility:visible;z-index:1;"
+    );
+    assert_eq!(
+        super::style_targets(ids.into_iter(), Some(reading), None, None).collect::<Vec<_>>(),
+        [reading]
+    );
+    let content = super::ReadingContent {
+        #[cfg(target_arch = "wasm32")]
+        mount: std::rc::Rc::new(|_| unreachable!()),
+    };
+    let repaint = egui::Context::default();
+    let surface = AttachmentSurface {
+        id: reading,
+        rect: egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(50., 40.)),
+        clip_rect: egui::Rect::EVERYTHING,
+        pixels_per_point: 1.,
+        opacity: 1.,
+        occluders: vec![],
+        content: AttachmentContent::Reading(super::ReadingPlacement {
+            content: std::rc::Rc::new(content),
+            phase: super::ReadingPhase::Publish,
+            modal: Some(modal),
+            context: &repaint,
+        }),
+    };
+    assert_eq!(
+        clip_path(&surface, (1., 1.)),
+        "path(evenodd,\"M0 0H50V40H0Z\")"
+    );
+}

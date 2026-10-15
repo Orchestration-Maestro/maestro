@@ -1,0 +1,60 @@
+[
+  {
+    "name": "id-missing",
+    "data": {
+      "entries": [],
+      "header": {}
+    },
+    "title": "Session: unknown"
+  },
+  {
+    "name": "id-null",
+    "data": {
+      "entries": [],
+      "header": {
+        "id": null
+      }
+    },
+    "title": "Session: unknown"
+  },
+  {
+    "name": "id-empty",
+    "data": {
+      "entries": [],
+      "header": {
+        "id": ""
+      }
+    },
+    "title": "Session: unknown"
+  },
+  {
+    "name": "id-zero",
+    "data": {
+      "entries": [],
+      "header": {
+        "id": 0
+      }
+    },
+    "title": "Session: unknown"
+  },
+  {
+    "name": "id-false",
+    "data": {
+      "entries": [],
+      "header": {
+        "id": false
+      }
+    },
+    "title": "Session: unknown"
+  },
+  {
+    "name": "id-text",
+    "data": {
+      "entries": [],
+      "header": {
+        "id": " <literal> "
+      }
+    },
+    "title": "Session:  <literal> "
+  }
+]

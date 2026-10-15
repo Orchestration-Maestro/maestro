@@ -61,3 +61,24 @@ fonts and do not qualify installed brand faces. See
 Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`
 through both tile and overlay drawing. Platform failures remain `Host` errors;
 color admission uses the existing shared style owner, before content placement.
+
+## Owned reading content
+
+The same registry admits `AttachmentContent::Reading(ReadingPlacement)`.
+On WebAssembly, an owned `ReadingContent` factory receives the actual canvas
+`Document` and returns a `ReadingRoot` containing its native element. It is not a
+raw-markup or template interface. The host retains the complete returned owner.
+
+`ReadingPhase::Measure` stages a hidden candidate without replacing the published
+root. `reading_layout(id)` reads unclipped natural height in canvas points;
+`ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
+are valid. Failed measurement/publication discards the candidate and retains the
+previous root, native selection, scroll and placement without remounting it.
+Measurement restores the wrapper's prior style and scroll position.
+
+The full viewport, including typography, uses the existing canvas's separate
+axis scales exactly once. Native resize and scroll callbacks request repaint
+through the shared event-subscription owner, with no root backedge, polling or
+new timer. Observer disconnection precedes callable release. Existing modal
+visibility is shared with attachments. Canvas-control slots are not part of
+this reading interface yet; they arrive with their actual consuming controls.

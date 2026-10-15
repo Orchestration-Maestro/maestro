@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
+mod reading;
 /// Browser objects scoped to the supplied canvas's document.
 pub struct BrowserAttachmentHost {
     /// Canvas coordinate frame.
@@ -33,12 +34,17 @@ struct DomSurface {
     style: String,
     /// Native field callbacks and reference assignment.
     input: Option<super::input::DomInput>,
+    /// Native reading lifetime and current measurement operands.
+    reading: Option<reading::NativeReading>,
+    /// Detached replacement retained until successful publication.
+    pending: Option<Box<DomSurface>>,
     /// Containing modal identity, distinct from the field identity.
     modal: Option<egui::Id>,
 }
 impl Drop for DomSurface {
     fn drop(&mut self) {
         drop(self.input.take());
+        drop(self.reading.take());
         self.wrapper.remove();
     }
 }
@@ -81,31 +87,37 @@ impl BrowserAttachmentHost {
             tag,
             style: String::new(),
             input: None,
+            reading: None,
+            pending: None,
             modal: None,
         })
     }
     /// Map canvas points to viewport CSS pixels without resizing for clipping.
     /// `bounds` is in CSS pixels, `r` in canvas points; `x`/`y` are CSS pixels per point.
     fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentUiError> {
-        let bounds = self.canvas.get_bounding_client_rect();
-        if self.canvas.width() == 0 || self.canvas.height() == 0 {
-            return Err(AttachmentUiError::Host(
-                "Canvas has no drawable size".into(),
-            ));
-        }
-        let x = bounds.width() * f64::from(s.pixels_per_point) / f64::from(self.canvas.width());
-        let y = bounds.height() * f64::from(s.pixels_per_point) / f64::from(self.canvas.height());
+        let transform = self.transform(s.pixels_per_point)?;
+        let (x, y) = transform.scale;
+        let [left, top] = transform.position(s.rect.min);
         let r = s.rect;
         let clip = super::placement::clip_path(s, (x, y));
         Ok(format!(
             "position:fixed;left:{}px;top:{}px;width:{}px;height:{}px;clip-path:{};opacity:{};",
-            bounds.left() + f64::from(r.left()) * x,
-            bounds.top() + f64::from(r.top()) * y,
+            left,
+            top,
             f64::from(r.width()) * x,
             f64::from(r.height()) * y,
             clip,
             s.opacity
         ))
+    }
+    /// Observe the current canvas coordinate frame.
+    fn transform(&self, pixels: f32) -> Result<super::placement::Transform, AttachmentUiError> {
+        let b = self.canvas.get_bounding_client_rect();
+        super::placement::Transform::new(
+            [b.left(), b.top(), b.width(), b.height()],
+            [self.canvas.width(), self.canvas.height()],
+            pixels,
+        )
     }
     /// Apply modal visibility without replacing retained image/text objects.
     fn visibility(
@@ -117,17 +129,7 @@ impl BrowserAttachmentHost {
         let surfaces = self.surfaces.borrow();
         for id in super::style_targets(surfaces.keys().copied(), placed, previous, top) {
             let Some(s) = surfaces.get(&id) else { continue };
-            let visibility = if top.is_none_or(|top| top == id || s.modal == Some(top)) {
-                "visible"
-            } else {
-                "hidden"
-            };
-            let z = if top == Some(id) || top.is_some_and(|id| s.modal == Some(id)) {
-                51
-            } else {
-                1
-            };
-            let style = format!("{}visibility:{visibility};z-index:{z};", s.style);
+            let style = format!("{}{}", s.style, super::visibility_style(id, s.modal, top));
             s.wrapper
                 .set_attribute("style", &style)
                 .map_err(|error| host_error(&error))?;
@@ -143,6 +145,7 @@ impl BrowserAttachmentHost {
         surface.modal = None;
         let element = &surface.child;
         let css=match content {
+            AttachmentContent::Reading(_) => return Ok(()),
             AttachmentContent::Input { props, modal, .. } => {
                 if surface.input.is_none() { surface.input = Some(super::input::DomInput::new(element)?); }
                 if let Some(input) = surface.input.as_mut() { input.update(content, Rc::clone(&self.escape))?; }
@@ -173,13 +176,16 @@ impl BrowserAttachmentHost {
     }
 }
 impl AttachmentHost for BrowserAttachmentHost {
+    fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentUiError> {
+        self.measure_reading(id)
+    }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
-        let id = s.id;
         let tag = match &s.content {
+            AttachmentContent::Reading(_) => return self.present_reading(&s, p),
             AttachmentContent::Input { .. } => "input",
             AttachmentContent::Image { .. } => "img",
             AttachmentContent::Text { .. } => "pre",
@@ -234,9 +240,10 @@ impl AttachmentHost for BrowserAttachmentHost {
             }
             Ok(())
         })();
-        self.surfaces.borrow_mut().insert(id, surface);
+        let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
+        drop(displaced);
         result?;
-        self.visibility(Some(id), self.overlays.borrow().last().copied())
+        self.visibility(Some(s.id), self.overlays.borrow().last().copied())
     }
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
         let previous = self.overlays.borrow().last().copied();

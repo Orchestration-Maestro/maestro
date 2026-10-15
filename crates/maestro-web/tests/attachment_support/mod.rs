@@ -56,13 +56,19 @@ pub struct Host {
     pub fail_download: Cell<bool>,
 }
 impl AttachmentHost for Host {
+    fn reading_layout(
+        &self,
+        _: egui::Id,
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+        unreachable!("this suite does not create reading content")
+    }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &maestro_theme::BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
         let content = match s.content {
-            AttachmentContent::Input { .. } => {
+            AttachmentContent::Reading(_) | AttachmentContent::Input { .. } => {
                 unreachable!("attachment suite does not create inputs")
             }
             AttachmentContent::Image { source, alt, fit } => {
