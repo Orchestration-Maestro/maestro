@@ -146,6 +146,7 @@ fn check(group: &str) {
                 assert_eq!(
                     category,
                     match error {
+                        FormatError::TooManySections => "TooManySections",
                         FormatError::UnsupportedNumberFormat => "UnsupportedNumberFormat",
                         FormatError::InvalidDateFormat(_) => "InvalidDateFormat",
                         FormatError::UnterminatedString => "UnterminatedString",

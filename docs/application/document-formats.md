@@ -1,7 +1,8 @@
-# Spreadsheet value primitives
+# Spreadsheet values and workbooks
 
 The application library exposes `maestro_app::browser::ssf` for scalar spreadsheet
-formatting. These operations have no I/O and do not render a workbook preview.
+formatting and in-memory XLSX reading. These operations do not render a workbook
+preview or write files.
 
 - `init_table` overwrites built-in format IDs in the supplied table, retains other
   entries and returns that table. `default_map` and `default_str` independently
@@ -32,7 +33,7 @@ formatting. These operations have no I/O and do not render a workbook preview.
   preserves displacement and mantissa carry. Decimal fields with `0`/`#` integer placeholders retain finite
   integral values without lossy scaling. Zero fixed denominators fail.
   `FormatError` distinguishes unsupported number patterns, invalid date fields,
-  unclosed quoted literals, unclosed bracket blocks and unrecognized characters;
+  unclosed quoted literals, unclosed bracket blocks, excess sections and unrecognized characters;
   callers need not parse its display text.
 - `is_date` reports whether a pattern contains calendar or clock fields. It skips
   quoted/escaped literals and numeric runs, recognizes General case-insensitively,
@@ -40,12 +41,35 @@ formatting. These operations have no I/O and do not render a workbook preview.
   recognition, not validation of syntax or field widths.
 
 The [numeric/calendar library inventory](../libraries/spreadsheet-formats.md)
-documents the underlying primitives. Custom format evaluation, mutable format
-loading, date-valued General input and alternate calendars are not exposed by
-this scalar interface. The internal selected-section evaluator reuses the scalar
-writers for literals, numeric masks, fractions and clock/calendar fields. Its
-private implementation is test-gated until the full-format consumer is wired;
-it is not a public formatting operation. The internal alternate projection uses
+documents the underlying primitives. `read(bytes, name, &mut ssf)` uses the same
+selected-section evaluator for workbook number, currency, percentage, scientific,
+fraction, date and custom conditional formats. Full standalone formatting options,
+date-valued SDK inputs and legacy XLS reading are not yet exposed.
+
+`Ssf::get_table` returns a shared mutable format table. Reading a workbook replaces
+the current table slot without changing earlier handles; `WorkBook::ssf` is a
+detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
+`WorkSheet` retains ordered populated cells, its range and merged regions.
+Blank sheets retain declared rectangular ranges; empty singleton defaults are omitted.
+Retained error cells load implicit formats into the live table and workbook snapshot.
+Cells retain raw typed values and optional formatted text. Raw string-cell escapes
+are decoded once; shared and inline strings are not decoded again. Decoded text
+normalizes CRLF to LF at the common cell boundary. `format_cell` respects
+present caches, including empty text, and otherwise uses the active default
+format with unrounded raw-scalar fallback on formatting failure, leaving the cache
+absent. Unknown error labels survive
+native conversion, and no-cache formula cells are omitted without evaluation.
+Malformed archives, required missing parts, XML, reader and address failures have
+distinct `WorkbookError` variants. Missing style declarations are optional, while
+missing declared style parts and malformed style XML fail with workbook/part
+context. ISO dates and timezone-free datetimes use UTC serial conversion with the
+real March 1900 boundary. Time-only cells attach to the workbook epoch date and
+use the same millisecond serial conversion; noon is 0.5 in either epoch. Numeric
+serial 60 retains the spreadsheet's synthetic leap day.
+`encode_row`, `encode_col`, `encode_cell` and `encode_range` render zero-based
+positions as A1 addresses; decoders accept absolute `$` markers.
+
+The internal evaluator The internal alternate projection uses
 a tabular Thursday-epoch calendar, preserving the standard serial sentinels.
 Midnight carry retains both the effective epoch and the first captured calendar.
 Meridiem labels use the rounded clock. General tokens resolve in source order;

@@ -1,0 +1,304 @@
+{
+  "file": "reader-dispatch.xlsx",
+  "expected": {
+    "ok": {
+      "sheets": [
+        {
+          "name": "Dispatch",
+          "range": "A1:A13",
+          "merges": [],
+          "cells": [
+            {
+              "address": "A1",
+              "type": "n",
+              "value": {
+                "number": "12.5"
+              },
+              "w_after_read": "12.50",
+              "text": "12.50",
+              "w_after_format": "12.50"
+            },
+            {
+              "address": "A2",
+              "type": "n",
+              "value": {
+                "number": "-12.5"
+              },
+              "w_after_read": "(12.50)",
+              "text": "(12.50)",
+              "w_after_format": "(12.50)"
+            },
+            {
+              "address": "A3",
+              "type": "n",
+              "value": {
+                "number": "0"
+              },
+              "w_after_read": "-",
+              "text": "-",
+              "w_after_format": "-"
+            },
+            {
+              "address": "A4",
+              "type": "s",
+              "value": "label",
+              "w_after_read": "text:label",
+              "text": "text:label",
+              "w_after_format": "text:label"
+            },
+            {
+              "address": "A5",
+              "type": "n",
+              "value": {
+                "number": "101"
+              },
+              "w_after_read": "big101",
+              "text": "big101",
+              "w_after_format": "big101"
+            },
+            {
+              "address": "A6",
+              "type": "n",
+              "value": {
+                "number": "-1"
+              },
+              "w_after_read": "negative1",
+              "text": "negative1",
+              "w_after_format": "negative1"
+            },
+            {
+              "address": "A7",
+              "type": "n",
+              "value": {
+                "number": "0"
+              },
+              "w_after_read": "other0",
+              "text": "other0",
+              "w_after_format": "other0"
+            },
+            {
+              "address": "A8",
+              "type": "n",
+              "value": {
+                "number": "101"
+              },
+              "w_after_read": "101",
+              "text": "101",
+              "w_after_format": "101"
+            },
+            {
+              "address": "A9",
+              "type": "n",
+              "value": {
+                "number": "0"
+              },
+              "w_after_read": "fallback0",
+              "text": "fallback0",
+              "w_after_format": "fallback0"
+            },
+            {
+              "address": "A10",
+              "type": "n",
+              "value": {
+                "number": "12"
+              },
+              "w_after_read": "12",
+              "text": "12",
+              "w_after_format": "12"
+            },
+            {
+              "address": "A11",
+              "type": "s",
+              "value": "label",
+              "w_after_read": "text:label",
+              "text": "text:label",
+              "w_after_format": "text:label"
+            },
+            {
+              "address": "A12",
+              "type": "n",
+              "value": {
+                "number": "12.5"
+              },
+              "w_after_read": "12.50",
+              "text": "12.50",
+              "w_after_format": "12.50"
+            },
+            {
+              "address": "A13",
+              "type": "n",
+              "value": {
+                "number": "-12.5"
+              },
+              "w_after_read": "(12.50)",
+              "text": "(12.50)",
+              "w_after_format": "(12.50)"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "record": {
+    "file": "reader-dispatch.xlsx",
+    "date1904": false,
+    "ssf": [
+      [
+        0,
+        "General"
+      ],
+      [
+        1,
+        "0"
+      ],
+      [
+        2,
+        "0.00"
+      ],
+      [
+        3,
+        "#,##0"
+      ],
+      [
+        4,
+        "#,##0.00"
+      ],
+      [
+        9,
+        "0%"
+      ],
+      [
+        10,
+        "0.00%"
+      ],
+      [
+        11,
+        "0.00E+00"
+      ],
+      [
+        12,
+        "# ?/?"
+      ],
+      [
+        13,
+        "# ??/??"
+      ],
+      [
+        14,
+        "m/d/yy"
+      ],
+      [
+        15,
+        "d-mmm-yy"
+      ],
+      [
+        16,
+        "d-mmm"
+      ],
+      [
+        17,
+        "mmm-yy"
+      ],
+      [
+        18,
+        "h:mm AM/PM"
+      ],
+      [
+        19,
+        "h:mm:ss AM/PM"
+      ],
+      [
+        20,
+        "h:mm"
+      ],
+      [
+        21,
+        "h:mm:ss"
+      ],
+      [
+        22,
+        "m/d/yy h:mm"
+      ],
+      [
+        37,
+        "#,##0 ;(#,##0)"
+      ],
+      [
+        38,
+        "#,##0 ;[Red](#,##0)"
+      ],
+      [
+        39,
+        "#,##0.00;(#,##0.00)"
+      ],
+      [
+        40,
+        "#,##0.00;[Red](#,##0.00)"
+      ],
+      [
+        45,
+        "mm:ss"
+      ],
+      [
+        46,
+        "[h]:mm:ss"
+      ],
+      [
+        47,
+        "mmss.0"
+      ],
+      [
+        48,
+        "##0.0E+0"
+      ],
+      [
+        49,
+        "@"
+      ],
+      [
+        56,
+        "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+      ],
+      [
+        60,
+        "yyyy-mm-dd hh:mm:ss"
+      ],
+      [
+        61,
+        "$#,##0.00"
+      ],
+      [
+        62,
+        "0.0%"
+      ],
+      [
+        63,
+        "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+      ],
+      [
+        64,
+        "Q0"
+      ],
+      [
+        65,
+        "0.00;[Red](0.00);\"-\";\"text:\"@"
+      ],
+      [
+        66,
+        "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+      ],
+      [
+        67,
+        "[>100]0;\"fallback\"0"
+      ],
+      [
+        68,
+        "0;\"text:\"@"
+      ],
+      [
+        69,
+        "0.00;[Red](0.00)"
+      ]
+    ]
+  }
+}

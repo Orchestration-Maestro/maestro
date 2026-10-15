@@ -163,7 +163,7 @@ SOFTWARE.
 
 ## Spreadsheet formatting source
 
-Spreadsheet formatting data and policy are derived from SheetJS SSF in
+Spreadsheet formatting data, workbook projection and style policy are derived from SheetJS SSF in
 SheetJS 0.20.3. Copyright (C) 2012-present SheetJS LLC. Maestro implements
 the policy in Rust and corrects carried seconds, invalid numeric dates and
 host-timezone calendar discontinuities. The source is distributed under the

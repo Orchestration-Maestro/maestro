@@ -10,6 +10,16 @@ fn section_splitting_preserves_empty_and_extra_sections() {
 #[test]
 fn section_splitting_protects_quotes_escapes_skip_and_fill() {
     partition(&["protected_section_separators"]);
+    for code in [
+        r#""prefix_"0"#,
+        r#""star*"0"#,
+        r#""slash\"0"#,
+        r#""a_b"0"#,
+        r#""a*b"0"#,
+        r#""a\b"0"#,
+    ] {
+        assert_eq!(split_fmt(code).unwrap(), vec![code]);
+    }
 }
 
 #[test]
@@ -114,6 +124,7 @@ fn error_value(error: super::FormatError) -> serde_json::Value {
     use super::FormatError;
     use serde_json::json;
     match error {
+        FormatError::TooManySections => json!({"error": {"kind": "too_many_sections"}}),
         FormatError::UnterminatedBlock => json!({"error": {"kind": "unterminated_block"}}),
         FormatError::UnrecognizedCharacter(character) => {
             json!({"error": {"kind": "unrecognized_character", "character": character}})
@@ -131,6 +142,19 @@ fn error_value(error: super::FormatError) -> serde_json::Value {
 #[test]
 fn selected_sections_emit_literals_escapes_skip_and_fill_exactly() {
     partition(&["literal_emission"]);
+    for (code, text) in [
+        (r#""prefix_"0"#, "prefix_12"),
+        (r#""star*"0"#, "star*12"),
+        (r#""slash\"0"#, "slash\\12"),
+        (r#""a_b"0"#, "a_b12"),
+        (r#""a*b"0"#, "a*b12"),
+        (r#""a\b"0"#, "a\\b12"),
+    ] {
+        assert_eq!(
+            super::eval_fmt::eval_fmt(code, super::GeneralValue::Number(12.0), false, 1).unwrap(),
+            text
+        );
+    }
 }
 
 #[test]
@@ -141,6 +165,10 @@ fn condition_parsing_keeps_the_first_matching_ascii_threshold() {
 #[test]
 fn text_placeholders_repeat_and_preserve_supplied_text() {
     partition(&["text_placeholder"]);
+    assert_eq!(
+        super::eval_fmt::eval_fmt("@", super::GeneralValue::Text("1.25"), false, 4).unwrap(),
+        "1.25"
+    );
 }
 
 #[test]
@@ -261,6 +289,16 @@ fn fixed_fraction_denominators_keep_adjacent_spaces() {
 #[test]
 fn unsupported_numeric_sections_keep_writer_failure_categories() {
     partition(&["unsupported_number_fields"]);
+    for code in ["0.0@", "0", "#@", "0@", "yyyy@"] {
+        assert_eq!(
+            super::eval_fmt::eval_fmt(code, super::GeneralValue::Text("1.25"), false, 4),
+            Err(super::FormatError::UnsupportedNumberFormat)
+        );
+    }
+    assert_eq!(
+        super::eval_fmt::eval_fmt("0@", super::GeneralValue::Boolean(true), false, 4),
+        Err(super::FormatError::UnsupportedNumberFormat)
+    );
 }
 
 #[test]

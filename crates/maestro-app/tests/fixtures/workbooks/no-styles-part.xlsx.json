@@ -1,0 +1,10 @@
+{
+  "file": "no-styles-part.xlsx",
+  "expected": {
+    "error": {
+      "kind": "missing_package_part",
+      "part": "xl/styles.xml"
+    }
+  },
+  "record": null
+}

@@ -192,9 +192,9 @@
       "format": "\"a\\\";b\"0"
     },
     "expected": {
-      "ok": [
-        "\"a\\\";b\"0"
-      ]
+      "error": {
+        "kind": "unterminated_string"
+      }
     }
   },
   {

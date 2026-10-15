@@ -1,0 +1,10 @@
+{
+  "file": "truncated.xlsx",
+  "expected": {
+    "error": {
+      "kind": "invalid_archive",
+      "part": null
+    }
+  },
+  "record": null
+}

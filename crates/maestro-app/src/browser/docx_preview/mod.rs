@@ -36,6 +36,7 @@ pub(crate) use common::open_xml_package::OpenXmlPackage;
 #[cfg(test)]
 mod tests;
 mod utils;
+pub(crate) use utils::resolve_path;
 mod word_document;
 pub use common::{
     part::{Part, PartKind},

@@ -1,0 +1,250 @@
+[
+  {
+    "args": {
+      "cell": null,
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": null,
+      "v_after": null
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "v": {
+          "number": "12"
+        },
+        "w": "ignored"
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": "ignored",
+      "v_after": {
+        "number": "12"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "z",
+        "v": {
+          "number": "12"
+        },
+        "w": "ignored"
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": "ignored",
+      "v_after": {
+        "number": "12"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "number": "12"
+        },
+        "w": ""
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": "",
+      "v_after": {
+        "number": "12"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "number": "12"
+        },
+        "w": "cached"
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "cached",
+      "w": "cached",
+      "v_after": {
+        "number": "12"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "e",
+        "v": {
+          "number": "8"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": 8,
+      "w": null,
+      "v_after": {
+        "number": "8"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "e",
+        "v": {
+          "number": "43"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "#GETTING_DATA",
+      "w": null,
+      "v_after": {
+        "number": "43"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "number": "1.25"
+        }
+      },
+      "default_code": ""
+    },
+    "expected": {
+      "text": "",
+      "w": "",
+      "v_after": {
+        "number": "1.25"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "number": "1.23456789012345"
+        }
+      },
+      "default_code": "Q0"
+    },
+    "expected": {
+      "text": "1.23456789012345",
+      "w": null,
+      "v_after": {
+        "number": "1.23456789012345"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "empty": "null"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": "",
+      "v_after": {
+        "empty": "null"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "empty": "missing"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "",
+      "w": "",
+      "v_after": {
+        "empty": "missing"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "b",
+        "v": {
+          "boolean": true
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "TRUE",
+      "w": "TRUE",
+      "v_after": {
+        "boolean": true
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "s",
+        "v": {
+          "text": "\t雪\ntext"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "\t雪\ntext",
+      "w": "\t雪\ntext",
+      "v_after": {
+        "text": "\t雪\ntext"
+      }
+    }
+  },
+  {
+    "args": {
+      "cell": {
+        "t": "n",
+        "v": {
+          "number": "-0"
+        }
+      },
+      "default_code": null
+    },
+    "expected": {
+      "text": "0",
+      "w": "0",
+      "v_after": {
+        "number": "-0"
+      }
+    }
+  }
+]

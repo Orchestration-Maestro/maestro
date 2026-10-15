@@ -8,7 +8,7 @@ pub(super) fn normalize_path(path: &str) -> &str {
     path.strip_prefix('/').unwrap_or(path)
 }
 /// Resolve a relationship target against the package URL base.
-pub(super) fn resolve_path(path: &str, base: &str) -> String {
+pub(crate) fn resolve_path(path: &str, base: &str) -> String {
     url::Url::parse(&format!("http://docx/{base}"))
         .and_then(|base| base.join(path))
         .map_or_else(

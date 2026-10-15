@@ -1,10 +1,8 @@
 //! Protected spreadsheet format section boundaries.
 
-#[cfg(test)]
 use super::FormatError;
 
 /// Borrow sections while retaining protected delimiters and empty sections.
-#[cfg(test)]
 pub(super) fn split_fmt(format: &str) -> Result<Vec<&str>, FormatError> {
     let mut sections = Vec::new();
     let (mut start, mut quoted) = (0, false);
@@ -12,7 +10,7 @@ pub(super) fn split_fmt(format: &str) -> Result<Vec<&str>, FormatError> {
     while let Some((offset, character)) = characters.next() {
         match character {
             '"' => quoted = !quoted,
-            '\\' | '_' | '*' => {
+            '\\' | '_' | '*' if !quoted => {
                 characters.next();
             }
             ';' if !quoted => {

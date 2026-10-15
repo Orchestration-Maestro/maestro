@@ -1,0 +1,234 @@
+{
+  "file": "errors.xlsx",
+  "expected": {
+    "ok": {
+      "sheets": [
+        {
+          "name": "Errors",
+          "range": "A1:H1",
+          "merges": [],
+          "cells": [
+            {
+              "address": "A1",
+              "type": "e",
+              "value": {
+                "number": "0"
+              },
+              "w_after_read": "#NULL!",
+              "text": "#NULL!",
+              "w_after_format": "#NULL!"
+            },
+            {
+              "address": "B1",
+              "type": "e",
+              "value": {
+                "number": "7"
+              },
+              "w_after_read": "#DIV/0!",
+              "text": "#DIV/0!",
+              "w_after_format": "#DIV/0!"
+            },
+            {
+              "address": "C1",
+              "type": "e",
+              "value": {
+                "number": "15"
+              },
+              "w_after_read": "#VALUE!",
+              "text": "#VALUE!",
+              "w_after_format": "#VALUE!"
+            },
+            {
+              "address": "D1",
+              "type": "e",
+              "value": {
+                "number": "23"
+              },
+              "w_after_read": "#REF!",
+              "text": "#REF!",
+              "w_after_format": "#REF!"
+            },
+            {
+              "address": "E1",
+              "type": "e",
+              "value": {
+                "number": "29"
+              },
+              "w_after_read": "#NAME?",
+              "text": "#NAME?",
+              "w_after_format": "#NAME?"
+            },
+            {
+              "address": "F1",
+              "type": "e",
+              "value": {
+                "number": "36"
+              },
+              "w_after_read": "#NUM!",
+              "text": "#NUM!",
+              "w_after_format": "#NUM!"
+            },
+            {
+              "address": "G1",
+              "type": "e",
+              "value": {
+                "number": "42"
+              },
+              "w_after_read": "#N/A",
+              "text": "#N/A",
+              "w_after_format": "#N/A"
+            },
+            {
+              "address": "H1",
+              "type": "e",
+              "value": {
+                "number": "43"
+              },
+              "w_after_read": "#GETTING_DATA",
+              "text": "#GETTING_DATA",
+              "w_after_format": "#GETTING_DATA"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "record": {
+    "file": "errors.xlsx",
+    "date1904": false,
+    "ssf": [
+      [
+        0,
+        "General"
+      ],
+      [
+        1,
+        "0"
+      ],
+      [
+        2,
+        "0.00"
+      ],
+      [
+        3,
+        "#,##0"
+      ],
+      [
+        4,
+        "#,##0.00"
+      ],
+      [
+        9,
+        "0%"
+      ],
+      [
+        10,
+        "0.00%"
+      ],
+      [
+        11,
+        "0.00E+00"
+      ],
+      [
+        12,
+        "# ?/?"
+      ],
+      [
+        13,
+        "# ??/??"
+      ],
+      [
+        14,
+        "m/d/yy"
+      ],
+      [
+        15,
+        "d-mmm-yy"
+      ],
+      [
+        16,
+        "d-mmm"
+      ],
+      [
+        17,
+        "mmm-yy"
+      ],
+      [
+        18,
+        "h:mm AM/PM"
+      ],
+      [
+        19,
+        "h:mm:ss AM/PM"
+      ],
+      [
+        20,
+        "h:mm"
+      ],
+      [
+        21,
+        "h:mm:ss"
+      ],
+      [
+        22,
+        "m/d/yy h:mm"
+      ],
+      [
+        37,
+        "#,##0 ;(#,##0)"
+      ],
+      [
+        38,
+        "#,##0 ;[Red](#,##0)"
+      ],
+      [
+        39,
+        "#,##0.00;(#,##0.00)"
+      ],
+      [
+        40,
+        "#,##0.00;[Red](#,##0.00)"
+      ],
+      [
+        45,
+        "mm:ss"
+      ],
+      [
+        46,
+        "[h]:mm:ss"
+      ],
+      [
+        47,
+        "mmss.0"
+      ],
+      [
+        48,
+        "##0.0E+0"
+      ],
+      [
+        49,
+        "@"
+      ],
+      [
+        56,
+        "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+      ],
+      [
+        60,
+        "yyyy-mm-dd hh:mm:ss"
+      ],
+      [
+        61,
+        "$#,##0.00"
+      ],
+      [
+        62,
+        "0.0%"
+      ],
+      [
+        63,
+        "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+      ]
+    ]
+  }
+}
