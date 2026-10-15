@@ -72,3 +72,10 @@ supporting records remain in the public application modules. See
 [Browser input and timers](components.md) reuse the attachment content host for
 native editing and owned timer callbacks. The retained browser `Input` is
 distinct from the terminal toolkit input.
+
+## Sandbox messages
+
+[Sandbox runtime messaging](sandbox.md) provides registered-window admission,
+live runtime-provider dispatch and source generation for iframe and extension
+channels. Native tests and WebAssembly compilation are distinct from browser
+effect qualification.

@@ -39,3 +39,8 @@ pub use maestro_app::{
 pub use maestro_app::browser::storage::{
     IndexDirection, QuotaInfo, StorageOperation, TransactionMode,
 };
+
+pub use components::sandbox::runtime_message_bridge::RuntimeMessageBridge;
+
+#[cfg(target_arch = "wasm32")]
+pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
