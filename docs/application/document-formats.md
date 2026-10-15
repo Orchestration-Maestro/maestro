@@ -110,3 +110,25 @@ none is transparent. Border styles default to solid; nil/none produces only none
 Absent width/color components are omitted, allowing CSS defaults. Widths use the
 existing length conversion. These operations do not wire formatting into the
 owned element tree or render a document.
+
+## Word default properties and conditional table styles
+
+`maestro_app::browser::docx_preview::parse_default_properties` updates supplied
+ordered CSS maps from immediate property children. It handles alignment, colors,
+font size and families, underline, indentation, paragraph spacing, cell margins,
+row height and table layout. The optional child map receives table borders and
+cell margins; paragraph and cell borders stay in the main map. Replacements keep
+their original key positions, including nullable values.
+
+`DefaultPropertiesOptions` defaults to no width suppression and no interceptor.
+Its `ignore_width` suppresses cell widths only. The borrowed synchronous handler
+sees and may mutate the main map before each child's dispatch; returning true
+consumes that child. Font parsing selects ASCII, ASCII theme and East Asian
+families, using the existing font enclosure. Position writes the valid
+`vertical-align` CSS key.
+
+`parse_table_style` prepares owned `TableStyle` selector/modifier/value records
+for first/last rows and columns and horizontal/vertical banding. Property-child
+order, duplicates and empty maps are retained. Unsupported regions return no
+records. These parsers do not integrate formatting into the owned element tree
+or render a preview.

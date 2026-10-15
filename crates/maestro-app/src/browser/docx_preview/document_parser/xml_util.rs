@@ -6,10 +6,11 @@ pub(super) fn color_attr<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
     attr_name: &str,
+    auto_color: &str,
 ) -> Option<String> {
     if let Some(value) = xml.attr(element, attr_name).filter(|s| !s.is_empty()) {
         return Some(match value {
-            "auto" => "black".into(),
+            "auto" => auto_color.into(),
             "black" => "#000000".into(),
             "blue" => "#0000FF".into(),
             "cyan" => "#00FFFF".into(),

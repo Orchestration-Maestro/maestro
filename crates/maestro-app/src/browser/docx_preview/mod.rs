@@ -63,5 +63,7 @@ pub use document::dom::{
     UnparsedKind,
 };
 pub use document_parser::{
-    parse_background, parse_body_elements, parse_border_properties, parse_paragraph, parse_run,
+    DefaultPropertiesOptions, TableStyle, parse_background, parse_body_elements,
+    parse_border_properties, parse_default_properties, parse_paragraph, parse_run,
+    parse_table_style,
 };
