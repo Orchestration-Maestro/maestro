@@ -199,23 +199,23 @@ browser-library-build pack=(justfile_directory() / "assets/brand/brand.json") mo
 
 # Watch shared browser inputs and serve the editable example.
 browser-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk serve --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --address 127.0.0.1 --dist {{quote(justfile_directory() / "target/maestro-browser/example")}} "$@"
+    shift 2; just _browser-watch serve example {{quote(pack)}} {{quote(mode)}} --address 127.0.0.1 "$@"
 
 # Watch browser Rust and stylesheet inputs without a server.
 browser-dev-compile pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk watch --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser/library")}} "$@"
+    shift 2; just _browser-watch watch library {{quote(pack)}} {{quote(mode)}} "$@"
 
 # Format and strictly check the delivered browser library and author fixture.
 browser-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
-    cargo fmt -p maestro-web --check
-    cargo fmt --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --check
+    cargo fmt -p maestro-web
+    cargo fmt --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}}
     cargo clippy --no-deps -p maestro-web --target wasm32-unknown-unknown --locked -- -D warnings
-    MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo clippy --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked -- -D warnings
+    MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo clippy --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked -- -D warnings
     just browser-example-check {{quote(pack)}} {{quote(mode)}}
 
 # Type-check shared example declarations without emitting a distribution.
 browser-example-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
-    MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo check --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked
+    MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo check --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked
 
 # Serve the example through the single shared browser watch graph.
 browser-example-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
@@ -235,7 +235,7 @@ browser-example-clean:
 
 # Retain source locations and declarations without an optimizer pass.
 browser-debug-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/debug.html")}} --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser/debug")}} "$@"
+    shift 2; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/debug.html")}} --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser/debug")}} "$@"
 
 # Caller-owned shared build interface, failing before the next build on error.
 browser-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
@@ -245,4 +245,10 @@ browser-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark
 # One optimized build path owns the fixture, asset inputs and tool pins.
 [private]
 _browser-build output pack mode *args:
-    shift 3; MAESTRO_BRAND_PACK={{quote(pack)}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --release --dist {{quote(justfile_directory() / "target/maestro-browser" / output)}} "$@"
+    shift 3; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --release --dist {{quote(justfile_directory() / "target/maestro-browser" / output)}} "$@"
+
+# Prepare invocation-specific roots before starting the native watcher.
+[private]
+_browser-watch command output pack mode *args:
+    MAESTRO_BROWSER_WATCH_CONFIG={{quote(justfile_directory() / "target/maestro-browser/watch.toml")}} just browser-example-check {{quote(pack)}} {{quote(mode)}}
+    shift 4; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk {{command}} {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/index.html")}} --config {{quote(justfile_directory() / "target/maestro-browser/watch.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser" / output)}} "$@"

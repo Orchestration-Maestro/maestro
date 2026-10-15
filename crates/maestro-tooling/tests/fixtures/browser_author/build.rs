@@ -16,6 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pack = load_brand_pack(&path, &NativeThemeOperations)?;
     let view = pack.presentation(mode)?;
     println!("cargo:rerun-if-changed={}", view.mark.template);
+    watch_config(&path, &view.mark.template)?;
     let out = PathBuf::from(std::env::var_os("OUT_DIR").ok_or("missing OUT_DIR")?);
     let mut declarations = String::new();
     for (key, value) in view.css_properties() {
@@ -53,6 +54,30 @@ fn main() -> Result<(), Box<dyn Error>> {
         fs::write(
             out.join(format!("{role}.txt")),
             *view.colors.get(role).ok_or("missing color role")?,
+        )?;
+    }
+    Ok(())
+}
+
+/// Extend the static watch roots with invocation-selected identity inputs.
+fn watch_config(path: &str, template: &str) -> Result<(), Box<dyn Error>> {
+    println!("cargo:rerun-if-env-changed=MAESTRO_BROWSER_WATCH_CONFIG");
+    if let Some(config) = std::env::var_os("MAESTRO_BROWSER_WATCH_CONFIG") {
+        let root = std::env::current_dir()?;
+        let roots = serde_json::to_string(&[
+            root.as_path(),
+            root.join("../../../../../assets/brand").as_path(),
+            std::path::Path::new(path),
+            std::path::Path::new(template),
+        ])?;
+        let config = PathBuf::from(config);
+        fs::create_dir_all(config.parent().ok_or("missing watch output directory")?)?;
+        fs::write(
+            config,
+            include_str!("Trunk.toml").replace(
+                r#"watch = [".", "../../../../../assets/brand"]"#,
+                &format!("watch = {roots}"),
+            ),
         )?;
     }
     Ok(())

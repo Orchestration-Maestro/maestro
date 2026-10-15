@@ -24,7 +24,7 @@ interaction qualification remain tracked in [#111](https://github.com/Orchestrat
 | `browser-clean`, `browser-example-clean` | Remove only the respective prepared distribution |
 | `browser-dev`, `browser-example-dev` | Trunk rebuilds shared inputs and serves the editable example on loopback |
 | `browser-dev-compile` | Trunk watch without a server |
-| `browser-check` | Check formatting and strict wasm Clippy for the delivered library and fixture, then example checking |
+| `browser-check` | Apply formatting, then strict wasm Clippy for the delivered library and fixture, then example checking |
 | `browser-example-check` | Locked wasm Cargo check without distribution emission |
 | `browser-example-preview` | Miniserve prepared example bytes with HTML route fallback; no compilation |
 | `browser-debug-build` | Separate debug HTML target, retaining source locations and declarations without wasm-opt |
@@ -43,14 +43,20 @@ mise exec -- just browser-example-dev assets/brand/brand.json light --port 9000
 Defaults select the checkout's brand pack and dark appearance. Supply both
 positional inputs before additional native options. Native options are forwarded
 by build/watch/serve/debug recipes; preview accepts only native server options.
-Paths containing spaces, apostrophes and non-ASCII characters remain literal
-arguments. Preparation reads `MAESTRO_BRAND_PACK` / `MAESTRO_BRAND_MODE` through
+Relative pack paths resolve from the recipe directory. Paths containing spaces,
+apostrophes and non-ASCII characters remain literal arguments. Preparation reads `MAESTRO_BRAND_PACK` / `MAESTRO_BRAND_MODE` through
 the existing theme loader and projection; no alternate identity decoder exists.
 
 Root `dev` composes `native-dev` with `browser-dev` using just's native parallel
 dependencies. Root `dev-compile` composes models with `browser-dev-compile`;
 `models-dev-compile` still selects only models. Trunk owns browser watching,
 rebuilding and serving; watchexec retains the native compiler graph.
+The browser watch routes first check the fixture to prepare an invocation-specific
+configuration under `target/maestro-browser/`. It retains the fixture and default
+brand roots and adds the selected pack and its resolved mark template, including
+external files. The native watch option replaces configured roots rather than
+extending them, so the configuration is prepared from the existing theme loader;
+there is no second pack decoder.
 
 ## Tools and prepared metadata
 
@@ -87,13 +93,18 @@ default toolkit font bundle is required by the fixture's wasm graph.
 The six fonts total **1,967,112 raw bytes**; qualification measured **881,586
 bytes** with deterministic gzip. Real glyph tests cover `✦✓✗┃↑↓` through five
 family/weight chains with an empty-font toolkit context and nonempty tessellation.
+The editable input uses `border` when unfocused and a two-pixel `accent` outline
+when focused, independent of `on-accent` selected text over `accent`. Caret and
+composition underlines use `text` over `panel`. The same native widget projection
+is exercised for both packs and modes, including the emitted focus outline.
 This is not arbitrary-script coverage or real-browser pixel certification.
 
 ## Validation boundary
 
-Twenty focused `browser_author_build` tests exercise actual optimized/debug
+Focused `browser_author_build` tests exercise actual optimized/debug
 builds, strict checking, independently edited Rust/CSS/shared identity inputs,
-native serving, prepared-only preview and child failures. Controlled command
+native serving, external pack/mark rebuilds on serving and compile-only routes,
+formatting repair, prepared-only preview and child failures. Controlled command
 fixtures cover command selection and finite negative traces, not rendering.
 Native tests also inspect assets, glyph geometry, wasm magic, bindings and source
 locations. Browser interaction and startup performance are not inferred from
