@@ -23,8 +23,11 @@ summary is included only if the accumulated estimate is strictly below 90% of bu
 traversal stops either way. Returned messages are chronological. File sets preserve
 insertion order; generation computes the sorted, disjoint output lists.
 
-Preparation reads only consumed raw fields. Reached invalid fields return a native
-JSON error; unread metadata and older messages beyond the crossing are not decoded.
+Preparation reads only consumed raw fields. Consumed fields requiring valid shapes
+return native JSON errors for invalid shapes; unread metadata and older messages
+beyond the crossing are not decoded. Timestamp projection follows the
+[session-context projection](sessions/session_manager.md#branch-selection), including invalid
+timestamps becoming null.
 The shared [estimator and serializer](compaction.md) own message accounting and projection.
 
 ## Generation

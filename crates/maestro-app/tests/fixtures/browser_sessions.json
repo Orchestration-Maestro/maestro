@@ -3862,7 +3862,6 @@
       "input": {
         "op": "get",
         "id": "id",
-        "presence": "absent",
         "records": {
           "sessions": {}
         }
@@ -3889,7 +3888,6 @@
       "input": {
         "op": "get",
         "id": "id",
-        "presence": "null",
         "records": {
           "sessions": {
             "id": null
@@ -3920,7 +3918,6 @@
       "input": {
         "op": "get",
         "id": "id",
-        "presence": "present",
         "records": {
           "sessions": {
             "id": {
@@ -4095,7 +4092,6 @@
       "input": {
         "op": "getMetadata",
         "id": "id",
-        "presence": "absent",
         "records": {
           "sessions-metadata": {}
         }
@@ -4122,7 +4118,6 @@
       "input": {
         "op": "getMetadata",
         "id": "id",
-        "presence": "null",
         "records": {
           "sessions-metadata": {
             "id": null
@@ -4153,7 +4148,6 @@
       "input": {
         "op": "getMetadata",
         "id": "id",
-        "presence": "present",
         "records": {
           "sessions-metadata": {
             "id": {
@@ -4250,7 +4244,6 @@
       "input": {
         "op": "loadSession",
         "id": "id",
-        "presence": "absent",
         "records": {
           "sessions": {}
         }
@@ -4277,7 +4270,6 @@
       "input": {
         "op": "loadSession",
         "id": "id",
-        "presence": "null",
         "records": {
           "sessions": {
             "id": null
@@ -4308,7 +4300,6 @@
       "input": {
         "op": "loadSession",
         "id": "id",
-        "presence": "present",
         "records": {
           "sessions": {
             "id": {
@@ -4598,7 +4589,6 @@
       "input": {
         "id": "id",
         "title": "",
-        "present": "both",
         "records": {
           "sessions": {
             "id": {
@@ -4862,7 +4852,6 @@
       "input": {
         "id": "id",
         "title": " ﻿new\n",
-        "present": "both",
         "records": {
           "sessions": {
             "id": {
@@ -5126,7 +5115,6 @@
       "input": {
         "id": "id",
         "title": "",
-        "present": "metadata",
         "records": {
           "sessions": {},
           "sessions-metadata": {
@@ -5236,7 +5224,6 @@
       "input": {
         "id": "id",
         "title": " ﻿new\n",
-        "present": "metadata",
         "records": {
           "sessions": {},
           "sessions-metadata": {
@@ -5346,7 +5333,6 @@
       "input": {
         "id": "id",
         "title": "",
-        "present": "data",
         "records": {
           "sessions": {
             "id": {
@@ -5534,7 +5520,6 @@
       "input": {
         "id": "id",
         "title": " ﻿new\n",
-        "present": "data",
         "records": {
           "sessions": {
             "id": {
@@ -5722,7 +5707,6 @@
       "input": {
         "id": "id",
         "title": "",
-        "present": "neither",
         "records": {
           "sessions": {},
           "sessions-metadata": {}
@@ -5756,7 +5740,6 @@
       "input": {
         "id": "id",
         "title": " ﻿new\n",
-        "present": "neither",
         "records": {
           "sessions": {},
           "sessions-metadata": {}
@@ -17208,7 +17191,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -17587,7 +17569,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -18105,7 +18086,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -18608,7 +18588,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -19055,7 +19034,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -19452,7 +19430,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -19816,7 +19793,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -20175,7 +20151,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -20556,7 +20531,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -20982,7 +20956,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -21366,7 +21339,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -21710,7 +21682,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -22054,7 +22025,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -22402,7 +22372,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -22754,7 +22723,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -23114,7 +23082,6 @@
             },
             "replay": []
           },
-          "error": null,
           "trace": [
             [
               "transaction",
@@ -24121,7 +24088,6 @@
               }
             ]
           },
-          "error": null,
           "trace": [
             [
               "transaction",

@@ -89,8 +89,9 @@ content under context-window-minus-reserve; the [branch API](../branch_summary.m
 specifies the summary exception, defaults and request/result policy.
 
 1. Collect the abandoned path after the common ancestor.
-2. Prepare and generate its summary.
-3. Let caller hooks cancel or replace the result where applicable.
+2. Let caller hooks cancel, supply a custom summary or override instructions.
+3. Generate the default summary only when neither cancellation nor a custom summary
+   bypasses generation; instruction overrides configure that generation.
 4. Publish the summary at the selected navigation point using the session operation.
 
 ```text

@@ -368,35 +368,7 @@ impl SandboxValue for Payload {
 #[test]
 fn repl_generic_return_keeps_non_json_caller_value() {
     run(async {
-        let payload = retained_payload().await;
-        let removed = Arc::clone(&payload.removed);
-        let value = Arc::clone(&payload.value);
-        let closed = Arc::clone(&removed);
-        let host = Controlled {
-            create: Arc::new(|_| {}),
-            execute: Arc::new(move |_| {
-                let mut result = empty();
-                result.return_value = Some(Payload {
-                    value: Arc::clone(&value),
-                    removed: Arc::clone(&closed),
-                    fail: false,
-                });
-                Box::pin(async move { Ok(result) })
-            }),
-            remove: Arc::new(move || removed.store(true, std::sync::atomic::Ordering::SeqCst)),
-        };
-        let result = execute_javascript(
-            "1".into(),
-            vec![],
-            None,
-            SandboxEnvironment {
-                host: Arc::new(host),
-                sandbox_url_provider: None,
-            },
-        )
-        .await
-        .unwrap();
-        assert_eq!(result.output, "=> owned payload");
+        retained_payload().await;
     });
 }
 #[test]
@@ -634,7 +606,16 @@ fn repl_callback_errors_precede_preflight_or_invocation() {
     run(async {
         use support::javascript_execution::corpus;
         for row in corpus().callback_errors {
-            let repl = maestro_app::create_javascript_repl_tool(Arc::new(QuietHost));
+            let admissions = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+            let opened = Arc::clone(&admissions);
+            let host = Controlled::<serde_json::Value> {
+                create: Arc::new(move |_| {
+                    opened.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                }),
+                execute: Arc::new(|_| Box::pin(async { Ok(empty()) })),
+                remove: Arc::new(|| {}),
+            };
+            let repl = maestro_app::create_javascript_repl_tool(Arc::new(host));
             let expected = row["message"].as_str().unwrap().to_owned();
             let supplied = expected.clone();
             if row["mode"] == "provider_description" {
@@ -674,6 +655,7 @@ fn repl_callback_errors_precede_preflight_or_invocation() {
                 assert_eq!(description(&repl.tool).unwrap_err().message, expected);
                 failed_description_run(repl.tool, &expected).await;
             }
+            assert_eq!(admissions.load(std::sync::atomic::Ordering::SeqCst), 0);
         }
     });
 }
@@ -801,7 +783,7 @@ fn payload_result(
 }
 
 /// Pause and recover a non-JSON caller value through the public host contract.
-async fn retained_payload() -> Payload {
+async fn retained_payload() {
     let removed = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let value = Arc::new(vec![42, 7]);
     let supplied = Arc::clone(&value);
@@ -810,6 +792,7 @@ async fn retained_payload() -> Payload {
     let started = Arc::new(std::sync::Mutex::new(Some(started)));
     let (resume, resumed) = tokio::sync::oneshot::channel();
     let resumed = Arc::new(std::sync::Mutex::new(Some(resumed)));
+    let cleanup = Arc::clone(&removed);
     let host = Controlled {
         create: Arc::new(|_| {}),
         execute: Arc::new(move |_| {
@@ -828,26 +811,29 @@ async fn retained_payload() -> Payload {
                 Ok(result)
             })
         }),
-        remove: Arc::new(move || removed.store(true, std::sync::atomic::Ordering::SeqCst)),
+        remove: Arc::new(move || cleanup.store(true, std::sync::atomic::Ordering::SeqCst)),
     };
     let task = tokio::spawn(async move {
-        // The host also exposes its unconverted value through the execution port.
-        let direct = host
-            .execute(SandboxExecution {
-                sandbox_id: "direct".into(),
-                code: "1".into(),
-                runtime_providers: vec![],
-                signal: None,
-            })
-            .await
-            .unwrap();
-        direct.return_value.unwrap()
+        execute_javascript(
+            "1".into(),
+            vec![],
+            None,
+            SandboxEnvironment {
+                host: Arc::new(host),
+                sandbox_url_provider: None,
+            },
+        )
+        .await
+        .unwrap()
     });
     entered.await.unwrap();
+    assert!(!task.is_finished());
+    assert!(!removed.load(std::sync::atomic::Ordering::SeqCst));
     resume.send(()).unwrap();
-    let payload = task.await.unwrap();
-    assert!(Arc::ptr_eq(&payload.value, &value));
-    payload
+    let result = task.await.unwrap();
+    assert_eq!(result.output, "=> owned payload");
+    assert!(removed.load(std::sync::atomic::Ordering::SeqCst));
+    assert_eq!(Arc::strong_count(&value), 1);
 }
 
 /// A description failure prevents the supplied stream callback from running.

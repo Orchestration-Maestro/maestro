@@ -70,7 +70,7 @@ pub fn run(name: &str) {
     if case.kind == "replay" {
         row.update_result(
             ToolExecutionResult {
-                content: vec![],
+                content: vec![success_text()],
                 details: case.details.clone(),
                 is_error: false,
             },
@@ -87,7 +87,7 @@ pub fn run(name: &str) {
     if case.kind == "large" {
         row.update_result(
             ToolExecutionResult {
-                content: vec![],
+                content: vec![success_text()],
                 details: case.details,
                 is_error: false,
             },
@@ -106,6 +106,12 @@ pub fn run(name: &str) {
     );
     assert_eq!(runtime.futures(), 0);
     assert_eq!(runtime.pending(), 0);
+}
+
+/// Visible success content that native diff renderers must suppress.
+fn success_text() -> maestro_app::UserBlock {
+    serde_json::from_value(json!({"type":"text","text":"native success text must stay hidden"}))
+        .unwrap()
 }
 
 /// The existing recording terminal for containing-writer ownership tests.

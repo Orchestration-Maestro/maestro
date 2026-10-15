@@ -188,8 +188,6 @@ pub struct Observations {
     pub events: Vec<String>,
     /// Removed sandbox count.
     pub removals: usize,
-    /// Execution identifiers.
-    pub ids: Vec<String>,
     /// Factory evaluations.
     pub factory_calls: usize,
 }
@@ -248,7 +246,6 @@ impl SandboxIframe for Host {
             let mut observed = self.observed.lock().unwrap();
             observed.events.push("execute".into());
             assert!(request.sandbox_id.starts_with("repl-"));
-            observed.ids.push(request.sandbox_id);
         }
         let result = self
             .input

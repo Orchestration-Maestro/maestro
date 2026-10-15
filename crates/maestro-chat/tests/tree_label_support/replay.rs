@@ -99,7 +99,7 @@ fn callbacks(effects: &Rc<Effects>, policy: &str) -> TreeSelectorCallbacks {
 /// Observes state before rendering and effects after it, preserving oracle phases.
 fn frame(panel: &TreeSelectorComponent, case: &Case, record: &Frame, context: &Context) {
     let list = panel.get_tree_list();
-    assert!(Rc::ptr_eq(list, panel.get_tree_list()));
+    assert!(Rc::ptr_eq(list, &context.original_list));
     assert_eq!(
         list.get_selected_node()
             .and_then(|n| n.entry()["id"].as_str().map(str::to_owned)),
@@ -136,6 +136,8 @@ fn frame(panel: &TreeSelectorComponent, case: &Case, record: &Frame, context: &C
 }
 /// Runtime and publication handles spanning each complete transaction.
 struct Context {
+    /// Original list retained across every replay operation.
+    original_list: Rc<maestro_chat::TreeList>,
     host: manual_runtime::ManualRuntime,
     theme: maestro_theme::LiveTheme,
     publication: maestro_theme::ThemeState,
@@ -222,6 +224,7 @@ pub(super) fn case(case: &Case) {
     );
     *effects.panel.borrow_mut() = Rc::downgrade(&panel);
     let context = Context {
+        original_list: panel.get_tree_list().clone(),
         host,
         theme,
         publication,
