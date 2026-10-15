@@ -217,3 +217,120 @@ fn session_scans_skip_absent_or_nondirectory_roots() {
 fn session_moves_preserve_opaque_bytes() {
     startup::run("session_moves_preserve_opaque_bytes");
 }
+
+#[test]
+#[cfg(unix)]
+fn session_links_follow_relocated_referents_alias_first() {
+    relocated_referent("session_links_follow_relocated_referents_alias_first", true);
+}
+
+#[test]
+#[cfg(unix)]
+fn session_links_follow_relocated_referents_referent_first() {
+    relocated_referent(
+        "session_links_follow_relocated_referents_referent_first",
+        false,
+    );
+}
+
+#[cfg(unix)]
+fn relocated_referent(name: &str, alias_first: bool) {
+    use std::{fs, os::unix::fs::symlink};
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        println!("PROBE done");
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
+    for file in ["a.jsonl", "b.jsonl"] {
+        fs::write(scratch.0.join(file), body).unwrap();
+    }
+    let entries = || {
+        fs::read_dir(&scratch.0)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name())
+            .collect::<Vec<_>>()
+    };
+    let order = entries();
+    let alias_index = usize::from(!alias_first);
+    let alias = &order[alias_index];
+    let referent = &order[1 - alias_index];
+    fs::remove_file(scratch.0.join(alias)).unwrap();
+    symlink(referent, scratch.0.join(alias)).unwrap();
+    assert_eq!(
+        entries(),
+        order,
+        "qualify the actual native encounter order"
+    );
+    for _ in 0..2 {
+        child::probe(
+            name,
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "sessions"),
+                ("MAESTRO_CODING_AGENT_DIR", "."),
+            ],
+        );
+        for file in [alias, referent] {
+            assert_eq!(
+                fs::read(scratch.0.join("sessions/--work--").join(file)).unwrap(),
+                body
+            );
+            assert_eq!(
+                fs::symlink_metadata(scratch.0.join(file))
+                    .unwrap_err()
+                    .kind(),
+                std::io::ErrorKind::NotFound
+            );
+        }
+        assert!(
+            fs::symlink_metadata(scratch.0.join("sessions/--work--").join(alias))
+                .unwrap()
+                .is_symlink()
+        );
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn relative_session_link_replaces_a_dangling_destination() {
+    use std::{fs, os::unix::fs::symlink};
+    let name = "relative_session_link_replaces_a_dangling_destination";
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        println!("PROBE done");
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
+    fs::write(scratch.0.join("original.data"), body).unwrap();
+    symlink("original.data", scratch.0.join("alias.jsonl")).unwrap();
+    let directory = scratch.0.join("sessions/--work--");
+    fs::create_dir_all(&directory).unwrap();
+    symlink("missing.data", directory.join("alias.jsonl")).unwrap();
+    for _ in 0..2 {
+        child::probe(
+            name,
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "sessions"),
+                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+            ],
+        );
+        assert_eq!(
+            fs::symlink_metadata(scratch.0.join("alias.jsonl"))
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::NotFound
+        );
+        assert!(
+            fs::symlink_metadata(directory.join("alias.jsonl"))
+                .unwrap()
+                .is_symlink()
+        );
+        assert_eq!(fs::read(directory.join("alias.jsonl")).unwrap(), body);
+        assert_eq!(fs::read(scratch.0.join("original.data")).unwrap(), body);
+        assert!(!directory.join("missing.data").exists());
+    }
+}

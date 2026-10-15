@@ -56,8 +56,12 @@ or concurrent-writer protocol.
 first-line session header with a nonempty string cwd selects the existing
 [session directory encoding](../sessions/session_manager.md). The original entry
 is relocated using its native basename; transcript bytes are not rewritten.
-Relative links are re-anchored to their original resolved file so the relocated
-transcript remains readable. Other entries are renamed unchanged.
-Existing destinations are preserved; scan and individual-file failures are
-ignored. Configuration-root lookup errors propagate from both operations.
+The scan captures headers and resolved link referents before moving any entry.
+Links are re-anchored to their referent's new location after a successful move,
+or its original location if it did not move. Other entries are renamed unchanged.
+Existing readable destinations are preserved; dangling destination links are
+replaced, not followed. Re-anchored links are staged beside their source with a
+`.jsonl.migrating` suffix before publication by rename. An existing staging entry
+is never overwritten. Scan and individual-file failures are ignored.
+Configuration-root lookup errors propagate from both operations.
 These operations are native-only and do not install startup orchestration.

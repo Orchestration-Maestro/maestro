@@ -9,9 +9,10 @@ use std::os::unix::fs::symlink;
 #[cfg(windows)]
 use std::os::windows::fs::symlink_file as symlink;
 use std::{
+    collections::BTreeMap,
     fs,
     io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 /// Selected credentials and deferred source retirement.
@@ -24,6 +25,16 @@ struct PreparedAuth {
     oauth_read: bool,
     /// Remaining settings when a key container was admitted.
     settings: Option<Map<String, Value>>,
+}
+
+/// Admitted session entry and its referent identity before relocation.
+struct PreparedSession {
+    /// Authored source entry.
+    path: PathBuf,
+    /// Header-selected workspace.
+    cwd: String,
+    /// Resolved final referent for symbolic links.
+    referent: Option<PathBuf>,
 }
 
 /// Read a legacy JSON value with native decoding boundaries.
@@ -149,43 +160,72 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
     else {
         return Ok(());
     };
-    for entry in entries {
-        let name = entry.file_name();
-        let name = name.to_string_lossy();
-        if !name.ends_with(".jsonl") {
+    let prepared: Vec<_> = entries
+        .into_iter()
+        .filter(|entry| entry.file_name().to_string_lossy().ends_with(".jsonl"))
+        .filter_map(|entry| prepare_session(entry.path()).ok().flatten())
+        .collect();
+    let mut moved = BTreeMap::new();
+    let mut links = Vec::new();
+    for session in prepared {
+        let Ok(directory) = get_default_session_dir(&session.cwd, &agent_dir) else {
+            continue;
+        };
+        let path = session.path;
+        let target = Path::new(&directory).join(path.file_name().unwrap_or_default());
+        if target.exists() {
             continue;
         }
-        let _ = move_session(&agent_dir, &name);
+        if let Some(referent) = session.referent {
+            links.push((path, target, referent));
+        } else if let Ok(identity) = fs::canonicalize(&path)
+            && fs::rename(&path, &target).is_ok()
+            && let Ok(target) = fs::canonicalize(target)
+        {
+            moved.insert(identity, target);
+        }
+    }
+    for (path, target, referent) in links {
+        let _ = publish_session_link(&path, &target, moved.get(&referent).unwrap_or(&referent));
     }
     Ok(())
 }
 
-/// Admit the first header and relocate its entry without rewriting transcript bytes.
-fn move_session(agent_dir: &str, name: &str) -> io::Result<()> {
-    let path = join(&[agent_dir, name]);
+/// Capture header admission and link identity before any source can move.
+fn prepare_session(path: PathBuf) -> io::Result<Option<PreparedSession>> {
     let content = fs::read(&path)?;
     let text = String::from_utf8_lossy(&content);
     let line = text.split('\n').next().unwrap_or_default();
     let header: Value = serde_json::from_str(line).map_err(io::Error::other)?;
     if header.get("type").and_then(Value::as_str) != Some("session") {
-        return Ok(());
+        return Ok(None);
     }
     let Some(cwd) = header
         .get("cwd")
         .and_then(Value::as_str)
         .filter(|cwd| !cwd.is_empty())
     else {
-        return Ok(());
+        return Ok(None);
     };
-    let directory = get_default_session_dir(cwd, agent_dir)?;
-    let target = join(&[&directory, name]);
-    if !Path::new(&target).exists() {
-        if fs::read_link(&path).is_ok_and(|link| link.is_relative()) {
-            symlink(fs::canonicalize(&path)?, &target)?;
-            fs::remove_file(path)?;
-        } else {
-            fs::rename(path, target)?;
-        }
+    let referent = fs::read_link(&path)
+        .ok()
+        .map(|_| fs::canonicalize(&path))
+        .transpose()?;
+    Ok(Some(PreparedSession {
+        path,
+        cwd: cwd.into(),
+        referent,
+    }))
+}
+
+/// Publish a re-anchored link with native replacement, retaining the source on failure.
+fn publish_session_link(path: &Path, target: &Path, referent: &Path) -> io::Result<()> {
+    let temporary = path.with_extension("jsonl.migrating");
+    symlink(referent, &temporary)?;
+    let result = fs::rename(&temporary, target);
+    if result.is_err() {
+        let _ = fs::remove_file(temporary);
     }
-    Ok(())
+    result?;
+    fs::remove_file(path)
 }
