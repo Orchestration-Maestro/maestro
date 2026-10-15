@@ -91,6 +91,44 @@ fn browser_editor_focus_selection_caret_and_composition_use_identity() {
 }
 
 #[test]
+fn browser_editor_preserves_padding_and_paints_decoration_outside() {
+    let context = egui::Context::default();
+    let mut text = "author text".to_owned();
+    let mut field = egui::Rect::NOTHING;
+    let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+        let id = ui.make_persistent_id("author-input");
+        ui.memory_mut(|memory| memory.request_focus(id));
+        field = editor::show(ui, &mut text).rect;
+    });
+    output.textures_delta.clear();
+    let text_position = output
+        .shapes
+        .iter()
+        .find_map(|shape| match &shape.shape {
+            egui::Shape::Text(text) => Some(text.pos),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(
+        text_position,
+        field.min + egui::vec2(4.0, 2.0),
+        "text keeps the field's default padding"
+    );
+    let decoration = output
+        .shapes
+        .iter()
+        .find_map(|shape| match &shape.shape {
+            egui::Shape::Rect(rect) if rect.stroke.width.to_bits() == 2.0_f32.to_bits() => {
+                Some(rect)
+            }
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(decoration.rect, field);
+    assert_eq!(decoration.stroke_kind, egui::StrokeKind::Outside);
+}
+
+#[test]
 fn browser_build_emits_wasm_and_prepared_assets() {
     let browser = Browser::new();
     let mut command = browser.command("browser-library-build");
@@ -241,22 +279,10 @@ fn browser_example_development_serves_rebuilt_external_assets() {
             .unwrap()
             .contains("outline-style:dotted")
     );
-    let contents = fs::read_to_string(&pack).unwrap().replace(
-        "\"wordmark\": \"Maestro\"",
-        "\"wordmark\": \"Edited author wordmark\"",
-    );
-    fs::write(pack, contents).unwrap();
-    wait_for(&receive, "✅ success");
-    let (_, changed) = get(port, wasm.file_name().unwrap().to_str().unwrap());
-    assert!(String::from_utf8_lossy(&changed).contains("Edited author wordmark"));
-    let mark = browser.path("external mark.svg");
-    let contents = fs::read_to_string(&mark)
-        .unwrap()
-        .replace("<svg", "<svg data-edited=\"yes\"");
-    fs::write(mark, contents).unwrap();
-    wait_for(&receive, "✅ success");
-    let (_, changed) = get(port, wasm.file_name().unwrap().to_str().unwrap());
-    assert!(String::from_utf8_lossy(&changed).contains("data-edited=\"yes\""));
+    replace_identity_twice(&browser, &pack, || {
+        wait_for(&receive, "✅ success");
+        get(port, wasm.file_name().unwrap().to_str().unwrap()).1
+    });
     drop(child);
     drop(receive);
     thread.join().unwrap();
@@ -272,32 +298,55 @@ fn browser_compile_watch_rebuilds_external_identity() {
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "✅ success");
     let wasm = browser.path("target/maestro-browser/library/maestro-browser-author_bg.wasm");
-    for (path, from, to) in [
-        (
-            pack,
-            "\"wordmark\": \"Maestro\"",
-            "\"wordmark\": \"Compiled external identity\"",
-        ),
-        (
-            browser.path("external mark.svg"),
-            "<svg",
-            "<svg data-compiled=\"yes\"",
-        ),
-    ] {
-        let contents = fs::read_to_string(&path).unwrap().replace(from, to);
-        fs::write(path, contents).unwrap();
+    replace_identity_twice(&browser, &pack, || {
         wait_for(&receive, "✅ success");
-        let bytes = fs::read(&wasm).unwrap();
-        let expected = if to.contains("wordmark") {
-            "Compiled external identity"
-        } else {
-            "data-compiled=\"yes\""
-        };
-        assert!(String::from_utf8_lossy(&bytes).contains(expected));
-    }
+        fs::read(&wasm).unwrap()
+    });
     drop(child);
     drop(receive);
     thread.join().unwrap();
+}
+
+/// Replace directory entries as an editor does, including a newly selected dependency.
+fn replace_identity_twice(
+    browser: &Browser,
+    pack: &std::path::Path,
+    mut rebuilt: impl FnMut() -> Vec<u8>,
+) {
+    let mark = browser.path("external mark.svg");
+    for revision in ["first", "second"] {
+        let mut data: serde_json::Value = serde_json::from_slice(&fs::read(pack).unwrap()).unwrap();
+        data["wordmark"] = format!("{revision} author wordmark").into();
+        let temporary = pack.with_extension("tmp");
+        fs::write(&temporary, serde_json::to_string_pretty(&data).unwrap()).unwrap();
+        fs::rename(temporary, pack).unwrap();
+        eprintln!("waiting for {revision} pack replacement rebuild");
+        assert!(
+            String::from_utf8_lossy(&rebuilt()).contains(&format!("{revision} author wordmark"))
+        );
+        let temporary = mark.with_extension("tmp");
+        let svg = fs::read_to_string(browser.path("assets/brand/mark.svg"))
+            .unwrap()
+            .replace("<svg", &format!("<svg data-revision=\"{revision}\""));
+        fs::write(&temporary, svg).unwrap();
+        fs::rename(temporary, &mark).unwrap();
+        eprintln!("waiting for {revision} mark replacement rebuild");
+        assert!(
+            String::from_utf8_lossy(&rebuilt()).contains(&format!("data-revision=\"{revision}\""))
+        );
+    }
+    let replacement = browser.path("new dependency/mark.svg");
+    fs::create_dir_all(replacement.parent().unwrap()).unwrap();
+    fs::copy(&mark, &replacement).unwrap();
+    let mut data: serde_json::Value = serde_json::from_slice(&fs::read(pack).unwrap()).unwrap();
+    data["mark"]["template"] = "../new dependency/mark.svg".into();
+    fs::write(pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
+    rebuilt();
+    let contents = fs::read_to_string(&replacement)
+        .unwrap()
+        .replace("second", "replacement");
+    fs::write(replacement, contents).unwrap();
+    assert!(String::from_utf8_lossy(&rebuilt()).contains("data-revision=\"replacement\""));
 }
 
 /// Keep the selected pack and mark outside both existing watch roots.

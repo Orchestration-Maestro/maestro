@@ -6,6 +6,7 @@ pub fn show(ui: &mut egui::Ui, text: &mut String) -> egui::Response {
     let id = ui.make_persistent_id("author-input");
     let radius = ui.visuals().widgets.inactive.corner_radius;
     let frame = egui::Frame::new()
+        .inner_margin(egui::Margin::symmetric(4, 2))
         .fill(ui.visuals().extreme_bg_color)
         .corner_radius(radius);
     let response = ui.add(egui::TextEdit::singleline(text).id(id).frame(frame));
@@ -15,7 +16,7 @@ pub fn show(ui: &mut egui::Ui, text: &mut String) -> egui::Response {
         ui.visuals().widgets.inactive.bg_stroke
     };
     ui.painter()
-        .rect_stroke(response.rect, radius, stroke, egui::StrokeKind::Inside);
+        .rect_stroke(response.rect, radius, stroke, egui::StrokeKind::Outside);
     response
 }
 

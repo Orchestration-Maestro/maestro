@@ -53,9 +53,12 @@ dependencies. Root `dev-compile` composes models with `browser-dev-compile`;
 rebuilding and serving; watchexec retains the native compiler graph.
 The browser watch routes first check the fixture to prepare an invocation-specific
 configuration under `target/maestro-browser/`. It retains the fixture and default
-brand roots and adds the selected pack and its resolved mark template, including
-external files. The native watch option replaces configured roots rather than
-extending them, so the configuration is prepared from the existing theme loader;
+brand roots and adds the containing directories of the selected pack and its
+resolved mark template, including external directories. Recursive directory
+watching covers repeated replacement saves and new dependencies beneath those
+roots. If you change the template to a path outside the watched directories,
+restart the serve or watch command ([tracked follow-up](https://github.com/Orchestration-Maestro/maestro/issues/1088)).
+The native watch option replaces configured roots rather than extending them, so the configuration is prepared from the existing theme loader;
 there is no second pack decoder.
 
 ## Tools and prepared metadata
@@ -97,6 +100,8 @@ The editable input uses `border` when unfocused and a two-pixel `accent` outline
 when focused, independent of `on-accent` selected text over `accent`. Caret and
 composition underlines use `text` over `panel`. The same native widget projection
 is exercised for both packs and modes, including the emitted focus outline.
+The field retains its normal four-pixel horizontal and two-pixel vertical text padding; the outline is painted outside
+the field rectangle.
 This is not arbitrary-script coverage or real-browser pixel certification.
 
 ## Validation boundary

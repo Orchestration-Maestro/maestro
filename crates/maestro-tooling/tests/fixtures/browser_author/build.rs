@@ -67,8 +67,12 @@ fn watch_config(path: &str, template: &str) -> Result<(), Box<dyn Error>> {
         let roots = serde_json::to_string(&[
             root.as_path(),
             root.join("../../../../../assets/brand").as_path(),
-            std::path::Path::new(path),
-            std::path::Path::new(template),
+            std::path::Path::new(path)
+                .parent()
+                .ok_or("missing pack directory")?,
+            std::path::Path::new(template)
+                .parent()
+                .ok_or("missing mark directory")?,
         ])?;
         let config = PathBuf::from(config);
         fs::create_dir_all(config.parent().ok_or("missing watch output directory")?)?;
