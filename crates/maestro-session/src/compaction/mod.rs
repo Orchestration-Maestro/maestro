@@ -62,3 +62,13 @@ mod generation;
 mod prompts;
 pub use generation::{SummaryOptions, compact, generate_summary};
 pub use maestro_entry::compaction::CompactionResult;
+
+mod branch_summarization;
+pub use branch_summarization::{CollectEntriesResult, collect_entries_for_branch_summary};
+
+pub use branch_summarization::{BranchPreparation, BranchSummaryDetails, prepare_branch_entries};
+
+pub use branch_summarization::{
+    BranchSummaryResult, GenerateBranchSummaryOptions, generate_branch_summary,
+};
+pub use utils::SUMMARIZATION_SYSTEM_PROMPT;
