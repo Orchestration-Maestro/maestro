@@ -186,7 +186,13 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
         }
     }
     for (path, target, referent) in links {
-        let _ = publish_session_link(&path, &target, moved.get(&referent).unwrap_or(&referent));
+        if !moved.contains_key(&referent)
+            && fs::read_link(&path).is_ok_and(|link| link.is_absolute())
+        {
+            let _ = fs::rename(path, target);
+        } else {
+            let _ = publish_session_link(&path, &target, moved.get(&referent).unwrap_or(&referent));
+        }
     }
     Ok(())
 }

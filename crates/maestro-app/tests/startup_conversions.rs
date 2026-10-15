@@ -334,3 +334,44 @@ fn relative_session_link_replaces_a_dangling_destination() {
         assert!(!directory.join("missing.data").exists());
     }
 }
+
+#[test]
+#[cfg(unix)]
+fn unchanged_absolute_session_link_moves_by_rename() {
+    use std::{
+        fs,
+        os::unix::fs::{MetadataExt, symlink},
+    };
+    let name = "unchanged_absolute_session_link_moves_by_rename";
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        println!("PROBE done");
+        return;
+    }
+    let scratch = child::Scratch::new();
+    let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
+    let referent = scratch.0.join("original.data");
+    fs::write(&referent, body).unwrap();
+    let source = scratch.0.join("alias.jsonl");
+    symlink(&referent, &source).unwrap();
+    let identity = fs::symlink_metadata(&source).unwrap().ino();
+    let destination = scratch.0.join("sessions/--work--/alias.jsonl");
+    for _ in 0..2 {
+        child::probe(
+            name,
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "sessions"),
+                ("MAESTRO_CODING_AGENT_DIR", scratch.0.to_str().unwrap()),
+            ],
+        );
+        assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
+        assert_eq!(fs::read_link(&destination).unwrap(), referent);
+        assert_eq!(fs::read(&destination).unwrap(), body);
+        assert_eq!(fs::read(&referent).unwrap(), body);
+        assert_eq!(
+            fs::symlink_metadata(&source).unwrap_err().kind(),
+            std::io::ErrorKind::NotFound
+        );
+    }
+}
