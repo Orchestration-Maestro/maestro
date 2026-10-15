@@ -27,7 +27,7 @@ An omitted filter starts in `Default`. The five modes are:
 
 Assistant entries other than the current leaf need nonblank text or a truthy stop reason other than
 `stop` or `toolUse`. The current leaf bypasses this eligibility check, not the
-selected mode. Content checks use the shared [text](../text.md) whitespace
+selected mode. Content eligibility uses the shared session owner with the [text](../text.md) whitespace
 predicate and [JSON](../json.md) truth predicate. A reached truthy nonstring text
 block returns `InvalidData`; an earlier nonblank text block avoids later reads.
 
@@ -65,7 +65,8 @@ the selected identity and its raw optional label; it does not edit that label.
 Printable chunks extend the authored query; any C0, DEL or C1 control rejects the
 whole chunk unless a registered action takes precedence. Backspace removes one
 Unicode scalar, including a separate combining mark, not one grapheme. Literal
-search lowercases the query and entry text and requires every nonempty token.
+search delegates to the shared session owner, which lowercases the query and
+entry text and requires every nonempty token.
 Tokens use the shared [text](../text.md) whitespace predicate; search is neither
 fuzzy nor regular-expression based.
 
@@ -73,7 +74,8 @@ Search covers attached labels and entry-specific role/text, shell commands,
 custom-message kinds/content, branch summaries, titles, model IDs, thinking
 levels, custom-state kinds and labels. Compaction contributes its keyword, not
 its summary; unknown kinds contribute only their attached label. Message and
-custom text-block previews reuse the shared prefix helper; custom string content
+custom text-block previews use the shared session prefix helper with a 200-UTF-16-unit
+cutoff; custom string content
 is not limited. Search and category eligibility intersect.
 
 Typing, nonempty-query Backspace, query-clearing cancel and every filter action
@@ -90,7 +92,8 @@ the selected occurrence if no boundary is reachable.
 `render(width, &LiveTheme, &dyn TuiRuntime, styles_enabled)` returns the visible
 window and position/filter status, clipped with the toolkit's terminal-cell
 formatter. Branch gutters follow the filtered parent projection; hidden parents
-attach to the nearest visible ancestor. Active marks follow the current leaf,
+attach to the nearest visible ancestor. Plain prefixes come from the shared session
+owner; fold markers and theme roles remain here. Active marks follow the current leaf,
 not the selection. Attached nonempty labels precede entry content.
 
 The list borrows display fields only when their row reaches the window. Reached

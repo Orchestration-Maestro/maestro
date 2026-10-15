@@ -159,34 +159,25 @@ impl TreeState {
     /// Three-cell levels place continuing gutters before branch connectors.
     fn prefix(&self, index: usize) -> String {
         let row = &self.structure.rows[index];
-        let indent = row
-            .indent
-            .saturating_sub(usize::from(self.structure.multiple_roots));
-        let connector = row.show_connector && !row.virtual_child;
+        let mut prefix = maestro_app::export_html::template::build_tree_prefix(
+            row,
+            self.structure.multiple_roots,
+        );
         let foldable = self.visible[index].entry()["id"]
             .as_str()
             .is_some_and(|id| self.structure.is_foldable(id));
         let folded = self.visible[index].entry()["id"]
             .as_str()
             .is_some_and(|id| self.folded.contains(id));
-        (0..indent)
-            .map(|level| {
-                if let Some(gutter) = row.gutters.iter().find(|g| g.position == level) {
-                    ["   ", "│  "][usize::from(gutter.show)]
-                } else if connector && level + 1 == indent {
-                    match (row.is_last, foldable, folded) {
-                        (true, _, true) => "└⊞ ",
-                        (false, _, true) => "├⊞ ",
-                        (true, true, false) => "└⊟ ",
-                        (true, false, false) => "└─ ",
-                        (false, true, false) => "├⊟ ",
-                        (false, false, false) => "├─ ",
-                    }
-                } else {
-                    "   "
-                }
-            })
-            .collect()
+        if (foldable || folded)
+            && let Some(position) = prefix.find('─')
+        {
+            prefix.replace_range(
+                position..position + '─'.len_utf8(),
+                if folded { "⊞" } else { "⊟" },
+            );
+        }
+        prefix
     }
     /// The badge for the nondefault category selection.
     fn status(&self) -> String {

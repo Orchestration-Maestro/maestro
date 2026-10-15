@@ -1,4 +1,7 @@
 //! Borrowed display reads and preview normalization.
+pub(super) use maestro_app::export_html::template::{
+    extract_content_prefix as content, read_text as text,
+};
 use maestro_app::{is_whitespace_scalar, truncate_utf16};
 use maestro_theme::{Theme, ThemeColor};
 use serde_json::Value;
@@ -8,35 +11,6 @@ pub(super) fn normalize(text: &str) -> String {
     text.replace(['\n', '\t'], " ")
         .trim_matches(is_whitespace_scalar)
         .to_owned()
-}
-/// Read a string only at its consuming display branch.
-pub(super) fn text(value: &Value) -> io::Result<&str> {
-    value
-        .as_str()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "display field is not text"))
-}
-/// The content prefix, with text blocks concatenated before normalization.
-pub(super) fn content(value: &Value, limit: usize) -> io::Result<String> {
-    if let Some(text) = value.as_str() {
-        return Ok(truncate_utf16(text, limit));
-    }
-    let mut result = String::new();
-    for block in value
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter(|b| b["type"] == "text")
-    {
-        result.push_str(text(&block["text"])?);
-        if limit != usize::MAX && result.encode_utf16().count() >= limit {
-            break;
-        }
-    }
-    if limit == usize::MAX {
-        Ok(result)
-    } else {
-        Ok(truncate_utf16(&result, limit))
-    }
 }
 /// Dispatch entry kinds without decoding unread message fields.
 pub(super) fn entry(entry: &Value, theme: &Theme, styles: bool) -> io::Result<String> {
