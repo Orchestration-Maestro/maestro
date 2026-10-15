@@ -302,8 +302,16 @@ pub fn parse_background<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
 ) -> indexmap::IndexMap<String, Option<String>> {
-    xml_util::color_attr(xml, element, "color")
+    xml_util::color_attr(xml, element, "color", "black")
         .map(|color| ("background-color".into(), Some(color)))
         .into_iter()
         .collect()
 }
+
+mod default_properties;
+pub use default_properties::{DefaultPropertiesOptions, parse_default_properties};
+
+mod formatting;
+
+mod table_style;
+pub use table_style::{TableStyle, parse_table_style};
